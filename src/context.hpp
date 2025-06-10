@@ -22,7 +22,7 @@ public:
 
     template <typename Node, typename Exception>
     Node* allocNode(const idl::location& loc) {
-        static_assert(std::is_base_of<ASTNode, Node>::value, "T must be inherited from ASTNode");
+        static_assert(std::is_base_of<ASTNode, Node>::value, "Node must be inherited from ASTNode");
         if constexpr (std::is_same<Node, ASTProgram>::value) {
             if (_program) {
                 return _program;
@@ -31,9 +31,6 @@ public:
         auto node = new (std::nothrow) Node{};
         if (!node) {
             throw Exception(loc, "out of memory");
-        }
-        if constexpr (std::is_base_of<ASTDecl, Node>::value) {
-            _decls.push_back(node);
         }
         if constexpr (std::is_same<Node, ASTProgram>::value) {
             _program = node;
@@ -63,8 +60,7 @@ public:
             std::sort(attr->arguments.begin(), attr->arguments.end());
             auto last = std::unique(attr->arguments.begin(), attr->arguments.end());
             if (last != attr->arguments.end()) {
-                throw Exception(
-                    loc, "the 'platform' attribute cannot have duplicates in arguments");
+                throw Exception(loc, "the 'platform' attribute cannot have duplicates in arguments");
             }
         } else if (name == "hex") {
             attr->type = ASTAttribute::Hex;
@@ -88,7 +84,7 @@ public:
     }
 
     bool updateSymbols() {
-        for (const auto decl : _decls) {
+        return filter<ASTDecl>([this](const auto decl) {
             const auto type = decl->typeLowercase();
             if (_symbols.contains(type)) {
                 std::cerr << "error: redefinition of declaration '" + decl->type() + "' at " << Location(decl->location)
@@ -96,14 +92,63 @@ public:
                 return false;
             }
             _symbols[type] = decl;
+            return true;
+        });
+    }
+
+    bool resolveDeclRef(ASTDeclRef* ref) {
+        if (ref->decl) {
+            return true;
+        }
+        auto ns = ref->ns();
+        while (ns) {
+            auto it = _symbols.find(ns->typeLowercase() + '.' + ref->nameLowercase());
+            if (it != _symbols.end() && it->second->type() == ns->type() + '.' + ref->name) {
+                ref->decl = it->second;
+                break;
+            }
+            ns = ns->ns();
+        }
+        if (!ref->decl) {
+            auto it = _symbols.find(ref->nameLowercase());
+            if (it != _symbols.end() && it->second->type() == ref->name) {
+                ref->decl = it->second;
+            }
+        }
+        if (!ref->decl) {
+            std::cerr << "error: declaration '" + ref->name + "' not found at " << Location(ref->location) << std::endl;
+            return false;
+        }
+        if (dynamic_cast<ASTDecl*>(ref->parent) && dynamic_cast<ASTType*>(ref->decl) == nullptr) {
+            std::cerr << "error: declaration '" + ref->name + "' is not a type at " << Location(ref->location)
+                      << std::endl;
+            return false;
         }
         return true;
     }
 
+    bool resolveDeclRefs() {
+        return filter<ASTDeclRef>([this](auto ref) {
+            return resolveDeclRef(ref);
+        });
+    }
+
 private:
+    template <typename Node, typename Pred>
+    bool filter(Pred&& pred) {
+        static_assert(std::is_base_of<ASTNode, Node>::value, "Node must be inherited from ASTNode");
+        for (auto node : _nodes) {
+            if (auto ptr = dynamic_cast<Node*>(node)) {
+                if (!pred(ptr)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     ASTProgram* _program{};
     std::vector<ASTNode*> _nodes{};
-    std::vector<ASTDecl*> _decls{};
     std::unordered_map<std::string, struct ASTDecl*> _symbols{};
 };
 

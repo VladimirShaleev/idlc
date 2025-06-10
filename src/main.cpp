@@ -48,6 +48,10 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
+    if (!context.resolveDeclRefs()) {
+        return EXIT_FAILURE;
+    }
+
     const auto result = context.program();
     return EXIT_SUCCESS;
 }

@@ -48,8 +48,8 @@
 
 %type <ASTNode*> program
 %type <ASTNamespace*> namespace_decl
-%type <ASTDecl*> enum_decl
-%type <ASTDecl*> interface_decl
+%type <ASTType*> enum_decl
+%type <ASTType*> interface_decl
 %type <std::vector<ASTDecl*>> declarations
 
 // enums
@@ -98,6 +98,7 @@ namespace_decl :
 
 declarations : 
     /* empty */ { $$ = std::vector<ASTDecl*>(); }
+    | declarations namespace_decl { $1.push_back($2); $$ = $1; }
     | declarations enum_decl { $1.push_back($2); $$ = $1; }
     | declarations interface_decl { $1.push_back($2); $$ = $1; }
     ;
@@ -285,6 +286,10 @@ ref :
         auto ref = alloc_node(ASTDeclRef, @1);
         ref->name = $1;
         $$ = ref;
+    }
+    | ref '.' ID {
+        $1->name += '.' + $3;
+        $$ = $1;
     }
     ;
 

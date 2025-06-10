@@ -22,6 +22,8 @@ struct ASTNode {
     virtual ~ASTNode() = default;
     ASTNode* parent{};
     idl::location location{};
+
+    const ASTNamespace* ns() const noexcept;
 };
 
 struct ASTAttribute : ASTNode {
@@ -55,8 +57,19 @@ struct ASTDecl : ASTNode {
     }
 };
 
+struct ASTType : ASTDecl {};
+
 struct ASTDeclRef : ASTNode {
     std::string name;
+    ASTDecl* decl{};
+
+    [[nodiscard]] std::string nameLowercase() const {
+        auto str = name;
+        std::transform(str.cbegin(), str.cend(), str.begin(), [](const auto c) {
+            return std::tolower(c);
+        });
+        return str;
+    }
 };
 
 struct ASTProgram : ASTNode {
@@ -67,25 +80,33 @@ struct ASTNamespace : ASTDecl {
     std::vector<ASTDecl*> declarations;
 };
 
-struct ASTEnum : ASTDecl {
+struct ASTEnum : ASTType {
     std::vector<ASTEnumConst*> constants;
 };
 
 struct ASTEnumConst : ASTDecl {
-    int64_t value;
+    int64_t value{};
 };
 
-struct ASTInterface : ASTDecl {
+struct ASTInterface : ASTType {
     std::vector<ASTMethod*> methods;
 };
 
 struct ASTMethod : ASTDecl {
-    ASTDeclRef* returnTypeRef;
+    ASTDeclRef* returnTypeRef{};
     std::vector<ASTParameter*> parameters;
 };
 
 struct ASTParameter : ASTDecl {
-    ASTDeclRef* typeRef;
+    ASTDeclRef* typeRef{};
 };
+
+inline const ASTNamespace* ASTNode::ns() const noexcept {
+    auto current = parent;
+    while (current && dynamic_cast<const ASTNamespace*>(current) == nullptr) {
+        current = current->parent;
+    }
+    return dynamic_cast<const ASTNamespace*>(current);
+}
 
 #endif

@@ -25,7 +25,7 @@ typedef idl::Parser::token token;
 
 [a-zA-Z_][a-zA-Z0-9_]* { yylval->emplace<std::string>(YYText()); return token::ID; }
 [0-9]+                 { yylval->emplace<int64_t>(atoi(YYText())); return token::NUM; }
-[\{\}=,;()[\]]         { return YYText()[0]; }
+[\{\}=\.,;()[\]]       { return YYText()[0]; }
 \n                     { yylloc->lines(); }
 [ \t]                  ;
 <<EOF>>                { return token::YYEOF; }

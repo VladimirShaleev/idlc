@@ -1,0 +1,84 @@
+cmake_minimum_required(VERSION 3.24)
+
+include(cmake/version.cmake)
+include(cmake/vcpkg.cmake)
+
+project(idlc
+    HOMEPAGE_URL "https://github.com/VladimirShaleev/idlc"
+    DESCRIPTION "desc"
+    VERSION ${IDLC_VERSION}
+    LANGUAGES CXX)
+
+include(CMakePackageConfigHelpers)
+include(GNUInstallDirs)
+include(CMakeDependentOption)
+
+cmake_dependent_option(IDLC_BUILD_PACKAGES "Build packages" ON
+  "CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR" OFF)
+
+find_package(FLEX REQUIRED)
+find_package(BISON REQUIRED)
+find_package(argparse CONFIG REQUIRED)
+
+bison_target(parser src/idl.yy ${CMAKE_CURRENT_BINARY_DIR}/parser.cpp)
+flex_target(scanner src/idl.ll ${CMAKE_CURRENT_BINARY_DIR}/scanner.cpp)
+add_flex_bison_dependency(scanner parser)
+
+add_executable(${PROJECT_NAME}
+    src/main.cpp
+    ${BISON_parser_OUTPUTS}
+    ${FLEX_scanner_OUTPUTS})
+target_link_libraries(${PROJECT_NAME} PRIVATE argparse::argparse)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(${PROJECT_NAME} PRIVATE ${FLEX_INCLUDE_DIR})
+
+target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    CXX_STANDARD_REQUIRED ON
+    CXX_EXTENSIONS OFF
+    POSITION_INDEPENDENT_CODE ON
+    WINDOWS_EXPORT_ALL_SYMBOLS OFF)
+ 
+set_target_properties(${PROJECT_NAME} PROPERTIES 
+    VERSION ${PROJECT_VERSION} 
+    SOVERSION ${PROJECT_VERSION_MAJOR})
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    CXX_VISIBILITY_PRESET hidden 
+    VISIBILITY_INLINES_HIDDEN ON)
+
+if(MSVC)
+    target_compile_options(${PROJECT_NAME} PUBLIC /GR-)
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
+
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/version.hpp.in" 
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/version.hpp"
+    @ONLY)
+
+configure_package_config_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/${PROJECT_NAME}-config.cmake.in" 
+    "${PROJECT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
+    INSTALL_DESTINATION "${CMAKE_INSTALL_DATADIR}/cmake/${PROJECT_NAME}"
+    NO_SET_AND_CHECK_MACRO
+    NO_CHECK_REQUIRED_COMPONENTS_MACRO)
+
+write_basic_package_version_file(${PROJECT_NAME}-config-version.cmake
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion)
+
+install(TARGETS ${PROJECT_NAME} EXPORT ${PROJECT_NAME}-targets)
+install(EXPORT ${PROJECT_NAME}-targets 
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/cmake/${PROJECT_NAME}"
+    NAMESPACE ${PROJECT_NAME}::)
+install(
+    FILES
+        "${PROJECT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake"
+        "${PROJECT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/${PROJECT_NAME})
+
+if(IDLC_BUILD_PACKAGES)
+    include(cmake/package.cmake)
+endif()

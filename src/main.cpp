@@ -34,9 +34,9 @@ int main(int argc, char* argv[]) {
         filename = input.filename().string();
     }
 
-    idl::Scanner scanner{ stream, &filename };
+    idl::Context context{};
+    idl::Scanner scanner{ context, stream, &filename };
     idl::Parser parser{ scanner };
-    std::cout.precision(10);
     auto code = parser.parse();
     file.close();
 
@@ -44,6 +44,10 @@ int main(int argc, char* argv[]) {
         return code;
     }
 
-    const auto result = scanner.program;
+    if (!context.updateSymbols()) {
+        return EXIT_FAILURE;
+    }
+
+    const auto result = context.program();
     return EXIT_SUCCESS;
 }

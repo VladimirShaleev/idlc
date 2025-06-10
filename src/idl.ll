@@ -32,7 +32,7 @@ typedef idl::Parser::token token;
 \n                     { yylloc->lines(); }
 [ \t]                  ;
 <<EOF>>                { return token::YYEOF; }
-.                      { std::cerr << "error: unexpected character" << YYText() << " at " << *yylloc << std::endl; yyterminate(); }
+.                      { std::cerr << "error: unexpected character '" << YYText() << "' at " << Location(*yylloc) << std::endl; yyterminate(); }
 
 %%
 

@@ -2,6 +2,7 @@
 #define SCANNER_HPP
 
 #include "ast.hpp"
+#include "context.hpp"
 #include "parser.hpp"
 
 #if !defined(yyFlexLexerOnce)
@@ -12,10 +13,17 @@ namespace idl {
 
 class Scanner : public yyFlexLexer {
 public:
-    Scanner(std::istream* in = nullptr, const std::string* filename = nullptr) : yyFlexLexer(in), _filename(filename) {
+    Scanner(Context& ctx, std::istream* in = nullptr, const std::string* filename = nullptr) :
+        yyFlexLexer(in),
+        _ctx(ctx),
+        _filename(filename) {
     }
 
     int yylex(Parser::semantic_type* yylval, Parser::location_type* yylloc);
+
+    Context& context() noexcept {
+        return _ctx;
+    }
 
     const std::string* filename() const noexcept {
         return _filename;
@@ -24,6 +32,7 @@ public:
     ASTProgram* program{};
 
 private:
+    Context& _ctx;
     const std::string* _filename{};
 };
 

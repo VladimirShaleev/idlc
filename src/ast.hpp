@@ -1,60 +1,72 @@
 #ifndef AST_HPP
 #define AST_HPP
 
-#include <memory>
+#include <algorithm>
 #include <string>
 #include <vector>
+
+#include "location.hh"
 
 struct ASTNode;
 struct ASTProgram;
 struct ASTNamespace;
 struct ASTEnum;
+struct ASTEnumConst;
 struct ASTInterface;
 struct ASTMethod;
 struct ASTParameter;
 
 struct ASTNode {
     virtual ~ASTNode() = default;
+    ASTNode* parent{};
+    idl::location location{};
 };
 
 struct ASTDecl : ASTNode {
+    std::string name;
 
+    [[nodiscard]] std::string type() const {
+        auto parentDecl = dynamic_cast<const ASTDecl*>(parent);
+        return parentDecl ? parentDecl->type() + "." + name : name;
+    }
+
+    [[nodiscard]] std::string typeLowercase() const {
+        auto str = type();
+        std::transform(str.cbegin(), str.cend(), str.begin(), [](const auto c) {
+            return std::tolower(c);
+        });
+        return str;
+    }
 };
 
 struct ASTProgram : ASTNode {
-    std::vector<std::unique_ptr<ASTNode>> namespaces;
+    std::vector<ASTNamespace*> namespaces;
 };
 
 struct ASTNamespace : ASTDecl {
-    std::string name;
-    std::vector<std::unique_ptr<ASTNode>> declarations;
+    std::vector<ASTDecl*> declarations;
 };
 
 struct ASTEnum : ASTDecl {
-    struct Constant {
-        std::string name;
-        int64_t value;
-    };
+    std::vector<ASTEnumConst*> constants;
+};
 
-    std::string name;
-    std::vector<Constant> constants;
+struct ASTEnumConst : ASTDecl {
+    int64_t value;
 };
 
 struct ASTInterface : ASTDecl {
-    std::string name;
-    std::vector<std::unique_ptr<ASTNode>> methods;
+    std::vector<ASTMethod*> methods;
 };
 
 struct ASTMethod : ASTDecl {
     std::string returnType;
-    std::string name;
-    std::vector<std::unique_ptr<ASTNode>> parameters;
+    std::vector<ASTParameter*> parameters;
 };
 
 struct ASTParameter : ASTDecl {
     std::string direction;
     std::string type;
-    std::string name;
 };
 
 #endif

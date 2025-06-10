@@ -43,6 +43,50 @@ public:
         return node;
     }
 
+    template <typename Exception>
+    ASTAttribute* allocAttribute(const idl::location& loc,
+                                 const std::string& name,
+                                 const std::vector<std::string>& args) {
+        auto attr       = allocNode<ASTAttribute, Exception>(loc);
+        attr->arguments = args;
+        if (name == "flags") {
+            attr->type = ASTAttribute::Flags;
+            if (!args.empty()) {
+                throw Exception(loc, "the 'flags' attribute has no arguments");
+            }
+        } else if (name == "platform") {
+            attr->type = ASTAttribute::Platform;
+            if (args.empty()) {
+                throw Exception(
+                    loc, "the 'platform' attribute no arguments (allowed args: window,linux,macos,web,android,ios)");
+            }
+            std::sort(attr->arguments.begin(), attr->arguments.end());
+            auto last = std::unique(attr->arguments.begin(), attr->arguments.end());
+            if (last != attr->arguments.end()) {
+                throw Exception(
+                    loc, "the 'platform' attribute cannot have duplicates in arguments");
+            }
+        } else if (name == "hex") {
+            attr->type = ASTAttribute::Hex;
+            if (!args.empty()) {
+                throw Exception(loc, "the 'hex' attribute has no arguments");
+            }
+        } else if (name == "in") {
+            attr->type = ASTAttribute::In;
+            if (!args.empty()) {
+                throw Exception(loc, "the 'in' attribute has no arguments");
+            }
+        } else if (name == "out") {
+            attr->type = ASTAttribute::Out;
+            if (!args.empty()) {
+                throw Exception(loc, "the 'out' attribute has no arguments");
+            }
+        } else {
+            throw Exception(loc, "unknown attribute '" + name + '\'');
+        }
+        return attr;
+    }
+
     bool updateSymbols() {
         for (const auto decl : _decls) {
             const auto type = decl->typeLowercase();

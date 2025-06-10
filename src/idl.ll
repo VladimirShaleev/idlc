@@ -22,9 +22,6 @@ typedef idl::Parser::token token;
 "namespace" return token::NAMESPACE;
 "enum"      return token::ENUM;
 "interface" return token::INTERFACE;
-"in"        return token::IN;
-"out"       return token::OUT;
-"int"       return token::INT;
 
 [a-zA-Z_][a-zA-Z0-9_]* { yylval->emplace<std::string>(YYText()); return token::ID; }
 [0-9]+                 { yylval->emplace<int64_t>(atoi(YYText())); return token::NUM; }

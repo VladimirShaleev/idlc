@@ -8,6 +8,8 @@
 #include "location.hh"
 
 struct ASTNode;
+struct ASTDecl;
+struct ASTAttribute;
 struct ASTProgram;
 struct ASTNamespace;
 struct ASTEnum;
@@ -22,8 +24,22 @@ struct ASTNode {
     idl::location location{};
 };
 
+struct ASTAttribute : ASTNode {
+    enum Attribute {
+        Platform,
+        Flags,
+        Hex,
+        In,
+        Out
+    };
+
+    Attribute type;
+    std::vector<std::string> arguments;
+};
+
 struct ASTDecl : ASTNode {
     std::string name;
+    std::vector<ASTAttribute*> attributes;
 
     [[nodiscard]] std::string type() const {
         auto parentDecl = dynamic_cast<const ASTDecl*>(parent);
@@ -37,6 +53,10 @@ struct ASTDecl : ASTNode {
         });
         return str;
     }
+};
+
+struct ASTDeclRef : ASTNode {
+    std::string name;
 };
 
 struct ASTProgram : ASTNode {
@@ -60,13 +80,12 @@ struct ASTInterface : ASTDecl {
 };
 
 struct ASTMethod : ASTDecl {
-    std::string returnType;
+    ASTDeclRef* returnTypeRef;
     std::vector<ASTParameter*> parameters;
 };
 
 struct ASTParameter : ASTDecl {
-    std::string direction;
-    std::string type;
+    ASTDeclRef* typeRef;
 };
 
 #endif

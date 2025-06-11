@@ -20,10 +20,7 @@ public:
     }
 
     template <typename Exception>
-    ASTApi* api(const idl::location& loc) {
-        if (!_api) {
-            throw Exception(loc, err_str<E2012>());
-        }
+    const ASTApi* api(const idl::location& loc) const noexcept {
         return _api;
     }
 

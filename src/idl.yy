@@ -28,12 +28,12 @@
 {
     #include "scanner.hpp"
     #define yylex scanner.yylex
-    #define get_api(loc) \
-        scanner.context().api<idl::Parser::syntax_error>(loc)
     #define alloc_node(ast, loc) \
         scanner.context().allocNode<ast, idl::Parser::syntax_error>(loc)
     #define intern(loc, str) \
         scanner.context().intern<idl::Parser::syntax_error>(loc, str)
+    
+    void addDoc(const idl::location&, ASTDoc*, const std::vector<ASTNode*>&, char);
 }
 
 %initial-action {
@@ -47,6 +47,8 @@
 %token DOCLICENSE
 %token DOCAUTHOR
 
+%token ATTRFLAGS
+
 %token API
 %token ENUM
 
@@ -54,86 +56,99 @@
 %token <std::string> ID
 %token <int64_t> NUM
 
-%type <ASTNode*> api
-%type <ASTNode*> enum
-
 %type <ASTDoc*> doc
-%type <ASTNode*> doc_item
+%type <ASTNode*> doc_lit_or_ref
 %type <std::vector<ASTNode*>> doc_field
-%type <std::vector<ASTNode*>> doc_list
+%type <std::pair<std::vector<ASTNode*>, char>> doc_decl
 
-%start root
+%type <ASTApi*> api
+%type <ASTApi*> api_def
+
+%type <ASTEnum*> enum_def
+
+%start api
 
 %%
 
-root
-    : api
-    | enum { throw syntax_error(@1, err_str<E2012>()); }
-    | root api { throw syntax_error(@2, err_str<E2004>()); }
-    | root enum
-    ;
-
 api
-    : API ID { throw syntax_error(@1, err_str<E2005>()); }
-    | doc API ID { auto node = alloc_node(ASTApi, @2); node->name = $3; node->doc = $1; $$ = node; }
+    : api_def { $$ = $1; }
+    | enum_def { throw syntax_error(@1, err_str<E2012>()); }
+    | api api_def { throw syntax_error(@2, err_str<E2004>()); }
+    | api enum_def { $1->enums.push_back($2); $2->parent = $1; $$ = $1; }
     ;
 
-enum
+api_def
+    : API ID { throw syntax_error(@1, err_str<E2005>()); }
+    | doc API ID { 
+        auto node = alloc_node(ASTApi, @2);
+        node->name = $3;
+        node->doc = $1;
+        $1->parent = node;
+        $$ = node;
+        }
+    ;
+
+enum_def
     : ENUM ID { throw syntax_error(@1, err_str<E2005>()); }
-    | doc ENUM ID { 
+    | doc ENUM ID {
         auto node = alloc_node(ASTEnum, @2);
-        node->name = $3; 
-        node->doc = $1; 
-        auto api = get_api(@$);
-        api->enums.push_back(node);
-        node->parent = api;
+        node->name = $3;
+        node->doc = $1;
+        $1->parent = node;
         $$ = node;
     }
     ;
 
 doc
-    : { auto node = alloc_node(ASTDoc, @$); $$ = node; }
-    | doc doc_field { 
-        if (!$1->brief.empty()) throw syntax_error(@2, err_str<E2007>());
-        $1->brief = $2; $$ = $1; 
-    }
-    | doc doc_field DOCBRIEF { 
-        if (!$1->brief.empty()) throw syntax_error(@2, err_str<E2007>());
-        $1->brief = $2; $$ = $1; 
-    }
-    | doc doc_field DOCDETAIL { 
-        if (!$1->detail.empty()) throw syntax_error(@2, err_str<E2008>());
-        $1->detail = $2; $$ = $1; 
-    }
-    | doc doc_field DOCCOPYRIGHT { 
-        if (!$1->copyright.empty()) throw syntax_error(@2, err_str<E2009>());
-        $1->copyright = $2; $$ = $1; 
-    }
-    | doc doc_field DOCLICENSE { 
-        if (!$1->license.empty()) throw syntax_error(@2, err_str<E2010>());
-        $1->license = $2; $$ = $1; 
-    }
-    | doc doc_field DOCAUTHOR { 
-        $1->authors.push_back($2); $$ = $1; 
-    }
+    : doc_decl { auto node = alloc_node(ASTDoc, @1); addDoc(@1, node, $1.first, $1.second); $$ = node; }
+    | doc doc_decl { addDoc(@2, $1, $2.first, $2.second); $$ = $1; }
     ;
 
-doc_field:
-    DOC doc_list { $$ = $2; }
+doc_decl
+    : DOC { throw syntax_error(@$, err_str<E2006>()); }
+    | DOC doc_field              { $$ = std::make_pair($2, 'b'); }
+    | DOC doc_field DOCBRIEF     { $$ = std::make_pair($2, 'b'); }
+    | DOC doc_field DOCDETAIL    { $$ = std::make_pair($2, 'd'); }
+    | DOC doc_field DOCCOPYRIGHT { $$ = std::make_pair($2, 'c'); }
+    | DOC doc_field DOCLICENSE   { $$ = std::make_pair($2, 'l'); }
+    | DOC doc_field DOCAUTHOR    { $$ = std::make_pair($2, 'a'); }
     ;
 
-doc_list
-    : doc_item { auto list = std::vector<ASTNode*>(); list.push_back($1); $$ = list; }
-    | doc_list doc_item { $1.push_back($2); $$ = $1; }
+doc_field
+    : doc_lit_or_ref { auto list = std::vector<ASTNode*>(); list.push_back($1); $$ = list; }
+    | doc_field doc_lit_or_ref { $1.push_back($2); $$ = $1; }
     ;
 
-doc_item
-    : { throw syntax_error(@$, err_str<E2006>()); }
-    | STR { $$ = intern(@1, $1); }
-    | '{' STR '}' { $$ = intern(@1, $2); }
+doc_lit_or_ref
+    : STR { $$ = intern(@1, $1); }
+    | '{' STR '}' { auto node = alloc_node(ASTDeclRef, @2); node->name = $2; $$ = node; }
     ;
 
 %%
+
+void addDoc(const idl::location& loc, ASTDoc* node, const std::vector<ASTNode*>& doc, char type) {
+    switch (type) {
+        case 'b':
+            if (!node->brief.empty()) throw idl::Parser::syntax_error(loc, err_str<E2007>());
+            node->brief = doc;
+            break;
+        case 'd':
+            if (!node->detail.empty()) throw idl::Parser::syntax_error(loc, err_str<E2008>());
+            node->detail = doc;
+            break;
+        case 'c':
+            if (!node->copyright.empty()) throw idl::Parser::syntax_error(loc, err_str<E2009>());
+            node->copyright = doc;
+            break;
+        case 'l':
+            if (!node->license.empty()) throw idl::Parser::syntax_error(loc, err_str<E2010>());
+            node->license = doc;
+            break;
+        case 'a':
+            node->authors.push_back(doc);
+            break;
+    }
+}
 
 void idl::Parser::error(const location_type& loc, const std::string& message)
 {

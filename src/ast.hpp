@@ -27,8 +27,16 @@ struct ASTDoc : ASTNode {
     std::vector<std::vector<ASTNode*>> authors;
 };
 
+struct ASTAttr : ASTNode {
+    enum Type {
+        Flags
+    };
+    Type type;
+};
+
 struct ASTDecl : ASTNode {
     std::string name;
+    std::vector<ASTAttr*> attrs;
     ASTDoc* doc{};
 };
 

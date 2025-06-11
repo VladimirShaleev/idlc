@@ -4,6 +4,8 @@
 #include <sstream>
 #include <unordered_map>
 
+#include <rapidhash.h>
+
 #include "ast.hpp"
 #include "errors.hpp"
 #include "location.hpp"
@@ -18,14 +20,17 @@ public:
         }
     }
 
+    template <typename Exception>
+    ASTApi* api(const idl::location& loc) {
+        if (!_api) {
+            throw Exception(loc, err_str<E2012>());
+        }
+        return _api;
+    }
+
     template <typename Node, typename Exception>
     Node* allocNode(const idl::location& loc) {
         static_assert(std::is_base_of<ASTNode, Node>::value, "Node must be inherited from ASTNode");
-        if constexpr (std::is_same<Node, ASTApi>::value) {
-            if (_api) {
-                throw Exception(loc, err_str<E2004>());
-            }
-        }
         auto node = new (std::nothrow) Node{};
         if (!node) {
             throw Exception(loc, "out of memory");
@@ -36,6 +41,18 @@ public:
         node->location = loc;
         _nodes.push_back(node);
         return node;
+    }
+
+    template <typename Exception>
+    ASTLiteral* intern(const idl::location& loc, const std::string& str) {
+        const auto key = rapidhash(str.c_str(), str.length());
+        if (auto it = _literals.find(key); it != _literals.end()) {
+            return it->second;
+        }
+        auto literal   = allocNode<ASTLiteralStr, Exception>(loc);
+        literal->value = str;
+        _literals[key] = literal;
+        return literal;
     }
 
 private:
@@ -55,6 +72,7 @@ private:
     ASTApi* _api{};
     std::vector<ASTNode*> _nodes{};
     std::unordered_map<std::string, struct ASTDecl*> _symbols{};
+    std::unordered_map<uint64_t, ASTLiteral*> _literals{};
 };
 
 } // namespace idl

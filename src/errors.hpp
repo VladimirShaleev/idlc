@@ -26,7 +26,8 @@ enum Error {
     E2008,
     E2009,
     E2010,
-    E2011
+    E2011,
+    E2012
 };
 
 template <Warning Code, typename... Args>
@@ -79,6 +80,9 @@ inline std::string err_str(Args&&... args) {
     if constexpr (Code == E2011) {
         ss << "multi-line documentation must start with 4 spaces";
     }
+    if constexpr (Code == E2012) {
+        ss << "the .idl file must start with the 'api' element.";
+    }
     return ss.str();
 }
 
@@ -90,6 +94,7 @@ inline void warn(const Location& loc, Args&&... args) {
 template <Error Code, typename... Args>
 inline void err(const Location& loc, Args&&... args) {
     std::cerr << "error: " << err_str<Code>(args...) << " at " << loc << std::endl;
+    exit(1);
 }
 
 #endif

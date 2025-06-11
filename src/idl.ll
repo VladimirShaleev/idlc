@@ -23,7 +23,8 @@ typedef idl::Parser::token token;
     yylloc->step();
 %}
 
-"api" { return token::API; }
+"api"  { return token::API; }
+"enum" { return token::ENUM; }
 
 "@ "                                 { BEGIN(DOCSTR); return token::DOC; }
 "@"                                  { BEGIN(DOCSTR); warn<W1001>(*yylloc); return token::DOC; }

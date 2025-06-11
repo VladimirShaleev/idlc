@@ -15,7 +15,7 @@ struct ASTNode {
 
 struct ASTLiteral : ASTNode {};
 
-struct ASTLiteralStr : ASTNode {
+struct ASTLiteralStr : ASTLiteral {
     std::string value;
 };
 
@@ -39,6 +39,10 @@ struct ASTDeclRef : ASTNode {
 
 struct ASTType : ASTDecl {};
 
-struct ASTApi : ASTDecl {};
+struct ASTEnum : ASTType {};
+
+struct ASTApi : ASTDecl {
+    std::vector<ASTEnum*> enums;
+};
 
 #endif

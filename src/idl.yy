@@ -28,8 +28,12 @@
 {
     #include "scanner.hpp"
     #define yylex scanner.yylex
+    #define get_api(loc) \
+        scanner.context().api<idl::Parser::syntax_error>(loc)
     #define alloc_node(ast, loc) \
         scanner.context().allocNode<ast, idl::Parser::syntax_error>(loc)
+    #define intern(loc, str) \
+        scanner.context().intern<idl::Parser::syntax_error>(loc, str)
 }
 
 %initial-action {
@@ -42,12 +46,16 @@
 %token DOCCOPYRIGHT
 %token DOCLICENSE
 %token DOCAUTHOR
+
 %token API
+%token ENUM
+
 %token <std::string> STR
 %token <std::string> ID
 %token <int64_t> NUM
 
 %type <ASTNode*> api
+%type <ASTNode*> enum
 
 %type <ASTDoc*> doc
 %type <ASTNode*> doc_item
@@ -60,11 +68,27 @@
 
 root
     : api
-    | root api
+    | enum { throw syntax_error(@1, err_str<E2012>()); }
+    | root api { throw syntax_error(@2, err_str<E2004>()); }
+    | root enum
+    ;
 
 api
     : API ID { throw syntax_error(@1, err_str<E2005>()); }
     | doc API ID { auto node = alloc_node(ASTApi, @2); node->name = $3; node->doc = $1; $$ = node; }
+    ;
+
+enum
+    : ENUM ID { throw syntax_error(@1, err_str<E2005>()); }
+    | doc ENUM ID { 
+        auto node = alloc_node(ASTEnum, @2);
+        node->name = $3; 
+        node->doc = $1; 
+        auto api = get_api(@$);
+        api->enums.push_back(node);
+        node->parent = api;
+        $$ = node;
+    }
     ;
 
 doc
@@ -105,8 +129,8 @@ doc_list
 
 doc_item
     : { throw syntax_error(@$, err_str<E2006>()); }
-    | STR { auto node = alloc_node(ASTLiteralStr, @1); node->value = $1; $$ = node; }
-    | '{' STR '}' { auto node = alloc_node(ASTDeclRef, @1); node->name = $2; $$ = node; }
+    | STR { $$ = intern(@1, $1); }
+    | '{' STR '}' { $$ = intern(@1, $2); }
     ;
 
 %%

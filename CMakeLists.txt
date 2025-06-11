@@ -20,7 +20,7 @@ find_package(FLEX REQUIRED)
 find_package(BISON REQUIRED)
 find_package(argparse CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
-find_path(RAPIDHASH_INCLUDE_DIRS "rapidhash.h")
+find_package(xxHash CONFIG REQUIRED)
 
 bison_target(parser src/idl.yy ${CMAKE_CURRENT_BINARY_DIR}/parser.cpp)
 flex_target(scanner src/idl.ll ${CMAKE_CURRENT_BINARY_DIR}/scanner.cpp)
@@ -32,10 +32,10 @@ add_executable(${PROJECT_NAME}
     ${FLEX_scanner_OUTPUTS})
 target_link_libraries(${PROJECT_NAME} PRIVATE argparse::argparse)
 target_link_libraries(${PROJECT_NAME} PRIVATE fmt::fmt-header-only)
+target_link_libraries(${PROJECT_NAME} PRIVATE xxHash::xxhash)
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_include_directories(${PROJECT_NAME} PRIVATE ${FLEX_INCLUDE_DIR})
-target_include_directories(${PROJECT_NAME} PRIVATE ${RAPIDHASH_INCLUDE_DIRS})
 target_compile_definitions(${PROJECT_NAME} PRIVATE YYDEBUG)
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
@@ -53,7 +53,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     VISIBILITY_INLINES_HIDDEN ON)
 
 if(MSVC)
-    target_compile_options(${PROJECT_NAME} PUBLIC /GR-)
     set_target_properties(${PROJECT_NAME} PROPERTIES
         MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()

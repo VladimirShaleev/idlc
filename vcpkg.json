@@ -5,6 +5,6 @@
   "dependencies": [
     "argparse",
     "fmt",
-    "rapidhash"
+    "xxhash"
   ]
 }

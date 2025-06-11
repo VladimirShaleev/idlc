@@ -3,8 +3,7 @@
 
 #include <sstream>
 #include <unordered_map>
-
-#include <rapidhash.h>
+#include <xxhash.h>
 
 #include "ast.hpp"
 #include "errors.hpp"
@@ -45,8 +44,13 @@ public:
 
     template <typename Exception>
     ASTLiteral* intern(const idl::location& loc, const std::string& str) {
-        const auto key = rapidhash(str.c_str(), str.length());
+        const auto key = XXH64(str.c_str(), str.length(), 0);
         if (auto it = _literals.find(key); it != _literals.end()) {
+#ifndef NDEBUG
+            if (auto strLiteral = dynamic_cast<ASTLiteralStr*>(it->second)) {
+                assert(strLiteral->value == str);
+            }
+#endif
             return it->second;
         }
         auto literal   = allocNode<ASTLiteralStr, Exception>(loc);

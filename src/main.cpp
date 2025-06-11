@@ -4,128 +4,88 @@
 #include "parser.hpp"
 #include "scanner.hpp"
 #include "version.hpp"
+#include "visitors.hpp"
 
-struct PrintIDL : Visitor {
-    bool visit(const ASTDeclRef* node) override {
-        std::cout << node->decl->type();
-        return true;
-    }
-
-    bool visit(const ASTAttribute* node) override {
-        switch (node->type) {
-            case ASTAttribute::Platform:
-                std::cout << "platform";
-                break;
-            case ASTAttribute::Flags:
-                std::cout << "flags";
-                break;
-            case ASTAttribute::Hex:
-                std::cout << "hex";
-                break;
-            case ASTAttribute::In:
-                std::cout << "in";
-                break;
-            case ASTAttribute::Out:
-                std::cout << "out";
-                break;
-        }
-        if (!node->arguments.empty()) {
-            std::cout << '(';
-            auto hasPrevArg = false;
-            for (auto arg : node->arguments) {
-                if (hasPrevArg) {
-                    std::cout << ',';
-                }
-                std::cout << arg;
-                hasPrevArg = true;
-            }
-            std::cout << ')';
-        }
-        return true;
-    }
-
-    bool visit(const ASTProgram* node) override {
-        auto hasPrev = false;
-        for (auto ns : node->namespaces) {
-            if (hasPrev) {
-                std::cout << std::endl;
-            }
-            ns->accept(*this);
-            hasPrev = true;
-        }
-        return true;
-    }
-
+struct PrintIDL : HierarchyState,
+                  Visitor {
     bool visit(const ASTNamespace* node) override {
-        printAttributes(node);
-        std::cout << "namespace " << node->name << std::endl;
-        std::cout << '{' << std::endl;
-        if (!node->declarations.empty()) {
-            for (auto decl : node->declarations) {
-                std::cout << std::endl;
-                decl->accept(*this);
+        const auto parentIsProgram = dynamic_cast<const ASTProgram*>(node->parent) != nullptr;
+        if (state == Begin) {
+            if (hasPrev == parentIsProgram) {
                 std::cout << std::endl;
             }
-            std::cout << std::endl;
+            printAttributes(node);
+            std::cout << "namespace " << node->name << std::endl;
+            std::cout << '{' << std::endl;
+        } else if (state == End) {
+            std::cout << '}' << std::endl;
+            if (hasPrev != parentIsProgram) {
+                std::cout << std::endl;
+            }
         }
-        std::cout << '}' << std::endl;
         return true;
     }
 
     bool visit(const ASTEnum* node) override {
-        printAttributes(node);
-        std::cout << "enum " << node->name << std::endl;
-        std::cout << '{' << std::endl;
-        for (size_t i = 0; i < node->constants.size(); ++i) {
-            node->constants[i]->accept(*this);
-            if (i + 1 < node->constants.size()) {
-                std::cout << ',';
+        if (state == Begin) {
+            if (!hasPrev) {
+                std::cout << std::endl;
             }
-            std::cout << std::endl;
+            printAttributes(node);
+            std::cout << "enum " << node->name << std::endl;
+            std::cout << '{' << std::endl;
+        } else if (state == End) {
+            std::cout << '}' << std::endl << std::endl;
         }
-        std::cout << '}';
         return true;
     }
 
     bool visit(const ASTEnumConst* node) override {
-        auto hexOutput = dynamic_cast<ASTEnum*>(node->parent)->isHexOutputValues();
-        std::cout << "    " << node->name << " = ";
-        if (hexOutput) {
-            std::cout << "0x" << std::hex << node->value << std::dec;
-        } else {
-            std::cout << node->value;
+        if (state == Begin) {
+            const auto hexOutput = dynamic_cast<ASTEnum*>(node->parent)->isHexOutputValues();
+            std::cout << "    " << node->name << " = ";
+            if (hexOutput) {
+                std::cout << "0x" << std::hex << node->value << std::dec;
+            } else {
+                std::cout << node->value;
+            }
+            if (hasNext) {
+                std::cout << ',';
+            }
+            std::cout << std::endl;
         }
         return true;
     }
 
     bool visit(const ASTInterface* node) override {
-        printAttributes(node);
-        std::cout << "interface " << node->name << std::endl;
-        std::cout << '{' << std::endl;
-        for (auto method : node->methods) {
-            method->accept(*this);
+        if (state == Begin) {
+            if (!hasPrev) {
+                std::cout << std::endl;
+            }
+            printAttributes(node);
+            std::cout << "interface " << node->name << std::endl;
+            std::cout << '{' << std::endl;
+        } else if (state == End) {
+            std::cout << '}' << std::endl << std::endl;
         }
-        std::cout << '}';
         return true;
     }
 
     bool visit(const ASTMethod* node) override {
-        std::cout << "    ";
-        node->returnTypeRef->accept(*this);
-        std::cout << ' ' << node->name << '(';
-        for (size_t i = 0; i < node->parameters.size(); ++i) {
-            auto param = node->parameters[i];
-            param->typeRef->accept(*this);
-            std::cout << ' ' << param->name;
-            if (i + 1 < node->parameters.size()) {
-                std::cout << ", ";
-            }
+        if (state == Begin) {
+            std::cout << "    " << node->returnTypeRef->decl->type() << ' ' << node->name << '(';
+        } else if (state == End) {
+            std::cout << ");" << std::endl;
         }
-        std::cout << ");" << std::endl;
         return true;
     }
 
     bool visit(const ASTParameter* node) override {
+        if (hasPrev) {
+            std::cout << ", ";
+        }
+        printAttributes(node, false);
+        std::cout << node->typeRef->decl->type() << ' ' << node->name;
         return false;
     }
 
@@ -137,7 +97,35 @@ struct PrintIDL : Visitor {
                 if (hasPrev) {
                     std::cout << ',';
                 }
-                attr->accept(*this);
+                switch (attr->type) {
+                    case ASTAttribute::Platform:
+                        std::cout << "platform";
+                        break;
+                    case ASTAttribute::Flags:
+                        std::cout << "flags";
+                        break;
+                    case ASTAttribute::Hex:
+                        std::cout << "hex";
+                        break;
+                    case ASTAttribute::In:
+                        std::cout << "in";
+                        break;
+                    case ASTAttribute::Out:
+                        std::cout << "out";
+                        break;
+                }
+                if (!attr->arguments.empty()) {
+                    std::cout << '(';
+                    auto hasPrevArg = false;
+                    for (auto arg : attr->arguments) {
+                        if (hasPrevArg) {
+                            std::cout << ',';
+                        }
+                        std::cout << arg;
+                        hasPrevArg = true;
+                    }
+                    std::cout << ')';
+                }
                 hasPrev = true;
             }
             std::cout << ']';
@@ -198,6 +186,7 @@ int main(int argc, char* argv[]) {
     }
 
     PrintIDL printIDL;
-    context.program()->accept(printIDL);
+    HierarchyVisitor hierarchyVisitor(printIDL);
+    context.program()->accept(hierarchyVisitor);
     return EXIT_SUCCESS;
 }

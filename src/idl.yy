@@ -46,7 +46,7 @@
 %token <std::string> ID
 %token <int64_t> NUM
 
-%type <ASTNode*> program
+%type <ASTProgram*> program
 %type <ASTNamespace*> namespace_decl
 %type <ASTType*> enum_decl
 %type <ASTType*> interface_decl
@@ -82,6 +82,7 @@ program :
         $1->parent = program;
         $$ = program;
     }
+    | program namespace_decl { $1->namespaces.push_back($2); $2->parent = $1; $$ = $1; }
     ;
 
 namespace_decl : 

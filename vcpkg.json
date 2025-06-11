@@ -3,6 +3,7 @@
   "name": "idlc",
   "version": "1.0.0",
   "dependencies": [
-    "argparse"
+    "argparse",
+    "fmt"
   ]
 }

@@ -29,8 +29,6 @@ public:
         return _filename;
     }
 
-    ASTProgram* program{};
-
 private:
     Context& _ctx;
     const std::string* _filename{};

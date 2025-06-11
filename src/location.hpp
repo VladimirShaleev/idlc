@@ -4,7 +4,7 @@
 #include "location.hh"
 
 struct Location {
-    explicit Location(const idl::location& loc) noexcept : location(loc) {
+    Location(const idl::location& loc) noexcept : location(loc) {
     }
 
     const idl::location& location;

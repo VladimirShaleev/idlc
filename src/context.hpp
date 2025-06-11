@@ -1,6 +1,7 @@
 #ifndef CONTEXT_HPP
 #define CONTEXT_HPP
 
+#include <sstream>
 #include <unordered_map>
 
 #include "ast.hpp"
@@ -52,15 +53,34 @@ public:
                 throw Exception(loc, "the 'flags' attribute has no arguments");
             }
         } else if (name == "platform") {
-            attr->type = ASTAttribute::Platform;
+            std::ostringstream ss;
+            ss << " (allowed args: ";
+            for (size_t i = 0; i < std::size(TargetPlatform::names); ++i) {
+                ss << TargetPlatform::names[i] << (i + 1 < std::size(TargetPlatform::names) ? ',' : ')');
+            }
+            auto allowedArgs = ss.str();
+            attr->type       = ASTAttribute::Platform;
             if (args.empty()) {
-                throw Exception(
-                    loc, "the 'platform' attribute no arguments (allowed args: window,linux,macos,web,android,ios)");
+                throw Exception(loc, "the 'platform' attribute no arguments" + allowedArgs);
             }
             std::sort(attr->arguments.begin(), attr->arguments.end());
             auto last = std::unique(attr->arguments.begin(), attr->arguments.end());
             if (last != attr->arguments.end()) {
                 throw Exception(loc, "the 'platform' attribute cannot have duplicates in arguments");
+            }
+            for (const auto& arg : attr->arguments) {
+                const std::string* str = nullptr;
+                bool found       = false;
+                for (const auto& name : TargetPlatform::names) {
+                    str = &arg;
+                    if (arg == name) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    throw Exception(loc, "the 'platform' has not supported type '" + *str + "'" + allowedArgs);
+                }
             }
         } else if (name == "hex") {
             attr->type = ASTAttribute::Hex;

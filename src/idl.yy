@@ -85,6 +85,23 @@ program :
     ;
 
 namespace_decl : 
+    attribute_list NAMESPACE ID '{' declarations '}' {
+        auto ns = alloc_node(ASTNamespace, @3);
+        ns->name = $3;
+        for (auto decl : $5) {
+            ns->declarations.push_back(decl);
+            decl->parent = ns;
+        }
+        ns->attributes = $1;
+        for (auto attr : $1) {
+            if (attr->type != ASTAttribute::Platform) {
+                throw syntax_error(@1, "namespaces only support the following attributes: [platform]");
+            }
+            attr->parent = ns;
+        }
+        $$ = ns;
+    }
+    | 
     NAMESPACE ID '{' declarations '}' {
         auto ns = alloc_node(ASTNamespace, @2);
         ns->name = $2;
@@ -265,6 +282,10 @@ attribute_item_list :
             throw syntax_error(@3, "duplicate attribute");
         }
         $1.push_back(attr);
+        std::sort($1.begin(), $1.end(), [](auto attr1, auto attr2)
+        {
+            return attr1->type < attr2->type;
+        });
         $$ = $1;
     }
     ;

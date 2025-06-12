@@ -12,7 +12,6 @@
 
 enum Warning {
     W1001 = 1001,
-    W1002
 };
 
 enum Error {
@@ -36,7 +35,12 @@ enum Error {
     E2018,
     E2019,
     E2020,
-    E2021
+    E2021,
+    E2022,
+    E2023,
+    E2024,
+    E2025,
+    E2026
 };
 
 template <Warning Code, typename... Args>
@@ -44,10 +48,7 @@ inline std::string warn_str(Args&&... args) {
     std::ostringstream ss;
     ss << "[" << Code << "] ";
     if constexpr (Code == W1001) {
-        std::cerr << "the beginning of the documentation should be marked with a space";
-    }
-    if constexpr (Code == W1002) {
-        std::cerr << "the beginning of the documentation should be marked with a single space";
+        std::cerr << "TODO";
     }
     return ss.str();
 }
@@ -117,7 +118,22 @@ inline std::string err_str(Args&&... args) {
         ss << fmt::format("invalid attribute {} in documentation", args...);
     }
     if constexpr (Code == E2021) {
-        ss << "it is acceptable to use either documentation or inline documentation, but not both.";
+        ss << "it is acceptable to use either documentation or inline documentation, but not both";
+    }
+    if constexpr (Code == E2022) {
+        ss << "constants can only be added to an enumeration type";
+    }
+    if constexpr (Code == E2023) {
+        ss << "the 'value' attribute must specify the value in the argument";
+    }
+    if constexpr (Code == E2024) {
+        ss << "the 'value' attribute must contain only one value";
+    }
+    if constexpr (Code == E2025) {
+        ss << "the 'value' attribute must specify an integer.";
+    }
+    if constexpr (Code == E2026) {
+        ss << fmt::format("an enumeration '{}' must contain at least one constant", args...);
     }
     return ss.str();
 }

@@ -46,5 +46,7 @@ int main(int argc, char* argv[]) {
         return code;
     }
 
+    context.calcEnumConsts();
+
     return EXIT_SUCCESS;
 }

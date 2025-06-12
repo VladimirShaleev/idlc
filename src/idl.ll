@@ -16,7 +16,6 @@ std::string unescape(const char*);
 %option nodefault
 %option outfile="scanner.cpp"
 
-%x IDOCSTR
 %x DOCSTR
 %x DOCMSTR
 %x ATTRCTX
@@ -28,23 +27,16 @@ std::string unescape(const char*);
     yylloc->step();
 %}
 
-"api"  { return token::API; }
-"enum" { return token::ENUM; }
+"api"   { context().currentDeclLine(yylloc->end.line); return token::API; }
+"enum"  { context().currentDeclLine(yylloc->end.line); return token::ENUM; }
+"const" { context().currentDeclLine(yylloc->end.line); return token::CONST; }
 
-([A-Z][a-zA-Z0-9]*)/([ ]+@) { BEGIN(IDOCSTR); yylval->emplace<std::string>(YYText()); return token::ID; }
-<IDOCSTR>"@"                { return token::IDOC; }
-<IDOCSTR>\n                 { yylloc->lines(); BEGIN(INITIAL); }
-<IDOCSTR>([^ @\n\t\{\}[\]]|\\\{|\\\}|\\\[|\\\])+ { yylval->emplace<std::string>(unescape(YYText())); return token::STR; }
-<IDOCSTR>"[detail]"[ ]*$    { return token::DOCDETAIL; }
-<IDOCSTR>"[".*"]"[ ]*$      { err<E2019>(*yylloc); yyterminate(); }
-<IDOCSTR>[\{\}]             { return YYText()[0]; }
-<IDOCSTR>\t                 { err<E2002>(*yylloc); yyterminate(); }
-<IDOCSTR>" "                ;
-<IDOCSTR>.                  { err<E2001>(*yylloc, YYText()); yyterminate(); }
-
-"@ "                       { BEGIN(DOCSTR); return token::DOC; }
-"@"                        { BEGIN(DOCSTR); warn<W1001>(*yylloc); return token::DOC; }
-"@"[ ][ ]+                 { BEGIN(DOCSTR); warn<W1002>(*yylloc); return token::DOC; }
+"@" {
+    BEGIN(DOCSTR);
+    auto prevLine = context().currentDeclLine();
+    auto currLine = yylloc->end.line;
+    return prevLine == currLine ?  token::IDOC : token::DOC;
+}
 <DOCSTR>\n                 { yylloc->lines(); BEGIN(INITIAL); }
 <DOCSTR>([^ \n\t\{\}[\]]|\\\{|\\\}|\\\[|\\\])+ { yylval->emplace<std::string>(unescape(YYText())); return token::STR; }
 <DOCSTR>"[brief]"[ ]*$     { return token::DOCBRIEF; }
@@ -72,6 +64,7 @@ std::string unescape(const char*);
 <ATTRCTX>"flags"    { return token::ATTRFLAGS; }
 <ATTRCTX>"hex"      { return token::ATTRHEX; }
 <ATTRCTX>"platform" { return token::ATTRPLATFORM; }
+<ATTRCTX>"value"    { return token::ATTRVALUE; }
 <ATTRCTX>","        { return YYText()[0]; }
 <ATTRCTX>" "        ;
 <ATTRCTX>[a-z]+     { err<E2015>(*yylloc, YYText()); yyterminate(); }
@@ -79,9 +72,9 @@ std::string unescape(const char*);
 <ATTRCTX>"]"        { BEGIN(INITIAL); }
 <ATTRCTX>"("        { BEGIN(ATTRARGS); return YYText()[0]; }
 
-<ATTRARGS>[a-z]+    { yylval->emplace<std::string>(YYText()); return token::ATTRARG; }
-<ATTRARGS>","       { return YYText()[0]; }
-<ATTRARGS>")"       { BEGIN(ATTRCTX); return YYText()[0]; }
+<ATTRARGS>[-+]?[a-z0-9]+ { yylval->emplace<std::string>(YYText()); return token::ATTRARG; }
+<ATTRARGS>","            { return YYText()[0]; }
+<ATTRARGS>")"            { BEGIN(ATTRCTX); return YYText()[0]; }
 
 [A-Z][a-zA-Z0-9]* { yylval->emplace<std::string>(YYText()); return token::ID; }
 [a-zA-Z0-9]+      { err<E2003>(*yylloc, YYText()); yyterminate(); }

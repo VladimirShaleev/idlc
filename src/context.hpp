@@ -20,7 +20,6 @@ public:
         }
     }
 
-    template <typename Exception>
     const ASTApi* api(const idl::location& loc) const noexcept {
         return _api;
     }
@@ -57,6 +56,46 @@ public:
         return literal;
     }
 
+    void currentDeclLine(int currentDeclLine) noexcept {
+        _currentDeclLine = currentDeclLine;
+    }
+
+    int currentDeclLine() const noexcept {
+        return _currentDeclLine;
+    }
+
+    template <typename Exception>
+    ASTEnum* lastEnum(const idl::location& loc) const {
+        for (auto it = _nodes.rbegin(); it != _nodes.rend(); ++it) {
+            if (dynamic_cast<ASTType*>(*it)) {
+                if (auto en = dynamic_cast<ASTEnum*>(*it)) {
+                    return en;
+                }
+                break;
+            }
+        }
+        throw Exception(loc, err_str<E2022>());
+    }
+
+    void calcEnumConsts() {
+        filter<ASTEnum>([](auto en) {
+            if (en->consts.empty()) {
+                err<E2026>(en->location, en->name);
+                return false;
+            }
+            auto attrValue            = en->consts.front()->template findAttr<ASTAttr::Value>();
+            int32_t lastValue         = attrValue ? attrValue->args[0].value : 0;
+            en->consts.front()->value = lastValue;
+            for (size_t i = 1; i < en->consts.size(); ++i) {
+                attrValue            = en->consts[i]->template findAttr<ASTAttr::Value>();
+                const auto value     = attrValue ? attrValue->args[0].value : lastValue + 1;
+                lastValue            = value;
+                en->consts[i]->value = value;
+            }
+            return true;
+        });
+    }
+
 private:
     template <typename Node, typename Pred>
     bool filter(Pred&& pred) {
@@ -75,6 +114,7 @@ private:
     std::vector<ASTNode*> _nodes{};
     std::unordered_map<std::string, struct ASTDecl*> _symbols{};
     std::unordered_map<uint64_t, ASTLiteral*> _literals{};
+    int _currentDeclLine{ -1 };
 };
 
 } // namespace idl

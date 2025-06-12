@@ -34,10 +34,13 @@
         scanner.context().allocNode<ast, idl::Parser::syntax_error>(loc)
     #define intern(loc, str) \
         scanner.context().intern<idl::Parser::syntax_error>(loc, str)
+    #define last_enum(loc) \
+        scanner.context().lastEnum<idl::Parser::syntax_error>(loc)
     
     void addDoc(ASTDoc*, const std::vector<ASTNode*>&, char);
     void addAttrs(ASTDecl*, const std::vector<ASTAttr*>&, const std::set<ASTAttr::Type>&);
     void addAttrPlatformArgs(ASTAttr*, const std::vector<std::string>&);
+    void addAttrValueArgs(ASTAttr*, const std::vector<std::string>&);
 }
 
 %initial-action {
@@ -55,10 +58,12 @@
 %token ATTRFLAGS
 %token ATTRHEX
 %token ATTRPLATFORM
+%token ATTRVALUE
 %token <std::string> ATTRARG
 
 %token API
 %token ENUM
+%token CONST
 
 %token <std::string> STR
 %token <std::string> ID
@@ -78,9 +83,8 @@
 
 %type <ASTApi*> root
 %type <ASTApi*> api
-
 %type <ASTEnum*> enum
-%type <ASTEnum*> enum_def
+%type <ASTEnumConst*> enum_const
 
 %start root
 
@@ -89,8 +93,10 @@
 root
     : api { $$ = $1; }
     | enum { throw syntax_error(@1, err_str<E2012>()); }
+    | enum_const { throw syntax_error(@1, err_str<E2012>()); }
     | root api { throw syntax_error(@2, err_str<E2004>()); }
     | root enum { $1->enums.push_back($2); $2->parent = $1; $$ = $1; }
+    | root enum_const { auto en = last_enum(@2); en->consts.push_back($2); $2->parent = en; $$ = $1; }
     ;
 
 api
@@ -113,17 +119,73 @@ api
     ;
 
 enum
-    : enum_def { $$ = $1; }
-    | enum_def attr_list { addAttrs($1, $2, { ASTAttr::Flags, ASTAttr::Hex, ASTAttr::Platform }); $$ = $1; }
-    ;
-
-enum_def
     : ENUM ID { throw syntax_error(@1, err_str<E2005>()); }
+    | doc ENUM ID idoc { throw syntax_error(@2, err_str<E2021>()); }
+    | doc ENUM ID attr_list idoc { throw syntax_error(@2, err_str<E2021>()); }
     | doc ENUM ID {
         auto node = alloc_node(ASTEnum, @2);
         node->name = $3;
         node->doc = $1;
         $1->parent = node;
+        $$ = node;
+    }
+    | ENUM ID idoc {
+        auto node = alloc_node(ASTEnum, @1);
+        node->name = $2;
+        node->doc = $3;
+        $3->parent = node;
+        $$ = node;
+    }
+    | doc ENUM ID attr_list {
+        auto node = alloc_node(ASTEnum, @2);
+        node->name = $3;
+        node->doc = $1;
+        $1->parent = node;
+        addAttrs(node, $4, { ASTAttr::Flags, ASTAttr::Hex, ASTAttr::Platform });
+        $$ = node;
+    }
+    | ENUM ID attr_list idoc {
+        auto node = alloc_node(ASTEnum, @1);
+        node->name = $2;
+        node->doc = $4;
+        $4->parent = node;
+        addAttrs(node, $3, { ASTAttr::Flags, ASTAttr::Hex, ASTAttr::Platform });
+        $$ = node;
+    }
+    ;
+
+enum_const
+    : CONST ID { throw syntax_error(@1, err_str<E2005>()); }
+    | doc CONST ID idoc { throw syntax_error(@2, err_str<E2021>()); }
+    | doc CONST ID attr_list idoc { throw syntax_error(@2, err_str<E2021>()); }
+    | doc CONST ID {
+        auto node = alloc_node(ASTEnumConst, @2);
+        node->name = $3;
+        node->doc = $1;
+        $1->parent = node;
+        $$ = node;
+    }
+    | CONST ID idoc {
+        auto node = alloc_node(ASTEnumConst, @1);
+        node->name = $2;
+        node->doc = $3;
+        $3->parent = node;
+        $$ = node;
+    }
+    | doc CONST ID attr_list {
+        auto node = alloc_node(ASTEnumConst, @2);
+        node->name = $3;
+        node->doc = $1;
+        $1->parent = node;
+        addAttrs(node, $4, { ASTAttr::Value });
+        $$ = node;
+    }
+    | CONST ID attr_list idoc {
+        auto node = alloc_node(ASTEnumConst, @1);
+        node->name = $2;
+        node->doc = $4;
+        $4->parent = node;
+        addAttrs(node, $3, { ASTAttr::Value });
         $$ = node;
     }
     ;
@@ -141,6 +203,13 @@ attr_item
         auto node = alloc_node(ASTAttr, @1);
         node->type = ASTAttr::Platform;
         addAttrPlatformArgs(node, $2);
+        $$ = node;
+    }
+    | ATTRVALUE { throw syntax_error(@1, err_str<E2023>()); }
+    | ATTRVALUE attr_args {
+        auto node = alloc_node(ASTAttr, @1);
+        node->type = ASTAttr::Value;
+        addAttrValueArgs(node, $2);
         $$ = node;
     }
     ;
@@ -294,6 +363,25 @@ void addAttrPlatformArgs(ASTAttr* node, const std::vector<std::string>& platform
         });
         throw idl::Parser::syntax_error(node->location, err_str<E2018>(str));
     }
+}
+
+void addAttrValueArgs(ASTAttr* node, const std::vector<std::string>& values)
+{
+    if (values.size() != 1) 
+    {
+        throw idl::Parser::syntax_error(node->location, err_str<E2024>());
+    }
+    const auto& str = values[0];
+
+    char* end;  
+    long int result = std::strtol(str.c_str(), &end, 10);
+    if (*end != '\0')
+    {  
+        throw idl::Parser::syntax_error(node->location, err_str<E2025>());
+    }
+    ASTAttr::Arg arg{};
+    arg.value = result;
+    node->args.push_back(arg);
 }
 
 void idl::Parser::error(const location_type& loc, const std::string& message)

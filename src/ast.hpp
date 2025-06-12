@@ -42,7 +42,8 @@ struct ASTAttr : ASTNode {
     enum Type {
         Platform,
         Flags,
-        Hex
+        Hex,
+        Value
     };
 
     struct Arg {
@@ -72,6 +73,14 @@ struct ASTDecl : ASTNode {
     std::string name;
     std::vector<ASTAttr*> attrs;
     ASTDoc* doc{};
+
+    template <ASTAttr::Type Type>
+    const ASTAttr* findAttr() const noexcept {
+        auto it = std::find_if(attrs.begin(), attrs.end(), [](auto attr) {
+            return attr->type == Type;
+        });
+        return it != attrs.end() ? *it : nullptr;
+    }
 };
 
 struct ASTDeclRef : ASTNode {
@@ -81,7 +90,13 @@ struct ASTDeclRef : ASTNode {
 
 struct ASTType : ASTDecl {};
 
-struct ASTEnum : ASTType {};
+struct ASTEnumConst : ASTDecl {
+    int32_t value{};
+};
+
+struct ASTEnum : ASTType {
+    std::vector<ASTEnumConst*> consts;
+};
 
 struct ASTApi : ASTDecl {
     std::vector<ASTEnum*> enums;

@@ -27,7 +27,13 @@ enum Error {
     E2009,
     E2010,
     E2011,
-    E2012
+    E2012,
+    E2013,
+    E2014,
+    E2015,
+    E2016,
+    E2017,
+    E2018
 };
 
 template <Warning Code, typename... Args>
@@ -81,8 +87,27 @@ inline std::string err_str(Args&&... args) {
         ss << "multi-line documentation must start with 4 spaces";
     }
     if constexpr (Code == E2012) {
-        ss << "the .idl file must start with the 'api' element.";
+        ss << "the .idl file must start with the 'api' element";
     }
+    if constexpr (Code == E2013) {
+        ss << fmt::format("attribute '{}' cannot be duplicated", args...);
+    }
+    if constexpr (Code == E2014) {
+        ss << fmt::format("the following attributes: {} - are allowed in this context", args...);
+    }
+    if constexpr (Code == E2015) {
+        ss << fmt::format("unknown attribute '{}'", args...);
+    }
+    if constexpr (Code == E2016) {
+        ss << "the 'platform' attribute must specify at least one argument";
+    }
+    if constexpr (Code == E2017) {
+        ss << fmt::format("the following arguments: {} - are allowed in 'platform' attribute", args...);
+    }
+    if constexpr (Code == E2018) {
+        ss << fmt::format("argument '{}' in the 'platform' attribute cannot be duplicated", args...);
+    }
+
     return ss.str();
 }
 

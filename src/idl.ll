@@ -19,6 +19,7 @@ std::string unescape(const char*);
 %x DOCSTR
 %x DOCMSTR
 %x ATTRCTX
+%x ATTRARGS
 
 %%
 
@@ -54,12 +55,20 @@ std::string unescape(const char*);
 <DOCMSTR>.      { err<E2001>(*yylloc, YYText()); yyterminate(); }
 <DOCMSTR>"```"  { BEGIN(DOCSTR); }
 
-"["              { BEGIN(ATTRCTX); }
-<ATTRCTX>"flags" { return token::ATTRFLAGS; }
-<ATTRCTX>","     { return YYText()[0]; }
-<ATTRCTX>" "     ;
-<DOCSTR>.        { err<E2001>(*yylloc, YYText()); yyterminate(); }
-<ATTRCTX>"]"     { BEGIN(INITIAL); }
+"["                 { BEGIN(ATTRCTX); }
+<ATTRCTX>"flags"    { return token::ATTRFLAGS; }
+<ATTRCTX>"hex"      { return token::ATTRHEX; }
+<ATTRCTX>"platform" { return token::ATTRPLATFORM; }
+<ATTRCTX>","        { return YYText()[0]; }
+<ATTRCTX>" "        ;
+<ATTRCTX>[a-z]+     { err<E2015>(*yylloc, YYText()); yyterminate(); }
+<ATTRCTX>[^\]\(]    { err<E2001>(*yylloc, YYText()); yyterminate(); }
+<ATTRCTX>"]"        { BEGIN(INITIAL); }
+<ATTRCTX>"("        { BEGIN(ATTRARGS); return YYText()[0]; }
+
+<ATTRARGS>[a-z]+    { yylval->emplace<std::string>(YYText()); return token::ATTRARG; }
+<ATTRARGS>","       { return YYText()[0]; }
+<ATTRARGS>")"       { BEGIN(ATTRCTX); return YYText()[0]; }
 
 [A-Z][a-zA-Z0-9]* { yylval->emplace<std::string>(YYText()); return token::ID; }
 [a-zA-Z0-9]+      { err<E2003>(*yylloc, YYText()); yyterminate(); }

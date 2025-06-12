@@ -5,6 +5,7 @@
   "dependencies": [
     "argparse",
     "fmt",
-    "xxhash"
+    "xxhash",
+    "magic-enum"
   ]
 }

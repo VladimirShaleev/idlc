@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+#include <magic_enum/magic_enum.hpp>
+
 #include "location.hh"
 
 struct ASTNode {
@@ -27,11 +29,43 @@ struct ASTDoc : ASTNode {
     std::vector<std::vector<ASTNode*>> authors;
 };
 
+enum struct TargetPlatfrom {
+    Windows,
+    Linux,
+    MacOS,
+    Web,
+    Android,
+    iOS
+};
+
 struct ASTAttr : ASTNode {
     enum Type {
-        Flags
+        Platform,
+        Flags,
+        Hex
     };
+
+    struct Arg {
+        union {
+            int64_t value;
+            TargetPlatfrom platform;
+        };
+    };
+
     Type type;
+    std::vector<Arg> args;
+
+    static std::string typeStr(Type type) {
+        std::string str = magic_enum::enum_name(type).data();
+        std::transform(str.begin(), str.end(), str.begin(), [](auto c) {
+            return std::tolower(c);
+        });
+        return str;
+    }
+
+    std::string typeStr() const {
+        return typeStr(type);
+    }
 };
 
 struct ASTDecl : ASTNode {

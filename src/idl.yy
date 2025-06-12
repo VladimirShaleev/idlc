@@ -44,6 +44,7 @@
     @$.begin.filename = @$.end.filename = scanner.filename();
 }
 
+%token IDOC
 %token DOC
 %token DOCBRIEF
 %token DOCDETAIL
@@ -69,12 +70,14 @@
 %type <std::vector<std::string>> attr_arg_list
 
 %type <ASTDoc*> doc
+%type <ASTDoc*> idoc
 %type <ASTNode*> doc_lit_or_ref
 %type <std::vector<ASTNode*>> doc_field
 %type <std::pair<std::vector<ASTNode*>, char>> doc_decl
+%type <std::pair<std::vector<ASTNode*>, char>> idoc_decl
 
 %type <ASTApi*> root
-%type <ASTApi*> api_def
+%type <ASTApi*> api
 
 %type <ASTEnum*> enum
 %type <ASTEnum*> enum_def
@@ -84,21 +87,29 @@
 %%
 
 root
-    : api_def { $$ = $1; }
+    : api { $$ = $1; }
     | enum { throw syntax_error(@1, err_str<E2012>()); }
-    | root api_def { throw syntax_error(@2, err_str<E2004>()); }
+    | root api { throw syntax_error(@2, err_str<E2004>()); }
     | root enum { $1->enums.push_back($2); $2->parent = $1; $$ = $1; }
     ;
 
-api_def
+api
     : API ID { throw syntax_error(@1, err_str<E2005>()); }
+    | doc API ID idoc { throw syntax_error(@2, err_str<E2021>()); }
     | doc API ID { 
         auto node = alloc_node(ASTApi, @2);
         node->name = $3;
         node->doc = $1;
         $1->parent = node;
         $$ = node;
-        }
+    }
+    | API ID idoc { 
+        auto node = alloc_node(ASTApi, @1);
+        node->name = $2;
+        node->doc = $3;
+        $3->parent = node;
+        $$ = node;
+    }
     ;
 
 enum
@@ -148,6 +159,11 @@ doc
     | doc doc_decl { addDoc($1, $2.first, $2.second); $$ = $1; }
     ;
 
+idoc
+    : idoc_decl { auto node = alloc_node(ASTDoc, @1); addDoc(node, $1.first, $1.second); $$ = node; }
+    | idoc idoc_decl { addDoc($1, $2.first, $2.second); $$ = $1; }
+    ;
+
 doc_decl
     : DOC { throw syntax_error(@$, err_str<E2006>()); }
     | DOC doc_field              { $$ = std::make_pair($2, 'b'); }
@@ -156,6 +172,12 @@ doc_decl
     | DOC doc_field DOCCOPYRIGHT { $$ = std::make_pair($2, 'c'); }
     | DOC doc_field DOCLICENSE   { $$ = std::make_pair($2, 'l'); }
     | DOC doc_field DOCAUTHOR    { $$ = std::make_pair($2, 'a'); }
+    ;
+
+idoc_decl
+    : IDOC { throw syntax_error(@$, err_str<E2006>()); }
+    | IDOC doc_field              { $$ = std::make_pair($2, 'd'); }
+    | IDOC doc_field DOCDETAIL    { $$ = std::make_pair($2, 'd'); }
     ;
 
 doc_field

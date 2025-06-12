@@ -16,6 +16,7 @@ std::string unescape(const char*);
 %option nodefault
 %option outfile="scanner.cpp"
 
+%x IDOCSTR
 %x DOCSTR
 %x DOCMSTR
 %x ATTRCTX
@@ -30,6 +31,17 @@ std::string unescape(const char*);
 "api"  { return token::API; }
 "enum" { return token::ENUM; }
 
+([A-Z][a-zA-Z0-9]*)/([ ]+@) { BEGIN(IDOCSTR); yylval->emplace<std::string>(YYText()); return token::ID; }
+<IDOCSTR>"@"                { return token::IDOC; }
+<IDOCSTR>\n                 { yylloc->lines(); BEGIN(INITIAL); }
+<IDOCSTR>([^ @\n\t\{\}[\]]|\\\{|\\\}|\\\[|\\\])+ { yylval->emplace<std::string>(unescape(YYText())); return token::STR; }
+<IDOCSTR>"[detail]"[ ]*$    { return token::DOCDETAIL; }
+<IDOCSTR>"[".*"]"[ ]*$      { err<E2019>(*yylloc); yyterminate(); }
+<IDOCSTR>[\{\}]             { return YYText()[0]; }
+<IDOCSTR>\t                 { err<E2002>(*yylloc); yyterminate(); }
+<IDOCSTR>" "                ;
+<IDOCSTR>.                  { err<E2001>(*yylloc, YYText()); yyterminate(); }
+
 "@ "                       { BEGIN(DOCSTR); return token::DOC; }
 "@"                        { BEGIN(DOCSTR); warn<W1001>(*yylloc); return token::DOC; }
 "@"[ ][ ]+                 { BEGIN(DOCSTR); warn<W1002>(*yylloc); return token::DOC; }
@@ -40,6 +52,7 @@ std::string unescape(const char*);
 <DOCSTR>"[author]"[ ]*$    { return token::DOCAUTHOR; }
 <DOCSTR>"[copyright]"[ ]*$ { return token::DOCCOPYRIGHT; }
 <DOCSTR>"[license]"[ ]*$   { return token::DOCLICENSE; }
+<DOCSTR>"[".*"]"[ ]*$      { err<E2020>(*yylloc, YYText()); yyterminate(); }
 <DOCSTR>[\{\}]             { return YYText()[0]; }
 <DOCSTR>\t                 { err<E2002>(*yylloc); yyterminate(); }
 <DOCSTR>" "                ;

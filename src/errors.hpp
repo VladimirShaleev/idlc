@@ -33,7 +33,10 @@ enum Error {
     E2015,
     E2016,
     E2017,
-    E2018
+    E2018,
+    E2019,
+    E2020,
+    E2021
 };
 
 template <Warning Code, typename... Args>
@@ -107,7 +110,15 @@ inline std::string err_str(Args&&... args) {
     if constexpr (Code == E2018) {
         ss << fmt::format("argument '{}' in the 'platform' attribute cannot be duplicated", args...);
     }
-
+    if constexpr (Code == E2019) {
+        ss << "inline documentation only [detail] description is allowed";
+    }
+    if constexpr (Code == E2020) {
+        ss << fmt::format("invalid attribute {} in documentation", args...);
+    }
+    if constexpr (Code == E2021) {
+        ss << "it is acceptable to use either documentation or inline documentation, but not both.";
+    }
     return ss.str();
 }
 

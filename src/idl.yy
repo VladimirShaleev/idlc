@@ -56,25 +56,29 @@
 %token <std::string> ID
 %token <int64_t> NUM
 
+%type <ASTAttr*> attr_item
+%type <std::vector<ASTAttr*>> attr_list
+
 %type <ASTDoc*> doc
 %type <ASTNode*> doc_lit_or_ref
 %type <std::vector<ASTNode*>> doc_field
 %type <std::pair<std::vector<ASTNode*>, char>> doc_decl
 
-%type <ASTApi*> api
+%type <ASTApi*> root
 %type <ASTApi*> api_def
 
+%type <ASTEnum*> enum
 %type <ASTEnum*> enum_def
 
-%start api
+%start root
 
 %%
 
-api
+root
     : api_def { $$ = $1; }
-    | enum_def { throw syntax_error(@1, err_str<E2012>()); }
-    | api api_def { throw syntax_error(@2, err_str<E2004>()); }
-    | api enum_def { $1->enums.push_back($2); $2->parent = $1; $$ = $1; }
+    | enum { throw syntax_error(@1, err_str<E2012>()); }
+    | root api_def { throw syntax_error(@2, err_str<E2004>()); }
+    | root enum { $1->enums.push_back($2); $2->parent = $1; $$ = $1; }
     ;
 
 api_def
@@ -88,6 +92,17 @@ api_def
         }
     ;
 
+enum
+    : enum_def { $$ = $1; }
+    | enum_def attr_list { 
+        $1->attrs = $2; 
+        for (auto attr : $1->attrs) {
+            attr->parent = $1;
+        }
+        $$ = $1;
+    }
+    ;
+
 enum_def
     : ENUM ID { throw syntax_error(@1, err_str<E2005>()); }
     | doc ENUM ID {
@@ -97,6 +112,15 @@ enum_def
         $1->parent = node;
         $$ = node;
     }
+    ;
+
+attr_list
+    : attr_item { auto list = std::vector<ASTAttr*>(); list.push_back($1); $$ = list; }
+    | attr_list ',' attr_item { $1.push_back($3); $$ = $1; }
+    ;
+
+attr_item
+    : ATTRFLAGS { auto node = alloc_node(ASTAttr, @1); node->type = ASTAttr::Flags; $$ = node; }
     ;
 
 doc

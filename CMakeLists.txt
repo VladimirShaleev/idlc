@@ -14,14 +14,18 @@ include(GNUInstallDirs)
 include(CMakeDependentOption)
 
 cmake_dependent_option(IDLC_BUILD_PACKAGES "Build packages" ON
-  "CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR" OFF)
+    "CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR" OFF)
 
-find_package(FLEX REQUIRED)
-find_package(BISON REQUIRED)
+find_package(FLEX 2.6.4 REQUIRED)
+find_package(BISON 3.7.4)
 find_package(argparse CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(xxHash CONFIG REQUIRED)
 find_package(magic_enum CONFIG REQUIRED)
+
+if(NOT BISON_FOUND)
+    include(cmake/bison-install.cmake)
+endif()
 
 bison_target(parser src/idl.yy ${CMAKE_CURRENT_BINARY_DIR}/parser.cpp)
 flex_target(scanner src/idl.ll ${CMAKE_CURRENT_BINARY_DIR}/scanner.cpp)
@@ -37,7 +41,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE xxHash::xxhash)
 target_link_libraries(${PROJECT_NAME} PRIVATE magic_enum::magic_enum)
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-target_include_directories(${PROJECT_NAME} PRIVATE ${FLEX_INCLUDE_DIR})
+target_include_directories(${PROJECT_NAME} PRIVATE "$<$<BOOL:${FLEX_INCLUDE_DIR}>:${FLEX_INCLUDE_DIR}>")
 target_compile_definitions(${PROJECT_NAME} PRIVATE YYDEBUG)
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)

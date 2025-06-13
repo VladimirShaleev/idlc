@@ -1,0 +1,148 @@
+set(BISON_VERSION_INSTALL "3.8.2")
+message(STATUS "bison not found, try download and build bison ${BISON_VERSION_INSTALL}")
+
+find_program(SHELL "sh" REQUIRED)
+
+set(BISON_URL "https://ftp.gnu.org/gnu/bison/bison-${BISON_VERSION_INSTALL}.tar.gz")
+set(BISON_INSTALL_DIR "${CMAKE_BINARY_DIR}/bison_install")
+set(BISON_EXECUTABLE "${BISON_INSTALL_DIR}/bin/bison")
+
+set(BUILD_TRIPLET "${CMAKE_HOST_SYSTEM_PROCESSOR}")
+if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
+    if(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "x86_64")
+        set(BUILD_TRIPLET "x86_64-linux-gnu")
+    elseif(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "aarch64")
+        set(BUILD_TRIPLET "aarch64-linux-gnu")
+    endif()
+elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin")
+    if(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "x86_64")
+        set(BUILD_TRIPLET "x86_64-apple-darwin")
+    elseif(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "arm64")
+        set(BUILD_TRIPLET "aarch64-apple-darwin")
+    endif()
+endif()
+set(CONFIGURE_OPTS --build=${BUILD_TRIPLET})
+set(CONFIGURE_ENV env "MAKEINFO=true")
+
+execute_process(COMMAND sysctl -n hw.ncpu
+    OUTPUT_VARIABLE NPROC
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+include(ExternalProject)
+ExternalProject_Add(
+    bison_build
+    URL ${BISON_URL}
+    URL_HASH MD5=1e541a097cda9eca675d29dd2832921f
+    CONFIGURE_COMMAND 
+        ${CONFIGURE_ENV}
+            ${SHELL} <SOURCE_DIR>/configure
+            --prefix=${BISON_INSTALL_DIR}
+            "CC=${CMAKE_C_COMPILER}"
+            "CFLAGS=-O3"
+            ${CONFIGURE_OPTS}
+    BUILD_COMMAND make -j${NPROC}
+    INSTALL_COMMAND make install
+    BUILD_IN_SOURCE 1
+    BUILD_BYPRODUCTS ${BISON_EXECUTABLE}
+    STEP_TARGETS build install)
+
+add_custom_target(project_bison DEPENDS bison_build)
+
+macro(BISON_TARGET_option_report_file BisonOutput ReportFile)
+    if("${ReportFile}" STREQUAL "")
+        get_filename_component(BISON_TARGET_output_path "${BisonOutput}" PATH)
+        get_filename_component(BISON_TARGET_output_name "${BisonOutput}" NAME_WE)
+        set(BISON_TARGET_verbose_file "${BISON_TARGET_output_path}/${BISON_TARGET_output_name}.output")
+    else()
+        set(BISON_TARGET_verbose_file "${ReportFile}")
+        list(APPEND BISON_TARGET_cmdopt "--report-file=${BISON_TARGET_verbose_file}")
+    endif()
+    if(NOT IS_ABSOLUTE "${BISON_TARGET_verbose_file}")
+        cmake_policy(GET CMP0088 _BISON_CMP0088 PARENT_SCOPE)
+        if("x${_BISON_CMP0088}x" STREQUAL "xNEWx")
+            set(BISON_TARGET_verbose_file "${CMAKE_CURRENT_BINARY_DIR}/${BISON_TARGET_verbose_file}")
+        else()
+            set(BISON_TARGET_verbose_file "${CMAKE_CURRENT_SOURCE_DIR}/${BISON_TARGET_verbose_file}")
+        endif()
+        unset(_BISON_CMP0088)
+    endif()
+endmacro()
+
+macro(BISON_TARGET_option_defines BisonOutput Header)
+    if("${Header}" STREQUAL "")
+        string(REGEX REPLACE "^(.*)(\\.[^.]*)$" "\\2" _fileext "${BisonOutput}")
+        string(REPLACE "c" "h" _fileext ${_fileext})
+        string(REGEX REPLACE "^(.*)(\\.[^.]*)$" "\\1${_fileext}" BISON_TARGET_output_header "${BisonOutput}")
+        list(APPEND BISON_TARGET_cmdopt "-d")
+    else()
+        set(BISON_TARGET_output_header "${Header}")
+        list(APPEND BISON_TARGET_cmdopt "--defines=${BISON_TARGET_output_header}")
+    endif()
+endmacro()
+
+macro(BISON_TARGET_option_extraopts Options)
+    set(BISON_TARGET_cmdopt "")
+    set(BISON_TARGET_extraopts "${Options}")
+    separate_arguments(BISON_TARGET_extraopts)
+    list(APPEND BISON_TARGET_cmdopt ${BISON_TARGET_extraopts})
+endmacro()
+
+macro(BISON_TARGET Name BisonInput BisonOutput)
+    set(BISON_TARGET_outputs "${BisonOutput}")
+    set(BISON_TARGET_extraoutputs "")
+    set(BISON_TARGET_PARAM_OPTIONS)
+    set(BISON_TARGET_PARAM_ONE_VALUE_KEYWORDS COMPILE_FLAGS DEFINES_FILE REPORT_FILE)
+    set(BISON_TARGET_PARAM_MULTI_VALUE_KEYWORDS VERBOSE)
+    cmake_parse_arguments(
+        BISON_TARGET_ARG
+        "${BISON_TARGET_PARAM_OPTIONS}"
+        "${BISON_TARGET_PARAM_ONE_VALUE_KEYWORDS}"
+        "${BISON_TARGET_PARAM_MULTI_VALUE_KEYWORDS}"
+        ${ARGN})
+    if(NOT "${BISON_TARGET_ARG_UNPARSED_ARGUMENTS}" STREQUAL "")
+        message(SEND_ERROR "Usage")
+    elseif("${BISON_TARGET_ARG_VERBOSE}" MATCHES ";")
+        message(SEND_ERROR "Usage")
+    else()
+        BISON_TARGET_option_extraopts("${BISON_TARGET_ARG_COMPILE_FLAGS}")
+        BISON_TARGET_option_defines("${BisonOutput}" "${BISON_TARGET_ARG_DEFINES_FILE}")
+        BISON_TARGET_option_report_file("${BisonOutput}" "${BISON_TARGET_ARG_REPORT_FILE}")
+        if(NOT "${BISON_TARGET_ARG_VERBOSE}" STREQUAL "")
+            BISON_TARGET_option_verbose(${Name} ${BisonOutput} "${BISON_TARGET_ARG_VERBOSE}")
+        else()
+        set(BISON_TARGET_args "${ARGN}")
+        list(FIND BISON_TARGET_args "VERBOSE" BISON_TARGET_args_indexof_verbose)
+        if(${BISON_TARGET_args_indexof_verbose} GREATER -1)
+            BISON_TARGET_option_verbose(${Name} ${BisonOutput} "")
+        endif()
+    endif()
+        list(APPEND BISON_TARGET_outputs "${BISON_TARGET_output_header}")
+        cmake_policy(GET CMP0088 _BISON_CMP0088 PARENT_SCOPE)
+        set(_BISON_WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+        set(_BisonInput "${BisonInput}")
+        if("x${_BISON_CMP0088}x" STREQUAL "xNEWx")
+            set(_BISON_WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+            if(NOT IS_ABSOLUTE "${_BisonInput}")
+                set(_BisonInput "${CMAKE_CURRENT_SOURCE_DIR}/${_BisonInput}")
+            endif()
+        endif()
+        unset(_BISON_CMP0088)
+        add_custom_command(OUTPUT ${BISON_TARGET_outputs}
+            COMMAND ${BISON_EXECUTABLE} ${BISON_TARGET_cmdopt} -o ${BisonOutput} ${_BisonInput}
+            VERBATIM
+            DEPENDS ${_BisonInput} project_bison
+            COMMENT "[BISON][${Name}] Building parser with bison ${BISON_VERSION}"
+            WORKING_DIRECTORY ${_BISON_WORKING_DIRECTORY})
+        unset(_BISON_WORKING_DIRECTORY)
+        set(BISON_${Name}_DEFINED TRUE)
+        set(BISON_${Name}_INPUT ${_BisonInput})
+        set(BISON_${Name}_OUTPUTS ${BISON_TARGET_outputs} ${BISON_TARGET_extraoutputs})
+        set(BISON_${Name}_COMPILE_FLAGS ${BISON_TARGET_cmdopt})
+        set(BISON_${Name}_OUTPUT_SOURCE "${BisonOutput}")
+        set(BISON_${Name}_OUTPUT_HEADER "${BISON_TARGET_output_header}")
+        unset(_BisonInput)
+    endif()
+endmacro()
+
+set(BISON_VERSION ${BISON_VERSION_INSTALL})
+set(BISON_FOUND TRUE)

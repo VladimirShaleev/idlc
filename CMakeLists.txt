@@ -12,20 +12,15 @@ project(idlc
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
 include(CMakeDependentOption)
+include(cmake/add-flex-bison.cmake)
 
 cmake_dependent_option(IDLC_BUILD_PACKAGES "Build packages" ON
     "CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR" OFF)
 
-find_package(FLEX 2.6.4 REQUIRED)
-find_package(BISON 3.7.4)
 find_package(argparse CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(xxHash CONFIG REQUIRED)
 find_package(magic_enum CONFIG REQUIRED)
-
-if(NOT BISON_FOUND)
-    include(cmake/bison-install.cmake)
-endif()
 
 bison_target(parser src/idl.yy ${CMAKE_CURRENT_BINARY_DIR}/parser.cpp)
 flex_target(scanner src/idl.ll ${CMAKE_CURRENT_BINARY_DIR}/scanner.cpp)

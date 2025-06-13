@@ -1,52 +1,72 @@
-set(BISON_VERSION_INSTALL "3.8.2")
-message(STATUS "bison not found, try download and build bison ${BISON_VERSION_INSTALL}")
-
-find_program(SHELL "sh" REQUIRED)
-
-set(BISON_URL "https://ftp.gnu.org/gnu/bison/bison-${BISON_VERSION_INSTALL}.tar.gz")
-set(BISON_INSTALL_DIR "${CMAKE_BINARY_DIR}/bison_install")
-set(BISON_EXECUTABLE "${BISON_INSTALL_DIR}/bin/bison")
-
-set(BUILD_TRIPLET "${CMAKE_HOST_SYSTEM_PROCESSOR}")
-if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
-    if(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "x86_64")
-        set(BUILD_TRIPLET "x86_64-linux-gnu")
-    elseif(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "aarch64")
-        set(BUILD_TRIPLET "aarch64-linux-gnu")
-    endif()
-elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin")
-    if(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "x86_64")
-        set(BUILD_TRIPLET "x86_64-apple-darwin")
-    elseif(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "arm64")
-        set(BUILD_TRIPLET "aarch64-apple-darwin")
-    endif()
-endif()
-set(CONFIGURE_OPTS --build=${BUILD_TRIPLET})
-set(CONFIGURE_ENV env "MAKEINFO=true")
-
-execute_process(COMMAND sysctl -n hw.ncpu
-    OUTPUT_VARIABLE NPROC
-    OUTPUT_STRIP_TRAILING_WHITESPACE)
-
 include(ExternalProject)
-ExternalProject_Add(
-    bison_build
-    URL ${BISON_URL}
-    URL_HASH MD5=1e541a097cda9eca675d29dd2832921f
-    CONFIGURE_COMMAND 
-        ${CONFIGURE_ENV}
-            ${SHELL} <SOURCE_DIR>/configure
-            --prefix=${BISON_INSTALL_DIR}
-            "CC=${CMAKE_C_COMPILER}"
-            "CFLAGS=-O3"
-            ${CONFIGURE_OPTS}
-    BUILD_COMMAND make -j${NPROC}
-    INSTALL_COMMAND make install
-    BUILD_IN_SOURCE 1
-    BUILD_BYPRODUCTS ${BISON_EXECUTABLE}
-    STEP_TARGETS build install)
+if(WIN32)
+    message(STATUS "bison not found, try download bison from winflexbison ${WINFLEXBISON_VERSION_INSTALL}")
 
-add_custom_target(project_bison DEPENDS bison_build)
+    set(WINBISON_URL "https://github.com/lexxmark/winflexbison/releases/download/v${WINFLEXBISON_VERSION_INSTALL}/win_flex_bison-${WINFLEXBISON_VERSION_INSTALL}.zip")
+    set(WINBISON_INSTALL_DIR "${CMAKE_BINARY_DIR}/winbison")
+    set(BISON_EXECUTABLE "${WINBISON_INSTALL_DIR}/win_bison.exe")
+    
+    ExternalProject_Add(
+        winbison
+        URL ${WINBISON_URL}
+        URL_HASH MD5=6b549d43e34ece0e8ed05af92daa31c4
+        CONFIGURE_COMMAND ""
+        BUILD_COMMAND ""
+        INSTALL_COMMAND 
+            ${CMAKE_COMMAND} -E copy_directory
+            <SOURCE_DIR>/
+            ${WINBISON_INSTALL_DIR}
+        BUILD_BYPRODUCTS ${BISON_EXECUTABLE})
+    
+    add_custom_target(project_bison DEPENDS winbison)
+else()
+    message(STATUS "bison not found, try download and build bison ${BISON_VERSION_INSTALL}")
+    find_program(SHELL "sh" REQUIRED)
+
+    set(BISON_URL "https://ftp.gnu.org/gnu/bison/bison-${BISON_VERSION_INSTALL}.tar.gz")
+    set(BISON_INSTALL_DIR "${CMAKE_BINARY_DIR}/bison_install")
+    set(BISON_EXECUTABLE "${BISON_INSTALL_DIR}/bin/bison")
+
+    set(BUILD_TRIPLET "${CMAKE_HOST_SYSTEM_PROCESSOR}")
+    if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
+        if(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "x86_64")
+            set(BUILD_TRIPLET "x86_64-linux-gnu")
+        elseif(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "aarch64")
+            set(BUILD_TRIPLET "aarch64-linux-gnu")
+        endif()
+    elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin")
+        if(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "x86_64")
+            set(BUILD_TRIPLET "x86_64-apple-darwin")
+        elseif(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "arm64")
+            set(BUILD_TRIPLET "aarch64-apple-darwin")
+        endif()
+    endif()
+    set(CONFIGURE_OPTS --build=${BUILD_TRIPLET})
+    set(CONFIGURE_ENV env "MAKEINFO=true")
+
+    execute_process(COMMAND sysctl -n hw.ncpu
+        OUTPUT_VARIABLE NPROC
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+    ExternalProject_Add(
+        bison_build
+        URL ${BISON_URL}
+        URL_HASH MD5=1e541a097cda9eca675d29dd2832921f
+        CONFIGURE_COMMAND 
+            ${CONFIGURE_ENV}
+                ${SHELL} <SOURCE_DIR>/configure
+                --prefix=${BISON_INSTALL_DIR}
+                "CC=${CMAKE_C_COMPILER}"
+                "CFLAGS=-O3"
+                ${CONFIGURE_OPTS}
+        BUILD_COMMAND make -j${NPROC}
+        INSTALL_COMMAND make install
+        BUILD_IN_SOURCE 1
+        BUILD_BYPRODUCTS ${BISON_EXECUTABLE}
+        STEP_TARGETS build install)
+
+    add_custom_target(project_bison DEPENDS bison_build)
+endif()
 
 macro(BISON_TARGET_option_report_file BisonOutput ReportFile)
     if("${ReportFile}" STREQUAL "")
@@ -144,5 +164,5 @@ macro(BISON_TARGET Name BisonInput BisonOutput)
     endif()
 endmacro()
 
-set(BISON_VERSION ${BISON_VERSION_INSTALL})
+set(BISON_EXECUTABLE ${BISON_EXECUTABLE} CACHE FILEPATH "Path to Bison executable" FORCE)
 set(BISON_FOUND TRUE)

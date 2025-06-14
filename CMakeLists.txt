@@ -12,7 +12,8 @@ project(idlc
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
 include(CMakeDependentOption)
-include(cmake/add-flex-bison.cmake)
+include(cmake/flex-install.cmake)
+include(cmake/bison-install.cmake)
 
 cmake_dependent_option(IDLC_BUILD_PACKAGES "Build packages" ON
     "CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR" OFF)

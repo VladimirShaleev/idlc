@@ -14,27 +14,34 @@ if(M4_EXECUTABLE)
 endif()
 
 if (NOT M4_EXECUTABLE)
+    set(M4_VERSION_INSTALL "1.4.19")
     message(STATUS "m4 not found, building from source")
     
     set(M4_URL "https://ftp.gnu.org/gnu/m4/m4-${M4_VERSION_INSTALL}.tar.gz")
     set(M4_INSTALL_DIR "${CMAKE_BINARY_DIR}/m4_install")
     set(M4_EXECUTABLE "${M4_INSTALL_DIR}/bin/m4")
 
+    if(POLICY CMP0135)  
+        cmake_policy(SET CMP0135 OLD)  
+    endif()
+
+    include(ProcessorCount)
+    ProcessorCount(NPROC)
+    if(NPROC EQUAL 0)
+        set(NPROC 1)
+    endif()
+
     ExternalProject_Add(
         m4_build
         URL ${M4_URL}
         URL_HASH MD5=f4a2b0284d80353b995f8ef2385ed73c
-        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
         CONFIGURE_COMMAND <SOURCE_DIR>/configure
             --prefix=${M4_INSTALL_DIR}
-            "CC=${CMAKE_C_COMPILER}"
             "CFLAGS=-O3"
         BUILD_COMMAND make -j${NPROC}
         INSTALL_COMMAND make install
         BUILD_IN_SOURCE 1
         BUILD_BYPRODUCTS ${M4_EXECUTABLE}
         STEP_TARGETS build install)
-
-    set(M4_EXECUTABLE ${M4_EXECUTABLE} CACHE FILEPATH "Path to m4 executable" FORCE)
-    set(M4_FOUND TRUE)
+    set(M4_DEPENDS "m4_build-install")
 endif()

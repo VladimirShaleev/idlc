@@ -33,6 +33,3 @@
 *.exe
 *.out
 *.app
-
-# Generated Files
-scanner.cpp

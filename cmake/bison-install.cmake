@@ -21,7 +21,6 @@ if(WIN32)
     add_custom_target(project_bison DEPENDS winbison)
 else()
     message(STATUS "bison not found, try download and build bison ${BISON_VERSION_INSTALL}")
-    find_program(SHELL "sh" REQUIRED)
 
     set(BISON_URL "https://ftp.gnu.org/gnu/bison/bison-${BISON_VERSION_INSTALL}.tar.gz")
     set(BISON_INSTALL_DIR "${CMAKE_BINARY_DIR}/bison_install")
@@ -42,29 +41,27 @@ else()
         endif()
     endif()
     set(CONFIGURE_OPTS --build=${BUILD_TRIPLET})
-    set(CONFIGURE_ENV env "MAKEINFO=true")
-
-    execute_process(COMMAND sysctl -n hw.ncpu
-        OUTPUT_VARIABLE NPROC
-        OUTPUT_STRIP_TRAILING_WHITESPACE)
-
+    
     ExternalProject_Add(
         bison_build
         URL ${BISON_URL}
         URL_HASH MD5=1e541a097cda9eca675d29dd2832921f
-        CONFIGURE_COMMAND 
-            ${CONFIGURE_ENV}
-                ${SHELL} <SOURCE_DIR>/configure
-                --prefix=${BISON_INSTALL_DIR}
-                "CC=${CMAKE_C_COMPILER}"
-                "CFLAGS=-O3"
-                ${CONFIGURE_OPTS}
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+        CONFIGURE_COMMAND <SOURCE_DIR>/configure
+            --prefix=${BISON_INSTALL_DIR}
+            "CC=${CMAKE_C_COMPILER}"
+            "CFLAGS=-O3"
+            "M4=${M4_EXECUTABLE}"
+            ${CONFIGURE_OPTS}
         BUILD_COMMAND make -j${NPROC}
         INSTALL_COMMAND make install
         BUILD_IN_SOURCE 1
         BUILD_BYPRODUCTS ${BISON_EXECUTABLE}
         STEP_TARGETS build install)
 
+    if(TARGET m4_build)
+        add_dependencies(bison_build m4_build)
+    endif()
     add_custom_target(project_bison DEPENDS bison_build)
 endif()
 
@@ -78,13 +75,7 @@ macro(BISON_TARGET_option_report_file BisonOutput ReportFile)
         list(APPEND BISON_TARGET_cmdopt "--report-file=${BISON_TARGET_verbose_file}")
     endif()
     if(NOT IS_ABSOLUTE "${BISON_TARGET_verbose_file}")
-        cmake_policy(GET CMP0088 _BISON_CMP0088 PARENT_SCOPE)
-        if("x${_BISON_CMP0088}x" STREQUAL "xNEWx")
-            set(BISON_TARGET_verbose_file "${CMAKE_CURRENT_BINARY_DIR}/${BISON_TARGET_verbose_file}")
-        else()
-            set(BISON_TARGET_verbose_file "${CMAKE_CURRENT_SOURCE_DIR}/${BISON_TARGET_verbose_file}")
-        endif()
-        unset(_BISON_CMP0088)
+        set(BISON_TARGET_verbose_file "${CMAKE_CURRENT_BINARY_DIR}/${BISON_TARGET_verbose_file}")
     endif()
 endmacro()
 
@@ -137,16 +128,11 @@ macro(BISON_TARGET Name BisonInput BisonOutput)
         endif()
     endif()
         list(APPEND BISON_TARGET_outputs "${BISON_TARGET_output_header}")
-        cmake_policy(GET CMP0088 _BISON_CMP0088 PARENT_SCOPE)
-        set(_BISON_WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
         set(_BisonInput "${BisonInput}")
-        if("x${_BISON_CMP0088}x" STREQUAL "xNEWx")
-            set(_BISON_WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-            if(NOT IS_ABSOLUTE "${_BisonInput}")
-                set(_BisonInput "${CMAKE_CURRENT_SOURCE_DIR}/${_BisonInput}")
-            endif()
+        set(_BISON_WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+        if(NOT IS_ABSOLUTE "${_BisonInput}")
+            set(_BisonInput "${CMAKE_CURRENT_SOURCE_DIR}/${_BisonInput}")
         endif()
-        unset(_BISON_CMP0088)
         add_custom_command(OUTPUT ${BISON_TARGET_outputs}
             COMMAND ${BISON_EXECUTABLE} ${BISON_TARGET_cmdopt} -o ${BisonOutput} ${_BisonInput}
             VERBATIM

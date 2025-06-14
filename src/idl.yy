@@ -120,6 +120,7 @@ api
 
 enum
     : ENUM ID { throw syntax_error(@1, err_str<E2005>()); }
+    | ENUM ID attr_list { throw syntax_error(@1, err_str<E2005>()); }
     | doc ENUM ID idoc { throw syntax_error(@2, err_str<E2021>()); }
     | doc ENUM ID attr_list idoc { throw syntax_error(@2, err_str<E2021>()); }
     | doc ENUM ID {
@@ -156,6 +157,7 @@ enum
 
 enum_const
     : CONST ID { throw syntax_error(@1, err_str<E2005>()); }
+    | CONST ID attr_list { throw syntax_error(@1, err_str<E2005>()); }
     | doc CONST ID idoc { throw syntax_error(@2, err_str<E2021>()); }
     | doc CONST ID attr_list idoc { throw syntax_error(@2, err_str<E2021>()); }
     | doc CONST ID {

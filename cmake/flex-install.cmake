@@ -21,7 +21,35 @@ if(WIN32)
     
     add_custom_target(project_flex DEPENDS winflex)
 else()
-    message(ERROR "Could NOT find FLEX (missing: FLEX_EXECUTABLE)")
+    message(STATUS "flex not found, try download and build flex ${FLEX_VERSION_INSTALL}")
+    include(cmake/m4-install.cmake)
+
+    set(FLEX_URL "https://github.com/westes/flex/releases/download/v${FLEX_VERSION_INSTALL}/flex-${FLEX_VERSION_INSTALL}.tar.gz")
+    set(FLEX_INSTALL_DIR "${CMAKE_BINARY_DIR}/flex_install")
+    set(FLEX_EXECUTABLE "${FLEX_INSTALL_DIR}/bin/flex")
+    set(FLEX_INCLUDE_DIR "${FLEX_INSTALL_DIR}/include")
+
+    ExternalProject_Add(
+        flex_build
+        URL ${FLEX_URL}
+        URL_HASH MD5=2882e3179748cc9f9c23ec593d6adc8d
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+        DEPENDS ${FLEX_DEPENDS}
+        CONFIGURE_COMMAND <SOURCE_DIR>/configure
+            --prefix=${FLEX_INSTALL_DIR}
+            "CC=${CMAKE_C_COMPILER}"
+            "CFLAGS=-O3"
+            "M4=${M4_EXECUTABLE}"
+        BUILD_COMMAND make -j${NPROC}
+        INSTALL_COMMAND make install
+        BUILD_IN_SOURCE 1
+        BUILD_BYPRODUCTS ${FLEX_EXECUTABLE}
+        STEP_TARGETS build install)
+        
+    if(TARGET m4_build)
+        add_dependencies(flex_build m4_build)
+    endif()
+    add_custom_target(project_flex DEPENDS bison_build)
 endif()
 
 macro(FLEX_TARGET Name Input Output)
@@ -38,17 +66,11 @@ macro(FLEX_TARGET Name Input Output)
     if(NOT "${FLEX_TARGET_ARG_UNPARSED_ARGUMENTS}" STREQUAL "")
         message(SEND_ERROR ${FLEX_TARGET_usage})
     else()
-        cmake_policy(GET CMP0098 _flex_CMP0098 PARENT_SCOPE)
         set(_flex_INPUT "${Input}")
-        if("x${_flex_CMP0098}x" STREQUAL "xNEWx")
-            set(_flex_WORKING_DIR "${CMAKE_CURRENT_BINARY_DIR}")
-            if(NOT IS_ABSOLUTE "${_flex_INPUT}")
+        set(_flex_WORKING_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+        if(NOT IS_ABSOLUTE "${_flex_INPUT}")
             set(_flex_INPUT "${CMAKE_CURRENT_SOURCE_DIR}/${_flex_INPUT}")
-            endif()
-        else()
-            set(_flex_WORKING_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
         endif()
-        unset(_flex_CMP0098)
 
         set(_flex_OUTPUT "${Output}")
         if(NOT IS_ABSOLUTE ${_flex_OUTPUT})

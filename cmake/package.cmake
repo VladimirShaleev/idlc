@@ -2,19 +2,19 @@ find_program(IDLC_DPKG_BUILDPACKAGE_FOUND dpkg-buildpackage)
 find_program(IDLC_RPMBUILD_FOUND rpmbuild)
 
 cmake_dependent_option(IDLC_BUILD_DEB_PACKAGE "Create DEB package" ON
-  "IDLC_DPKG_BUILDPACKAGE_FOUND" OFF)
+    "IDLC_DPKG_BUILDPACKAGE_FOUND" OFF)
 cmake_dependent_option(IDLC_BUILD_RPM_PACKAGE "Create RPM package" ON
-  "IDLC_RPMBUILD_FOUND" OFF)
+    "IDLC_RPMBUILD_FOUND" OFF)
 
 list(APPEND CPACK_SOURCE_GENERATOR TBZ2 TGZ TXZ ZIP)
 list(APPEND CPACK_SOURCE_IGNORE_FILES /.git/ /.github/ /.vscode/ /.vs/ /build/ .gitignore .DS_Store)
 
-if (IDLC_BUILD_DEB_PACKAGE)
-  list(APPEND CPACK_GENERATOR "DEB")
+if(IDLC_BUILD_DEB_PACKAGE)
+    list(APPEND CPACK_GENERATOR "DEB")
 endif()
 
-if (IDLC_BUILD_RPM_PACKAGE)
-  list(APPEND CPACK_GENERATOR "RPM")
+if(IDLC_BUILD_RPM_PACKAGE)
+    list(APPEND CPACK_GENERATOR "RPM")
 endif()
 
 set(CPACK_PACKAGE_VENDOR "Vladimir Shaleev")
@@ -37,19 +37,18 @@ set(CPACK_RPM_PACKAGE_NAME "lib${PROJECT_NAME}-devel")
 set(CPACK_RPM_PACKAGE_LICENSE "MIT License")
 set(CPACK_RPM_COMPRESSION_TYPE lzma)
 list(APPEND CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST
-  /etc
-  /etc/init.d
-  /usr
-  /usr/bin
-  /usr/include
-  /usr/lib
-  /usr/libx32
-  /usr/lib64
-  /usr/share
-  /usr/share/aclocal
-  /usr/share/doc
-  /usr/share/cmake
-  /usr/share/pkgconfig
-)
+    /etc
+    /etc/init.d
+    /usr
+    /usr/bin
+    /usr/include
+    /usr/lib
+    /usr/libx32
+    /usr/lib64
+    /usr/share
+    /usr/share/aclocal
+    /usr/share/doc
+    /usr/share/cmake
+    /usr/share/pkgconfig)
 
 include(CPack)

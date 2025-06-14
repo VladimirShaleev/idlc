@@ -25,6 +25,7 @@ if(NOT BISON_FOUND)
     else()
         set(BISON_VERSION_INSTALL "3.8.2")
         message(STATUS "bison not found, try download and build bison ${BISON_VERSION_INSTALL}")
+        include(cmake/m4-install.cmake)
 
         set(BISON_URL "https://ftp.gnu.org/gnu/bison/bison-${BISON_VERSION_INSTALL}.tar.gz")
         set(BISON_INSTALL_DIR "${CMAKE_BINARY_DIR}/bison_install")

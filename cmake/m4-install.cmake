@@ -1,7 +1,7 @@
 set(M4_VERSION_REQUIRED "1.4.16")
 find_program(M4_EXECUTABLE NAMES m4 gm4)
 
-if(M4_EXECUTABLE)
+if(M4_EXECUTABLE AND NOT M4_BUILDING)
     execute_process(COMMAND ${M4_EXECUTABLE} --version
         OUTPUT_VARIABLE M4_VERSION_OUTPUT
         ERROR_VARIABLE M4_VERSION_OUTPUT)
@@ -13,7 +13,7 @@ if(M4_EXECUTABLE)
     endif()
 endif()
 
-if (NOT M4_EXECUTABLE)
+if(NOT M4_EXECUTABLE)
     set(M4_VERSION_INSTALL "1.4.19")
     message(STATUS "m4 not found, building from source")
     
@@ -44,4 +44,5 @@ if (NOT M4_EXECUTABLE)
         BUILD_BYPRODUCTS ${M4_EXECUTABLE}
         STEP_TARGETS build install)
     set(M4_DEPENDS "m4_build-install")
+    set(M4_BUILDING ON)
 endif()

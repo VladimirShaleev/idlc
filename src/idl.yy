@@ -90,6 +90,7 @@
 %type <ASTDecl*> def_with_attrs_and_doc
 %type <ASTDecl*> def_with_attrs
 %type <ASTDecl*> def
+%type <ASTDecl*> def_with_type
 %type <ASTDecl*> decl
 
 %start node
@@ -122,15 +123,18 @@ def_with_attrs
     ;
 
 def
-    : decl ID { $1->name = $2; $$ = $1; }
-    | decl ID ':' NUM { 
-        $1->name = $2;
-        auto attr = alloc_node(ASTAttr, @4, -1, token::ATTRVALUE);
+    : def_with_type { $$ = $1; }
+    | def_with_type ':' NUM { 
+        auto attr = alloc_node(ASTAttr, @3, -1, token::ATTRVALUE);
         attr->type = ASTAttr::Value;
-        addAttrValueArgs(attr, { std::to_string($4) });
+        addAttrValueArgs(attr, { std::to_string($3) });
         addAttrs($1, { attr });
         $$ = $1;
     }
+    ;
+
+def_with_type
+    : decl ID { $1->name = $2; $$ = $1; }
     | decl ID '{' ID '}' {
         $1->name = $2;
         auto attr = alloc_node(ASTAttr, @4, -1, token::ATTRTYPE);

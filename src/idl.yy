@@ -68,6 +68,7 @@
 
 %token <std::string> STR
 %token <std::string> ID
+%token <int64_t> NUM
 
 %type <ASTAttr*> attr_item
 %type <std::vector<ASTAttr*>> attr_list
@@ -118,6 +119,14 @@ def_with_attrs
 
 def
     : decl ID { $1->name = $2; $$ = $1; }
+    | decl ID ':' NUM { 
+        $1->name = $2;
+        auto attr = alloc_node(ASTAttr, @4, -1, token::ATTRVALUE);
+        attr->type = ASTAttr::Value;
+        addAttrValueArgs(attr, { std::to_string($4) });
+        addAttrs($1, { attr });
+        $$ = $1;
+    }
     ;
 
 decl
@@ -244,7 +253,7 @@ void addDoc(ASTDoc* node, const std::vector<ASTNode*>& doc, char type)
 
 void addAttrs(ASTDecl* node, const std::vector<ASTAttr*>& attrs)
 {
-    node->attrs = attrs;
+    node->attrs.insert(node->attrs.end(), attrs.begin(), attrs.end());
     std::sort(node->attrs.begin(), node->attrs.end(), [](auto attr1, auto attr2)
     {
         return attr1->type < attr2->type;

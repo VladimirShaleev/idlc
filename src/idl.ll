@@ -78,12 +78,18 @@ DOCMCHAR ([^ \r\n\t\{\}[\]`]|^[`]{3}|\\\{|\\\}|\\\[|\\\])
 <ATTRCTX>"]"        { BEGIN(INITIAL); return YYText()[0]; }
 <ATTRCTX>"("        { BEGIN(ATTRARGS); return YYText()[0]; }
 
-<ATTRARGS>[-+]?[a-zA-Z0-9]+ { yylval->emplace<std::string>(YYText()); return token::ATTRARG; }
+<ATTRARGS>[-+]?[0-9]+       { yylval->emplace<int64_t>(std::stoll(YYText())); return token::NUM; }
+<ATTRARGS>"true"            { yylval->emplace<bool>(true); return token::BOOL; }
+<ATTRARGS>"false"           { yylval->emplace<bool>(false); return token::BOOL; }
+<ATTRARGS>[A-Z][a-zA-Z0-9]* { yylval->emplace<std::string>(YYText()); return token::ID; }
+<ATTRARGS>[a-z]+            { yylval->emplace<std::string>(YYText()); return token::ATTRARG; }
 <ATTRARGS>","               { return YYText()[0]; }
 <ATTRARGS>")"               { BEGIN(ATTRCTX); return YYText()[0]; }
 
 [A-Z][a-zA-Z0-9]* { yylval->emplace<std::string>(YYText()); return token::ID; }
 [-+]?[0-9]+       { yylval->emplace<int64_t>(std::stoll(YYText())); return token::NUM; }
+"true"            { yylval->emplace<bool>(true); return token::BOOL; }
+"false"           { yylval->emplace<bool>(false); return token::BOOL; }
 [a-zA-Z0-9]+      { err<E2003>(*yylloc, YYText()); }
 <<EOF>>           { return token::YYEOF; }
 [\{\}:]           { return YYText()[0]; }

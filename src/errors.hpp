@@ -43,7 +43,14 @@ enum Error {
     E2026,
     E2027,
     E2028,
-    E2029
+    E2029,
+    E2030,
+    E2031,
+    E2032,
+    E2033,
+    E2034,
+    E2035,
+    E2036
 };
 
 template <Warning Code, typename... Args>
@@ -147,6 +154,27 @@ inline std::string err_str(Args&&... args) {
     if constexpr (Code == E2029) {
         ss << "the 'type' attribute must contain only one type";
     }
+    if constexpr (Code == E2030) {
+        ss << fmt::format("symbol redefinition '{}'", args...);
+    }
+    if constexpr (Code == E2031) {
+        ss << "enumeration constants can only be specified as integers";
+    }
+    if constexpr (Code == E2032) {
+        ss << fmt::format("symbol definition '{}' not found", args...);
+    }
+    if constexpr (Code == E2033) {
+        ss << fmt::format("a constant '{}' cannot refer to itself when evaluated", args...);
+    }
+    if constexpr (Code == E2034) {
+        ss << "constants can only refer to other constants when evaluated";
+    }
+    if constexpr (Code == E2035) {
+        ss << fmt::format("declaration {} is not a type", args...);
+    }
+    if constexpr (Code == E2036) {
+        ss << "enumeration constant can only be of type 'Int32'";
+    }
     return ss.str();
 }
 
@@ -156,7 +184,7 @@ inline void warn(const Location& loc, Args&&... args) {
 }
 
 template <Error Code, typename... Args>
-inline void err(const Location& loc, Args&&... args) {
+[[noreturn]] inline void err(const Location& loc, Args&&... args) {
     std::cerr << "error: " << err_str<Code>(args...) << " at " << loc << std::endl;
     exit(1);
 }

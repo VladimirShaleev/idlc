@@ -10,7 +10,7 @@ struct AllowedAttrs : Visitor {
     }
 
     void visit(struct ASTEnumConst*) override {
-        allowed = { ASTAttr::Value };
+        allowed = { ASTAttr::Type, ASTAttr::Value };
     }
 
     void visit(ASTStruct* node) override {

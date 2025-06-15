@@ -9,6 +9,7 @@
 #include "ast.hpp"
 #include "errors.hpp"
 #include "location.hpp"
+#include "visitors.hpp"
 
 namespace idl {
 
@@ -25,7 +26,7 @@ public:
     }
 
     template <typename Node, typename Exception>
-    Node* allocNode(const idl::location& loc, int parentToken, int token) {
+    Node* allocNode(const idl::location& loc, int token) {
         static_assert(std::is_base_of<ASTNode, Node>::value, "Node must be inherited from ASTNode");
         auto node = new (std::nothrow) Node{};
         if (!node) {
@@ -34,28 +35,60 @@ public:
         if constexpr (std::is_same<Node, ASTApi>::value) {
             _api = node;
         }
-        node->location    = loc;
-        node->parentToken = parentToken;
-        node->token       = token;
+        node->location = loc;
+        node->token    = token;
         _nodes.push_back(node);
         return node;
     }
 
     template <typename Exception>
     ASTLiteral* intern(const idl::location& loc, const std::string& str, int token) {
-        const auto key = XXH64(str.c_str(), str.length(), 0);
-        if (auto it = _literals.find(key); it != _literals.end()) {
-#ifndef NDEBUG
-            if (auto strLiteral = dynamic_cast<ASTLiteralStr*>(it->second)) {
-                assert(strLiteral->value == str);
-            }
-#endif
-            return it->second;
+        return internLiteral<Exception, ASTLiteralStr>(loc, "str|" + str, str, token);
+    }
+
+    template <typename Exception>
+    ASTLiteral* intern(const idl::location& loc, bool b, int token) {
+        return internLiteral<Exception, ASTLiteralBool>(loc, "bool|" + std::to_string(b), b, token);
+    }
+
+    template <typename Exception>
+    ASTLiteral* intern(const idl::location& loc, int64_t num, int token) {
+        return internLiteral<Exception, ASTLiteralInt>(loc, "int|" + std::to_string(num), num, token);
+    }
+
+    template <typename Exception>
+    void addSymbol(ASTDecl* decl) {
+        const auto fullname = decl->fullnameLowecase();
+        if (_symbols.contains(fullname)) {
+            throw Exception(decl->location, err_str<E2030>(decl->fullname()));
         }
-        auto literal   = allocNode<ASTLiteralStr, Exception>(loc, -1, token);
-        literal->value = str;
-        _literals[key] = literal;
-        return literal;
+        _symbols[fullname] = decl;
+    }
+
+    ASTDecl* findSymbol(ASTDecl* decl, const idl::location& loc, const std::string& name) {
+        auto nameLower = name;
+        std::transform(nameLower.begin(), nameLower.end(), nameLower.begin(), [](auto c) {
+            return std::tolower(c);
+        });
+        while (decl) {
+            const auto fullname = decl->fullnameLowecase() + '.' + nameLower;
+            if (auto it = _symbols.find(fullname); it != _symbols.end()) {
+                return it->second;
+            }
+            decl = decl->parent->as<ASTDecl>();
+        }
+        err<E2032>(loc, name);
+    }
+
+    ASTType* resolveType(ASTDeclRef* declRef) {
+        auto parent = declRef->parent->is<ASTAttr>() ? declRef->parent->parent : declRef->parent;
+        declRef->decl = findSymbol(parent->as<ASTDecl>(), declRef->location, declRef->name);
+
+        if (auto type = declRef->decl->as<ASTType>()) {
+            return type;
+        } else {
+            err<E2035>(declRef->location, declRef->decl->fullname());
+        }
     }
 
     void currentDeclLine(int currentDeclLine) noexcept {
@@ -66,36 +99,56 @@ public:
         return _currentDeclLine;
     }
 
-    template <typename Node>
-    Node* lastType(ASTNode* from) const {
-        static_assert(std::is_base_of<ASTNode, Node>::value, "Node must be inherited from ASTNode");
-        auto it = std::find(_nodes.rbegin(), _nodes.rend(), from);
-        assert(it != _nodes.rend());
-        for (++it; it != _nodes.rend(); ++it) {
-            if (dynamic_cast<ASTType*>(*it)) {
-                if (auto node = dynamic_cast<Node*>(*it)) {
-                    return node;
-                }
-                break;
+    template <typename Exception>
+    void initBuiltins() {
+        static const std::string filename = "<builtin>";
+
+        const auto loc = idl::location(idl::position(&filename, 1, 1));
+
+        auto addBuiltin = [this, &loc]<typename Node>(std::string&& name, const std::string& detail, Node) {
+            std::vector<ASTNode*> doc{};
+            size_t prevPos = 0;
+            size_t pos     = 0;
+            std::string str;
+            while ((pos = detail.find(' ', prevPos)) != std::string::npos) {
+                str     = detail.substr(prevPos, pos - prevPos);
+                prevPos = pos + 1;
+                doc.push_back(intern<Exception>(loc, str, -1));
             }
-        }
-        return nullptr;
+            doc.push_back(intern<Exception>(loc, detail.substr(prevPos), -1));
+
+            auto node         = allocNode<Node, Exception>(loc, -1);
+            node->name        = std::move(name);
+            node->parent      = _api;
+            node->doc         = allocNode<ASTDoc, Exception>(loc, -1);
+            node->doc->detail = std::move(doc);
+            node->doc->parent = node;
+            addSymbol<Exception>(node);
+        };
+
+        addBuiltin("Char", "symbol type", ASTChar{});
+        addBuiltin("Str", "utf8 string", ASTStr{});
+        addBuiltin("Bool", "boolean type", ASTBool{});
+        addBuiltin("Int8", "8 bit signed integer", ASTInt8{});
+        addBuiltin("Uint8", "8 bit unsigned integer", ASTUint8{});
+        addBuiltin("Int16", "16 bit signed integer", ASTInt16{});
+        addBuiltin("Uint16", "16 bit unsigned integer", ASTUint16{});
+        addBuiltin("Int32", "32 bit signed integer", ASTInt32{});
+        addBuiltin("Uint32", "32 bit unsigned integer", ASTUint32{});
+        addBuiltin("Int64", "64 bit signed integer", ASTInt64{});
+        addBuiltin("Uint64", "64 bit unsigned integer", ASTUint64{});
+        addBuiltin("Float32", "32 bit float point", ASTFloat32{});
+        addBuiltin("Float64", "64 bit float point", ASTFloat64{});
     }
 
     void calcEnumConsts() {
-        filter<ASTEnum>([](auto en) {
+        filter<ASTEnum>([this](auto en) {
             if (en->consts.empty()) {
                 err<E2026>(en->location, en->name);
                 return false;
             }
-            auto attrValue            = en->consts.front()->template findAttr<ASTAttr::Value>();
-            int32_t lastValue         = attrValue ? attrValue->args[0].value : 0;
-            en->consts.front()->value = lastValue;
-            for (size_t i = 1; i < en->consts.size(); ++i) {
-                attrValue            = en->consts[i]->template findAttr<ASTAttr::Value>();
-                const auto value     = attrValue ? attrValue->args[0].value : lastValue + 1;
-                lastValue            = value;
-                en->consts[i]->value = value;
+            for (auto ec : en->consts) {
+                calcEnumConst(ec);
             }
             return true;
         });
@@ -114,6 +167,77 @@ private:
         }
         return true;
     }
+
+    template <typename Exception, typename Node, typename Value>
+    ASTLiteral* internLiteral(const idl::location& loc, const std::string& keyStr, const Value& value, int token) {
+        const auto key = XXH64(keyStr.c_str(), keyStr.length(), 0);
+        if (auto it = _literals.find(key); it != _literals.end()) {
+            return it->second;
+        }
+        auto literal   = allocNode<Node, Exception>(loc, token);
+        literal->value = value;
+        _literals[key] = literal;
+        return literal;
+    }
+
+    void calcEnumConst(ASTEnumConst* ec) {
+        if (ec->evaluated) {
+            return;
+        }
+
+        auto en   = ec->parent->as<ASTEnum>();
+        auto attr = ec->findAttr<ASTAttr::Value>();
+
+        if (auto typeAttr = ec->findAttr<ASTAttr::Type>()) {
+            auto type = resolveType(typeAttr->args.front().type);
+            if (!type->is<ASTInt32>()) {
+                err<E2036>(typeAttr->location);
+            }
+        }
+
+        if (attr && !attr->args[0].value->template is<ASTLiteralInt>() &&
+            !attr->args[0].value->template is<ASTLiteralEnumConst>()) {
+            err<E2031>(attr->location);
+        }
+
+        if (attr) {
+            if (auto literal = attr->args[0].value->template as<ASTLiteralInt>()) {
+                ec->value = literal->value;
+            } else {
+                for (auto literal : attr->args) {
+                    auto symbol = findSymbol(en, ec->location, literal.value->as<ASTLiteralEnumConst>()->name);
+                    if (symbol == ec) {
+                        err<E2033>(symbol->location, symbol->fullname());
+                    }
+                    if (auto refEc = symbol->as<ASTEnumConst>()) {
+                        literal.value->as<ASTLiteralEnumConst>()->value = refEc;
+                        calcEnumConst(refEc);
+                        ec->value |= refEc->value;
+                    } else {
+                        err<E2034>(ec->location);
+                    }
+                }
+            }
+        } else {
+            int32_t prevValue = -1;
+            for (auto c : en->consts) {
+                if (c == ec) {
+                    break;
+                }
+                calcEnumConst(c);
+                prevValue = c->value;
+            }
+            ec->value = prevValue + 1;
+        }
+        ec->evaluated = true;
+    }
+
+    struct Exception : std::runtime_error {
+        Exception(const idl::location& loc, const std::string& m) : std::runtime_error(m), location(loc) {
+        }
+
+        const idl::location& location;
+    };
 
     ASTApi* _api{};
     std::vector<ASTNode*> _nodes{};

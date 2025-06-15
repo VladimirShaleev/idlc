@@ -30,18 +30,22 @@
 {
     #include "scanner.hpp"
     #define yylex scanner.yylex
-    #define alloc_node(ast, loc, ptoken, token) \
-        scanner.context().allocNode<ast, idl::Parser::syntax_error>(loc, ptoken, token)
+    #define alloc_node(ast, loc, token) \
+        scanner.context().allocNode<ast, idl::Parser::syntax_error>(loc, token)
     #define intern(loc, str) \
-        scanner.context().intern<idl::Parser::syntax_error>(loc, str, token::STR)
+        scanner.context().intern<idl::Parser::syntax_error>(loc, str, idl::Parser::token::STR)
+    #define intern_bool(loc, b) \
+        scanner.context().intern<idl::Parser::syntax_error>(loc, b, idl::Parser::token::BOOL)
+    #define intern_int(loc, num) \
+        scanner.context().intern<idl::Parser::syntax_error>(loc, num, idl::Parser::token::NUM)
     #define last_enum(loc) \
         scanner.context().lastEnum<idl::Parser::syntax_error>(loc)
     
-    void addHierarchy(ASTDecl*, ASTDecl*);
+    void addNode(idl::Context&, ASTDecl*, ASTDecl*);
     void addDoc(ASTDoc*, const std::vector<ASTNode*>&, char);
     void addAttrs(ASTDecl*, const std::vector<ASTAttr*>&);
     void addAttrPlatformArgs(ASTAttr*, const std::vector<std::string>&);
-    void addAttrValueArgs(ASTAttr*, const std::vector<std::string>&);
+    void addAttrValueArgs(idl::Scanner&, ASTAttr*, ASTLiteral);
     void addAttrTypeArgs(idl::Scanner&, ASTAttr*, const std::vector<std::string>&);
 }
 
@@ -73,6 +77,7 @@
 %token <std::string> STR
 %token <std::string> ID
 %token <int64_t> NUM
+%token <bool> BOOL
 
 %type <ASTAttr*> attr_item
 %type <std::vector<ASTAttr*>> attr_list
@@ -98,8 +103,8 @@
 %%
 
 node
-    : def_with_attrs_and_doc { addHierarchy(nullptr, $1); $$ = $1; }
-    | node def_with_attrs_and_doc { addHierarchy($1, $2); $$ = $2; }
+    : def_with_attrs_and_doc { addNode(scanner.context(), nullptr, $1); $$ = $1; }
+    | node def_with_attrs_and_doc { addNode(scanner.context(), $1, $2); $$ = $2; }
     ;
 
 def_with_attrs_and_doc
@@ -125,9 +130,20 @@ def_with_attrs
 def
     : def_with_type { $$ = $1; }
     | def_with_type ':' NUM { 
-        auto attr = alloc_node(ASTAttr, @3, -1, token::ATTRVALUE);
+        ASTAttr::Arg arg{};
+        arg.value = intern_int(@3, $3);
+        auto attr = alloc_node(ASTAttr, @3, token::ATTRVALUE);
         attr->type = ASTAttr::Value;
-        addAttrValueArgs(attr, { std::to_string($3) });
+        attr->args.push_back(arg);
+        addAttrs($1, { attr });
+        $$ = $1;
+    }
+    | def_with_type ':' BOOL { 
+        ASTAttr::Arg arg{};
+        arg.value = intern_bool(@3, $3);
+        auto attr = alloc_node(ASTAttr, @3, token::ATTRVALUE);
+        attr->type = ASTAttr::Value;
+        attr->args.push_back(arg);
         addAttrs($1, { attr });
         $$ = $1;
     }
@@ -137,7 +153,7 @@ def_with_type
     : decl ID { $1->name = $2; $$ = $1; }
     | decl ID '{' ID '}' {
         $1->name = $2;
-        auto attr = alloc_node(ASTAttr, @4, -1, token::ATTRTYPE);
+        auto attr = alloc_node(ASTAttr, @4, token::ATTRTYPE);
         attr->type = ASTAttr::Type;
         addAttrTypeArgs(scanner, attr, { $4 });
         addAttrs($1, { attr });
@@ -146,11 +162,11 @@ def_with_type
     ;
 
 decl
-    : API { auto node = alloc_node(ASTApi, @1, -1, token::API); $$ = node; }
-    | ENUM { auto node = alloc_node(ASTEnum, @1, token::API, token::ENUM); $$ = node; }
-    | CONST { auto node = alloc_node(ASTEnumConst, @1, token::ENUM, token::CONST); $$ = node; }
-    | STRUCT { auto node = alloc_node(ASTStruct, @1, token::API, token::STRUCT); $$ = node; }
-    | FIELD { auto node = alloc_node(ASTField, @1, token::API, token::FIELD); $$ = node; }
+    : API { auto node = alloc_node(ASTApi, @1, token::API); $$ = node; }
+    | ENUM { auto node = alloc_node(ASTEnum, @1, token::ENUM); $$ = node; }
+    | CONST { auto node = alloc_node(ASTEnumConst, @1, token::CONST); $$ = node; }
+    | STRUCT { auto node = alloc_node(ASTStruct, @1, token::STRUCT); $$ = node; }
+    | FIELD { auto node = alloc_node(ASTField, @1, token::FIELD); $$ = node; }
     ;
 
 attr_list
@@ -159,25 +175,47 @@ attr_list
     ;
 
 attr_item
-    : ATTRFLAGS { auto node = alloc_node(ASTAttr, @1, -1, token::ATTRFLAGS); node->type = ASTAttr::Flags; $$ = node; }
-    | ATTRHEX { auto node = alloc_node(ASTAttr, @1, -1, token::ATTRHEX); node->type = ASTAttr::Hex; $$ = node; }
+    : ATTRFLAGS { auto node = alloc_node(ASTAttr, @1, token::ATTRFLAGS); node->type = ASTAttr::Flags; $$ = node; }
+    | ATTRHEX { auto node = alloc_node(ASTAttr, @1, token::ATTRHEX); node->type = ASTAttr::Hex; $$ = node; }
     | ATTRPLATFORM { throw syntax_error(@1, err_str<E2016>()); }
     | ATTRPLATFORM attr_args {
-        auto node = alloc_node(ASTAttr, @1, -1, token::ATTRPLATFORM);
+        auto node = alloc_node(ASTAttr, @1, token::ATTRPLATFORM);
         node->type = ASTAttr::Platform;
         addAttrPlatformArgs(node, $2);
         $$ = node;
     }
     | ATTRVALUE { throw syntax_error(@1, err_str<E2023>()); }
-    | ATTRVALUE attr_args {
-        auto node = alloc_node(ASTAttr, @1, -1, token::ATTRVALUE);
+    | ATTRVALUE '(' NUM ')' {
+        ASTAttr::Arg arg{};
+        arg.value = intern_int(@3, $3);
+        auto node = alloc_node(ASTAttr, @1, token::ATTRVALUE);
         node->type = ASTAttr::Value;
-        addAttrValueArgs(node, $2);
+        node->args.push_back(arg);
+        $$ = node;
+    }
+    | ATTRVALUE '(' BOOL ')' {
+        ASTAttr::Arg arg{};
+        arg.value = intern_bool(@3, $3);
+        auto node = alloc_node(ASTAttr, @1, token::ATTRVALUE);
+        node->type = ASTAttr::Value;
+        node->args.push_back(arg);
+        $$ = node;
+    }
+    | ATTRVALUE attr_args {
+        auto node = alloc_node(ASTAttr, @1, token::ATTRVALUE);
+        node->type = ASTAttr::Value;
+        for (const auto& name : $2) {
+            auto lit = alloc_node(ASTLiteralEnumConst, @1, token::NUM);
+            lit->name = name;
+            ASTAttr::Arg arg{};
+            arg.value = lit;
+            node->args.push_back(arg);
+        }
         $$ = node;
     }
     | ATTRTYPE { throw syntax_error(@1, err_str<E2028>()); }
     | ATTRTYPE attr_args {
-        auto node = alloc_node(ASTAttr, @1, -1, token::ATTRTYPE);
+        auto node = alloc_node(ASTAttr, @1, token::ATTRTYPE);
         node->type = ASTAttr::Type;
         addAttrTypeArgs(scanner, node, $2);
         $$ = node;
@@ -189,17 +227,19 @@ attr_args
     ;
 
 attr_arg_list
-    : ATTRARG { auto list = std::vector<std::string>(); list.push_back($1); $$ = list; }
+    : ID { auto list = std::vector<std::string>(); list.push_back($1); $$ = list; }
+    | ATTRARG { auto list = std::vector<std::string>(); list.push_back($1); $$ = list; }
     | attr_arg_list ',' ATTRARG { $1.push_back($3); $$ = $1; }
+    | attr_arg_list ',' ID { $1.push_back($3); $$ = $1; }
     ;
 
 doc
-    : doc_decl { auto node = alloc_node(ASTDoc, @1, -1, token::DOC); addDoc(node, $1.first, $1.second); $$ = node; }
+    : doc_decl { auto node = alloc_node(ASTDoc, @1, token::DOC); addDoc(node, $1.first, $1.second); $$ = node; }
     | doc doc_decl { addDoc($1, $2.first, $2.second); $$ = $1; }
     ;
 
 idoc
-    : idoc_decl { auto node = alloc_node(ASTDoc, @1, -1, token::IDOC); addDoc(node, $1.first, $1.second); $$ = node; }
+    : idoc_decl { auto node = alloc_node(ASTDoc, @1, token::IDOC); addDoc(node, $1.first, $1.second); $$ = node; }
     | idoc idoc_decl { addDoc($1, $2.first, $2.second); $$ = $1; }
     ;
 
@@ -226,12 +266,12 @@ doc_field
 
 doc_lit_or_ref
     : STR { $$ = intern(@1, $1); }
-    | '{' STR '}' { auto node = alloc_node(ASTDeclRef, @2, -1, token::STR); node->name = $2; $$ = node; }
+    | '{' STR '}' { auto node = alloc_node(ASTDeclRef, @2, token::STR); node->name = $2; $$ = node; }
     ;
 
 %%
 
-void addHierarchy(ASTDecl* prev, ASTDecl* decl)
+void addNode(idl::Context& context, ASTDecl* prev, ASTDecl* decl)
 {
     if (prev == nullptr)
     {
@@ -239,6 +279,7 @@ void addHierarchy(ASTDecl* prev, ASTDecl* decl)
         {
             throw idl::Parser::syntax_error(decl->location, err_str<E2012>());
         }
+        context.initBuiltins<idl::Parser::syntax_error>();
         return;
     }
     if (decl->token == idl::Parser::token::API)
@@ -248,6 +289,7 @@ void addHierarchy(ASTDecl* prev, ASTDecl* decl)
     
     ChildsAggregator<idl::Parser::syntax_error> aggregator = prev;
     decl->accept(aggregator);
+    context.addSymbol<idl::Parser::syntax_error>(decl);
 }
 
 void addDoc(ASTDoc* node, const std::vector<ASTNode*>& doc, char type)
@@ -356,25 +398,6 @@ void addAttrPlatformArgs(ASTAttr* node, const std::vector<std::string>& platform
     }
 }
 
-void addAttrValueArgs(ASTAttr* node, const std::vector<std::string>& values)
-{
-    if (values.size() != 1) 
-    {
-        throw idl::Parser::syntax_error(node->location, err_str<E2024>());
-    }
-    const auto& str = values[0];
-
-    char* end;  
-    long int result = std::strtol(str.c_str(), &end, 10);
-    if (*end != '\0')
-    {  
-        throw idl::Parser::syntax_error(node->location, err_str<E2025>());
-    }
-    ASTAttr::Arg arg{};
-    arg.value = result;
-    node->args.push_back(arg);
-}
-
 void addAttrTypeArgs(idl::Scanner& scanner, ASTAttr* node, const std::vector<std::string>& types)
 {
     if (types.size() != 1) 
@@ -383,7 +406,7 @@ void addAttrTypeArgs(idl::Scanner& scanner, ASTAttr* node, const std::vector<std
     }
     const auto& str = types[0];
     ASTAttr::Arg arg{};
-    arg.type = alloc_node(ASTDeclRef, node->location, -1, idl::Parser::token::STR);
+    arg.type = alloc_node(ASTDeclRef, node->location, idl::Parser::token::STR);
     arg.type->name = str;
     arg.type->parent = node;
     node->args.push_back(arg);

@@ -8,6 +8,7 @@
 
 #include <magic_enum/magic_enum.hpp>
 
+#include "errors.hpp"
 #include "location.hh"
 
 enum struct TargetPlatfrom {
@@ -25,6 +26,15 @@ struct Visitor {
     virtual void visit(struct ASTLiteralStr* node) {
     }
 
+    virtual void visit(struct ASTLiteralBool* node) {
+    }
+
+    virtual void visit(struct ASTLiteralInt* node) {
+    }
+
+    virtual void visit(struct ASTLiteralEnumConst* node) {
+    }
+
     virtual void visit(struct ASTDoc* node) {
     }
 
@@ -32,6 +42,45 @@ struct Visitor {
     }
 
     virtual void visit(struct ASTDeclRef* node) {
+    }
+
+    virtual void visit(struct ASTChar* node) {
+    }
+
+    virtual void visit(struct ASTStr* node) {
+    }
+
+    virtual void visit(struct ASTBool* node) {
+    }
+
+    virtual void visit(struct ASTInt8* node) {
+    }
+
+    virtual void visit(struct ASTUint8* node) {
+    }
+
+    virtual void visit(struct ASTInt16* node) {
+    }
+
+    virtual void visit(struct ASTUint16* node) {
+    }
+
+    virtual void visit(struct ASTInt32* node) {
+    }
+
+    virtual void visit(struct ASTUint32* node) {
+    }
+
+    virtual void visit(struct ASTInt64* node) {
+    }
+
+    virtual void visit(struct ASTUint64* node) {
+    }
+
+    virtual void visit(struct ASTFloat32* node) {
+    }
+
+    virtual void visit(struct ASTFloat64* node) {
     }
 
     virtual void visit(struct ASTApi* node) {
@@ -69,11 +118,35 @@ struct ASTNode {
 
     ASTNode* parent{};
     idl::location location{};
-    int parentToken{};
     int token{};
 };
 
 struct ASTLiteral : ASTNode {};
+
+struct ASTLiteralBool : ASTLiteral {
+    void accept(Visitor& visitor) override {
+        visitor.visit(this);
+    }
+
+    bool value;
+};
+
+struct ASTLiteralInt : ASTLiteral {
+    void accept(Visitor& visitor) override {
+        visitor.visit(this);
+    }
+
+    int64_t value;
+};
+
+struct ASTLiteralEnumConst : ASTLiteral {
+    void accept(Visitor& visitor) override {
+        visitor.visit(this);
+    }
+
+    std::string name;
+    struct ASTEnumConst* value{};
+};
 
 struct ASTLiteralStr : ASTLiteral {
     void accept(Visitor& visitor) override {
@@ -106,8 +179,8 @@ struct ASTAttr : ASTNode {
 
     struct Arg {
         union {
-            int64_t value;
             TargetPlatfrom platform;
+            ASTLiteral* value;
             struct ASTDeclRef* type;
         };
     };
@@ -138,11 +211,28 @@ struct ASTDecl : ASTNode {
     ASTDoc* doc{};
 
     template <ASTAttr::AttrType Type>
-    const ASTAttr* findAttr() const noexcept {
+    ASTAttr* findAttr() noexcept {
         auto it = std::find_if(attrs.begin(), attrs.end(), [](auto attr) {
             return attr->type == Type;
         });
         return it != attrs.end() ? *it : nullptr;
+    }
+
+    std::string fullname() const {
+        assert(name.length() > 0);
+        std::string str{};
+        if (auto parentDecl = dynamic_cast<ASTDecl*>(parent)) {
+            str = parentDecl->fullname() + '.';
+        }
+        return str + name;
+    }
+
+    std::string fullnameLowecase() const {
+        auto str = fullname();
+        std::transform(str.begin(), str.end(), str.begin(), [](auto c) {
+            return std::tolower(c);
+        });
+        return str;
     }
 };
 
@@ -157,11 +247,94 @@ struct ASTDeclRef : ASTNode {
 
 struct ASTType : ASTDecl {};
 
+struct ASTTrivialType : ASTType {};
+
+struct ASTBuiltinType : ASTTrivialType {};
+
+struct ASTChar : ASTBuiltinType {
+    void accept(Visitor& visitor) override {
+        visitor.visit(this);
+    }
+};
+
+struct ASTStr : ASTBuiltinType {
+    void accept(Visitor& visitor) override {
+        visitor.visit(this);
+    }
+};
+
+struct ASTBool : ASTBuiltinType {
+    void accept(Visitor& visitor) override {
+        visitor.visit(this);
+    }
+};
+
+struct ASTInt8 : ASTBuiltinType {
+    void accept(Visitor& visitor) override {
+        visitor.visit(this);
+    }
+};
+
+struct ASTUint8 : ASTBuiltinType {
+    void accept(Visitor& visitor) override {
+        visitor.visit(this);
+    }
+};
+
+struct ASTInt16 : ASTBuiltinType {
+    void accept(Visitor& visitor) override {
+        visitor.visit(this);
+    }
+};
+
+struct ASTUint16 : ASTBuiltinType {
+    void accept(Visitor& visitor) override {
+        visitor.visit(this);
+    }
+};
+
+struct ASTInt32 : ASTBuiltinType {
+    void accept(Visitor& visitor) override {
+        visitor.visit(this);
+    }
+};
+
+struct ASTUint32 : ASTBuiltinType {
+    void accept(Visitor& visitor) override {
+        visitor.visit(this);
+    }
+};
+
+struct ASTInt64 : ASTBuiltinType {
+    void accept(Visitor& visitor) override {
+        visitor.visit(this);
+    }
+};
+
+struct ASTUint64 : ASTBuiltinType {
+    void accept(Visitor& visitor) override {
+        visitor.visit(this);
+    }
+};
+
+struct ASTFloat32 : ASTBuiltinType {
+    void accept(Visitor& visitor) override {
+        visitor.visit(this);
+    }
+};
+
+struct ASTFloat64 : ASTBuiltinType {
+    void accept(Visitor& visitor) override {
+        visitor.visit(this);
+    }
+};
+
 struct ASTEnumConst : ASTDecl {
     void accept(Visitor& visitor) override {
         visitor.visit(this);
     }
 
+    bool evaluated{};
     int32_t value{};
 };
 

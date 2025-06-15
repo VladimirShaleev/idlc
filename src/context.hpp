@@ -81,7 +81,7 @@ public:
     }
 
     ASTType* resolveType(ASTDeclRef* declRef) {
-        auto parent = declRef->parent->is<ASTAttr>() ? declRef->parent->parent : declRef->parent;
+        auto parent   = declRef->parent->is<ASTAttr>() ? declRef->parent->parent : declRef->parent;
         declRef->decl = findSymbol(parent->as<ASTDecl>(), declRef->location, declRef->name);
 
         if (auto type = declRef->decl->as<ASTType>()) {
@@ -142,16 +142,50 @@ public:
     }
 
     void calcEnumConsts() {
-        filter<ASTEnum>([this](auto en) {
+        std::vector<ASTEnumConst*> needAddTypeAttrs{};
+        filter<ASTEnum>([this, &needAddTypeAttrs](auto en) {
             if (en->consts.empty()) {
                 err<E2026>(en->location, en->name);
                 return false;
             }
             for (auto ec : en->consts) {
-                calcEnumConst(ec);
+                if (!ec->template findAttr<ASTAttr::Type>()) {
+                    needAddTypeAttrs.push_back(ec);
+                }
             }
             return true;
         });
+        for (auto ec : needAddTypeAttrs) {
+            ASTAttr::Arg arg{};
+            arg.type         = allocNode<ASTDeclRef, Exception>(ec->location, -1);
+            auto attr        = allocNode<ASTAttr, Exception>(ec->location, -1);
+            arg.type->parent = attr;
+            arg.type->name   = "Int32";
+            attr->parent     = ec;
+            attr->type       = ASTAttr::Type;
+            attr->args.push_back(arg);
+            ec->attrs.push_back(attr);
+        }
+
+        std::vector<ASTEnumConst*> needAddValueAttrs{};
+        filter<ASTEnum>([this, &needAddValueAttrs](auto en) {
+            for (auto ec : en->consts) {
+                calcEnumConst(ec);
+                if (!ec->template findAttr<ASTAttr::Value>()) {
+                    needAddValueAttrs.push_back(ec);
+                }
+            }
+            return true;
+        });
+        for (auto ec : needAddValueAttrs) {
+            ASTAttr::Arg arg{};
+            arg.value    = intern<Exception>(ec->location, (int64_t) ec->value, -1);
+            auto attr    = allocNode<ASTAttr, Exception>(ec->location, -1);
+            attr->parent = ec;
+            attr->type   = ASTAttr::Value;
+            attr->args.push_back(arg);
+            ec->attrs.push_back(attr);
+        }
     }
 
 private:

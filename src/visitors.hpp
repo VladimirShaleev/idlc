@@ -13,6 +13,14 @@ struct AllowedAttrs : Visitor {
         allowed = { ASTAttr::Value };
     }
 
+    void visit(ASTStruct* node) override {
+        allowed = { ASTAttr::Platform };
+    }
+
+    void visit(ASTField* node) override {
+        allowed = { ASTAttr::Value };
+    }
+
     std::set<ASTAttr::Type> allowed;
 };
 
@@ -36,6 +44,24 @@ struct ChildsAggregator : Visitor {
             node->parent = parent;
         } else {
             throw Exception(node->location, err_str<E2022>());
+        }
+    }
+
+    void visit(ASTStruct* node) override {
+        if (auto parent = getParent<ASTApi>()) {
+            parent->structs.push_back(node);
+            node->parent = parent;
+        } else {
+            assert(!"unreachable code");
+        }
+    }
+
+    void visit(ASTField* node) override {
+        if (auto parent = getParent<ASTStruct>()) {
+            parent->fields.push_back(node);
+            node->parent = parent;
+        } else {
+            throw Exception(node->location, err_str<E2027>());
         }
     }
 

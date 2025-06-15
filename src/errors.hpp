@@ -40,7 +40,8 @@ enum Error {
     E2023,
     E2024,
     E2025,
-    E2026
+    E2026,
+    E2027
 };
 
 template <Warning Code, typename... Args>
@@ -134,6 +135,9 @@ inline std::string err_str(Args&&... args) {
     }
     if constexpr (Code == E2026) {
         ss << fmt::format("an enumeration '{}' must contain at least one constant", args...);
+    }
+    if constexpr (Code == E2027) {
+        ss << "fields can only be added to a structured type";
     }
     return ss.str();
 }

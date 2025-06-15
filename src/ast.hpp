@@ -42,6 +42,12 @@ struct Visitor {
 
     virtual void visit(struct ASTEnumConst* node) {
     }
+
+    virtual void visit(struct ASTStruct* node) {
+    }
+
+    virtual void visit(struct ASTField* node) {
+    }
 };
 
 struct ASTNode {
@@ -165,12 +171,27 @@ struct ASTEnum : ASTType {
     std::vector<ASTEnumConst*> consts;
 };
 
+struct ASTField : ASTDecl {
+    void accept(Visitor& visitor) override {
+        visitor.visit(this);
+    }
+};
+
+struct ASTStruct : ASTType {
+    void accept(Visitor& visitor) override {
+        visitor.visit(this);
+    }
+
+    std::vector<ASTField*> fields;
+};
+
 struct ASTApi : ASTDecl {
     void accept(Visitor& visitor) override {
         visitor.visit(this);
     }
 
     std::vector<ASTEnum*> enums;
+    std::vector<ASTStruct*> structs;
 };
 
 #endif

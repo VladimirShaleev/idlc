@@ -65,6 +65,8 @@
 %token API
 %token ENUM
 %token CONST
+%token STRUCT
+%token FIELD
 
 %token <std::string> STR
 %token <std::string> ID
@@ -133,6 +135,8 @@ decl
     : API { auto node = alloc_node(ASTApi, @1, -1, token::API); $$ = node; }
     | ENUM { auto node = alloc_node(ASTEnum, @1, token::API, token::ENUM); $$ = node; }
     | CONST { auto node = alloc_node(ASTEnumConst, @1, token::ENUM, token::CONST); $$ = node; }
+    | STRUCT { auto node = alloc_node(ASTStruct, @1, token::API, token::STRUCT); $$ = node; }
+    | FIELD { auto node = alloc_node(ASTField, @1, token::API, token::FIELD); $$ = node; }
     ;
 
 attr_list

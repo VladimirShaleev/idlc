@@ -21,6 +21,9 @@ std::string unescape(const char*);
 %x ATTRCTX
 %x ATTRARGS
 
+DOCCHAR  ([^ \r\n\t\{\}[\]]|\\\{|\\\}|\\\[|\\\])
+DOCMCHAR ([^ \r\n\t\{\}[\]`]|^[`]{3}|\\\{|\\\}|\\\[|\\\])
+
 %%
 
 %{
@@ -37,39 +40,39 @@ std::string unescape(const char*);
     auto currLine = yylloc->end.line;
     return prevLine == currLine ?  token::IDOC : token::DOC;
 }
-<DOCSTR>\n                 { yylloc->lines(); BEGIN(INITIAL); }
-<DOCSTR>([^ \n\t\{\}[\]]|\\\{|\\\}|\\\[|\\\])+ { yylval->emplace<std::string>(unescape(YYText())); return token::STR; }
+<DOCSTR>{DOCCHAR}+         { yylval->emplace<std::string>(unescape(YYText())); return token::STR; }
 <DOCSTR>"[brief]"[ ]*$     { return token::DOCBRIEF; }
 <DOCSTR>"[detail]"[ ]*$    { return token::DOCDETAIL; }
 <DOCSTR>"[author]"[ ]*$    { return token::DOCAUTHOR; }
 <DOCSTR>"[copyright]"[ ]*$ { return token::DOCCOPYRIGHT; }
 <DOCSTR>"[license]"[ ]*$   { return token::DOCLICENSE; }
-<DOCSTR>"[".*"]"[ ]*$      { err<E2020>(*yylloc, YYText()); yyterminate(); }
+<DOCSTR>"[".*"]"[ ]*$      { err<E2020>(*yylloc, YYText()); }
 <DOCSTR>[\{\}]             { return YYText()[0]; }
-<DOCSTR>\t                 { err<E2002>(*yylloc); yyterminate(); }
+<DOCSTR>\n                 { yylloc->lines(); BEGIN(INITIAL); }
+<DOCSTR>\t                 { err<E2002>(*yylloc); }
 <DOCSTR>" "                ;
-<DOCSTR>.                  { err<E2001>(*yylloc, YYText()); yyterminate(); }
+<DOCSTR>.                  { err<E2001>(*yylloc, YYText()); }
 <DOCSTR>"```\n"            { yylloc->lines(); BEGIN(DOCMSTR); }
 
-<DOCMSTR>\n     { yylloc->lines(); yylval->emplace<std::string>(YYText()); return token::STR; }
-<DOCMSTR>([^ \n\t\{\}[\]`]|^[`]{3}|\\\{|\\\}|\\\[|\\\])+ { yylval->emplace<std::string>(unescape(YYText())); return token::STR; }
+<DOCMSTR>{DOCMCHAR}+ { yylval->emplace<std::string>(unescape(YYText())); return token::STR; }
 <DOCMSTR>[\{\}] { return YYText()[0]; }
 <DOCMSTR>^[ ]+  ;
+<DOCMSTR>\n     { yylloc->lines(); yylval->emplace<std::string>(YYText()); return token::STR; }
+<DOCMSTR>\t     { err<E2002>(*yylloc); }
 <DOCMSTR>" "    ;
-<DOCMSTR>\t     { err<E2002>(*yylloc); yyterminate(); }
-<DOCMSTR>.      { err<E2001>(*yylloc, YYText()); yyterminate(); }
+<DOCMSTR>.      { err<E2001>(*yylloc, YYText()); }
 <DOCMSTR>"```"  { BEGIN(DOCSTR); }
 
-"["                 { BEGIN(ATTRCTX); }
+"["                 { BEGIN(ATTRCTX); return YYText()[0]; }
 <ATTRCTX>"flags"    { return token::ATTRFLAGS; }
 <ATTRCTX>"hex"      { return token::ATTRHEX; }
 <ATTRCTX>"platform" { return token::ATTRPLATFORM; }
 <ATTRCTX>"value"    { return token::ATTRVALUE; }
 <ATTRCTX>","        { return YYText()[0]; }
 <ATTRCTX>" "        ;
-<ATTRCTX>[a-z]+     { err<E2015>(*yylloc, YYText()); yyterminate(); }
-<ATTRCTX>[^\]\(]    { err<E2001>(*yylloc, YYText()); yyterminate(); }
-<ATTRCTX>"]"        { BEGIN(INITIAL); }
+<ATTRCTX>[a-z]+     { err<E2015>(*yylloc, YYText()); }
+<ATTRCTX>[^\]\(]    { err<E2001>(*yylloc, YYText()); }
+<ATTRCTX>"]"        { BEGIN(INITIAL); return YYText()[0]; }
 <ATTRCTX>"("        { BEGIN(ATTRARGS); return YYText()[0]; }
 
 <ATTRARGS>[-+]?[a-z0-9]+ { yylval->emplace<std::string>(YYText()); return token::ATTRARG; }
@@ -77,13 +80,14 @@ std::string unescape(const char*);
 <ATTRARGS>")"            { BEGIN(ATTRCTX); return YYText()[0]; }
 
 [A-Z][a-zA-Z0-9]* { yylval->emplace<std::string>(YYText()); return token::ID; }
-[a-zA-Z0-9]+      { err<E2003>(*yylloc, YYText()); yyterminate(); }
+[a-zA-Z0-9]+      { err<E2003>(*yylloc, YYText()); }
 <<EOF>>           { return token::YYEOF; }
+":"               { return YYText()[0]; }
 \n                { yylloc->lines(); }
-\t                { err<E2002>(*yylloc); yyterminate(); }
+\t                { err<E2002>(*yylloc); }
 " "               ;
 "//".*            ;
-.                 { err<E2001>(*yylloc, YYText()); yyterminate(); }
+.                 { err<E2001>(*yylloc, YYText()); }
 
 %%
 

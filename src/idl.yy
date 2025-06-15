@@ -5,12 +5,12 @@
 %locations
 
 %{
-#include <set>
 #include <map>
 #include <iostream>
 #include <string>
 #include <cmath>
 #include <FlexLexer.h>
+#include "visitors.hpp"
 %}
 
 %define api.parser.class {Parser}
@@ -30,15 +30,16 @@
 {
     #include "scanner.hpp"
     #define yylex scanner.yylex
-    #define alloc_node(ast, loc) \
-        scanner.context().allocNode<ast, idl::Parser::syntax_error>(loc)
+    #define alloc_node(ast, loc, ptoken, token) \
+        scanner.context().allocNode<ast, idl::Parser::syntax_error>(loc, ptoken, token)
     #define intern(loc, str) \
-        scanner.context().intern<idl::Parser::syntax_error>(loc, str)
+        scanner.context().intern<idl::Parser::syntax_error>(loc, str, token::STR)
     #define last_enum(loc) \
         scanner.context().lastEnum<idl::Parser::syntax_error>(loc)
     
+    void addHierarchy(ASTDecl*, ASTDecl*);
     void addDoc(ASTDoc*, const std::vector<ASTNode*>&, char);
-    void addAttrs(ASTDecl*, const std::vector<ASTAttr*>&, const std::set<ASTAttr::Type>&);
+    void addAttrs(ASTDecl*, const std::vector<ASTAttr*>&);
     void addAttrPlatformArgs(ASTAttr*, const std::vector<std::string>&);
     void addAttrValueArgs(ASTAttr*, const std::vector<std::string>&);
 }
@@ -67,7 +68,6 @@
 
 %token <std::string> STR
 %token <std::string> ID
-%token <int64_t> NUM
 
 %type <ASTAttr*> attr_item
 %type <std::vector<ASTAttr*>> attr_list
@@ -81,115 +81,49 @@
 %type <std::pair<std::vector<ASTNode*>, char>> doc_decl
 %type <std::pair<std::vector<ASTNode*>, char>> idoc_decl
 
-%type <ASTApi*> root
-%type <ASTApi*> api
-%type <ASTEnum*> enum
-%type <ASTEnumConst*> enum_const
+%type <ASTDecl*> node
+%type <ASTDecl*> def_with_attrs_and_doc
+%type <ASTDecl*> def_with_attrs
+%type <ASTDecl*> def
+%type <ASTDecl*> decl
 
-%start root
+%start node
 
 %%
 
-root
-    : api { $$ = $1; }
-    | enum { throw syntax_error(@1, err_str<E2012>()); }
-    | enum_const { throw syntax_error(@1, err_str<E2012>()); }
-    | root api { throw syntax_error(@2, err_str<E2004>()); }
-    | root enum { $1->enums.push_back($2); $2->parent = $1; $$ = $1; }
-    | root enum_const { auto en = last_enum(@2); en->consts.push_back($2); $2->parent = en; $$ = $1; }
+node
+    : def_with_attrs_and_doc { addHierarchy(nullptr, $1); $$ = $1; }
+    | node def_with_attrs_and_doc { addHierarchy($1, $2); $$ = $2; }
     ;
 
-api
-    : API ID { throw syntax_error(@1, err_str<E2005>()); }
-    | doc API ID idoc { throw syntax_error(@2, err_str<E2021>()); }
-    | doc API ID { 
-        auto node = alloc_node(ASTApi, @2);
-        node->name = $3;
-        node->doc = $1;
-        $1->parent = node;
-        $$ = node;
+def_with_attrs_and_doc
+    : def_with_attrs { throw syntax_error(@1, err_str<E2005>()); }
+    | doc def_with_attrs idoc { throw syntax_error(@2, err_str<E2021>()); }
+    | doc def_with_attrs {
+        $2->doc = $1;
+        $1->parent = $2;
+        $$ = $2;
     }
-    | API ID idoc { 
-        auto node = alloc_node(ASTApi, @1);
-        node->name = $2;
-        node->doc = $3;
-        $3->parent = node;
-        $$ = node;
+    | def_with_attrs idoc {
+        $1->doc = $2;
+        $2->parent = $1;
+        $$ = $1;
     }
     ;
 
-enum
-    : ENUM ID { throw syntax_error(@1, err_str<E2005>()); }
-    | ENUM ID attr_list { throw syntax_error(@1, err_str<E2005>()); }
-    | doc ENUM ID idoc { throw syntax_error(@2, err_str<E2021>()); }
-    | doc ENUM ID attr_list idoc { throw syntax_error(@2, err_str<E2021>()); }
-    | doc ENUM ID {
-        auto node = alloc_node(ASTEnum, @2);
-        node->name = $3;
-        node->doc = $1;
-        $1->parent = node;
-        $$ = node;
-    }
-    | ENUM ID idoc {
-        auto node = alloc_node(ASTEnum, @1);
-        node->name = $2;
-        node->doc = $3;
-        $3->parent = node;
-        $$ = node;
-    }
-    | doc ENUM ID attr_list {
-        auto node = alloc_node(ASTEnum, @2);
-        node->name = $3;
-        node->doc = $1;
-        $1->parent = node;
-        addAttrs(node, $4, { ASTAttr::Flags, ASTAttr::Hex, ASTAttr::Platform });
-        $$ = node;
-    }
-    | ENUM ID attr_list idoc {
-        auto node = alloc_node(ASTEnum, @1);
-        node->name = $2;
-        node->doc = $4;
-        $4->parent = node;
-        addAttrs(node, $3, { ASTAttr::Flags, ASTAttr::Hex, ASTAttr::Platform });
-        $$ = node;
-    }
+def_with_attrs
+    : def { $$ = $1; }
+    | def '[' attr_list ']' { addAttrs($1, $3); $$ = $1; }
     ;
 
-enum_const
-    : CONST ID { throw syntax_error(@1, err_str<E2005>()); }
-    | CONST ID attr_list { throw syntax_error(@1, err_str<E2005>()); }
-    | doc CONST ID idoc { throw syntax_error(@2, err_str<E2021>()); }
-    | doc CONST ID attr_list idoc { throw syntax_error(@2, err_str<E2021>()); }
-    | doc CONST ID {
-        auto node = alloc_node(ASTEnumConst, @2);
-        node->name = $3;
-        node->doc = $1;
-        $1->parent = node;
-        $$ = node;
-    }
-    | CONST ID idoc {
-        auto node = alloc_node(ASTEnumConst, @1);
-        node->name = $2;
-        node->doc = $3;
-        $3->parent = node;
-        $$ = node;
-    }
-    | doc CONST ID attr_list {
-        auto node = alloc_node(ASTEnumConst, @2);
-        node->name = $3;
-        node->doc = $1;
-        $1->parent = node;
-        addAttrs(node, $4, { ASTAttr::Value });
-        $$ = node;
-    }
-    | CONST ID attr_list idoc {
-        auto node = alloc_node(ASTEnumConst, @1);
-        node->name = $2;
-        node->doc = $4;
-        $4->parent = node;
-        addAttrs(node, $3, { ASTAttr::Value });
-        $$ = node;
-    }
+def
+    : decl ID { $1->name = $2; $$ = $1; }
+    ;
+
+decl
+    : API { auto node = alloc_node(ASTApi, @1, -1, token::API); $$ = node; }
+    | ENUM { auto node = alloc_node(ASTEnum, @1, token::API, token::ENUM); $$ = node; }
+    | CONST { auto node = alloc_node(ASTEnumConst, @1, token::ENUM, token::CONST); $$ = node; }
     ;
 
 attr_list
@@ -198,18 +132,18 @@ attr_list
     ;
 
 attr_item
-    : ATTRFLAGS { auto node = alloc_node(ASTAttr, @1); node->type = ASTAttr::Flags; $$ = node; }
-    | ATTRHEX { auto node = alloc_node(ASTAttr, @1); node->type = ASTAttr::Hex; $$ = node; }
+    : ATTRFLAGS { auto node = alloc_node(ASTAttr, @1, -1, token::ATTRFLAGS); node->type = ASTAttr::Flags; $$ = node; }
+    | ATTRHEX { auto node = alloc_node(ASTAttr, @1, -1, token::ATTRHEX); node->type = ASTAttr::Hex; $$ = node; }
     | ATTRPLATFORM { throw syntax_error(@1, err_str<E2016>()); }
     | ATTRPLATFORM attr_args {
-        auto node = alloc_node(ASTAttr, @1);
+        auto node = alloc_node(ASTAttr, @1, -1, token::ATTRPLATFORM);
         node->type = ASTAttr::Platform;
         addAttrPlatformArgs(node, $2);
         $$ = node;
     }
     | ATTRVALUE { throw syntax_error(@1, err_str<E2023>()); }
     | ATTRVALUE attr_args {
-        auto node = alloc_node(ASTAttr, @1);
+        auto node = alloc_node(ASTAttr, @1, -1, token::ATTRVALUE);
         node->type = ASTAttr::Value;
         addAttrValueArgs(node, $2);
         $$ = node;
@@ -226,12 +160,12 @@ attr_arg_list
     ;
 
 doc
-    : doc_decl { auto node = alloc_node(ASTDoc, @1); addDoc(node, $1.first, $1.second); $$ = node; }
+    : doc_decl { auto node = alloc_node(ASTDoc, @1, -1, token::DOC); addDoc(node, $1.first, $1.second); $$ = node; }
     | doc doc_decl { addDoc($1, $2.first, $2.second); $$ = $1; }
     ;
 
 idoc
-    : idoc_decl { auto node = alloc_node(ASTDoc, @1); addDoc(node, $1.first, $1.second); $$ = node; }
+    : idoc_decl { auto node = alloc_node(ASTDoc, @1, -1, token::IDOC); addDoc(node, $1.first, $1.second); $$ = node; }
     | idoc idoc_decl { addDoc($1, $2.first, $2.second); $$ = $1; }
     ;
 
@@ -258,10 +192,29 @@ doc_field
 
 doc_lit_or_ref
     : STR { $$ = intern(@1, $1); }
-    | '{' STR '}' { auto node = alloc_node(ASTDeclRef, @2); node->name = $2; $$ = node; }
+    | '{' STR '}' { auto node = alloc_node(ASTDeclRef, @2, -1, token::STR); node->name = $2; $$ = node; }
     ;
 
 %%
+
+void addHierarchy(ASTDecl* prev, ASTDecl* decl)
+{
+    if (prev == nullptr)
+    {
+        if (decl->token != idl::Parser::token::API)
+        {
+            throw idl::Parser::syntax_error(decl->location, err_str<E2012>());
+        }
+        return;
+    }
+    if (decl->token == idl::Parser::token::API)
+    {
+        throw idl::Parser::syntax_error(decl->location, err_str<E2004>());
+    }
+    
+    ChildsAggregator<idl::Parser::syntax_error> aggregator = prev;
+    decl->accept(aggregator);
+}
 
 void addDoc(ASTDoc* node, const std::vector<ASTNode*>& doc, char type)
 {
@@ -289,7 +242,7 @@ void addDoc(ASTDoc* node, const std::vector<ASTNode*>& doc, char type)
     }
 }
 
-void addAttrs(ASTDecl* node, const std::vector<ASTAttr*>& attrs, const std::set<ASTAttr::Type>& allowedAttrs)
+void addAttrs(ASTDecl* node, const std::vector<ASTAttr*>& attrs)
 {
     node->attrs = attrs;
     std::sort(node->attrs.begin(), node->attrs.end(), [](auto attr1, auto attr2)
@@ -304,13 +257,15 @@ void addAttrs(ASTDecl* node, const std::vector<ASTAttr*>& attrs, const std::set<
     {
         throw idl::Parser::syntax_error((*it)->location, err_str<E2013>((*it)->typeStr()));
     }
+    AllowedAttrs allowAttrs{};
+    node->accept(allowAttrs);
     for (auto attr : node->attrs)
     {
-        if (!allowedAttrs.contains(attr->type))
+        if (!allowAttrs.allowed.contains(attr->type))
         {
             auto first = true;
             std::ostringstream ss;
-            for (auto type : allowedAttrs) {
+            for (auto type : allowAttrs.allowed) {
                 if (!first) {
                     ss << ", ";
                 }

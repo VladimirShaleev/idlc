@@ -2,32 +2,13 @@
 #define AST_HPP
 
 #include <algorithm>
+#include <set>
 #include <string>
 #include <vector>
 
 #include <magic_enum/magic_enum.hpp>
 
 #include "location.hh"
-
-struct ASTNode {
-    virtual ~ASTNode() = default;
-    ASTNode* parent{};
-    idl::location location{};
-};
-
-struct ASTLiteral : ASTNode {};
-
-struct ASTLiteralStr : ASTLiteral {
-    std::string value;
-};
-
-struct ASTDoc : ASTNode {
-    std::vector<ASTNode*> brief;
-    std::vector<ASTNode*> detail;
-    std::vector<ASTNode*> copyright;
-    std::vector<ASTNode*> license;
-    std::vector<std::vector<ASTNode*>> authors;
-};
 
 enum struct TargetPlatfrom {
     Windows,
@@ -36,6 +17,76 @@ enum struct TargetPlatfrom {
     Web,
     Android,
     iOS
+};
+
+struct Visitor {
+    virtual ~Visitor() = default;
+
+    virtual void visit(struct ASTLiteralStr* node) {
+    }
+
+    virtual void visit(struct ASTDoc* node) {
+    }
+
+    virtual void visit(struct ASTAttr* node) {
+    }
+
+    virtual void visit(struct ASTDeclRef* node) {
+    }
+
+    virtual void visit(struct ASTApi* node) {
+    }
+
+    virtual void visit(struct ASTEnum* node) {
+    }
+
+    virtual void visit(struct ASTEnumConst* node) {
+    }
+};
+
+struct ASTNode {
+    virtual ~ASTNode() = default;
+
+    virtual void accept(Visitor& visitor) = 0;
+
+    template <typename Node>
+    bool is() noexcept {
+        static_assert(std::is_base_of<ASTNode, Node>::value, "Node must be inherited from ASTNode");
+        return dynamic_cast<Node*>(this) != nullptr;
+    }
+
+    template <typename Node>
+    Node* as() noexcept {
+        static_assert(std::is_base_of<ASTNode, Node>::value, "Node must be inherited from ASTNode");
+        return dynamic_cast<Node*>(this);
+    }
+
+    ASTNode* parent{};
+    idl::location location{};
+    int parentToken{};
+    int token{};
+};
+
+struct ASTLiteral : ASTNode {};
+
+struct ASTLiteralStr : ASTLiteral {
+    void accept(Visitor& visitor) override {
+        visitor.visit(this);
+    }
+
+    std::string value;
+};
+
+struct ASTDoc : ASTNode {
+    void accept(Visitor& visitor) override {
+        visitor.visit(this);
+    }
+
+    std::vector<ASTNode*> brief;
+    std::vector<ASTNode*> detail;
+    std::vector<ASTNode*> copyright;
+    std::vector<ASTNode*> license;
+    std::vector<std::vector<ASTNode*>> authors;
 };
 
 struct ASTAttr : ASTNode {
@@ -52,6 +103,10 @@ struct ASTAttr : ASTNode {
             TargetPlatfrom platform;
         };
     };
+
+    void accept(Visitor& visitor) override {
+        visitor.visit(this);
+    }
 
     Type type;
     std::vector<Arg> args;
@@ -84,6 +139,10 @@ struct ASTDecl : ASTNode {
 };
 
 struct ASTDeclRef : ASTNode {
+    void accept(Visitor& visitor) override {
+        visitor.visit(this);
+    }
+
     std::string name;
     ASTDecl* decl{};
 };
@@ -91,14 +150,26 @@ struct ASTDeclRef : ASTNode {
 struct ASTType : ASTDecl {};
 
 struct ASTEnumConst : ASTDecl {
+    void accept(Visitor& visitor) override {
+        visitor.visit(this);
+    }
+
     int32_t value{};
 };
 
 struct ASTEnum : ASTType {
+    void accept(Visitor& visitor) override {
+        visitor.visit(this);
+    }
+
     std::vector<ASTEnumConst*> consts;
 };
 
 struct ASTApi : ASTDecl {
+    void accept(Visitor& visitor) override {
+        visitor.visit(this);
+    }
+
     std::vector<ASTEnum*> enums;
 };
 

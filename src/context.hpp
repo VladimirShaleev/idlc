@@ -25,7 +25,7 @@ public:
     }
 
     template <typename Node, typename Exception>
-    Node* allocNode(const idl::location& loc) {
+    Node* allocNode(const idl::location& loc, int parentToken, int token) {
         static_assert(std::is_base_of<ASTNode, Node>::value, "Node must be inherited from ASTNode");
         auto node = new (std::nothrow) Node{};
         if (!node) {
@@ -34,13 +34,15 @@ public:
         if constexpr (std::is_same<Node, ASTApi>::value) {
             _api = node;
         }
-        node->location = loc;
+        node->location    = loc;
+        node->parentToken = parentToken;
+        node->token       = token;
         _nodes.push_back(node);
         return node;
     }
 
     template <typename Exception>
-    ASTLiteral* intern(const idl::location& loc, const std::string& str) {
+    ASTLiteral* intern(const idl::location& loc, const std::string& str, int token) {
         const auto key = XXH64(str.c_str(), str.length(), 0);
         if (auto it = _literals.find(key); it != _literals.end()) {
 #ifndef NDEBUG
@@ -50,7 +52,7 @@ public:
 #endif
             return it->second;
         }
-        auto literal   = allocNode<ASTLiteralStr, Exception>(loc);
+        auto literal   = allocNode<ASTLiteralStr, Exception>(loc, -1, token);
         literal->value = str;
         _literals[key] = literal;
         return literal;
@@ -64,17 +66,20 @@ public:
         return _currentDeclLine;
     }
 
-    template <typename Exception>
-    ASTEnum* lastEnum(const idl::location& loc) const {
-        for (auto it = _nodes.rbegin(); it != _nodes.rend(); ++it) {
+    template <typename Node>
+    Node* lastType(ASTNode* from) const {
+        static_assert(std::is_base_of<ASTNode, Node>::value, "Node must be inherited from ASTNode");
+        auto it = std::find(_nodes.rbegin(), _nodes.rend(), from);
+        assert(it != _nodes.rend());
+        for (++it; it != _nodes.rend(); ++it) {
             if (dynamic_cast<ASTType*>(*it)) {
-                if (auto en = dynamic_cast<ASTEnum*>(*it)) {
-                    return en;
+                if (auto node = dynamic_cast<Node*>(*it)) {
+                    return node;
                 }
                 break;
             }
         }
-        throw Exception(loc, err_str<E2022>());
+        return nullptr;
     }
 
     void calcEnumConsts() {

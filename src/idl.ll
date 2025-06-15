@@ -70,6 +70,7 @@ DOCMCHAR ([^ \r\n\t\{\}[\]`]|^[`]{3}|\\\{|\\\}|\\\[|\\\])
 <ATTRCTX>"hex"      { return token::ATTRHEX; }
 <ATTRCTX>"platform" { return token::ATTRPLATFORM; }
 <ATTRCTX>"value"    { return token::ATTRVALUE; }
+<ATTRCTX>"type"     { return token::ATTRTYPE; }
 <ATTRCTX>","        { return YYText()[0]; }
 <ATTRCTX>" "        ;
 <ATTRCTX>[a-z]+     { err<E2015>(*yylloc, YYText()); }
@@ -77,15 +78,15 @@ DOCMCHAR ([^ \r\n\t\{\}[\]`]|^[`]{3}|\\\{|\\\}|\\\[|\\\])
 <ATTRCTX>"]"        { BEGIN(INITIAL); return YYText()[0]; }
 <ATTRCTX>"("        { BEGIN(ATTRARGS); return YYText()[0]; }
 
-<ATTRARGS>[-+]?[a-z0-9]+ { yylval->emplace<std::string>(YYText()); return token::ATTRARG; }
-<ATTRARGS>","            { return YYText()[0]; }
-<ATTRARGS>")"            { BEGIN(ATTRCTX); return YYText()[0]; }
+<ATTRARGS>[-+]?[a-zA-Z0-9]+ { yylval->emplace<std::string>(YYText()); return token::ATTRARG; }
+<ATTRARGS>","               { return YYText()[0]; }
+<ATTRARGS>")"               { BEGIN(ATTRCTX); return YYText()[0]; }
 
 [A-Z][a-zA-Z0-9]* { yylval->emplace<std::string>(YYText()); return token::ID; }
 [-+]?[0-9]+       { yylval->emplace<int64_t>(std::stoll(YYText())); return token::NUM; }
 [a-zA-Z0-9]+      { err<E2003>(*yylloc, YYText()); }
 <<EOF>>           { return token::YYEOF; }
-":"               { return YYText()[0]; }
+[\{\}:]           { return YYText()[0]; }
 \n                { yylloc->lines(); }
 \t                { err<E2002>(*yylloc); }
 " "               ;

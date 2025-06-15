@@ -41,7 +41,9 @@ enum Error {
     E2024,
     E2025,
     E2026,
-    E2027
+    E2027,
+    E2028,
+    E2029
 };
 
 template <Warning Code, typename... Args>
@@ -138,6 +140,12 @@ inline std::string err_str(Args&&... args) {
     }
     if constexpr (Code == E2027) {
         ss << "fields can only be added to a structured type";
+    }
+    if constexpr (Code == E2028) {
+        ss << "the 'type' attribute must specify the type in the argument";
+    }
+    if constexpr (Code == E2029) {
+        ss << "the 'type' attribute must contain only one type";
     }
     return ss.str();
 }

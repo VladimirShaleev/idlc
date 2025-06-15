@@ -18,10 +18,10 @@ struct AllowedAttrs : Visitor {
     }
 
     void visit(ASTField* node) override {
-        allowed = { ASTAttr::Value };
+        allowed = { ASTAttr::Type, ASTAttr::Value };
     }
 
-    std::set<ASTAttr::Type> allowed;
+    std::set<ASTAttr::AttrType> allowed;
 };
 
 template <typename Exception>

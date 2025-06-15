@@ -42,6 +42,7 @@
     void addAttrs(ASTDecl*, const std::vector<ASTAttr*>&);
     void addAttrPlatformArgs(ASTAttr*, const std::vector<std::string>&);
     void addAttrValueArgs(ASTAttr*, const std::vector<std::string>&);
+    void addAttrTypeArgs(idl::Scanner&, ASTAttr*, const std::vector<std::string>&);
 }
 
 %initial-action {
@@ -60,6 +61,7 @@
 %token ATTRHEX
 %token ATTRPLATFORM
 %token ATTRVALUE
+%token ATTRTYPE
 %token <std::string> ATTRARG
 
 %token API
@@ -129,6 +131,14 @@ def
         addAttrs($1, { attr });
         $$ = $1;
     }
+    | decl ID '{' ID '}' {
+        $1->name = $2;
+        auto attr = alloc_node(ASTAttr, @4, -1, token::ATTRTYPE);
+        attr->type = ASTAttr::Type;
+        addAttrTypeArgs(scanner, attr, { $4 });
+        addAttrs($1, { attr });
+        $$ = $1;
+    }
     ;
 
 decl
@@ -159,6 +169,13 @@ attr_item
         auto node = alloc_node(ASTAttr, @1, -1, token::ATTRVALUE);
         node->type = ASTAttr::Value;
         addAttrValueArgs(node, $2);
+        $$ = node;
+    }
+    | ATTRTYPE { throw syntax_error(@1, err_str<E2028>()); }
+    | ATTRTYPE attr_args {
+        auto node = alloc_node(ASTAttr, @1, -1, token::ATTRTYPE);
+        node->type = ASTAttr::Type;
+        addAttrTypeArgs(scanner, node, $2);
         $$ = node;
     }
     ;
@@ -351,6 +368,20 @@ void addAttrValueArgs(ASTAttr* node, const std::vector<std::string>& values)
     }
     ASTAttr::Arg arg{};
     arg.value = result;
+    node->args.push_back(arg);
+}
+
+void addAttrTypeArgs(idl::Scanner& scanner, ASTAttr* node, const std::vector<std::string>& types)
+{
+    if (types.size() != 1) 
+    {
+        throw idl::Parser::syntax_error(node->location, err_str<E2029>());
+    }
+    const auto& str = types[0];
+    ASTAttr::Arg arg{};
+    arg.type = alloc_node(ASTDeclRef, node->location, -1, idl::Parser::token::STR);
+    arg.type->name = str;
+    arg.type->parent = node;
     node->args.push_back(arg);
 }
 

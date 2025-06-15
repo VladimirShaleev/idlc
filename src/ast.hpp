@@ -96,17 +96,19 @@ struct ASTDoc : ASTNode {
 };
 
 struct ASTAttr : ASTNode {
-    enum Type {
+    enum AttrType {
         Platform,
         Flags,
         Hex,
-        Value
+        Value,
+        Type
     };
 
     struct Arg {
         union {
             int64_t value;
             TargetPlatfrom platform;
+            struct ASTDeclRef* type;
         };
     };
 
@@ -114,10 +116,10 @@ struct ASTAttr : ASTNode {
         visitor.visit(this);
     }
 
-    Type type;
+    AttrType type;
     std::vector<Arg> args;
 
-    static std::string typeStr(Type type) {
+    static std::string typeStr(AttrType type) {
         std::string str = magic_enum::enum_name(type).data();
         std::transform(str.begin(), str.end(), str.begin(), [](auto c) {
             return std::tolower(c);
@@ -135,7 +137,7 @@ struct ASTDecl : ASTNode {
     std::vector<ASTAttr*> attrs;
     ASTDoc* doc{};
 
-    template <ASTAttr::Type Type>
+    template <ASTAttr::AttrType Type>
     const ASTAttr* findAttr() const noexcept {
         auto it = std::find_if(attrs.begin(), attrs.end(), [](auto attr) {
             return attr->type == Type;

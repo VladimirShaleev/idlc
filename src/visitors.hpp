@@ -4,24 +4,61 @@
 #include "ast.hpp"
 #include "errors.hpp"
 
+struct AttrName : Visitor {
+    void visit(ASTAttrPlatform*) override {
+        str = "platform";
+    }
+
+    void visit(ASTAttrFlags*) override {
+        str = "flags";
+    }
+
+    void visit(ASTAttrHex*) override {
+        str = "hex";
+    }
+
+    void visit(ASTAttrValue*) override {
+        str = "value";
+    }
+
+    void visit(ASTAttrType*) override {
+        str = "type";
+    }
+
+    std::string str;
+};
+
 struct AllowedAttrs : Visitor {
     void visit(struct ASTEnum*) override {
-        allowed = { ASTAttr::Flags, ASTAttr::Hex, ASTAttr::Platform };
+        allowed = { add<ASTAttrFlags>(), add<ASTAttrHex>(), add<ASTAttrPlatform>() };
     }
 
     void visit(struct ASTEnumConst*) override {
-        allowed = { ASTAttr::Type, ASTAttr::Value };
+        allowed = { add<ASTAttrType>(), add<ASTAttrValue>() };
     }
 
     void visit(ASTStruct* node) override {
-        allowed = { ASTAttr::Platform };
+        allowed = { add<ASTAttrPlatform>() };
     }
 
     void visit(ASTField* node) override {
-        allowed = { ASTAttr::Type, ASTAttr::Value };
+        allowed = { add<ASTAttrType>(), add<ASTAttrValue>() };
     }
 
-    std::set<ASTAttr::AttrType> allowed;
+    template <typename Attr>
+    static std::pair<std::type_index, std::string> add() {
+        return { typeid(Attr), getName<Attr>() };
+    }
+
+    template <typename Attr>
+    static std::string getName() {
+        AttrName name;
+        Attr attr{};
+        attr.accept(name);
+        return name.str;
+    }
+
+    std::map<std::type_index, std::string> allowed;
 };
 
 template <typename Exception>

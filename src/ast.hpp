@@ -2,23 +2,16 @@
 #define AST_HPP
 
 #include <algorithm>
+#include <map>
 #include <set>
 #include <string>
+#include <typeindex>
 #include <vector>
 
 #include <magic_enum/magic_enum.hpp>
 
 #include "errors.hpp"
 #include "location.hh"
-
-enum struct TargetPlatfrom {
-    Windows,
-    Linux,
-    MacOS,
-    Web,
-    Android,
-    iOS
-};
 
 struct Visitor {
     virtual ~Visitor() = default;
@@ -32,13 +25,25 @@ struct Visitor {
     virtual void visit(struct ASTLiteralInt* node) {
     }
 
-    virtual void visit(struct ASTLiteralEnumConst* node) {
+    virtual void visit(struct ASTLiteralConsts* node) {
     }
 
     virtual void visit(struct ASTDoc* node) {
     }
 
-    virtual void visit(struct ASTAttr* node) {
+    virtual void visit(struct ASTAttrPlatform* node) {
+    }
+
+    virtual void visit(struct ASTAttrFlags* node) {
+    }
+
+    virtual void visit(struct ASTAttrHex* node) {
+    }
+
+    virtual void visit(struct ASTAttrValue* node) {
+    }
+
+    virtual void visit(struct ASTAttrType* node) {
     }
 
     virtual void visit(struct ASTDeclRef* node) {
@@ -139,13 +144,12 @@ struct ASTLiteralInt : ASTLiteral {
     int64_t value;
 };
 
-struct ASTLiteralEnumConst : ASTLiteral {
+struct ASTLiteralConsts : ASTLiteral {
     void accept(Visitor& visitor) override {
         visitor.visit(this);
     }
 
-    std::string name;
-    struct ASTEnumConst* value{};
+    std::vector<struct ASTDeclRef*> decls;
 };
 
 struct ASTLiteralStr : ASTLiteral {
@@ -168,41 +172,51 @@ struct ASTDoc : ASTNode {
     std::vector<std::vector<ASTNode*>> authors;
 };
 
-struct ASTAttr : ASTNode {
-    enum AttrType {
-        Platform,
-        Flags,
-        Hex,
-        Value,
-        Type
-    };
+struct ASTAttr : ASTNode {};
 
-    struct Arg {
-        union {
-            TargetPlatfrom platform;
-            ASTLiteral* value;
-            struct ASTDeclRef* type;
-        };
+struct ASTAttrPlatform : ASTAttr {
+    enum Type {
+        Windows = 1,
+        Linux   = 2,
+        MacOS   = 4,
+        Web     = 8,
+        Android = 16,
+        iOS     = 32
     };
 
     void accept(Visitor& visitor) override {
         visitor.visit(this);
     }
 
-    AttrType type;
-    std::vector<Arg> args;
+    Type platforms;
+};
 
-    static std::string typeStr(AttrType type) {
-        std::string str = magic_enum::enum_name(type).data();
-        std::transform(str.begin(), str.end(), str.begin(), [](auto c) {
-            return std::tolower(c);
-        });
-        return str;
+struct ASTAttrFlags : ASTAttr {
+    void accept(Visitor& visitor) override {
+        visitor.visit(this);
+    }
+};
+
+struct ASTAttrHex : ASTAttr {
+    void accept(Visitor& visitor) override {
+        visitor.visit(this);
+    }
+};
+
+struct ASTAttrValue : ASTAttr {
+    void accept(Visitor& visitor) override {
+        visitor.visit(this);
     }
 
-    std::string typeStr() const {
-        return typeStr(type);
+    ASTLiteral* value;
+};
+
+struct ASTAttrType : ASTAttr {
+    void accept(Visitor& visitor) override {
+        visitor.visit(this);
     }
+
+    struct ASTDeclRef* type;
 };
 
 struct ASTDecl : ASTNode {
@@ -210,10 +224,10 @@ struct ASTDecl : ASTNode {
     std::vector<ASTAttr*> attrs;
     ASTDoc* doc{};
 
-    template <ASTAttr::AttrType Type>
+    template <typename Attr>
     ASTAttr* findAttr() noexcept {
         auto it = std::find_if(attrs.begin(), attrs.end(), [](auto attr) {
-            return attr->type == Type;
+            return typeid(*attr) == typeid(Attr);
         });
         return it != attrs.end() ? *it : nullptr;
     }

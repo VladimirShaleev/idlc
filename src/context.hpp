@@ -73,6 +73,11 @@ public:
         while (decl) {
             const auto fullname = decl->fullnameLowecase() + '.' + nameLower;
             if (auto it = _symbols.find(fullname); it != _symbols.end()) {
+                const auto actualName   = decl->fullname() + '.' + name;
+                const auto expectedName = it->second->fullname();
+                if (actualName != expectedName) {
+                    err<E2037>(loc, actualName, expectedName);
+                }
                 return it->second;
             }
             decl = decl->parent->as<ASTDecl>();
@@ -141,51 +146,82 @@ public:
         addBuiltin("Float64", "64 bit float point", ASTFloat64{});
     }
 
-    void calcEnumConsts() {
-        std::vector<ASTEnumConst*> needAddTypeAttrs{};
-        filter<ASTEnum>([this, &needAddTypeAttrs](auto en) {
-            if (en->consts.empty()) {
-                err<E2026>(en->location, en->name);
-                return false;
+    template <typename Exception>
+    void addAttrs(ASTDecl* node, const std::vector<ASTAttr*>& attrs) {
+        node->attrs.insert(node->attrs.end(), attrs.begin(), attrs.end());
+        std::set<std::type_index> uniqueAttrs;
+        for (auto attr : node->attrs) {
+            if (uniqueAttrs.contains(typeid(*attr))) {
+                AttrName name;
+                attr->accept(name);
+                throw Exception(attr->location, err_str<E2013>(name.str));
             }
-            for (auto ec : en->consts) {
-                if (!ec->template findAttr<ASTAttr::Type>()) {
-                    needAddTypeAttrs.push_back(ec);
-                }
-            }
-            return true;
-        });
-        for (auto ec : needAddTypeAttrs) {
-            ASTAttr::Arg arg{};
-            arg.type         = allocNode<ASTDeclRef, Exception>(ec->location, -1);
-            auto attr        = allocNode<ASTAttr, Exception>(ec->location, -1);
-            arg.type->parent = attr;
-            arg.type->name   = "Int32";
-            attr->parent     = ec;
-            attr->type       = ASTAttr::Type;
-            attr->args.push_back(arg);
-            ec->attrs.push_back(attr);
+            uniqueAttrs.insert(typeid(*attr));
         }
+        AllowedAttrs allowAttrs{};
+        node->accept(allowAttrs);
+        for (auto attr : node->attrs) {
+            if (!allowAttrs.allowed.contains(typeid(*attr))) {
+                auto first = true;
+                std::ostringstream ss;
+                for (const auto& [_, name] : allowAttrs.allowed) {
+                    if (!first) {
+                        ss << ", ";
+                    }
+                    ss << '\'' << name << '\'';
+                    first = false;
+                }
+                throw Exception(attr->location, err_str<E2014>(ss.str()));
+            }
+            attr->parent = node;
+        }
+    }
 
-        std::vector<ASTEnumConst*> needAddValueAttrs{};
-        filter<ASTEnum>([this, &needAddValueAttrs](auto en) {
-            for (auto ec : en->consts) {
-                calcEnumConst(ec);
-                if (!ec->template findAttr<ASTAttr::Value>()) {
-                    needAddValueAttrs.push_back(ec);
-                }
-            }
-            return true;
-        });
-        for (auto ec : needAddValueAttrs) {
-            ASTAttr::Arg arg{};
-            arg.value    = intern<Exception>(ec->location, (int64_t) ec->value, -1);
-            auto attr    = allocNode<ASTAttr, Exception>(ec->location, -1);
-            attr->parent = ec;
-            attr->type   = ASTAttr::Value;
-            attr->args.push_back(arg);
-            ec->attrs.push_back(attr);
-        }
+    void calcEnumConsts() {
+        // std::vector<ASTEnumConst*> needAddTypeAttrs{};
+        // filter<ASTEnum>([this, &needAddTypeAttrs](auto en) {
+        //     if (en->consts.empty()) {
+        //         err<E2026>(en->location, en->name);
+        //         return false;
+        //     }
+        //     for (auto ec : en->consts) {
+        //         if (!ec->template findAttr<ASTAttr::Type>()) {
+        //             needAddTypeAttrs.push_back(ec);
+        //         }
+        //     }
+        //     return true;
+        // });
+        // for (auto ec : needAddTypeAttrs) {
+        //     ASTAttr::Arg arg{};
+        //     arg.type         = allocNode<ASTDeclRef, Exception>(ec->location, -1);
+        //     auto attr        = allocNode<ASTAttr, Exception>(ec->location, -1);
+        //     arg.type->parent = attr;
+        //     arg.type->name   = "Int32";
+        //     attr->parent     = ec;
+        //     attr->type       = ASTAttr::Type;
+        //     attr->args.push_back(arg);
+        //     ec->attrs.push_back(attr);
+        // }
+        //
+        // std::vector<ASTEnumConst*> needAddValueAttrs{};
+        // filter<ASTEnum>([this, &needAddValueAttrs](auto en) {
+        //     for (auto ec : en->consts) {
+        //         calcEnumConst(ec);
+        //         if (!ec->template findAttr<ASTAttr::Value>()) {
+        //             needAddValueAttrs.push_back(ec);
+        //         }
+        //     }
+        //     return true;
+        // });
+        // for (auto ec : needAddValueAttrs) {
+        //     ASTAttr::Arg arg{};
+        //     arg.value    = intern<Exception>(ec->location, (int64_t) ec->value, -1);
+        //     auto attr    = allocNode<ASTAttr, Exception>(ec->location, -1);
+        //     attr->parent = ec;
+        //     attr->type   = ASTAttr::Value;
+        //     attr->args.push_back(arg);
+        //     ec->attrs.push_back(attr);
+        // }
     }
 
 private:
@@ -215,55 +251,55 @@ private:
     }
 
     void calcEnumConst(ASTEnumConst* ec) {
-        if (ec->evaluated) {
-            return;
-        }
+        // if (ec->evaluated) {
+        //     return;
+        // }
 
-        auto en   = ec->parent->as<ASTEnum>();
-        auto attr = ec->findAttr<ASTAttr::Value>();
+        // auto en   = ec->parent->as<ASTEnum>();
+        // auto attr = ec->findAttr<ASTAttr::Value>();
 
-        if (auto typeAttr = ec->findAttr<ASTAttr::Type>()) {
-            auto type = resolveType(typeAttr->args.front().type);
-            if (!type->is<ASTInt32>()) {
-                err<E2036>(typeAttr->location);
-            }
-        }
+        // if (auto typeAttr = ec->findAttr<ASTAttr::Type>()) {
+        //     auto type = resolveType(typeAttr->args.front().type);
+        //     if (!type->is<ASTInt32>()) {
+        //         err<E2036>(typeAttr->location);
+        //     }
+        // }
 
-        if (attr && !attr->args[0].value->template is<ASTLiteralInt>() &&
-            !attr->args[0].value->template is<ASTLiteralEnumConst>()) {
-            err<E2031>(attr->location);
-        }
+        // if (attr && !attr->args[0].value->template is<ASTLiteralInt>() &&
+        //     !attr->args[0].value->template is<ASTLiteralEnumConst>()) {
+        //     err<E2031>(attr->location);
+        // }
 
-        if (attr) {
-            if (auto literal = attr->args[0].value->template as<ASTLiteralInt>()) {
-                ec->value = literal->value;
-            } else {
-                for (auto literal : attr->args) {
-                    auto symbol = findSymbol(en, ec->location, literal.value->as<ASTLiteralEnumConst>()->name);
-                    if (symbol == ec) {
-                        err<E2033>(symbol->location, symbol->fullname());
-                    }
-                    if (auto refEc = symbol->as<ASTEnumConst>()) {
-                        literal.value->as<ASTLiteralEnumConst>()->value = refEc;
-                        calcEnumConst(refEc);
-                        ec->value |= refEc->value;
-                    } else {
-                        err<E2034>(ec->location);
-                    }
-                }
-            }
-        } else {
-            int32_t prevValue = -1;
-            for (auto c : en->consts) {
-                if (c == ec) {
-                    break;
-                }
-                calcEnumConst(c);
-                prevValue = c->value;
-            }
-            ec->value = prevValue + 1;
-        }
-        ec->evaluated = true;
+        // if (attr) {
+        //     if (auto literal = attr->args[0].value->template as<ASTLiteralInt>()) {
+        //         ec->value = literal->value;
+        //     } else {
+        //         for (auto literal : attr->args) {
+        //             auto symbol = findSymbol(en, ec->location, literal.value->as<ASTLiteralEnumConst>()->name);
+        //             if (symbol == ec) {
+        //                 err<E2033>(symbol->location, symbol->fullname());
+        //             }
+        //             if (auto refEc = symbol->as<ASTEnumConst>()) {
+        //                 literal.value->as<ASTLiteralEnumConst>()->value = refEc;
+        //                 calcEnumConst(refEc);
+        //                 ec->value |= refEc->value;
+        //             } else {
+        //                 err<E2034>(ec->location);
+        //             }
+        //         }
+        //     }
+        // } else {
+        //     int32_t prevValue = -1;
+        //     for (auto c : en->consts) {
+        //         if (c == ec) {
+        //             break;
+        //         }
+        //         calcEnumConst(c);
+        //         prevValue = c->value;
+        //     }
+        //     ec->value = prevValue + 1;
+        // }
+        // ec->evaluated = true;
     }
 
     struct Exception : std::runtime_error {

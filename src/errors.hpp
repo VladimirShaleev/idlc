@@ -50,7 +50,8 @@ enum Error {
     E2033,
     E2034,
     E2035,
-    E2036
+    E2036,
+    E2037
 };
 
 template <Warning Code, typename... Args>
@@ -174,6 +175,9 @@ inline std::string err_str(Args&&... args) {
     }
     if constexpr (Code == E2036) {
         ss << "enumeration constant can only be of type 'Int32'";
+    }
+    if constexpr (Code == E2037) {
+        ss << fmt::format("identifiers are case sensitive, error comparing {} and {}", args...);
     }
     return ss.str();
 }

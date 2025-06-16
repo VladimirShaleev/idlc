@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
     idl::Context context{};
     idl::Scanner scanner{ context, stream, &filename };
     idl::Parser parser{ scanner };
-    parser.set_debug_level(1);
+    // parser.set_debug_level(1);
     auto code = parser.parse();
     file.close();
 

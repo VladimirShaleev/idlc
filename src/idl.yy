@@ -254,10 +254,6 @@ attr_id_arg_list
         $$ = list;
     }
     | attr_id_arg_list ',' ID {
-        // TODO: add checks
-        //   auto it = std::find_if($1.begin(), $1.end(), [](auto decl) {
-        //       return decl.name == typeid(Attr);
-        //   });
         auto node = alloc_node(ASTDeclRef, @ID, token::STR);
         node->name = $ID;
         $1.push_back(node);

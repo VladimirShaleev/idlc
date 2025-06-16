@@ -52,7 +52,8 @@ enum Error {
     E2035,
     E2036,
     E2037,
-    E2038
+    E2038,
+    E2039
 };
 
 template <Warning Code, typename... Args>
@@ -76,7 +77,7 @@ inline std::string err_str(Args&&... args) {
         ss << "tabs are not allowed";
     }
     if constexpr (Code == E2003) {
-        ss << fmt::format("the name must start with a capital letter '{}'", args...);
+        ss << fmt::format("the name or type must start with a capital letter '{}'", args...);
     }
     if constexpr (Code == E2004) {
         ss << "there can only be one api declaration";
@@ -182,6 +183,9 @@ inline std::string err_str(Args&&... args) {
     }
     if constexpr (Code == E2038) {
         ss << "constant cannot go beyond the range of Int32 [-2147483648, 2147483647]";
+    }
+    if constexpr (Code == E2039) {
+        ss << fmt::format("constant '{}' was duplicated", args...);
     }
     return ss.str();
 }

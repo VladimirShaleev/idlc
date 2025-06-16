@@ -275,8 +275,13 @@ private:
                 }
                 ec->value = (int32_t) literalInt->value;
             } else if (auto literalConsts = attrValue->value->template as<ASTLiteralConsts>()) {
+                std::set<ASTDecl*> uniqueDecls;
                 for (auto declRef : literalConsts->decls) {
                     auto decl = findSymbol(en, ec->location, declRef);
+                    if (uniqueDecls.contains(decl)) {
+                        err<E2039>(decl->location, decl->fullname());
+                    }
+                    uniqueDecls.insert(decl);
                     if (decl == ec) {
                         err<E2033>(decl->location, decl->fullname());
                     }

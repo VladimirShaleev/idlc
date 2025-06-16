@@ -57,7 +57,8 @@ enum Error {
     E2040,
     E2041,
     E2042,
-    E2043
+    E2043,
+    E2044
 };
 
 template <Warning Code, typename... Args>
@@ -202,6 +203,9 @@ inline std::string err_str(Args&&... args) {
     }
     if constexpr (Code == E2043) {
         ss << "methods can only be added to a interface type";
+    }
+    if constexpr (Code == E2044) {
+        ss << "arguments can only be added to a method";
     }
     return ss.str();
 }

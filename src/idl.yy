@@ -72,9 +72,11 @@
 %token FIELD
 %token INTERFACE
 %token METHOD
+%token ARG
 
 %token <std::string> STR
 %token <std::string> ID
+%token <std::string> REF
 %token <int64_t> NUM
 %token <bool> BOOL
 %token <ASTAttrPlatform::Type> ATTRPLATFORMARG
@@ -87,7 +89,7 @@
 %type <ASTAttr*> attr_value
 %type <ASTAttr*> attr_static
 %type <ASTAttr*> attr_ctor
-%type <std::vector<ASTDeclRef*>> attr_id_arg_list
+%type <std::vector<ASTDeclRef*>> attr_ref_arg_list
 %type <ASTAttrPlatform::Type> attr_platform_arg_list
 %type <std::vector<ASTAttr*>> attr_list
 
@@ -148,9 +150,9 @@ def
         add_attrs($1, { attr });
         $$ = $1;
     }
-    | def_with_type ':' attr_id_arg_list { 
+    | def_with_type ':' attr_ref_arg_list { 
         auto consts = alloc_node(ASTLiteralConsts, @3);
-        consts->decls = $attr_id_arg_list;
+        consts->decls = $3;
         auto attr = alloc_node(ASTAttrValue, @1);
         attr->value = consts;
         for (auto decl : consts->decls) {
@@ -163,7 +165,7 @@ def
 
 def_with_type
     : decl ID { $1->name = $2; $$ = $1; }
-    | decl ID '{' ID '}' {
+    | decl ID '{' REF '}' {
         auto ref = alloc_node(ASTDeclRef, @4);
         ref->name = $4;
         auto attr = alloc_node(ASTAttrType, @4);
@@ -183,6 +185,7 @@ decl
     | FIELD { auto node = alloc_node(ASTField, @1); $$ = node; }
     | INTERFACE { auto node = alloc_node(ASTInterface, @1); $$ = node; }
     | METHOD { auto node = alloc_node(ASTMethod, @1); $$ = node; }
+    | ARG { auto node = alloc_node(ASTArg, @1); $$ = node; }
     ;
 
 attr_list
@@ -231,9 +234,9 @@ attr_value
         node->value = intern_bool(@3, $3);
         $$ = node;
     }
-    | ATTRVALUE '(' attr_id_arg_list ')' {
+    | ATTRVALUE '(' attr_ref_arg_list ')' {
         auto consts = alloc_node(ASTLiteralConsts, @3);
-        consts->decls = $attr_id_arg_list;
+        consts->decls = $attr_ref_arg_list;
         auto node = alloc_node(ASTAttrValue, @1);
         node->value = consts;
         for (auto decl : consts->decls) {
@@ -246,9 +249,9 @@ attr_value
 attr_type
     : ATTRTYPE { throw syntax_error(@1, err_str<E2028>()); }
     | ATTRTYPE '(' ')' { throw syntax_error(@1, err_str<E2028>()); }
-    | ATTRTYPE '(' ID ')' {
+    | ATTRTYPE '(' REF ')' {
         auto ref = alloc_node(ASTDeclRef, @3);
-        ref->name = $ID;
+        ref->name = $3;
         auto node = alloc_node(ASTAttrType, @1);
         node->type = ref;
         ref->parent = node;
@@ -264,17 +267,17 @@ attr_ctor
     : ATTRCTOR { auto node = alloc_node(ASTAttrCtor, @1); $$ = node; }
     ;
 
-attr_id_arg_list
-    : ID { 
+attr_ref_arg_list
+    : REF { 
         auto node = alloc_node(ASTDeclRef, @1);
         node->name = $1;
         auto list = std::vector<ASTDeclRef*>();
         list.push_back(node);
         $$ = list;
     }
-    | attr_id_arg_list ',' ID {
+    | attr_ref_arg_list ',' REF {
         auto node = alloc_node(ASTDeclRef, @3);
-        node->name = $ID;
+        node->name = $3;
         $1.push_back(node);
         $$ = $1;
     }

@@ -115,6 +115,9 @@ struct Visitor {
 
     virtual void visit(struct ASTMethod* node) {
     }
+
+    virtual void visit(struct ASTArg* node) {
+    }
 };
 
 struct ASTNode {
@@ -399,10 +402,18 @@ struct ASTStruct : ASTType {
     std::vector<ASTField*> fields;
 };
 
+struct ASTArg : ASTDecl {
+    void accept(Visitor& visitor) override {
+        visitor.visit(this);
+    }
+};
+
 struct ASTMethod : ASTDecl {
     void accept(Visitor& visitor) override {
         visitor.visit(this);
     }
+
+    std::vector<ASTArg*> args;
 };
 
 struct ASTInterface : ASTType {

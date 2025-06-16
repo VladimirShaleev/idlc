@@ -61,6 +61,10 @@ struct AllowedAttrs : Visitor {
         allowed = { add<ASTAttrType>(), add<ASTAttrPlatform>(), add<ASTAttrStatic>(), add<ASTAttrCtor>() };
     }
 
+    void visit(ASTArg* node) override {
+        allowed = { add<ASTAttrType>(), add<ASTAttrValue>() };
+    }
+
     template <typename Attr>
     static std::pair<std::type_index, std::string> add() {
         return { typeid(Attr), getName<Attr>() };
@@ -133,6 +137,15 @@ struct ChildsAggregator : Visitor {
             node->parent = parent;
         } else {
             throw Exception(node->location, err_str<E2043>());
+        }
+    }
+
+    void visit(ASTArg* node) override {
+        if (auto parent = getParent<ASTMethod>()) {
+            parent->args.push_back(node);
+            node->parent = parent;
+        } else {
+            throw Exception(node->location, err_str<E2044>());
         }
     }
 

@@ -13,7 +13,6 @@ std::string unescape(const char*);
 %option c++
 %option noyywrap
 %option yylineno
-%option nodefault
 %option outfile="scanner.cpp"
 
 %x DOCSTR
@@ -22,6 +21,8 @@ std::string unescape(const char*);
 %x ATTRARGTYPE
 %x ATTRARGVALUE
 %x ATTRARGPATFORM
+%x TYPE
+%x DECLREF
 %x IMPORT
 
 DOCCHAR  ([^ \r\n\t\{\}[\]]|\\\{|\\\}|\\\[|\\\])
@@ -40,6 +41,7 @@ DOCMCHAR ([^ \r\n\t\{\}[\]`]|^[`]{3}|\\\{|\\\}|\\\[|\\\])
 "field"     { context().currentDeclLine(yylloc->end.line); return token::FIELD; }
 "interface" { context().currentDeclLine(yylloc->end.line); return token::INTERFACE; }
 "method"    { context().currentDeclLine(yylloc->end.line); return token::METHOD; }
+"arg"       { context().currentDeclLine(yylloc->end.line); return token::ARG; }
 
 "@" {
     BEGIN(DOCSTR);
@@ -81,19 +83,21 @@ DOCMCHAR ([^ \r\n\t\{\}[\]`]|^[`]{3}|\\\{|\\\}|\\\[|\\\])
 <ATTRCTX>"ctor"     { return token::ATTRCTOR; }
 <ATTRCTX>","        { return YYText()[0]; }
 <ATTRCTX>" "        ;
+<ATTRCTX>\n         { yylloc->lines(); }
 <ATTRCTX>[a-z]+     { err<E2015>(*yylloc, YYText()); }
 <ATTRCTX>[^\]\(]    { err<E2001>(*yylloc, YYText()); }
 <ATTRCTX>"]"        { BEGIN(INITIAL); return YYText()[0]; }
 
-<ATTRARGVALUE>"("               { return YYText()[0]; }
-<ATTRARGVALUE>")"               { BEGIN(ATTRCTX); return YYText()[0]; }
-<ATTRARGVALUE>[-+]?[0-9]+       { yylval->emplace<int64_t>(std::stoll(YYText())); return token::NUM; }
-<ATTRARGVALUE>"true"            { yylval->emplace<bool>(true); return token::BOOL; }
-<ATTRARGVALUE>"false"           { yylval->emplace<bool>(false); return token::BOOL; }
-<ATTRARGVALUE>[A-Z][a-zA-Z0-9]* { yylval->emplace<std::string>(YYText()); return token::ID; }
-<ATTRARGVALUE>","               { return YYText()[0]; }
-<ATTRARGVALUE>" "               ;
-<ATTRARGVALUE>.                 { err<E2001>(*yylloc, YYText()); }
+<ATTRARGVALUE>"("                 { return YYText()[0]; }
+<ATTRARGVALUE>")"                 { BEGIN(ATTRCTX); return YYText()[0]; }
+<ATTRARGVALUE>[-+]?[0-9]+         { yylval->emplace<int64_t>(std::stoll(YYText())); return token::NUM; }
+<ATTRARGVALUE>"true"              { yylval->emplace<bool>(true); return token::BOOL; }
+<ATTRARGVALUE>"false"             { yylval->emplace<bool>(false); return token::BOOL; }
+<ATTRARGVALUE>[A-Z][a-zA-Z0-9\.]* { yylval->emplace<std::string>(YYText()); return token::REF; }
+<ATTRARGVALUE>","                 { return YYText()[0]; }
+<ATTRARGVALUE>" "                 ;
+<ATTRARGVALUE>\n                  { yylloc->lines(); }
+<ATTRARGVALUE>.                   { err<E2001>(*yylloc, YYText()); }
 
 <ATTRARGPATFORM>"("       { return YYText()[0]; }
 <ATTRARGPATFORM>")"       { BEGIN(ATTRCTX); return YYText()[0]; }
@@ -105,13 +109,15 @@ DOCMCHAR ([^ \r\n\t\{\}[\]`]|^[`]{3}|\\\{|\\\}|\\\[|\\\])
 <ATTRARGPATFORM>"ios"     { yylval->emplace<ASTAttrPlatform::Type>(ASTAttrPlatform::iOS); return token::ATTRPLATFORMARG; }
 <ATTRARGPATFORM>","       { return YYText()[0]; }
 <ATTRARGPATFORM>" "       ;
+<ATTRARGPATFORM>\n        { yylloc->lines(); }
 <ATTRARGPATFORM>.         { err<E2017>(*yylloc, "'windows', 'linux', 'macos', 'web', 'android', 'ios"); }
 
-<ATTRARGTYPE>"("               { return YYText()[0]; }
-<ATTRARGTYPE>")"               { BEGIN(ATTRCTX); return YYText()[0]; }
-<ATTRARGTYPE>[A-Z][a-zA-Z0-9]* { yylval->emplace<std::string>(YYText()); return token::ID; }
-<ATTRARGTYPE>.                 { err<E2001>(*yylloc, YYText()); }
-<ATTRARGTYPE>" "               ;
+<ATTRARGTYPE>"("                 { return YYText()[0]; }
+<ATTRARGTYPE>")"                 { BEGIN(ATTRCTX); return YYText()[0]; }
+<ATTRARGTYPE>" "                 ;
+<ATTRARGTYPE>\n                  { yylloc->lines(); }
+<ATTRARGTYPE>[A-Z][a-zA-Z0-9\.]* { yylval->emplace<std::string>(YYText()); return token::REF; }
+<ATTRARGTYPE>.                   { err<E2001>(*yylloc, YYText()); }
 
 import[ ]+ { BEGIN(IMPORT); }
 <IMPORT>[-\.a-zA-Z0-9_]+ { 
@@ -127,18 +133,30 @@ import[ ]+ { BEGIN(IMPORT); }
 }
 <IMPORT>.|\n { err<E2001>(*yylloc, YYText()); }
 
-[A-Z][a-zA-Z0-9]* { yylval->emplace<std::string>(YYText()); return token::ID; }
-[-+]?[0-9]+       { yylval->emplace<int64_t>(std::stoll(YYText())); return token::NUM; }
-"true"            { yylval->emplace<bool>(true); return token::BOOL; }
-"false"           { yylval->emplace<bool>(false); return token::BOOL; }
-[a-zA-Z0-9]+      { err<E2003>(*yylloc, YYText()); }
-<<EOF>>           { if (!popImport()) { return token::YYEOF; } }
-[\{\}:,]          { return YYText()[0]; }
-\n                { yylloc->lines(); }
-\t                { err<E2002>(*yylloc); }
-" "               ;
-"//".*            ;
-.                 { err<E2001>(*yylloc, YYText()); }
+<TYPE>" "                 ;
+<TYPE>\n                  { yylloc->lines(); }
+<TYPE>"}"                 { BEGIN(INITIAL); return YYText()[0]; }
+<TYPE>[A-Z][a-zA-Z0-9\.]* { yylval->emplace<std::string>(YYText()); return token::REF; }
+<TYPE>.                   { err<E2001>(*yylloc, YYText()); }
+
+<DECLREF>" " ;
+<DECLREF>\n                  { yylloc->lines(); }
+<DECLREF>[A-Z][a-zA-Z0-9\.]* { BEGIN(INITIAL); yylval->emplace<std::string>(YYText()); return token::REF; }
+<DECLREF>.                   { err<E2001>(*yylloc, YYText()); }
+
+[A-Z][a-zA-Z0-9]*         { yylval->emplace<std::string>(YYText()); return token::ID; }
+[-+]?[0-9]+               { yylval->emplace<int64_t>(std::stoll(YYText())); return token::NUM; }
+"true"                    { yylval->emplace<bool>(true); return token::BOOL; }
+"false"                   { yylval->emplace<bool>(false); return token::BOOL; }
+[a-zA-Z0-9]+              { err<E2003>(*yylloc, YYText()); }
+<<EOF>>                   { if (!popImport()) { return token::YYEOF; } }
+\n                        { yylloc->lines(); }
+\t                        { err<E2002>(*yylloc); }
+" "                       ;
+":"                       { BEGIN(DECLREF); return YYText()[0]; }
+"{"                       { BEGIN(TYPE); return YYText()[0]; }
+"//".*                    ;
+.                         { err<E2001>(*yylloc, YYText()); }
 
 %%
 

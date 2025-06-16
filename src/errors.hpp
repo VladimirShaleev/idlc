@@ -174,13 +174,13 @@ inline std::string err_str(Args&&... args) {
         ss << "constants can only refer to other constants when evaluated";
     }
     if constexpr (Code == E2035) {
-        ss << fmt::format("declaration {} is not a type", args...);
+        ss << fmt::format("declaration '{}' is not a type", args...);
     }
     if constexpr (Code == E2036) {
         ss << "enumeration constant can only be of type 'Int32'";
     }
     if constexpr (Code == E2037) {
-        ss << fmt::format("identifiers are case sensitive, error comparing {} and {}", args...);
+        ss << fmt::format("identifiers are case sensitive, error in '{}', but expected '{}'", args...);
     }
     if constexpr (Code == E2038) {
         ss << "constant cannot go beyond the range of Int32 [-2147483648, 2147483647]";

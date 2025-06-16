@@ -47,7 +47,7 @@ DOCMCHAR ([^ \r\n\t\{\}[\]`]|^[`]{3}|\\\{|\\\}|\\\[|\\\])
     BEGIN(DOCSTR);
     auto prevLine = context().currentDeclLine();
     auto currLine = yylloc->end.line;
-    return prevLine == currLine ?  token::IDOC : token::DOC;
+    return prevLine == currLine ? token::IDOC : token::DOC;
 }
 <DOCSTR>{DOCCHAR}+         { yylval->emplace<std::string>(unescape(YYText())); return token::STR; }
 <DOCSTR>"[brief]"[ ]*$     { return token::DOCBRIEF; }
@@ -81,6 +81,7 @@ DOCMCHAR ([^ \r\n\t\{\}[\]`]|^[`]{3}|\\\{|\\\}|\\\[|\\\])
 <ATTRCTX>"type"     { BEGIN(ATTRARGTYPE); return token::ATTRTYPE; }
 <ATTRCTX>"static"   { return token::ATTRSTATIC; }
 <ATTRCTX>"ctor"     { return token::ATTRCTOR; }
+<ATTRCTX>"this"     { return token::ATTRTHIS; }
 <ATTRCTX>","        { return YYText()[0]; }
 <ATTRCTX>" "        ;
 <ATTRCTX>\n         { yylloc->lines(); }
@@ -139,10 +140,11 @@ import[ ]+ { BEGIN(IMPORT); }
 <TYPE>[A-Z][a-zA-Z0-9\.]* { yylval->emplace<std::string>(YYText()); return token::REF; }
 <TYPE>.                   { err<E2001>(*yylloc, YYText()); }
 
-<DECLREF>" " ;
+<DECLREF>" "                 ;
+<DECLREF>","                 { return YYText()[0]; }
 <DECLREF>\n                  { yylloc->lines(); }
-<DECLREF>[A-Z][a-zA-Z0-9\.]* { BEGIN(INITIAL); yylval->emplace<std::string>(YYText()); return token::REF; }
-<DECLREF>.                   { err<E2001>(*yylloc, YYText()); }
+<DECLREF>[A-Z][a-zA-Z0-9\.]* { yylval->emplace<std::string>(YYText()); return token::REF; }
+<DECLREF>.                   { BEGIN(INITIAL); unput(YYText()[0]); }
 
 [A-Z][a-zA-Z0-9]*         { yylval->emplace<std::string>(YYText()); return token::ID; }
 [-+]?[0-9]+               { yylval->emplace<int64_t>(std::stoll(YYText())); return token::NUM; }

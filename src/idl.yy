@@ -64,6 +64,7 @@
 %token ATTRTYPE
 %token ATTRSTATIC
 %token ATTRCTOR
+%token ATTRTHIS
 
 %token API
 %token ENUM
@@ -89,6 +90,7 @@
 %type <ASTAttr*> attr_value
 %type <ASTAttr*> attr_static
 %type <ASTAttr*> attr_ctor
+%type <ASTAttr*> attr_this
 %type <std::vector<ASTDeclRef*>> attr_ref_arg_list
 %type <ASTAttrPlatform::Type> attr_platform_arg_list
 %type <std::vector<ASTAttr*>> attr_list
@@ -201,6 +203,7 @@ attr_item
     | attr_type { $$ = $1; }
     | attr_static { $$ = $1; }
     | attr_ctor { $$ = $1; }
+    | attr_this { $$ = $1; }
     ;
 
 attr_flags
@@ -265,6 +268,10 @@ attr_static
 
 attr_ctor
     : ATTRCTOR { auto node = alloc_node(ASTAttrCtor, @1); $$ = node; }
+    ;
+
+attr_this
+    : ATTRTHIS { auto node = alloc_node(ASTAttrThis, @1); $$ = node; }
     ;
 
 attr_ref_arg_list

@@ -33,6 +33,14 @@ struct AttrName : Visitor {
         str = "ctor";
     }
 
+    void visit(struct ASTAttrThis* node) override {
+        str = "this";
+    }
+
+    void discarded(ASTNode*) override {
+        assert(!"attribute name is missing");
+    }
+
     std::string str;
 };
 
@@ -62,7 +70,7 @@ struct AllowedAttrs : Visitor {
     }
 
     void visit(ASTArg* node) override {
-        allowed = { add<ASTAttrType>(), add<ASTAttrValue>() };
+        allowed = { add<ASTAttrType>(), add<ASTAttrValue>(), add<ASTAttrThis>() };
     }
 
     template <typename Attr>

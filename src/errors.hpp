@@ -54,7 +54,9 @@ enum Error {
     E2037,
     E2038,
     E2039,
-    E2040
+    E2040,
+    E2041,
+    E2042
 };
 
 template <Warning Code, typename... Args>
@@ -191,7 +193,12 @@ inline std::string err_str(Args&&... args) {
     if constexpr (Code == E2040) {
         ss << fmt::format("cyclic dependence of constant '{}'", args...);
     }
-
+    if constexpr (Code == E2041) {
+        ss << fmt::format("could not find file '{}' for import", args...);
+    }
+    if constexpr (Code == E2042) {
+        ss << fmt::format("failed to open file '{}'", args...);
+    }
     return ss.str();
 }
 

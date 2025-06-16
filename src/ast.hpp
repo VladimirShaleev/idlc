@@ -2,6 +2,7 @@
 #define AST_HPP
 
 #include <algorithm>
+#include <filesystem>
 #include <map>
 #include <set>
 #include <string>

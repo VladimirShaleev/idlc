@@ -53,7 +53,8 @@ enum Error {
     E2036,
     E2037,
     E2038,
-    E2039
+    E2039,
+    E2040
 };
 
 template <Warning Code, typename... Args>
@@ -187,6 +188,10 @@ inline std::string err_str(Args&&... args) {
     if constexpr (Code == E2039) {
         ss << fmt::format("constant '{}' was duplicated", args...);
     }
+    if constexpr (Code == E2040) {
+        ss << fmt::format("cyclic dependence of constant '{}'", args...);
+    }
+
     return ss.str();
 }
 

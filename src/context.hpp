@@ -212,8 +212,9 @@ public:
 
         std::vector<ASTEnumConst*> needAddValueAttrs{};
         filter<ASTEnum>([this, &needAddValueAttrs](auto en) {
+            std::vector<ASTEnumConst*> deps;
             for (auto ec : en->consts) {
-                calcEnumConst(ec);
+                calcEnumConst(ec, deps);
                 if (!ec->template findAttr<ASTAttrValue>()) {
                     needAddValueAttrs.push_back(ec);
                 }
@@ -254,10 +255,26 @@ private:
         return literal;
     }
 
-    void calcEnumConst(ASTEnumConst* ec) {
+    void calcEnumConst(ASTEnumConst* ec, std::vector<ASTEnumConst*>& deps) {
         if (ec->evaluated) {
             return;
         }
+
+        if (auto it = std::find(deps.begin(), deps.end(), ec); it != deps.end()) {
+            std::ostringstream ss;
+            auto first = true;
+            for (auto dep : deps) {
+                if (!first) {
+                    ss << " -> ";
+                }
+                first = false;
+                ss << dep->fullname();
+            }
+            ss << " -> " << ec->fullname();
+            err<E2040>(ec->location, ss.str());
+        }
+        deps.push_back(ec);
+
         if (auto typeAttr = ec->findAttr<ASTAttrType>()) {
             auto type = resolveType(typeAttr->type);
             if (!type->is<ASTInt32>()) {
@@ -286,7 +303,7 @@ private:
                         err<E2033>(decl->location, decl->fullname());
                     }
                     if (auto refEc = decl->as<ASTEnumConst>()) {
-                        calcEnumConst(refEc);
+                        calcEnumConst(refEc, deps);
                         ec->value |= refEc->value;
                     } else {
                         err<E2034>(ec->location);
@@ -301,12 +318,13 @@ private:
                 if (c == ec) {
                     break;
                 }
-                calcEnumConst(c);
+                calcEnumConst(c, deps);
                 prevValue = c->value;
             }
             ec->value = prevValue + 1;
         }
         ec->evaluated = true;
+        deps.pop_back();
     }
 
     struct Exception : std::runtime_error {

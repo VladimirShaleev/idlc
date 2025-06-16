@@ -147,6 +147,17 @@ def
         addAttrs($1, { attr });
         $$ = $1;
     }
+    | def_with_type ':' ID { 
+        auto lit = alloc_node(ASTLiteralEnumConst, @3, token::NUM);
+        lit->name = $3;
+        ASTAttr::Arg arg{};
+        arg.value = lit;
+        auto attr = alloc_node(ASTAttr, @3, token::ATTRVALUE);
+        attr->type = ASTAttr::Value;
+        attr->args.push_back(arg);
+        addAttrs($1, { attr });
+        $$ = $1;
+    }
     ;
 
 def_with_type

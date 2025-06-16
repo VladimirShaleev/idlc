@@ -55,12 +55,15 @@
 %token DOCCOPYRIGHT
 %token DOCLICENSE
 %token DOCAUTHOR
+%token DOCRETURN
 
 %token ATTRFLAGS
 %token ATTRHEX
 %token ATTRPLATFORM
 %token ATTRVALUE
 %token ATTRTYPE
+%token ATTRSTATIC
+%token ATTRCTOR
 
 %token API
 %token ENUM
@@ -82,6 +85,8 @@
 %type <ASTAttr*> attr_platform
 %type <ASTAttr*> attr_type
 %type <ASTAttr*> attr_value
+%type <ASTAttr*> attr_static
+%type <ASTAttr*> attr_ctor
 %type <std::vector<ASTDeclRef*>> attr_id_arg_list
 %type <ASTAttrPlatform::Type> attr_platform_arg_list
 %type <std::vector<ASTAttr*>> attr_list
@@ -191,6 +196,8 @@ attr_item
     | attr_platform { $$ = $1; }
     | attr_value { $$ = $1; }
     | attr_type { $$ = $1; }
+    | attr_static { $$ = $1; }
+    | attr_ctor { $$ = $1; }
     ;
 
 attr_flags
@@ -249,6 +256,14 @@ attr_type
     }
     ;
 
+attr_static
+    : ATTRSTATIC { auto node = alloc_node(ASTAttrStatic, @1); $$ = node; }
+    ;
+
+attr_ctor
+    : ATTRCTOR { auto node = alloc_node(ASTAttrCtor, @1); $$ = node; }
+    ;
+
 attr_id_arg_list
     : ID { 
         auto node = alloc_node(ASTDeclRef, @1);
@@ -297,6 +312,7 @@ doc_decl
     | DOC doc_field DOCCOPYRIGHT { $$ = std::make_pair($2, 'c'); }
     | DOC doc_field DOCLICENSE   { $$ = std::make_pair($2, 'l'); }
     | DOC doc_field DOCAUTHOR    { $$ = std::make_pair($2, 'a'); }
+    | DOC doc_field DOCRETURN    { $$ = std::make_pair($2, 'r'); }
     ;
 
 idoc_decl
@@ -360,6 +376,9 @@ void addDoc(ASTDoc* node, const std::vector<ASTNode*>& doc, char type)
             break;
         case 'a':
             node->authors.push_back(doc);
+            break;
+        case 'r':
+            node->ret = doc;
             break;
     }
 }

@@ -53,6 +53,7 @@ DOCMCHAR ([^ \r\n\t\{\}[\]`]|^[`]{3}|\\\{|\\\}|\\\[|\\\])
 <DOCSTR>"[author]"[ ]*$    { return token::DOCAUTHOR; }
 <DOCSTR>"[copyright]"[ ]*$ { return token::DOCCOPYRIGHT; }
 <DOCSTR>"[license]"[ ]*$   { return token::DOCLICENSE; }
+<DOCSTR>"[return]"[ ]*$    { return token::DOCRETURN; }
 <DOCSTR>"[".*"]"[ ]*$      { err<E2020>(*yylloc, YYText()); }
 <DOCSTR>[\{\}]             { return YYText()[0]; }
 <DOCSTR>\n                 { yylloc->lines(); BEGIN(INITIAL); }
@@ -76,6 +77,8 @@ DOCMCHAR ([^ \r\n\t\{\}[\]`]|^[`]{3}|\\\{|\\\}|\\\[|\\\])
 <ATTRCTX>"platform" { BEGIN(ATTRARGPATFORM); return token::ATTRPLATFORM; }
 <ATTRCTX>"value"    { BEGIN(ATTRARGVALUE); return token::ATTRVALUE; }
 <ATTRCTX>"type"     { BEGIN(ATTRARGTYPE); return token::ATTRTYPE; }
+<ATTRCTX>"static"   { return token::ATTRSTATIC; }
+<ATTRCTX>"ctor"     { return token::ATTRCTOR; }
 <ATTRCTX>","        { return YYText()[0]; }
 <ATTRCTX>" "        ;
 <ATTRCTX>[a-z]+     { err<E2015>(*yylloc, YYText()); }

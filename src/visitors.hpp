@@ -25,6 +25,14 @@ struct AttrName : Visitor {
         str = "type";
     }
 
+    void visit(ASTAttrStatic* node) override {
+        str = "static";
+    }
+
+    void visit(ASTAttrCtor* node) override {
+        str = "ctor";
+    }
+
     std::string str;
 };
 
@@ -50,7 +58,7 @@ struct AllowedAttrs : Visitor {
     }
 
     void visit(ASTMethod* node) override {
-        allowed = { add<ASTAttrType>(), add<ASTAttrPlatform>() };
+        allowed = { add<ASTAttrType>(), add<ASTAttrPlatform>(), add<ASTAttrStatic>(), add<ASTAttrCtor>() };
     }
 
     template <typename Attr>

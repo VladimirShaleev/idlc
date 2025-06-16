@@ -47,6 +47,12 @@ struct Visitor {
     virtual void visit(struct ASTAttrType* node) {
     }
 
+    virtual void visit(struct ASTAttrStatic* node) {
+    }
+
+    virtual void visit(struct ASTAttrCtor* node) {
+    }
+
     virtual void visit(struct ASTDeclRef* node) {
     }
 
@@ -173,6 +179,7 @@ struct ASTDoc : ASTNode {
 
     std::vector<ASTNode*> brief;
     std::vector<ASTNode*> detail;
+    std::vector<ASTNode*> ret;
     std::vector<ASTNode*> copyright;
     std::vector<ASTNode*> license;
     std::vector<std::vector<ASTNode*>> authors;
@@ -223,6 +230,18 @@ struct ASTAttrType : ASTAttr {
     }
 
     struct ASTDeclRef* type;
+};
+
+struct ASTAttrStatic : ASTAttr {
+    void accept(Visitor& visitor) override {
+        visitor.visit(this);
+    }
+};
+
+struct ASTAttrCtor : ASTAttr {
+    void accept(Visitor& visitor) override {
+        visitor.visit(this);
+    }
 };
 
 struct ASTDecl : ASTNode {

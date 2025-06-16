@@ -38,7 +38,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE magic_enum::magic_enum)
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_include_directories(${PROJECT_NAME} PRIVATE "$<$<BOOL:${FLEX_INCLUDE_DIR}>:${FLEX_INCLUDE_DIR}>")
-target_compile_definitions(${PROJECT_NAME} PRIVATE YYDEBUG)
+target_compile_definitions(${PROJECT_NAME} PRIVATE $<$<CONFIG:Debug>:YYDEBUG>)
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 set_target_properties(${PROJECT_NAME} PROPERTIES

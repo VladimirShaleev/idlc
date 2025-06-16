@@ -103,6 +103,12 @@ struct Visitor {
 
     virtual void visit(struct ASTField* node) {
     }
+
+    virtual void visit(struct ASTInterface* node) {
+    }
+
+    virtual void visit(struct ASTMethod* node) {
+    }
 };
 
 struct ASTNode {
@@ -124,7 +130,6 @@ struct ASTNode {
 
     ASTNode* parent{};
     idl::location location{};
-    int token{};
 };
 
 struct ASTLiteral : ASTNode {};
@@ -375,6 +380,20 @@ struct ASTStruct : ASTType {
     std::vector<ASTField*> fields;
 };
 
+struct ASTMethod : ASTDecl {
+    void accept(Visitor& visitor) override {
+        visitor.visit(this);
+    }
+};
+
+struct ASTInterface : ASTType {
+    void accept(Visitor& visitor) override {
+        visitor.visit(this);
+    }
+
+    std::vector<ASTMethod*> methods;
+};
+
 struct ASTApi : ASTDecl {
     void accept(Visitor& visitor) override {
         visitor.visit(this);
@@ -382,6 +401,7 @@ struct ASTApi : ASTDecl {
 
     std::vector<ASTEnum*> enums;
     std::vector<ASTStruct*> structs;
+    std::vector<ASTInterface*> interfaces;
 };
 
 #endif

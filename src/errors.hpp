@@ -56,7 +56,8 @@ enum Error {
     E2039,
     E2040,
     E2041,
-    E2042
+    E2042,
+    E2043
 };
 
 template <Warning Code, typename... Args>
@@ -198,6 +199,9 @@ inline std::string err_str(Args&&... args) {
     }
     if constexpr (Code == E2042) {
         ss << fmt::format("failed to open file '{}'", args...);
+    }
+    if constexpr (Code == E2043) {
+        ss << "methods can only be added to a interface type";
     }
     return ss.str();
 }

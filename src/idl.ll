@@ -33,11 +33,13 @@ DOCMCHAR ([^ \r\n\t\{\}[\]`]|^[`]{3}|\\\{|\\\}|\\\[|\\\])
     yylloc->step();
 %}
 
-"api"    { context().currentDeclLine(yylloc->end.line); return token::API; }
-"enum"   { context().currentDeclLine(yylloc->end.line); return token::ENUM; }
-"const"  { context().currentDeclLine(yylloc->end.line); return token::CONST; }
-"struct" { context().currentDeclLine(yylloc->end.line); return token::STRUCT; }
-"field"  { context().currentDeclLine(yylloc->end.line); return token::FIELD; }
+"api"       { context().currentDeclLine(yylloc->end.line); return token::API; }
+"enum"      { context().currentDeclLine(yylloc->end.line); return token::ENUM; }
+"const"     { context().currentDeclLine(yylloc->end.line); return token::CONST; }
+"struct"    { context().currentDeclLine(yylloc->end.line); return token::STRUCT; }
+"field"     { context().currentDeclLine(yylloc->end.line); return token::FIELD; }
+"interface" { context().currentDeclLine(yylloc->end.line); return token::INTERFACE; }
+"method"    { context().currentDeclLine(yylloc->end.line); return token::METHOD; }
 
 "@" {
     BEGIN(DOCSTR);

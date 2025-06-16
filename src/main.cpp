@@ -12,6 +12,10 @@ int main(int argc, char* argv[]) {
     argparse::ArgumentParser program("idlc", IDLC_VERSION_STRING);
     program.add_argument("input").store_into(input).help("input .idl file");
     program.add_argument("-o", "--output").store_into(output).help("output directory");
+#ifdef YYDEBUG
+    auto debug = false;
+    program.add_argument("-d", "--debug").store_into(debug).help("enable debugging");
+#endif
 
     try {
         program.parse_args(argc, argv);
@@ -24,7 +28,9 @@ int main(int argc, char* argv[]) {
     idl::Context context{};
     idl::Scanner scanner{ context, input };
     idl::Parser parser{ scanner };
-    // parser.set_debug_level(1);
+#ifdef YYDEBUG
+    parser.set_debug_level(debug ? 1 : 0);
+#endif
     auto code = parser.parse();
 
     if (code != 0) {

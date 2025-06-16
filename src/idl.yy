@@ -29,16 +29,16 @@
 {
     #include "scanner.hpp"
     #define yylex scanner.yylex
-    #define alloc_node(ast, loc, token) \
-        scanner.context().allocNode<ast, idl::Parser::syntax_error>(loc, token)
+    #define alloc_node(ast, loc) \
+        scanner.context().allocNode<ast, idl::Parser::syntax_error>(loc)
     #define add_attrs(node, attrs) \
         scanner.context().addAttrs<idl::Parser::syntax_error>(node, attrs)
     #define intern(loc, str) \
-        scanner.context().intern<idl::Parser::syntax_error>(loc, str, idl::Parser::token::STR)
+        scanner.context().intern<idl::Parser::syntax_error>(loc, str)
     #define intern_bool(loc, b) \
-        scanner.context().intern<idl::Parser::syntax_error>(loc, b, idl::Parser::token::BOOL)
+        scanner.context().intern<idl::Parser::syntax_error>(loc, b)
     #define intern_int(loc, num) \
-        scanner.context().intern<idl::Parser::syntax_error>(loc, num, idl::Parser::token::NUM)
+        scanner.context().intern<idl::Parser::syntax_error>(loc, num)
     
     void addNode(idl::Context&, ASTDecl*, ASTDecl*);
     void addDoc(ASTDoc*, const std::vector<ASTNode*>&, char);
@@ -67,6 +67,8 @@
 %token CONST
 %token STRUCT
 %token FIELD
+%token INTERFACE
+%token METHOD
 
 %token <std::string> STR
 %token <std::string> ID
@@ -130,21 +132,21 @@ def_with_attrs
 def
     : def_with_type { $$ = $1; }
     | def_with_type ':' NUM { 
-        auto attr = alloc_node(ASTAttrValue, @1, token::ATTRVALUE);
+        auto attr = alloc_node(ASTAttrValue, @1);
         attr->value = intern_int(@3, $3);
         add_attrs($1, { attr });
         $$ = $1;
     }
     | def_with_type ':' BOOL { 
-        auto attr = alloc_node(ASTAttrValue, @1, token::ATTRVALUE);
+        auto attr = alloc_node(ASTAttrValue, @1);
         attr->value = intern_bool(@3, $3);
         add_attrs($1, { attr });
         $$ = $1;
     }
     | def_with_type ':' attr_id_arg_list { 
-        auto consts = alloc_node(ASTLiteralConsts, @3, -1);
+        auto consts = alloc_node(ASTLiteralConsts, @3);
         consts->decls = $attr_id_arg_list;
-        auto attr = alloc_node(ASTAttrValue, @1, token::ATTRVALUE);
+        auto attr = alloc_node(ASTAttrValue, @1);
         attr->value = consts;
         for (auto decl : consts->decls) {
             decl->parent = $1;
@@ -157,9 +159,9 @@ def
 def_with_type
     : decl ID { $1->name = $2; $$ = $1; }
     | decl ID '{' ID '}' {
-        auto ref = alloc_node(ASTDeclRef, @4, token::STR);
+        auto ref = alloc_node(ASTDeclRef, @4);
         ref->name = $4;
-        auto attr = alloc_node(ASTAttrType, @4, token::ATTRTYPE);
+        auto attr = alloc_node(ASTAttrType, @4);
         attr->type = ref;
         ref->parent = attr;
         $1->name = $2;
@@ -169,11 +171,13 @@ def_with_type
     ;
 
 decl
-    : API { auto node = alloc_node(ASTApi, @1, token::API); $$ = node; }
-    | ENUM { auto node = alloc_node(ASTEnum, @1, token::ENUM); $$ = node; }
-    | CONST { auto node = alloc_node(ASTEnumConst, @1, token::CONST); $$ = node; }
-    | STRUCT { auto node = alloc_node(ASTStruct, @1, token::STRUCT); $$ = node; }
-    | FIELD { auto node = alloc_node(ASTField, @1, token::FIELD); $$ = node; }
+    : API { auto node = alloc_node(ASTApi, @1); $$ = node; }
+    | ENUM { auto node = alloc_node(ASTEnum, @1); $$ = node; }
+    | CONST { auto node = alloc_node(ASTEnumConst, @1); $$ = node; }
+    | STRUCT { auto node = alloc_node(ASTStruct, @1); $$ = node; }
+    | FIELD { auto node = alloc_node(ASTField, @1); $$ = node; }
+    | INTERFACE { auto node = alloc_node(ASTInterface, @1); $$ = node; }
+    | METHOD { auto node = alloc_node(ASTMethod, @1); $$ = node; }
     ;
 
 attr_list
@@ -190,18 +194,18 @@ attr_item
     ;
 
 attr_flags
-    : ATTRFLAGS { auto node = alloc_node(ASTAttrFlags, @1, token::ATTRFLAGS); $$ = node; }
+    : ATTRFLAGS { auto node = alloc_node(ASTAttrFlags, @1); $$ = node; }
     ;
 
 attr_hex
-    : ATTRHEX { auto node = alloc_node(ASTAttrHex, @1, token::ATTRHEX); $$ = node; }
+    : ATTRHEX { auto node = alloc_node(ASTAttrHex, @1); $$ = node; }
     ;
 
 attr_platform
     : ATTRPLATFORM { throw syntax_error(@1, err_str<E2016>()); }
     | ATTRPLATFORM '(' ')' { throw syntax_error(@1, err_str<E2016>()); }
     | ATTRPLATFORM '(' attr_platform_arg_list ')' {
-        auto node = alloc_node(ASTAttrPlatform, @1, token::ATTRPLATFORM);
+        auto node = alloc_node(ASTAttrPlatform, @1);
         node->platforms = $3;
         $$ = node;
     }
@@ -211,19 +215,19 @@ attr_value
     : ATTRVALUE { throw syntax_error(@1, err_str<E2023>()); }
     | ATTRVALUE '(' ')' { throw syntax_error(@1, err_str<E2023>()); }
     | ATTRVALUE '(' NUM ')' {
-        auto node = alloc_node(ASTAttrValue, @1, token::ATTRVALUE);
+        auto node = alloc_node(ASTAttrValue, @1);
         node->value = intern_int(@3, $3);
         $$ = node;
     }
     | ATTRVALUE '(' BOOL ')' {
-        auto node = alloc_node(ASTAttrValue, @1, token::ATTRVALUE);
+        auto node = alloc_node(ASTAttrValue, @1);
         node->value = intern_bool(@3, $3);
         $$ = node;
     }
     | ATTRVALUE '(' attr_id_arg_list ')' {
-        auto consts = alloc_node(ASTLiteralConsts, @3, -1);
+        auto consts = alloc_node(ASTLiteralConsts, @3);
         consts->decls = $attr_id_arg_list;
-        auto node = alloc_node(ASTAttrValue, @1, token::ATTRVALUE);
+        auto node = alloc_node(ASTAttrValue, @1);
         node->value = consts;
         for (auto decl : consts->decls) {
             decl->parent = node;
@@ -236,9 +240,9 @@ attr_type
     : ATTRTYPE { throw syntax_error(@1, err_str<E2028>()); }
     | ATTRTYPE '(' ')' { throw syntax_error(@1, err_str<E2028>()); }
     | ATTRTYPE '(' ID ')' {
-        auto ref = alloc_node(ASTDeclRef, @ID, token::STR);
+        auto ref = alloc_node(ASTDeclRef, @3);
         ref->name = $ID;
-        auto node = alloc_node(ASTAttrType, @ATTRTYPE, token::ATTRTYPE);
+        auto node = alloc_node(ASTAttrType, @1);
         node->type = ref;
         ref->parent = node;
         $$ = node;
@@ -247,14 +251,14 @@ attr_type
 
 attr_id_arg_list
     : ID { 
-        auto node = alloc_node(ASTDeclRef, @1, token::STR);
+        auto node = alloc_node(ASTDeclRef, @1);
         node->name = $1;
         auto list = std::vector<ASTDeclRef*>();
         list.push_back(node);
         $$ = list;
     }
     | attr_id_arg_list ',' ID {
-        auto node = alloc_node(ASTDeclRef, @ID, token::STR);
+        auto node = alloc_node(ASTDeclRef, @3);
         node->name = $ID;
         $1.push_back(node);
         $$ = $1;
@@ -276,12 +280,12 @@ attr_platform_arg_list
     ;
 
 doc
-    : doc_decl { auto node = alloc_node(ASTDoc, @1, token::DOC); addDoc(node, $1.first, $1.second); $$ = node; }
+    : doc_decl { auto node = alloc_node(ASTDoc, @1); addDoc(node, $1.first, $1.second); $$ = node; }
     | doc doc_decl { addDoc($1, $2.first, $2.second); $$ = $1; }
     ;
 
 idoc
-    : idoc_decl { auto node = alloc_node(ASTDoc, @1, token::IDOC); addDoc(node, $1.first, $1.second); $$ = node; }
+    : idoc_decl { auto node = alloc_node(ASTDoc, @1); addDoc(node, $1.first, $1.second); $$ = node; }
     | idoc idoc_decl { addDoc($1, $2.first, $2.second); $$ = $1; }
     ;
 
@@ -308,7 +312,7 @@ doc_field
 
 doc_lit_or_ref
     : STR { $$ = intern(@1, $1); }
-    | '{' STR '}' { auto node = alloc_node(ASTDeclRef, @2, token::STR); node->name = $2; $$ = node; }
+    | '{' STR '}' { auto node = alloc_node(ASTDeclRef, @2); node->name = $2; $$ = node; }
     ;
 
 %%
@@ -317,14 +321,14 @@ void addNode(idl::Context& context, ASTDecl* prev, ASTDecl* decl)
 {
     if (prev == nullptr)
     {
-        if (decl->token != idl::Parser::token::API)
+        if (dynamic_cast<ASTApi*>(decl) == nullptr)
         {
             throw idl::Parser::syntax_error(decl->location, err_str<E2012>());
         }
         context.initBuiltins<idl::Parser::syntax_error>();
         return;
     }
-    if (decl->token == idl::Parser::token::API)
+    if (dynamic_cast<ASTApi*>(decl) != nullptr)
     {
         throw idl::Parser::syntax_error(decl->location, err_str<E2004>());
     }

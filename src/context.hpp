@@ -26,7 +26,7 @@ public:
     }
 
     template <typename Node, typename Exception>
-    Node* allocNode(const idl::location& loc, int token) {
+    Node* allocNode(const idl::location& loc) {
         static_assert(std::is_base_of<ASTNode, Node>::value, "Node must be inherited from ASTNode");
         auto node = new (std::nothrow) Node{};
         if (!node) {
@@ -36,24 +36,23 @@ public:
             _api = node;
         }
         node->location = loc;
-        node->token    = token;
         _nodes.push_back(node);
         return node;
     }
 
     template <typename Exception>
-    ASTLiteral* intern(const idl::location& loc, const std::string& str, int token) {
-        return internLiteral<Exception, ASTLiteralStr>(loc, "str|" + str, str, token);
+    ASTLiteral* intern(const idl::location& loc, const std::string& str) {
+        return internLiteral<Exception, ASTLiteralStr>(loc, "str|" + str, str);
     }
 
     template <typename Exception>
-    ASTLiteral* intern(const idl::location& loc, bool b, int token) {
-        return internLiteral<Exception, ASTLiteralBool>(loc, "bool|" + std::to_string(b), b, token);
+    ASTLiteral* intern(const idl::location& loc, bool b) {
+        return internLiteral<Exception, ASTLiteralBool>(loc, "bool|" + std::to_string(b), b);
     }
 
     template <typename Exception>
-    ASTLiteral* intern(const idl::location& loc, int64_t num, int token) {
-        return internLiteral<Exception, ASTLiteralInt>(loc, "int|" + std::to_string(num), num, token);
+    ASTLiteral* intern(const idl::location& loc, int64_t num) {
+        return internLiteral<Exception, ASTLiteralInt>(loc, "int|" + std::to_string(num), num);
     }
 
     template <typename Exception>
@@ -128,14 +127,14 @@ public:
             while ((pos = detail.find(' ', prevPos)) != std::string::npos) {
                 str     = detail.substr(prevPos, pos - prevPos);
                 prevPos = pos + 1;
-                doc.push_back(intern<Exception>(loc, str, -1));
+                doc.push_back(intern<Exception>(loc, str));
             }
-            doc.push_back(intern<Exception>(loc, detail.substr(prevPos), -1));
+            doc.push_back(intern<Exception>(loc, detail.substr(prevPos)));
 
-            auto node         = allocNode<Node, Exception>(loc, -1);
+            auto node         = allocNode<Node, Exception>(loc);
             node->name        = std::move(name);
             node->parent      = _api;
-            node->doc         = allocNode<ASTDoc, Exception>(loc, -1);
+            node->doc         = allocNode<ASTDoc, Exception>(loc);
             node->doc->detail = std::move(doc);
             node->doc->parent = node;
             addSymbol<Exception>(node);
@@ -202,9 +201,9 @@ public:
             return true;
         });
         for (auto ec : needAddTypeAttrs) {
-            auto attr          = allocNode<ASTAttrType, Exception>(ec->location, -1);
+            auto attr          = allocNode<ASTAttrType, Exception>(ec->location);
             attr->parent       = ec;
-            attr->type         = allocNode<ASTDeclRef, Exception>(ec->location, -1);
+            attr->type         = allocNode<ASTDeclRef, Exception>(ec->location);
             attr->type->name   = "Int32";
             attr->type->parent = attr;
             ec->attrs.push_back(attr);
@@ -222,9 +221,9 @@ public:
             return true;
         });
         for (auto ec : needAddValueAttrs) {
-            auto attr    = allocNode<ASTAttrValue, Exception>(ec->location, -1);
+            auto attr    = allocNode<ASTAttrValue, Exception>(ec->location);
             attr->parent = ec;
-            attr->value  = intern<Exception>(ec->location, (int64_t) ec->value, -1);
+            attr->value  = intern<Exception>(ec->location, (int64_t) ec->value);
             ec->attrs.push_back(attr);
         }
     }
@@ -244,12 +243,12 @@ private:
     }
 
     template <typename Exception, typename Node, typename Value>
-    ASTLiteral* internLiteral(const idl::location& loc, const std::string& keyStr, const Value& value, int token) {
+    ASTLiteral* internLiteral(const idl::location& loc, const std::string& keyStr, const Value& value) {
         const auto key = XXH64(keyStr.c_str(), keyStr.length(), 0);
         if (auto it = _literals.find(key); it != _literals.end()) {
             return it->second;
         }
-        auto literal   = allocNode<Node, Exception>(loc, token);
+        auto literal   = allocNode<Node, Exception>(loc);
         literal->value = value;
         _literals[key] = literal;
         return literal;

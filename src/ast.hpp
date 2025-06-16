@@ -225,11 +225,11 @@ struct ASTDecl : ASTNode {
     ASTDoc* doc{};
 
     template <typename Attr>
-    ASTAttr* findAttr() noexcept {
+    Attr* findAttr() noexcept {
         auto it = std::find_if(attrs.begin(), attrs.end(), [](auto attr) {
             return typeid(*attr) == typeid(Attr);
         });
-        return it != attrs.end() ? *it : nullptr;
+        return it != attrs.end() ? dynamic_cast<Attr*>(*it) : nullptr;
     }
 
     std::string fullname() const {

@@ -51,7 +51,8 @@ enum Error {
     E2034,
     E2035,
     E2036,
-    E2037
+    E2037,
+    E2038
 };
 
 template <Warning Code, typename... Args>
@@ -159,7 +160,7 @@ inline std::string err_str(Args&&... args) {
         ss << fmt::format("symbol redefinition '{}'", args...);
     }
     if constexpr (Code == E2031) {
-        ss << "enumeration constants can only be specified as integers";
+        ss << "enumeration constants can only be specified as integers or enum consts";
     }
     if constexpr (Code == E2032) {
         ss << fmt::format("symbol definition '{}' not found", args...);
@@ -178,6 +179,9 @@ inline std::string err_str(Args&&... args) {
     }
     if constexpr (Code == E2037) {
         ss << fmt::format("identifiers are case sensitive, error comparing {} and {}", args...);
+    }
+    if constexpr (Code == E2038) {
+        ss << "constant cannot go beyond the range of Int32 [-2147483648, 2147483647]";
     }
     return ss.str();
 }

@@ -123,6 +123,18 @@ struct ASTAttrThis : ASTAttr {
     void accept(Visitor& visitor) override;
 };
 
+struct ASTAttrGet : ASTAttr {
+    void accept(Visitor& visitor) override;
+
+    struct ASTDeclRef* decl{};
+};
+
+struct ASTAttrSet : ASTAttr {
+    void accept(Visitor& visitor) override;
+
+    struct ASTDeclRef* decl{};
+};
+
 struct ASTDecl : ASTNode {
     std::string name;
     std::vector<ASTAttr*> attrs;
@@ -256,10 +268,15 @@ struct ASTMethod : ASTDecl {
     std::vector<ASTArg*> args;
 };
 
+struct ASTProperty : ASTDecl {
+    void accept(Visitor& visitor) override;
+};
+
 struct ASTInterface : ASTType {
     void accept(Visitor& visitor) override;
 
     std::vector<ASTMethod*> methods;
+    std::vector<ASTProperty*> props;
 };
 
 struct ASTApi : ASTDecl {
@@ -323,6 +340,12 @@ struct Visitor {
 
     virtual void visit(ASTAttrThis* node) {
         discarded(node);
+    }
+
+    virtual void visit(ASTAttrGet* node) {
+    }
+
+    virtual void visit(ASTAttrSet* node) {
     }
 
     virtual void visit(ASTDeclRef* node) {
@@ -413,6 +436,10 @@ struct Visitor {
         discarded(node);
     }
 
+    virtual void visit(ASTProperty* node) {
+        discarded(node);
+    }
+
     virtual void visit(ASTArg* node) {
         discarded(node);
     }
@@ -440,7 +467,7 @@ inline void ASTLiteralConsts::accept(Visitor& visitor) {
 inline void ASTDoc::accept(Visitor& visitor) {
     visitor.visit(this);
 }
-    
+
 inline void ASTAttrPlatform::accept(Visitor& visitor) {
     visitor.visit(this);
 }
@@ -460,7 +487,7 @@ inline void ASTAttrValue::accept(Visitor& visitor) {
 inline void ASTAttrType::accept(Visitor& visitor) {
     visitor.visit(this);
 }
-    
+
 inline void ASTAttrStatic::accept(Visitor& visitor) {
     visitor.visit(this);
 }
@@ -470,6 +497,14 @@ inline void ASTAttrCtor::accept(Visitor& visitor) {
 }
 
 inline void ASTAttrThis::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+inline void ASTAttrGet::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+inline void ASTAttrSet::accept(Visitor& visitor) {
     visitor.visit(this);
 }
 
@@ -558,6 +593,10 @@ inline void ASTInterface::accept(Visitor& visitor) {
 }
 
 inline void ASTMethod::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+inline void ASTProperty::accept(Visitor& visitor) {
     visitor.visit(this);
 }
 

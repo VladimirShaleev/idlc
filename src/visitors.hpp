@@ -33,8 +33,16 @@ struct AttrName : Visitor {
         str = "ctor";
     }
 
-    void visit(struct ASTAttrThis* node) override {
+    void visit(ASTAttrThis* node) override {
         str = "this";
+    }
+
+    void visit(ASTAttrGet* node) override {
+        str = "get";
+    }
+
+    void visit(ASTAttrSet* node) override {
+        str = "set";
     }
 
     void discarded(ASTNode*) override {
@@ -67,6 +75,10 @@ struct AllowedAttrs : Visitor {
 
     void visit(ASTMethod* node) override {
         allowed = { add<ASTAttrType>(), add<ASTAttrPlatform>(), add<ASTAttrStatic>(), add<ASTAttrCtor>() };
+    }
+
+    void visit(ASTProperty* node) override {
+        allowed = { add<ASTAttrPlatform>(), add<ASTAttrStatic>(), add<ASTAttrGet>(), add<ASTAttrSet>() };
     }
 
     void visit(ASTArg* node) override {
@@ -154,6 +166,15 @@ struct ChildsAggregator : Visitor {
             node->parent = parent;
         } else {
             throw Exception(node->location, err_str<E2044>());
+        }
+    }
+
+    void visit(ASTProperty* node) override {
+        if (auto parent = getParent<ASTInterface>()) {
+            parent->props.push_back(node);
+            node->parent = parent;
+        } else {
+            throw Exception(node->location, err_str<E2043>());
         }
     }
 

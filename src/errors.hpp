@@ -62,7 +62,9 @@ enum Error {
     E2045,
     E2046,
     E2047,
-    E2048
+    E2048,
+    E2049,
+    E2050
 };
 
 template <Warning Code, typename... Args>
@@ -222,6 +224,12 @@ inline std::string err_str(Args&&... args) {
     }
     if constexpr (Code == E2048) {
         ss << fmt::format("method '{}' must include one argument with the 'this' attribute.", args...);
+    }
+    if constexpr (Code == E2049) {
+        ss << "the 'get' attribute must specify a reference to the method in the argument";
+    }
+    if constexpr (Code == E2050) {
+        ss << "the 'set' attribute must specify a reference to the method in the argument";
     }
     return ss.str();
 }

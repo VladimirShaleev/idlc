@@ -42,6 +42,7 @@ DOCMCHAR ([^ \r\n\t\{\}[\]`]|^[`]{3}|\\\{|\\\}|\\\[|\\\])
 "interface" { context().currentDeclLine(yylloc->end.line); return token::INTERFACE; }
 "method"    { context().currentDeclLine(yylloc->end.line); return token::METHOD; }
 "arg"       { context().currentDeclLine(yylloc->end.line); return token::ARG; }
+"prop"      { context().currentDeclLine(yylloc->end.line); return token::PROP; }
 
 "@" {
     BEGIN(DOCSTR);
@@ -82,6 +83,8 @@ DOCMCHAR ([^ \r\n\t\{\}[\]`]|^[`]{3}|\\\{|\\\}|\\\[|\\\])
 <ATTRCTX>"static"   { return token::ATTRSTATIC; }
 <ATTRCTX>"ctor"     { return token::ATTRCTOR; }
 <ATTRCTX>"this"     { return token::ATTRTHIS; }
+<ATTRCTX>"get"      { BEGIN(ATTRARGTYPE); return token::ATTRGET; }
+<ATTRCTX>"set"      { BEGIN(ATTRARGTYPE); return token::ATTRSET; }
 <ATTRCTX>","        { return YYText()[0]; }
 <ATTRCTX>" "        ;
 <ATTRCTX>\n         { yylloc->lines(); }

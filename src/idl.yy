@@ -65,6 +65,8 @@
 %token ATTRSTATIC
 %token ATTRCTOR
 %token ATTRTHIS
+%token ATTRGET
+%token ATTRSET
 
 %token API
 %token ENUM
@@ -74,6 +76,7 @@
 %token INTERFACE
 %token METHOD
 %token ARG
+%token PROP
 
 %token <std::string> STR
 %token <std::string> ID
@@ -87,6 +90,8 @@
 %type <ASTAttr*> attr_hex
 %type <ASTAttr*> attr_platform
 %type <ASTAttr*> attr_type
+%type <ASTAttr*> attr_get
+%type <ASTAttr*> attr_set
 %type <ASTAttr*> attr_value
 %type <ASTAttr*> attr_static
 %type <ASTAttr*> attr_ctor
@@ -188,6 +193,7 @@ decl
     | INTERFACE { auto node = alloc_node(ASTInterface, @1); $$ = node; }
     | METHOD { auto node = alloc_node(ASTMethod, @1); $$ = node; }
     | ARG { auto node = alloc_node(ASTArg, @1); $$ = node; }
+    | PROP { auto node = alloc_node(ASTProperty, @1); $$ = node; }
     ;
 
 attr_list
@@ -201,6 +207,8 @@ attr_item
     | attr_platform { $$ = $1; }
     | attr_value { $$ = $1; }
     | attr_type { $$ = $1; }
+    | attr_get { $$ = $1; }
+    | attr_set { $$ = $1; }
     | attr_static { $$ = $1; }
     | attr_ctor { $$ = $1; }
     | attr_this { $$ = $1; }
@@ -250,13 +258,39 @@ attr_value
     ;
 
 attr_type
-    : ATTRTYPE { throw syntax_error(@1, err_str<E2028>()); }
-    | ATTRTYPE '(' ')' { throw syntax_error(@1, err_str<E2028>()); }
+    : ATTRTYPE { throw syntax_error(@1, err_str<E2049>()); }
+    | ATTRTYPE '(' ')' { throw syntax_error(@1, err_str<E2049>()); }
     | ATTRTYPE '(' REF ')' {
         auto ref = alloc_node(ASTDeclRef, @3);
         ref->name = $3;
         auto node = alloc_node(ASTAttrType, @1);
         node->type = ref;
+        ref->parent = node;
+        $$ = node;
+    }
+    ;
+
+attr_get
+    : ATTRGET { throw syntax_error(@1, err_str<E2050>()); }
+    | ATTRGET '(' ')' { throw syntax_error(@1, err_str<E2050>()); }
+    | ATTRGET '(' REF ')' {
+        auto ref = alloc_node(ASTDeclRef, @3);
+        ref->name = $3;
+        auto node = alloc_node(ASTAttrGet, @1);
+        node->decl = ref;
+        ref->parent = node;
+        $$ = node;
+    }
+    ;
+
+attr_set
+    : ATTRSET { throw syntax_error(@1, err_str<E2050>()); }
+    | ATTRSET '(' ')' { throw syntax_error(@1, err_str<E2050>()); }
+    | ATTRSET '(' REF ')' {
+        auto ref = alloc_node(ASTDeclRef, @3);
+        ref->name = $3;
+        auto node = alloc_node(ASTAttrSet, @1);
+        node->decl = ref;
         ref->parent = node;
         $$ = node;
     }

@@ -54,6 +54,9 @@ DOCMCHAR ([^ \r\n\t\{\}[\]`]|^[`]{3}|\\\{|\\\}|\\\[|\\\])
 <DOCSTR>"[brief]"[ ]*$     { return token::DOCBRIEF; }
 <DOCSTR>"[detail]"[ ]*$    { return token::DOCDETAIL; }
 <DOCSTR>"[author]"[ ]*$    { return token::DOCAUTHOR; }
+<DOCSTR>"[see]"[ ]*$       { return token::DOCSEE; }
+<DOCSTR>"[note]"[ ]*$      { return token::DOCNOTE; }
+<DOCSTR>"[warning]"[ ]*$   { return token::DOCWARN; }
 <DOCSTR>"[copyright]"[ ]*$ { return token::DOCCOPYRIGHT; }
 <DOCSTR>"[license]"[ ]*$   { return token::DOCLICENSE; }
 <DOCSTR>"[return]"[ ]*$    { return token::DOCRETURN; }

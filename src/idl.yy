@@ -55,6 +55,9 @@
 %token DOCCOPYRIGHT
 %token DOCLICENSE
 %token DOCAUTHOR
+%token DOCSEE
+%token DOCNOTE
+%token DOCWARN
 %token DOCRETURN
 
 %token ATTRFLAGS
@@ -356,6 +359,9 @@ doc_decl
     | DOC doc_field DOCCOPYRIGHT { $$ = std::make_pair($2, 'c'); }
     | DOC doc_field DOCLICENSE   { $$ = std::make_pair($2, 'l'); }
     | DOC doc_field DOCAUTHOR    { $$ = std::make_pair($2, 'a'); }
+    | DOC doc_field DOCSEE       { $$ = std::make_pair($2, 's'); }
+    | DOC doc_field DOCNOTE      { $$ = std::make_pair($2, 'n'); }
+    | DOC doc_field DOCWARN      { $$ = std::make_pair($2, 'w'); }
     | DOC doc_field DOCRETURN    { $$ = std::make_pair($2, 'r'); }
     ;
 
@@ -420,6 +426,15 @@ void addDoc(ASTDoc* node, const std::vector<ASTNode*>& doc, char type)
             break;
         case 'a':
             node->authors.push_back(doc);
+            break;
+        case 's':
+            node->see.push_back(doc);
+            break;
+        case 'n':
+            node->note.push_back(doc);
+            break;
+        case 'w':
+            node->warn.push_back(doc);
             break;
         case 'r':
             node->ret = doc;

@@ -72,6 +72,9 @@ struct ASTDoc : ASTNode {
     std::vector<ASTNode*> copyright;
     std::vector<ASTNode*> license;
     std::vector<std::vector<ASTNode*>> authors;
+    std::vector<std::vector<ASTNode*>> see;
+    std::vector<std::vector<ASTNode*>> note;
+    std::vector<std::vector<ASTNode*>> warn;
 };
 
 struct ASTAttr : ASTNode {};

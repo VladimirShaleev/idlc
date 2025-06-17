@@ -1,11 +1,11 @@
 #include <argparse/argparse.hpp>
 
+#include "generator_c.hpp"
 #include "parser.hpp"
 #include "scanner.hpp"
 #include "version.hpp"
-#include "visitors.hpp"
 
-enum struct Generator {
+enum struct GeneratorType {
     C,
     Cpp
 };
@@ -15,7 +15,7 @@ void addGeneratorArg(argparse::ArgumentParser& program) {
     std::ostringstream help;
     help << "generator programming language (";
     bool first = true;
-    for (auto& gen : magic_enum::enum_names<Generator>()) {
+    for (auto& gen : magic_enum::enum_names<GeneratorType>()) {
         auto str = std::string(gen.data());
         std::transform(str.begin(), str.end(), str.begin(), [](auto c) {
             return std::tolower(c);
@@ -31,12 +31,12 @@ void addGeneratorArg(argparse::ArgumentParser& program) {
     arg.help(help.str());
 }
 
-Generator getGeneratorArg(argparse::ArgumentParser& program) {
+GeneratorType getGeneratorArg(argparse::ArgumentParser& program) {
     if (!program.is_used("--generator")) {
-        return Generator::C;
+        return GeneratorType::C;
     }
     auto str = program.get("--generator");
-    return magic_enum::enum_cast<Generator>(str, magic_enum::case_insensitive).value();
+    return magic_enum::enum_cast<GeneratorType>(str, magic_enum::case_insensitive).value();
 }
 
 int main(int argc, char* argv[]) {
@@ -77,6 +77,16 @@ int main(int argc, char* argv[]) {
     context.prepareProperties();
 
     const auto generator = getGeneratorArg(program);
+    switch (generator) {
+        case GeneratorType::C: {
+            GeneratorC gen{};
+            gen.generate(context.api(), output);
+            break;
+        }
+        case GeneratorType::Cpp: {
+            break;
+        }
+    }
 
     return EXIT_SUCCESS;
 }

@@ -21,7 +21,7 @@ public:
         }
     }
 
-    const ASTApi* api(const idl::location& loc) const noexcept {
+    const ASTApi* api() const noexcept {
         return _api;
     }
 

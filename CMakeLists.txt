@@ -29,6 +29,7 @@ add_flex_bison_dependency(scanner parser)
 
 add_executable(${PROJECT_NAME}
     src/main.cpp
+    src/generator_c.cpp
     ${BISON_parser_OUTPUTS}
     ${FLEX_scanner_OUTPUTS})
 target_link_libraries(${PROJECT_NAME} PRIVATE argparse::argparse)

@@ -152,7 +152,7 @@ import[ ]+ { BEGIN(IMPORT); }
 "true"                    { yylval->emplace<bool>(true); return token::BOOL; }
 "false"                   { yylval->emplace<bool>(false); return token::BOOL; }
 [a-zA-Z0-9]+              { err<E2003>(*yylloc, YYText()); }
-<<EOF>>                   { if (!popImport()) { return token::YYEOF; } }
+<<EOF>>                   { context().setDeclaring(false); if (!popImport()) { return token::YYEOF; } }
 \n                        { yylloc->lines(); context().setDeclaring(false); }
 \t                        { err<E2002>(*yylloc); }
 " "                       ;

@@ -80,7 +80,8 @@ enum Error {
     E2063,
     E2064,
     E2065,
-    E2066
+    E2066,
+    E2067
 };
 
 template <Warning Code, typename... Args>
@@ -301,11 +302,12 @@ inline std::string err_str(Args&&... args) {
         ss << fmt::format("the property type '{}' does not match the return type '{}' of the getter method '{}'",
                           args...);
     }
-
     if constexpr (Code == E2066) {
         ss << fmt::format("the property type '{}' does not match the setter method '{}' argument type '{}'", args...);
     }
-
+    if constexpr (Code == E2067) {
+        ss << fmt::format("failed to create file '{}'", args...);
+    }
     return ss.str();
 }
 

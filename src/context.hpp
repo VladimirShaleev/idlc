@@ -146,7 +146,6 @@ public:
 
         addBuiltin("Void", "void type", ASTVoid{});
         addBuiltin("Char", "symbol type", ASTChar{});
-        addBuiltin("Str", "utf8 string", ASTStr{});
         addBuiltin("Bool", "boolean type", ASTBool{});
         addBuiltin("Int8", "8 bit signed integer", ASTInt8{});
         addBuiltin("Uint8", "8 bit unsigned integer", ASTUint8{});
@@ -158,6 +157,7 @@ public:
         addBuiltin("Uint64", "64 bit unsigned integer", ASTUint64{});
         addBuiltin("Float32", "32 bit float point", ASTFloat32{});
         addBuiltin("Float64", "64 bit float point", ASTFloat64{});
+        addBuiltin("Str", "utf8 string", ASTStr{});
     }
 
     template <typename Exception>

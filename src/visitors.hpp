@@ -6,6 +6,91 @@
 #include "errors.hpp"
 
 struct CName : Visitor {
+    void visit(ASTVoid* node) override {
+        str    = "void";
+        native = "void";
+    }
+
+    void visit(ASTChar* node) override {
+        str    = cname(node) + "_t";
+        native = "char";
+    }
+
+    void visit(ASTStr* node) override {
+        ASTStr type{};
+        type.parent = node->parent;
+        type.name   = "Utf8";
+        str         = cname(&type) + "_t";
+        native      = "const char*";
+    }
+
+    void visit(ASTBool* node) override {
+        str    = cname(node) + "_t";
+        native = "int32_t";
+    }
+
+    void visit(ASTInt8* node) override {
+        ASTInt8 type{};
+        type.parent = node->parent;
+        type.name   = "Sint8";
+        str         = cname(&type) + "_t";
+        native      = "int8_t";
+    }
+
+    void visit(ASTUint8* node) override {
+        str    = cname(node) + "_t";
+        native = "uint8_t";
+    }
+
+    void visit(ASTInt16* node) override {
+        ASTInt16 type{};
+        type.parent = node->parent;
+        type.name   = "Sint18";
+        str         = cname(&type) + "_t";
+        native      = "int16_t";
+    }
+
+    void visit(ASTUint16* node) override {
+        str    = cname(node) + "_t";
+        native = "uint16_t";
+    }
+
+    void visit(ASTInt32* node) override {
+        ASTInt32 type{};
+        type.parent = node->parent;
+        type.name   = "Sint32";
+        str         = cname(&type) + "_t";
+        native      = "int32_t";
+    }
+
+    void visit(ASTUint32* node) override {
+        str    = cname(node) + "_t";
+        native = "uint32_t";
+    }
+
+    void visit(ASTInt64* node) override {
+        ASTInt64 type{};
+        type.parent = node->parent;
+        type.name   = "Sint64";
+        str         = cname(&type) + "_t";
+        native      = "int64_t";
+    }
+
+    void visit(ASTUint64* node) override {
+        str    = cname(node) + "_t";
+        native = "uint64_t";
+    }
+
+    void visit(ASTFloat32* node) override {
+        str    = cname(node) + "_t";
+        native = "float";
+    }
+
+    void visit(ASTFloat64* node) override {
+        str    = cname(node) + "_t";
+        native = "double";
+    }
+
     void visit(ASTEnum* node) override {
         str = cname(node);
         if (node->findAttr<ASTAttrFlags>()) {
@@ -34,6 +119,7 @@ struct CName : Visitor {
     }
 
     std::string str;
+    std::string native;
 };
 
 struct AttrName : Visitor {

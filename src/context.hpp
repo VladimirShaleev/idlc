@@ -407,20 +407,25 @@ public:
         }
     }
 
-private:
     template <typename Node, typename Pred>
     bool filter(Pred&& pred) {
         static_assert(std::is_base_of<ASTNode, Node>::value, "Node must be inherited from ASTNode");
+        constexpr auto isVoid = std::is_same_v<decltype(pred((Node*) nullptr)), void>;
         for (auto node : _nodes) {
             if (auto ptr = dynamic_cast<Node*>(node)) {
-                if (!pred(ptr)) {
-                    return false;
+                if constexpr (isVoid) {
+                    pred(ptr);
+                } else {
+                    if (!pred(ptr)) {
+                        return false;
+                    }
                 }
             }
         }
         return true;
     }
 
+private:
     template <typename Exception, typename Node, typename Value>
     ASTLiteral* internLiteral(const idl::location& loc, const std::string& keyStr, const Value& value) {
         const auto key = XXH64(keyStr.c_str(), keyStr.length(), 0);

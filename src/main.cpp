@@ -80,7 +80,7 @@ int main(int argc, char* argv[]) {
     switch (generator) {
         case GeneratorType::C: {
             GeneratorC gen{};
-            gen.generate(context.api(), output);
+            gen.generate(context, output);
             break;
         }
         case GeneratorType::Cpp: {

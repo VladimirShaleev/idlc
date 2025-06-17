@@ -2,7 +2,39 @@
 #define VISITORS_HPP
 
 #include "ast.hpp"
+#include "case_converter.hpp"
 #include "errors.hpp"
+
+struct CName : Visitor {
+    void visit(ASTEnum* node) override {
+        str = cname(node);
+        if (node->findAttr<ASTAttrFlags>()) {
+            str += "_flags";
+        }
+        str += "_t";
+    }
+
+    void visit(ASTEnumConst* node) override {
+        str = cname(node, true);
+        if (node->parent->as<ASTDecl>()->findAttr<ASTAttrFlags>()) {
+            str += "_BIT";
+        }
+    }
+
+    void discarded(ASTNode*) override {
+        assert(!"C name is missing");
+    }
+
+    static std::string cname(ASTDecl* decl, bool upper = false) {
+        auto name = convert(decl->name, upper ? Case::ScreamingSnakeCase : Case::SnakeCase);
+        if (auto parentDecl = decl->parent->as<ASTDecl>()) {
+            return cname(parentDecl, upper) + '_' + name;
+        }
+        return name;
+    }
+
+    std::string str;
+};
 
 struct AttrName : Visitor {
     void visit(ASTAttrPlatform*) override {
@@ -78,7 +110,9 @@ struct AllowedAttrs : Visitor {
     }
 
     void visit(ASTProperty* node) override {
-        allowed = { add<ASTAttrType>(), add<ASTAttrPlatform>(), add<ASTAttrStatic>(), add<ASTAttrGet>(), add<ASTAttrSet>() };
+        allowed = {
+            add<ASTAttrType>(), add<ASTAttrPlatform>(), add<ASTAttrStatic>(), add<ASTAttrGet>(), add<ASTAttrSet>()
+        };
     }
 
     void visit(ASTArg* node) override {

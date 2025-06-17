@@ -1,10 +1,10 @@
 #ifndef GENERATOR_C_HPP
 #define GENERATOR_C_HPP
 
-#include "visitors.hpp"
+#include "context.hpp"
 
 struct GeneratorC {
-    void generate(const ASTApi* api, const std::filesystem::path& out);
+    void generate(idl::Context& ctx, const std::filesystem::path& out);
 };
 
 #endif

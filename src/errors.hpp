@@ -82,7 +82,10 @@ enum Error {
     E2065,
     E2066,
     E2067,
-    E2068
+    E2068,
+    E2069,
+    E2070,
+    E2071
 };
 
 template <Warning Code, typename... Args>
@@ -311,6 +314,15 @@ inline std::string err_str(Args&&... args) {
     }
     if constexpr (Code == E2068) {
         ss << fmt::format("field '{}' of struct '{}' cannot be of type 'Void'", args...);
+    }
+    if constexpr (Code == E2069) {
+        ss << fmt::format("the handle type must be specified for '{}'", args...);
+    }
+    if constexpr (Code == E2070) {
+        ss << fmt::format("the handle type must be struct for '{}'", args...);
+    }
+    if constexpr (Code == E2071) {
+        ss << fmt::format("the structure '{}' specified in the handle type '{}' must be marked with the 'handle' attribute", args...);
     }
     return ss.str();
 }

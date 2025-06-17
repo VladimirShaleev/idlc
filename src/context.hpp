@@ -435,7 +435,19 @@ public:
     }
 
     void prepareHandles() {
-        
+        filter<ASTHandle>([this](auto node) {
+            if (auto attr = node->template findAttr<ASTAttrType>()) {
+                if (auto type = resolveType(attr->type); type->template is<ASTStruct>()) {
+                    if (!type->template findAttr<ASTAttrHandle>()) {
+                        err<E2071>(node->location, type->fullname(), node->fullname());
+                    }
+                } else {
+                    err<E2070>(node->location, node->fullname());
+                }
+            } else {
+                err<E2069>(node->location, node->fullname());
+            }
+        });
     }
 
     template <typename Node, typename Pred>

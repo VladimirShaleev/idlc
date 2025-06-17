@@ -58,7 +58,11 @@ enum Error {
     E2041,
     E2042,
     E2043,
-    E2044
+    E2044,
+    E2045,
+    E2046,
+    E2047,
+    E2048
 };
 
 template <Warning Code, typename... Args>
@@ -206,6 +210,18 @@ inline std::string err_str(Args&&... args) {
     }
     if constexpr (Code == E2044) {
         ss << "arguments can only be added to a method";
+    }
+    if constexpr (Code == E2045) {
+        ss << "out of memory";
+    }
+    if constexpr (Code == E2046) {
+        ss << fmt::format("static method '{}' cannot include argument '{}' with attribute 'this'", args...);
+    }
+    if constexpr (Code == E2047) {
+        ss << fmt::format("constructor '{}' cannot include argument '{}' with attribute 'this'", args...);
+    }
+    if constexpr (Code == E2048) {
+        ss << fmt::format("method '{}' must include one argument with the 'this' attribute.", args...);
     }
     return ss.str();
 }

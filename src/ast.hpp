@@ -167,6 +167,10 @@ struct ASTTrivialType : ASTType {};
 
 struct ASTBuiltinType : ASTTrivialType {};
 
+struct ASTVoid : ASTBuiltinType {
+    void accept(Visitor& visitor) override;
+};
+
 struct ASTChar : ASTBuiltinType {
     void accept(Visitor& visitor) override;
 };
@@ -325,6 +329,10 @@ struct Visitor {
         discarded(node);
     }
 
+    virtual void visit(ASTVoid* node) {
+        discarded(node);
+    }
+
     virtual void visit(ASTChar* node) {
         discarded(node);
     }
@@ -466,6 +474,10 @@ inline void ASTAttrThis::accept(Visitor& visitor) {
 }
 
 inline void ASTDeclRef::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+inline void ASTVoid::accept(Visitor& visitor) {
     visitor.visit(this);
 }
 

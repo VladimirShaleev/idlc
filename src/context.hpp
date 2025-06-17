@@ -25,12 +25,16 @@ public:
         return _api;
     }
 
-    template <typename Node, typename Exception>
+    template <typename Node, typename Exception = void>
     Node* allocNode(const idl::location& loc) {
         static_assert(std::is_base_of<ASTNode, Node>::value, "Node must be inherited from ASTNode");
         auto node = new (std::nothrow) Node{};
         if (!node) {
-            throw Exception(loc, "out of memory");
+            if constexpr (std::is_same_v<Exception, void>) {
+                err<E2045>(loc);
+            } else {
+                throw Exception(loc, err_str<E2045>());
+            }
         }
         if constexpr (std::is_same<Node, ASTApi>::value) {
             _api = node;
@@ -40,17 +44,17 @@ public:
         return node;
     }
 
-    template <typename Exception>
+    template <typename Exception = void>
     ASTLiteral* intern(const idl::location& loc, const std::string& str) {
         return internLiteral<Exception, ASTLiteralStr>(loc, "str|" + str, str);
     }
 
-    template <typename Exception>
+    template <typename Exception = void>
     ASTLiteral* intern(const idl::location& loc, bool b) {
         return internLiteral<Exception, ASTLiteralBool>(loc, "bool|" + std::to_string(b), b);
     }
 
-    template <typename Exception>
+    template <typename Exception = void>
     ASTLiteral* intern(const idl::location& loc, int64_t num) {
         return internLiteral<Exception, ASTLiteralInt>(loc, "int|" + std::to_string(num), num);
     }
@@ -140,6 +144,7 @@ public:
             addSymbol<Exception>(node);
         };
 
+        addBuiltin("Void", "void type", ASTVoid{});
         addBuiltin("Char", "symbol type", ASTChar{});
         addBuiltin("Str", "utf8 string", ASTStr{});
         addBuiltin("Bool", "boolean type", ASTBool{});
@@ -186,7 +191,7 @@ public:
         }
     }
 
-    void calcEnumConsts() {
+    void prepareEnumConsts() {
         std::vector<ASTEnumConst*> needAddTypeAttrs{};
         filter<ASTEnum>([this, &needAddTypeAttrs](auto en) {
             if (en->consts.empty()) {
@@ -201,9 +206,9 @@ public:
             return true;
         });
         for (auto ec : needAddTypeAttrs) {
-            auto attr          = allocNode<ASTAttrType, Exception>(ec->location);
+            auto attr          = allocNode<ASTAttrType>(ec->location);
             attr->parent       = ec;
-            attr->type         = allocNode<ASTDeclRef, Exception>(ec->location);
+            attr->type         = allocNode<ASTDeclRef>(ec->location);
             attr->type->name   = "Int32";
             attr->type->parent = attr;
             ec->attrs.push_back(attr);
@@ -221,11 +226,65 @@ public:
             return true;
         });
         for (auto ec : needAddValueAttrs) {
-            auto attr    = allocNode<ASTAttrValue, Exception>(ec->location);
+            auto attr    = allocNode<ASTAttrValue>(ec->location);
             attr->parent = ec;
-            attr->value  = intern<Exception>(ec->location, (int64_t) ec->value);
+            attr->value  = intern(ec->location, (int64_t) ec->value);
             ec->attrs.push_back(attr);
         }
+    }
+
+    void prepareMethods() {
+        std::vector<ASTMethod*> needAddRetType{};
+        std::vector<ASTMethod*> needAddStatic{};
+        filter<ASTMethod>([this, &needAddRetType, &needAddStatic](auto node) {
+            const auto isStatic = node->template findAttr<ASTAttrStatic>();
+            const auto isCtor   = node->template findAttr<ASTAttrCtor>();
+            if (!node->template findAttr<ASTAttrType>()) {
+                needAddRetType.push_back(node);
+            }
+            if (isCtor && !isStatic) {
+                needAddStatic.push_back(node);
+            }
+            if (isCtor || isStatic) {
+                for (auto arg : node->args) {
+                    if (arg->template findAttr<ASTAttrThis>()) {
+                        if (isCtor) {
+                            err<E2047>(arg->location, node->fullname(), arg->name);
+                        } else {
+                            err<E2046>(arg->location, node->fullname(), arg->name);
+                        }
+                    }
+                }
+            }
+            if (!isCtor && !isStatic) {
+                int countThis = 0;
+                for (auto arg : node->args) {
+                    countThis += arg->template findAttr<ASTAttrThis>() ? 1 : 0;
+                }
+                if (countThis != 1) {
+                    err<E2048>(node->location, node->fullname());
+                }
+            }
+            return true;
+        });
+        for (auto node : needAddRetType) {
+            auto attr          = allocNode<ASTAttrType>(node->location);
+            attr->parent       = node;
+            attr->type         = allocNode<ASTDeclRef>(node->location);
+            attr->type->name   = "Void";
+            attr->type->parent = attr;
+            node->attrs.push_back(attr);
+        }
+        for (auto node : needAddStatic) {
+            auto attr    = allocNode<ASTAttrStatic>(node->location);
+            attr->parent = node;
+            node->attrs.push_back(attr);
+        }
+        filter<ASTMethod>([this](auto node) {
+            auto attr = node->template findAttr<ASTAttrType>();
+            resolveType(attr->type);
+            return true;
+        });
     }
 
 private:
@@ -325,13 +384,6 @@ private:
         ec->evaluated = true;
         deps.pop_back();
     }
-
-    struct Exception : std::runtime_error {
-        Exception(const idl::location& loc, const std::string& m) : std::runtime_error(m), location(loc) {
-        }
-
-        const idl::location& location;
-    };
 
     ASTApi* _api{};
     std::vector<ASTNode*> _nodes{};

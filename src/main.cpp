@@ -37,7 +37,8 @@ int main(int argc, char* argv[]) {
         return code;
     }
 
-    context.calcEnumConsts();
+    context.prepareEnumConsts();
+    context.prepareMethods();
 
     return EXIT_SUCCESS;
 }

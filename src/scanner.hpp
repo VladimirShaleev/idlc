@@ -32,7 +32,7 @@ public:
     }
 
     const std::string* filename() const noexcept {
-        return &_imports.back()->filename;
+        return _imports.back()->filename;
     }
 
     void import(const idl::location& loc, const std::filesystem::path& file, bool isRelative = true) {
@@ -42,15 +42,19 @@ public:
         const auto path     = findFile(loc, file);
         const auto filename = std::filesystem::relative(path, _basePath).string();
 
+        if (_allImports.contains(filename)) {
+            return;
+        }
+        _allImports[filename] = std::make_unique<std::string>(filename);
+        auto filenamePtr      = _allImports[filename].get();
+
         if (!_imports.empty()) {
             _imports.back()->location = loc;
             _imports.back()->line     = yylineno;
         }
         _imports.emplace_back(std::make_unique<Import>(
-            this, path, filename, idl::location(idl::position(nullptr, 1, 1)), 1, nullptr, nullptr));
-        auto& import    = *_imports.back();
-        import.location = idl::location(idl::position(&import.filename, 1, 1));
-
+            this, path, filenamePtr, idl::location(idl::position(filenamePtr, 1, 1)), 1, nullptr, nullptr));
+        auto& import  = *_imports.back();
         import.stream = new std::ifstream(path);
         if (import.stream->fail()) {
             delete import.stream;
@@ -102,7 +106,7 @@ private:
 
         Scanner* scanner{};
         std::filesystem::path file;
-        std::string filename;
+        std::string* filename;
         idl::location location;
         int line{};
         yy_buffer_state* buffer{};
@@ -155,6 +159,7 @@ private:
     Context& _ctx;
     std::filesystem::path _basePath{};
     std::vector<std::unique_ptr<Import>> _imports{};
+    std::map<std::string, std::unique_ptr<std::string>> _allImports{};
     bool _needUpdateLoc{};
 };
 

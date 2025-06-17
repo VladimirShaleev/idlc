@@ -78,7 +78,7 @@ struct AllowedAttrs : Visitor {
     }
 
     void visit(ASTProperty* node) override {
-        allowed = { add<ASTAttrPlatform>(), add<ASTAttrStatic>(), add<ASTAttrGet>(), add<ASTAttrSet>() };
+        allowed = { add<ASTAttrType>(), add<ASTAttrPlatform>(), add<ASTAttrStatic>(), add<ASTAttrGet>(), add<ASTAttrSet>() };
     }
 
     void visit(ASTArg* node) override {

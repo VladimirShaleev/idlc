@@ -39,6 +39,7 @@ int main(int argc, char* argv[]) {
 
     context.prepareEnumConsts();
     context.prepareMethods();
+    context.prepareProperties();
 
     return EXIT_SUCCESS;
 }

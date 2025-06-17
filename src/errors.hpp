@@ -64,7 +64,23 @@ enum Error {
     E2047,
     E2048,
     E2049,
-    E2050
+    E2050,
+    E2051,
+    E2052,
+    E2053,
+    E2054,
+    E2055,
+    E2056,
+    E2057,
+    E2058,
+    E2059,
+    E2060,
+    E2061,
+    E2062,
+    E2063,
+    E2064,
+    E2065,
+    E2066
 };
 
 template <Warning Code, typename... Args>
@@ -231,6 +247,65 @@ inline std::string err_str(Args&&... args) {
     if constexpr (Code == E2050) {
         ss << "the 'set' attribute must specify a reference to the method in the argument";
     }
+    if constexpr (Code == E2051) {
+        ss << fmt::format("argument '{}' of method '{}' cannot be of type 'Void'", args...);
+    }
+    if constexpr (Code == E2052) {
+        ss << fmt::format("the property '{}' must contain at least the 'get' attribute or the 'set' attribute or both",
+                          args...);
+    }
+    if constexpr (Code == E2053) {
+        ss << fmt::format("getter '{}' must be a method", args...);
+    }
+    if constexpr (Code == E2054) {
+        ss << fmt::format("property getter '{}' from '{}' refers to a method '{}' from another interface '{}'",
+                          args...);
+    }
+    if constexpr (Code == E2055) {
+        ss << fmt::format(
+            "if the getter method '{}' is static, then the property '{}' must also be static, and vice versa", args...);
+    }
+    if constexpr (Code == E2056) {
+        ss << fmt::format("a static getter method '{}' must not have arguments", args...);
+    }
+    if constexpr (Code == E2057) {
+        ss << fmt::format("a getter method '{}' must have one argument", args...);
+    }
+    if constexpr (Code == E2058) {
+        ss << fmt::format("getter method {} cannot return 'Void'", args...);
+    }
+    if constexpr (Code == E2059) {
+        ss << fmt::format("setter '{}' must be a method", args...);
+    }
+    if constexpr (Code == E2060) {
+        ss << fmt::format(
+            "if the setter method '{}' is static, then the property '{}' must also be static, and vice versa", args...);
+    }
+    if constexpr (Code == E2061) {
+        ss << fmt::format("property setter '{}' from '{}' refers to a method '{}' from another interface '{}'",
+                          args...);
+    }
+    if constexpr (Code == E2062) {
+        ss << fmt::format("a static setter method '{}' must have one argument", args...);
+    }
+    if constexpr (Code == E2063) {
+        ss << fmt::format("a setter method '{}' must have two arguments", args...);
+    }
+    if constexpr (Code == E2064) {
+        ss << fmt::format("the return type '{}' of the getter method '{}' is different from the argument type '{}' of "
+                          "the setter method "
+                          "'{}'",
+                          args...);
+    }
+    if constexpr (Code == E2065) {
+        ss << fmt::format("the property type '{}' does not match the return type '{}' of the getter method '{}'",
+                          args...);
+    }
+
+    if constexpr (Code == E2066) {
+        ss << fmt::format("the property type '{}' does not match the setter method '{}' argument type '{}'", args...);
+    }
+
     return ss.str();
 }
 

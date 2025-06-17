@@ -236,7 +236,8 @@ public:
     void prepareMethods() {
         std::vector<ASTMethod*> needAddRetType{};
         std::vector<ASTMethod*> needAddStatic{};
-        filter<ASTMethod>([this, &needAddRetType, &needAddStatic](auto node) {
+        std::vector<ASTArg*> needAddArgType{};
+        filter<ASTMethod>([this, &needAddRetType, &needAddStatic, &needAddArgType](auto node) {
             const auto isStatic = node->template findAttr<ASTAttrStatic>();
             const auto isCtor   = node->template findAttr<ASTAttrCtor>();
             if (!node->template findAttr<ASTAttrType>()) {
@@ -265,6 +266,11 @@ public:
                     err<E2048>(node->location, node->fullname());
                 }
             }
+            for (auto arg : node->args) {
+                if (!arg->template findAttr<ASTAttrType>()) {
+                    needAddArgType.push_back(arg);
+                }
+            }
             return true;
         });
         for (auto node : needAddRetType) {
@@ -280,11 +286,125 @@ public:
             attr->parent = node;
             node->attrs.push_back(attr);
         }
+        for (auto node : needAddArgType) {
+            auto attr          = allocNode<ASTAttrType>(node->location);
+            attr->parent       = node;
+            attr->type         = allocNode<ASTDeclRef>(node->location);
+            attr->type->name   = "Int32";
+            attr->type->parent = attr;
+            node->attrs.push_back(attr);
+        }
         filter<ASTMethod>([this](auto node) {
             auto attr = node->template findAttr<ASTAttrType>();
             resolveType(attr->type);
+            for (auto arg : node->args) {
+                auto argAttr = arg->template findAttr<ASTAttrType>();
+                if (dynamic_cast<ASTVoid*>(resolveType(argAttr->type)) != nullptr) {
+                    err<E2051>(arg->location, arg->name, node->fullname());
+                }
+            }
             return true;
         });
+    }
+
+    void prepareProperties() {
+        std::vector<std::pair<ASTProperty*, std::string>> needAddType{};
+        filter<ASTProperty>([this, &needAddType](auto node) {
+            auto getter = node->template findAttr<ASTAttrGet>();
+            auto setter = node->template findAttr<ASTAttrSet>();
+            if (!getter && !setter) {
+                err<E2052>(node->location, node->fullname());
+            }
+            auto isStaticProp       = node->template findAttr<ASTAttrStatic>() != nullptr;
+            ASTType* getterType     = nullptr;
+            ASTType* setterType     = nullptr;
+            ASTMethod* getterMethod = nullptr;
+            ASTMethod* setterMethod = nullptr;
+            if (getter) {
+                auto decl = findSymbol(node, getter->location, getter->decl);
+                if (auto method = dynamic_cast<ASTMethod*>(decl)) {
+                    getterMethod = method;
+                    if (method->parent != node->parent) {
+                        auto iface      = dynamic_cast<ASTInterface*>(node->parent)->fullname();
+                        auto otherIface = dynamic_cast<ASTInterface*>(method->parent)->fullname();
+                        err<E2054>(getter->location, node->name, iface, method->name, otherIface);
+                    }
+                    auto isStaticGetter = method->template findAttr<ASTAttrStatic>() != nullptr;
+                    if (isStaticProp != isStaticGetter) {
+                        err<E2055>(getter->location, method->fullname(), node->fullname());
+                    }
+                    const auto argCount = method->args.size();
+                    if (isStaticProp && argCount != 0) {
+                        err<E2056>(getter->location, method->fullname());
+                    } else if (!isStaticProp && argCount != 1) {
+                        err<E2057>(getter->location, method->fullname());
+                    }
+                    getterType = resolveType(method->template findAttr<ASTAttrType>()->type);
+                    if (dynamic_cast<ASTVoid*>(getterType) != nullptr) {
+                        err<E2058>(getter->location, method->fullname());
+                    }
+                } else {
+                    err<E2053>(getter->location, decl->fullname());
+                }
+            }
+            if (setter) {
+                auto decl = findSymbol(node, setter->location, setter->decl);
+                if (auto method = dynamic_cast<ASTMethod*>(decl)) {
+                    setterMethod = method;
+                    if (method->parent != node->parent) {
+                        auto iface      = dynamic_cast<ASTInterface*>(node->parent)->fullname();
+                        auto otherIface = dynamic_cast<ASTInterface*>(method->parent)->fullname();
+                        err<E2061>(setter->location, node->name, iface, method->name, otherIface);
+                    }
+                    auto isStaticSetter = method->template findAttr<ASTAttrStatic>() != nullptr;
+                    if (isStaticProp != isStaticSetter) {
+                        err<E2060>(setter->location, method->fullname(), node->fullname());
+                    }
+                    const auto argCount = method->args.size();
+                    if (isStaticProp && argCount != 1) {
+                        err<E2062>(setter->location, method->fullname());
+                    } else if (!isStaticProp && argCount != 2) {
+                        err<E2063>(setter->location, method->fullname());
+                    }
+                    for (auto arg : method->args) {
+                        if (arg->template findAttr<ASTAttrThis>() == nullptr) {
+                            setterType = resolveType(arg->template findAttr<ASTAttrType>()->type);
+                            break;
+                        }
+                    }
+                    assert(setterType);
+                } else {
+                    err<E2059>(setter->location, decl->fullname());
+                }
+            }
+            if (getterType && setterType && getterType != setterType) {
+                err<E2064>(node->location,
+                           getterType->fullname(),
+                           getterMethod->fullname(),
+                           setterType->fullname(),
+                           setterMethod->fullname());
+            }
+            if (auto attr = node->template findAttr<ASTAttrType>()) {
+                auto type = resolveType(attr->type);
+                if (getterType && getterType != type) {
+                    err<E2065>(attr->location, type->fullname(), getterType->fullname(), getterMethod->fullname());
+                }
+                if (setterType && setterType != type) {
+                    err<E2066>(attr->location, type->fullname(), setterMethod->fullname(), setterType->fullname());
+                }
+            } else {
+                needAddType.emplace_back(node, getterType ? getterType->name : setterType->name);
+            }
+            return true;
+        });
+        for (auto& [node, type] : needAddType) {
+            auto attr          = allocNode<ASTAttrType>(node->location);
+            attr->parent       = node;
+            attr->type         = allocNode<ASTDeclRef>(node->location);
+            attr->type->name   = type;
+            attr->type->parent = attr;
+            node->attrs.push_back(attr);
+        }
     }
 
 private:

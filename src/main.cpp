@@ -5,6 +5,40 @@
 #include "version.hpp"
 #include "visitors.hpp"
 
+enum struct Generator {
+    C,
+    Cpp
+};
+
+void addGeneratorArg(argparse::ArgumentParser& program) {
+    auto& arg = program.add_argument("-g", "--generator");
+    std::ostringstream help;
+    help << "generator programming language (";
+    bool first = true;
+    for (auto& gen : magic_enum::enum_names<Generator>()) {
+        auto str = std::string(gen.data());
+        std::transform(str.begin(), str.end(), str.begin(), [](auto c) {
+            return std::tolower(c);
+        });
+        arg.add_choice(str);
+        if (!first) {
+            help << ", ";
+        }
+        first = false;
+        help << str;
+    }
+    help << ')';
+    arg.help(help.str());
+}
+
+Generator getGeneratorArg(argparse::ArgumentParser& program) {
+    if (!program.is_used("--generator")) {
+        return Generator::C;
+    }
+    auto str = program.get("--generator");
+    return magic_enum::enum_cast<Generator>(str, magic_enum::case_insensitive).value();
+}
+
 int main(int argc, char* argv[]) {
     auto input  = std::filesystem::path();
     auto output = std::filesystem::current_path();
@@ -12,6 +46,7 @@ int main(int argc, char* argv[]) {
     argparse::ArgumentParser program("idlc", IDLC_VERSION_STRING);
     program.add_argument("input").store_into(input).help("input .idl file");
     program.add_argument("-o", "--output").store_into(output).help("output directory");
+    addGeneratorArg(program);
 #ifdef YYDEBUG
     auto debug = false;
     program.add_argument("-d", "--debug").store_into(debug).help("enable debugging");
@@ -40,6 +75,8 @@ int main(int argc, char* argv[]) {
     context.prepareEnumConsts();
     context.prepareMethods();
     context.prepareProperties();
+
+    const auto generator = getGeneratorArg(program);
 
     return EXIT_SUCCESS;
 }

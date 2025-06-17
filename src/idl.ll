@@ -34,22 +34,17 @@ DOCMCHAR ([^ \r\n\t\{\}[\]`]|^[`]{3}|\\\{|\\\}|\\\[|\\\])
     yylloc->step();
 %}
 
-"api"       { context().currentDeclLine(yylloc->end.line); return token::API; }
-"enum"      { context().currentDeclLine(yylloc->end.line); return token::ENUM; }
-"const"     { context().currentDeclLine(yylloc->end.line); return token::CONST; }
-"struct"    { context().currentDeclLine(yylloc->end.line); return token::STRUCT; }
-"field"     { context().currentDeclLine(yylloc->end.line); return token::FIELD; }
-"interface" { context().currentDeclLine(yylloc->end.line); return token::INTERFACE; }
-"method"    { context().currentDeclLine(yylloc->end.line); return token::METHOD; }
-"arg"       { context().currentDeclLine(yylloc->end.line); return token::ARG; }
-"prop"      { context().currentDeclLine(yylloc->end.line); return token::PROP; }
+"api"       { context().setDeclaring(); return token::API; }
+"enum"      { context().setDeclaring(); return token::ENUM; }
+"const"     { context().setDeclaring(); return token::CONST; }
+"struct"    { context().setDeclaring(); return token::STRUCT; }
+"field"     { context().setDeclaring(); return token::FIELD; }
+"interface" { context().setDeclaring(); return token::INTERFACE; }
+"method"    { context().setDeclaring(); return token::METHOD; }
+"arg"       { context().setDeclaring(); return token::ARG; }
+"prop"      { context().setDeclaring(); return token::PROP; }
 
-"@" {
-    BEGIN(DOCSTR);
-    auto prevLine = context().currentDeclLine();
-    auto currLine = yylloc->end.line;
-    return prevLine == currLine ? token::IDOC : token::DOC;
-}
+"@"                        { BEGIN(DOCSTR); return context().isDeclaring() ? token::IDOC : token::DOC; }
 <DOCSTR>{DOCCHAR}+         { yylval->emplace<std::string>(unescape(YYText())); return token::STR; }
 <DOCSTR>"[brief]"[ ]*$     { return token::DOCBRIEF; }
 <DOCSTR>"[detail]"[ ]*$    { return token::DOCDETAIL; }
@@ -158,7 +153,7 @@ import[ ]+ { BEGIN(IMPORT); }
 "false"                   { yylval->emplace<bool>(false); return token::BOOL; }
 [a-zA-Z0-9]+              { err<E2003>(*yylloc, YYText()); }
 <<EOF>>                   { if (!popImport()) { return token::YYEOF; } }
-\n                        { yylloc->lines(); }
+\n                        { yylloc->lines(); context().setDeclaring(false); }
 \t                        { err<E2002>(*yylloc); }
 " "                       ;
 ":"                       { BEGIN(DECLREF); return YYText()[0]; }

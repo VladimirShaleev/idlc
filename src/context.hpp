@@ -109,12 +109,12 @@ public:
         }
     }
 
-    void currentDeclLine(int currentDeclLine) noexcept {
-        _currentDeclLine = currentDeclLine;
+    void setDeclaring(bool active = true) noexcept {
+        _declaring = active;
     }
 
-    int currentDeclLine() const noexcept {
-        return _currentDeclLine;
+    bool isDeclaring() const noexcept {
+        return _declaring;
     }
 
     template <typename Exception>
@@ -509,7 +509,7 @@ private:
     std::vector<ASTNode*> _nodes{};
     std::unordered_map<std::string, struct ASTDecl*> _symbols{};
     std::unordered_map<uint64_t, ASTLiteral*> _literals{};
-    int _currentDeclLine{ -1 };
+    bool _declaring{};
 };
 
 } // namespace idl

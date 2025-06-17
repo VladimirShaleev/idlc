@@ -81,7 +81,8 @@ enum Error {
     E2064,
     E2065,
     E2066,
-    E2067
+    E2067,
+    E2068
 };
 
 template <Warning Code, typename... Args>
@@ -307,6 +308,9 @@ inline std::string err_str(Args&&... args) {
     }
     if constexpr (Code == E2067) {
         ss << fmt::format("failed to create file '{}'", args...);
+    }
+    if constexpr (Code == E2068) {
+        ss << fmt::format("field '{}' of struct '{}' cannot be of type 'Void'", args...);
     }
     return ss.str();
 }

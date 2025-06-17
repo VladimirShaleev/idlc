@@ -233,6 +233,33 @@ public:
         }
     }
 
+    void prepareStructs() {
+        std::vector<ASTField*> needAddType{};
+        filter<ASTStruct>([this, &needAddType](auto node) {
+            for (auto field : node->fields) {
+                if (!field->template findAttr<ASTAttrType>()) {
+                    needAddType.push_back(field);
+                }
+            }
+        });
+        for (auto field : needAddType) {
+            auto attr          = allocNode<ASTAttrType>(field->location);
+            attr->parent       = field;
+            attr->type         = allocNode<ASTDeclRef>(field->location);
+            attr->type->name   = "Int32";
+            attr->type->parent = attr;
+            field->attrs.push_back(attr);
+        }
+        filter<ASTStruct>([this, &needAddType](auto node) {
+            for (auto field : node->fields) {
+                auto attr = field->template findAttr<ASTAttrType>();
+                if (resolveType(attr->type)->template is<ASTVoid>()) {
+                    err<E2068>(field->location, field->name, node->fullname());
+                }
+            }
+        });
+    }
+
     void prepareMethods() {
         std::vector<ASTMethod*> needAddRetType{};
         std::vector<ASTMethod*> needAddStatic{};
@@ -405,6 +432,10 @@ public:
             attr->type->parent = attr;
             node->attrs.push_back(attr);
         }
+    }
+
+    void prepareHandles() {
+        
     }
 
     template <typename Node, typename Pred>

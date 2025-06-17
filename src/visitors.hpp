@@ -163,6 +163,10 @@ struct AttrName : Visitor {
         str = "set";
     }
 
+    void visit(ASTAttrHandle* node) override {
+        str = "handle";
+    }
+
     void discarded(ASTNode*) override {
         assert(!"attribute name is missing");
     }
@@ -180,7 +184,7 @@ struct AllowedAttrs : Visitor {
     }
 
     void visit(ASTStruct* node) override {
-        allowed = { add<ASTAttrPlatform>() };
+        allowed = { add<ASTAttrPlatform>(), add<ASTAttrHandle>() };
     }
 
     void visit(ASTField* node) override {
@@ -189,6 +193,10 @@ struct AllowedAttrs : Visitor {
 
     void visit(ASTInterface* node) override {
         allowed = { add<ASTAttrPlatform>() };
+    }
+
+    void visit(ASTHandle* node) override {
+        allowed = { add<ASTAttrPlatform>(), add<ASTAttrType>() };
     }
 
     void visit(ASTMethod* node) override {
@@ -265,6 +273,15 @@ struct ChildsAggregator : Visitor {
     void visit(ASTInterface* node) override {
         if (auto parent = getParent<ASTApi>()) {
             parent->interfaces.push_back(node);
+            node->parent = parent;
+        } else {
+            assert(!"unreachable code");
+        }
+    }
+
+    void visit(ASTHandle* node) override {
+        if (auto parent = getParent<ASTApi>()) {
+            parent->handles.push_back(node);
             node->parent = parent;
         } else {
             assert(!"unreachable code");

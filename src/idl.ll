@@ -43,6 +43,7 @@ DOCMCHAR ([^ \r\n\t\{\}[\]`]|^[`]{3}|\\\{|\\\}|\\\[|\\\])
 "method"    { context().setDeclaring(); return token::METHOD; }
 "arg"       { context().setDeclaring(); return token::ARG; }
 "prop"      { context().setDeclaring(); return token::PROP; }
+"handle"    { context().setDeclaring(); return token::HANDLE; }
 
 "@"                        { BEGIN(DOCSTR); return context().isDeclaring() ? token::IDOC : token::DOC; }
 <DOCSTR>{DOCCHAR}+         { yylval->emplace<std::string>(unescape(YYText())); return token::STR; }
@@ -83,6 +84,7 @@ DOCMCHAR ([^ \r\n\t\{\}[\]`]|^[`]{3}|\\\{|\\\}|\\\[|\\\])
 <ATTRCTX>"this"     { return token::ATTRTHIS; }
 <ATTRCTX>"get"      { BEGIN(ATTRARGTYPE); return token::ATTRGET; }
 <ATTRCTX>"set"      { BEGIN(ATTRARGTYPE); return token::ATTRSET; }
+<ATTRCTX>"handle"   { return token::ATTRHANDLE; }
 <ATTRCTX>","        { return YYText()[0]; }
 <ATTRCTX>" "        ;
 <ATTRCTX>\n         { yylloc->lines(); }

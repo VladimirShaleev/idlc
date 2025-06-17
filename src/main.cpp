@@ -73,8 +73,10 @@ int main(int argc, char* argv[]) {
     }
 
     context.prepareEnumConsts();
+    context.prepareStructs();
     context.prepareMethods();
     context.prepareProperties();
+    context.prepareHandles();
 
     const auto generator = getGeneratorArg(program);
     switch (generator) {

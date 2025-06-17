@@ -70,6 +70,7 @@
 %token ATTRTHIS
 %token ATTRGET
 %token ATTRSET
+%token ATTRHANDLE
 
 %token API
 %token ENUM
@@ -80,6 +81,7 @@
 %token METHOD
 %token ARG
 %token PROP
+%token HANDLE
 
 %token <std::string> STR
 %token <std::string> ID
@@ -95,6 +97,7 @@
 %type <ASTAttr*> attr_type
 %type <ASTAttr*> attr_get
 %type <ASTAttr*> attr_set
+%type <ASTAttr*> attr_handle
 %type <ASTAttr*> attr_value
 %type <ASTAttr*> attr_static
 %type <ASTAttr*> attr_ctor
@@ -197,6 +200,7 @@ decl
     | METHOD { auto node = alloc_node(ASTMethod, @1); $$ = node; }
     | ARG { auto node = alloc_node(ASTArg, @1); $$ = node; }
     | PROP { auto node = alloc_node(ASTProperty, @1); $$ = node; }
+    | HANDLE { auto node = alloc_node(ASTHandle, @1); $$ = node; }
     ;
 
 attr_list
@@ -212,6 +216,7 @@ attr_item
     | attr_type { $$ = $1; }
     | attr_get { $$ = $1; }
     | attr_set { $$ = $1; }
+    | attr_handle { $$ = $1; }
     | attr_static { $$ = $1; }
     | attr_ctor { $$ = $1; }
     | attr_this { $$ = $1; }
@@ -297,6 +302,10 @@ attr_set
         ref->parent = node;
         $$ = node;
     }
+    ;
+
+attr_handle
+    : ATTRHANDLE { auto node = alloc_node(ASTAttrHandle, @1); $$ = node; }
     ;
 
 attr_static

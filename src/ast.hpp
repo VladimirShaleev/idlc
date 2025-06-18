@@ -296,6 +296,10 @@ struct ASTData : ASTBuiltinType {
     void accept(Visitor& visitor) override;
 };
 
+struct ASTConstData : ASTBuiltinType {
+    void accept(Visitor& visitor) override;
+};
+
 struct ASTEnumConst : ASTDecl {
     void accept(Visitor& visitor) override;
 
@@ -538,6 +542,10 @@ struct Visitor {
         discarded(node);
     }
 
+    virtual void visit(ASTConstData* node) {
+        discarded(node);
+    }
+
     virtual void visit(ASTApi* node) {
         discarded(node);
     }
@@ -755,6 +763,10 @@ inline void ASTFloat64::accept(Visitor& visitor) {
 }
 
 inline void ASTData::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+inline void ASTConstData::accept(Visitor& visitor) {
     visitor.visit(this);
 }
 

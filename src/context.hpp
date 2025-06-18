@@ -171,7 +171,8 @@ public:
         addBuiltin("Float32", "float32", "32 bit float point", ASTFloat32{});
         addBuiltin("Float64", "float64", "64 bit float point", ASTFloat64{});
         addBuiltin("Str", "utf8", "utf8 string", ASTStr{});
-        addBuiltin("Data", "data", "data pointer", ASTData{});
+        addBuiltin("Data", "data", "pointer to data", ASTData{});
+        addBuiltin("ConstData", "cdata", "pointer to immutable data", ASTConstData{});
     }
 
     template <typename Exception>

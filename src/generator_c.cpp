@@ -56,6 +56,21 @@ static std::pair<std::string, std::string> fieldTypeName(ASTField* field) {
     return { type, fieldName };
 }
 
+static std::pair<std::string, std::string> argTypeName(ASTArg* arg) {
+    CName name;
+    arg->findAttr<ASTAttrType>()->type->decl->accept(name);
+    auto typeStr = name.str;
+    if (arg->findAttr<ASTAttrConst>()) {
+        typeStr = "const " + typeStr;
+    }
+    if (arg->findAttr<ASTAttrOut>()) {
+        typeStr += '*';
+    }
+    arg->accept(name);
+    const auto nameStr = name.str;
+    return { typeStr, name.str };
+}
+
 template <typename... Includes>
 static void beginHeader(idl::Context& ctx, Header& header, bool externC, const Includes&... includes) {
     fmt::println(header.stream, "#ifndef {}", header.includeGuard);
@@ -384,14 +399,7 @@ static void generateCallbacks(
             fmt::print(header.stream, "void");
         } else {
             for (size_t i = 0; i < node->args.size(); ++i) {
-                auto arg = node->args[i];
-                arg->template findAttr<ASTAttrType>()->type->decl->accept(name);
-                auto argType = name.str;
-                if (arg->template findAttr<ASTAttrOut>()) {
-                    argType += '*';
-                }
-                arg->accept(name);
-                const auto argName = name.str;
+                const auto [argType, argName] = argTypeName(node->args[i]);
                 if (i == 0) {
                     fmt::print(header.stream, "{} {}", argType, argName);
                 } else {
@@ -473,13 +481,7 @@ static void generateCore(idl::Context& ctx,
             fmt::print(header.stream, "void");
         } else {
             for (size_t i = 0; i < args.size(); ++i) {
-                args[i]->findAttr<ASTAttrType>()->type->decl->accept(name);
-                auto typeStr = name.str;
-                if (args[i]->findAttr<ASTAttrOut>()) {
-                    typeStr += '*';
-                }
-                args[i]->accept(name);
-                const auto nameStr = name.str;
+                const auto [typeStr, nameStr] = argTypeName(args[i]);
                 if (i == 0) {
                     fmt::print(header.stream, "{} {}", typeStr, nameStr);
                 } else {

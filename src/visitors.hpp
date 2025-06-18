@@ -81,6 +81,11 @@ struct CName : Visitor {
         native = "void*";
     }
 
+    void visit(ASTConstData* node) override {
+        str    = cname(node) + "_t";
+        native = "const void*";
+    }
+
     void visit(ASTEnum* node) override {
         str = cname(node);
         if (node->findAttr<ASTAttrFlags>()) {

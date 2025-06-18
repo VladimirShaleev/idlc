@@ -454,7 +454,40 @@ static void generateCore(idl::Context& ctx,
                          bool hasEnumsHeader,
                          bool hasCallbacksHeader,
                          bool hasStructsHeader) {
-    auto header = createHeader(ctx, out, "core");
+    auto api       = convert(ctx.api()->name, Case::SnakeCase);
+    auto dllPublic = api + "_api";
+    auto header    = createHeader(ctx, out, "core");
+    auto printFunc = [&dllPublic, &header](ASTDecl* decl, const std::vector<ASTArg*>& args) {
+        CName name;
+        decl->template findAttr<ASTAttrType>()->type->decl->accept(name);
+        fmt::println(header.stream, "{} {}", dllPublic, name.str);
+
+        decl->accept(name);
+        auto declStr = fmt::format("{}(", name.str);
+        fmt::print(header.stream, "{}", declStr);
+
+        if (args.empty()) {
+            fmt::print(header.stream, "void");
+        } else {
+            for (size_t i = 0; i < args.size(); ++i) {
+                args[i]->findAttr<ASTAttrType>()->type->decl->accept(name);
+                const auto typeStr = name.str;
+                args[i]->accept(name);
+                const auto nameStr = name.str;
+                if (i == 0) {
+                    fmt::print(header.stream, "{} {}", typeStr, nameStr);
+                } else {
+                    fmt::print(header.stream, "{:>{}} {}", typeStr, declStr.length() + typeStr.length(), nameStr);
+                }
+                if (i + 1 < args.size()) {
+                    fmt::println(header.stream, ",");
+                }
+            }
+        }
+        fmt::println(header.stream, ");");
+        fmt::println(header.stream, "");
+    };
+
     beginHeader(ctx,
                 header,
                 true,
@@ -464,6 +497,12 @@ static void generateCore(idl::Context& ctx,
                 hasEnumsHeader ? "enums" : "",
                 hasCallbacksHeader ? "callbacks" : "",
                 hasStructsHeader ? "structs" : "");
+    ctx.filter<ASTFunc>([&header, &printFunc](auto node) {
+        printFunc(node, node->args);
+    });
+    ctx.filter<ASTMethod>([&header, &printFunc](auto node) {
+        printFunc(node, node->args);
+    });
     endHeader(ctx, header, true);
 }
 

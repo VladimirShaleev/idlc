@@ -116,6 +116,14 @@ struct CName : Visitor {
         str = cname(node) + "_t";
     }
 
+    void visit(ASTFunc* node) override {
+        str = cname(node);
+    }
+
+    void visit(ASTMethod* node) override {
+        str = cname(node);
+    }
+
     void visit(ASTArg* node) override {
         if (auto attr = node->findAttr<ASTAttrCName>()) {
             str = attr->name;

@@ -88,7 +88,8 @@ enum Error {
     E2071,
     E2072,
     E2073,
-    E2074
+    E2074,
+    E2075
 };
 
 template <Warning Code, typename... Args>
@@ -118,7 +119,7 @@ inline std::string err_str(Args&&... args) {
         ss << "there can only be one api declaration";
     }
     if constexpr (Code == E2005) {
-        ss << "there is no documentation in the declaration";
+        ss << fmt::format("there is no documentation in the declaration '{}'", args...);
     }
     if constexpr (Code == E2006) {
         ss << "documentation cannot be an empty string";
@@ -336,6 +337,9 @@ inline std::string err_str(Args&&... args) {
     }
     if constexpr (Code == E2074) {
         ss << fmt::format("argument '{}' of function '{}' cannot be of type 'Void'", args...);
+    }
+    if constexpr (Code == E2075) {
+        ss << "the 'cname' attribute must specify a string in the argument";
     }
     return ss.str();
 }

@@ -32,14 +32,17 @@ inline std::string& upper(std::string& str) {
 inline std::vector<std::string> tokenize(const std::string& str) {
     std::vector<std::string> tokens;
     std::ostringstream ss;
+    char prevC = '\0';
     for (auto c : str) {
-        if (std::isupper(c)) {
+        if ((std::isupper(c) && !std::isupper(prevC)) || (std::isdigit(c) && !std::isdigit(prevC)) ||
+            (!std::isdigit(c) && std::isdigit(prevC))) {
             auto token = ss.str();
             if (token.length() > 0) {
                 tokens.push_back(token);
             }
             ss = std::ostringstream();
         }
+        prevC = c;
         ss << c;
     }
     tokens.push_back(ss.str());

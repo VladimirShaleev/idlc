@@ -300,9 +300,10 @@ static void generateEnums(idl::Context& ctx, const std::filesystem::path& out, b
         return;
     }
 
+    auto API    = convert(ctx.api()->name, Case::ScreamingSnakeCase);
     auto header = createHeader(ctx, out, "enums");
-    beginHeader(ctx, header, true);
-    ctx.filter<ASTEnum>([&header](auto node) {
+    beginHeader(ctx, header, true, "platform");
+    ctx.filter<ASTEnum>([&header, &API](auto node) {
         const auto isHexOut = node->template findAttr<ASTAttrHex>() != nullptr;
         std::vector<std::pair<std::string, std::string>> consts;
         consts.reserve(node->consts.size());
@@ -334,6 +335,9 @@ static void generateEnums(idl::Context& ctx, const std::filesystem::path& out, b
             fmt::println(header.stream, "{:<{}}{:<{}} = {}", ' ', 4, key, maxLength, value);
         }
         fmt::println(header.stream, "}} {};", name.str);
+        if (node->template findAttr<ASTAttrFlags>()) {
+            fmt::println(header.stream, "{}_FLAGS({})", API, name.str);
+        }
         fmt::println(header.stream, "");
     });
     endHeader(ctx, header, true);
@@ -391,7 +395,7 @@ static void generateCore(idl::Context& ctx,
                 header,
                 true,
                 "version",
-                (hasTypesHeader || hasStructsHeader) ? "" : "platform",
+                (hasTypesHeader || hasStructsHeader || hasEnumsHeader) ? "" : "platform",
                 hasTypesHeader ? "types" : "",
                 hasEnumsHeader ? "enums" : "",
                 hasStructsHeader ? "structs" : "");

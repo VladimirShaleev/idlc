@@ -126,8 +126,15 @@ struct CName : Visitor {
         assert(!"C name is missing");
     }
 
+    static std::string cnameDecl(ASTDecl* decl, bool upper) {
+        if (auto attr = decl->findAttr<ASTAttrCName>()) {
+            return attr->name;
+        }
+        return convert(decl->name, upper ? Case::ScreamingSnakeCase : Case::SnakeCase);
+    }
+
     static std::string cname(ASTDecl* decl, bool upper = false) {
-        auto name = convert(decl->name, upper ? Case::ScreamingSnakeCase : Case::SnakeCase);
+        auto name = cnameDecl(decl, upper);
         if (auto parentDecl = decl->parent->as<ASTDecl>()) {
             return cname(parentDecl, upper) + '_' + name;
         }
@@ -183,6 +190,10 @@ struct AttrName : Visitor {
         str = "handle";
     }
 
+    void visit(ASTAttrCName* node) override {
+        str = "cname";
+    }
+
     void discarded(ASTNode*) override {
         assert(!"attribute name is missing");
     }
@@ -192,31 +203,33 @@ struct AttrName : Visitor {
 
 struct AllowedAttrs : Visitor {
     void visit(struct ASTEnum*) override {
-        allowed = { add<ASTAttrFlags>(), add<ASTAttrHex>(), add<ASTAttrPlatform>() };
+        allowed = { add<ASTAttrFlags>(), add<ASTAttrHex>(), add<ASTAttrPlatform>(), add<ASTAttrCName>() };
     }
 
     void visit(struct ASTEnumConst*) override {
-        allowed = { add<ASTAttrType>(), add<ASTAttrValue>() };
+        allowed = { add<ASTAttrType>(), add<ASTAttrValue>(), add<ASTAttrCName>() };
     }
 
     void visit(ASTStruct* node) override {
-        allowed = { add<ASTAttrPlatform>(), add<ASTAttrHandle>() };
+        allowed = { add<ASTAttrPlatform>(), add<ASTAttrHandle>(), add<ASTAttrCName>() };
     }
 
     void visit(ASTField* node) override {
-        allowed = { add<ASTAttrType>(), add<ASTAttrValue>() };
+        allowed = { add<ASTAttrType>(), add<ASTAttrValue>(), add<ASTAttrCName>() };
     }
 
     void visit(ASTInterface* node) override {
-        allowed = { add<ASTAttrPlatform>() };
+        allowed = { add<ASTAttrPlatform>(), add<ASTAttrCName>() };
     }
 
     void visit(ASTHandle* node) override {
-        allowed = { add<ASTAttrPlatform>(), add<ASTAttrType>() };
+        allowed = { add<ASTAttrPlatform>(), add<ASTAttrType>(), add<ASTAttrCName>() };
     }
 
     void visit(ASTMethod* node) override {
-        allowed = { add<ASTAttrType>(), add<ASTAttrPlatform>(), add<ASTAttrStatic>(), add<ASTAttrCtor>() };
+        allowed = {
+            add<ASTAttrType>(), add<ASTAttrPlatform>(), add<ASTAttrStatic>(), add<ASTAttrCtor>(), add<ASTAttrCName>()
+        };
     }
 
     void visit(ASTProperty* node) override {
@@ -226,11 +239,11 @@ struct AllowedAttrs : Visitor {
     }
 
     void visit(ASTArg* node) override {
-        allowed = { add<ASTAttrType>(), add<ASTAttrValue>(), add<ASTAttrThis>() };
+        allowed = { add<ASTAttrType>(), add<ASTAttrValue>(), add<ASTAttrThis>(), add<ASTAttrCName>() };
     }
 
     void visit(ASTFunc* node) override {
-        allowed = { add<ASTAttrType>(), add<ASTAttrPlatform>() };
+        allowed = { add<ASTAttrType>(), add<ASTAttrPlatform>(), add<ASTAttrCName>() };
     }
 
     template <typename Attr>

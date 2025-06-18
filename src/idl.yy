@@ -71,6 +71,7 @@
 %token ATTRGET
 %token ATTRSET
 %token ATTRHANDLE
+%token ATTRCNAME
 
 %token API
 %token ENUM
@@ -96,6 +97,7 @@
 %type <ASTAttr*> attr_hex
 %type <ASTAttr*> attr_platform
 %type <ASTAttr*> attr_type
+%type <ASTAttr*> attr_cname
 %type <ASTAttr*> attr_get
 %type <ASTAttr*> attr_set
 %type <ASTAttr*> attr_handle
@@ -131,7 +133,7 @@ node
     ;
 
 def_with_attrs_and_doc
-    : def_with_attrs { throw syntax_error(@1, err_str<E2005>()); }
+    : def_with_attrs { throw syntax_error(@1, err_str<E2005>($1->fullname())); }
     | doc def_with_attrs idoc { throw syntax_error(@2, err_str<E2021>()); }
     | doc def_with_attrs {
         $2->doc = $1;
@@ -216,6 +218,7 @@ attr_item
     | attr_platform { $$ = $1; }
     | attr_value { $$ = $1; }
     | attr_type { $$ = $1; }
+    | attr_cname { $$ = $1; }
     | attr_get { $$ = $1; }
     | attr_set { $$ = $1; }
     | attr_handle { $$ = $1; }
@@ -276,6 +279,16 @@ attr_type
         auto node = alloc_node(ASTAttrType, @1);
         node->type = ref;
         ref->parent = node;
+        $$ = node;
+    }
+    ;
+
+attr_cname
+    : ATTRCNAME { throw syntax_error(@1, err_str<E2075>()); }
+    | ATTRCNAME '(' ')' { throw syntax_error(@1, err_str<E2075>()); }
+    | ATTRCNAME '(' STR ')' {
+        auto node = alloc_node(ASTAttrCName, @1);
+        node->name = $3;
         $$ = node;
     }
     ;

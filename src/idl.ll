@@ -21,6 +21,7 @@ std::string unescape(const char*);
 %x ATTRARGTYPE
 %x ATTRARGVALUE
 %x ATTRARGPATFORM
+%x ATTRARGCNAME
 %x TYPE
 %x DECLREF
 %x IMPORT
@@ -86,6 +87,7 @@ DOCMCHAR ([^ \r\n\t\{\}[\]`]|^[`]{3}|\\\{|\\\}|\\\[|\\\])
 <ATTRCTX>"get"      { BEGIN(ATTRARGTYPE); return token::ATTRGET; }
 <ATTRCTX>"set"      { BEGIN(ATTRARGTYPE); return token::ATTRSET; }
 <ATTRCTX>"handle"   { return token::ATTRHANDLE; }
+<ATTRCTX>"cname"    { BEGIN(ATTRARGCNAME); return token::ATTRCNAME; }
 <ATTRCTX>","        { return YYText()[0]; }
 <ATTRCTX>" "        ;
 <ATTRCTX>\n         { yylloc->lines(); }
@@ -123,6 +125,13 @@ DOCMCHAR ([^ \r\n\t\{\}[\]`]|^[`]{3}|\\\{|\\\}|\\\[|\\\])
 <ATTRARGTYPE>\n                  { yylloc->lines(); }
 <ATTRARGTYPE>[A-Z][a-zA-Z0-9\.]* { yylval->emplace<std::string>(YYText()); return token::REF; }
 <ATTRARGTYPE>.                   { err<E2001>(*yylloc, YYText()); }
+
+<ATTRARGCNAME>"("           { return YYText()[0]; }
+<ATTRARGCNAME>")"           { BEGIN(ATTRCTX); return YYText()[0]; }
+<ATTRARGCNAME>" "           ;
+<ATTRARGCNAME>\n            { yylloc->lines(); }
+<ATTRARGCNAME>[_a-zA-Z0-9]+ { yylval->emplace<std::string>(YYText()); return token::STR; }
+<ATTRARGCNAME>.             { err<E2001>(*yylloc, YYText()); }
 
 import[ ]+ { BEGIN(IMPORT); }
 <IMPORT>[-\.a-zA-Z0-9_]+ { 

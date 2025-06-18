@@ -103,7 +103,8 @@ enum Error {
     E2086,
     E2087,
     E2088,
-    E2089
+    E2089,
+    E2090
 };
 
 template <Warning Code, typename... Args>
@@ -401,6 +402,9 @@ inline std::string err_str(Args&&... args) {
     }
     if constexpr (Code == E2089) {
         ss << "there can only be one method to destroy object";
+    }
+    if constexpr (Code == E2090) {
+        ss << "events can only be added to a interface type";
     }
     return ss.str();
 }

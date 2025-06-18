@@ -91,6 +91,7 @@
 %token METHOD
 %token ARG
 %token PROP
+%token EVENT
 %token HANDLE
 %token FUNC
 %token CALLBACK
@@ -222,6 +223,7 @@ decl
     | METHOD { auto node = alloc_node(ASTMethod, @1); $$ = node; }
     | ARG { auto node = alloc_node(ASTArg, @1); $$ = node; }
     | PROP { auto node = alloc_node(ASTProperty, @1); $$ = node; }
+    | EVENT { auto node = alloc_node(ASTEvent, @1); $$ = node; }
     | HANDLE { auto node = alloc_node(ASTHandle, @1); $$ = node; }
     | FUNC { auto node = alloc_node(ASTFunc, @1); $$ = node; }
     | CALLBACK { auto node = alloc_node(ASTCallback, @1); $$ = node; }

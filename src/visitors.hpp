@@ -291,6 +291,12 @@ struct AllowedAttrs : Visitor {
         };
     }
 
+    void visit(ASTEvent* node) override {
+        allowed = {
+            add<ASTAttrType>(), add<ASTAttrPlatform>(), add<ASTAttrStatic>(), add<ASTAttrGet>(), add<ASTAttrSet>()
+        };
+    }
+
     void visit(ASTArg* node) override {
         allowed = { add<ASTAttrType>(),  add<ASTAttrValue>(), add<ASTAttrThis>(),     add<ASTAttrCName>(),
                     add<ASTAttrConst>(), add<ASTAttrRef>(),   add<ASTAttrUserData>(), add<ASTAttrResult>(),
@@ -429,6 +435,15 @@ struct ChildsAggregator : Visitor {
             node->parent = parent;
         } else {
             throw Exception(node->location, err_str<E2043>());
+        }
+    }
+
+    void visit(ASTEvent* node) override {
+        if (auto parent = getParent<ASTInterface>()) {
+            parent->events.push_back(node);
+            node->parent = parent;
+        } else {
+            throw Exception(node->location, err_str<E2090>());
         }
     }
 

@@ -79,6 +79,7 @@ int main(int argc, char* argv[]) {
     context.prepareFunctions();
     context.prepareMethods();
     context.prepareProperties();
+    context.prepareEvents();
     context.prepareInterfaces();
     context.prepareHandles();
 

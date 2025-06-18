@@ -657,6 +657,9 @@ public:
         }
     }
 
+    void prepareEvents() {
+    }
+
     void prepareInterfaces() {
         filter<ASTInterface>([this](auto node) {
             int refMethodCount     = 0;

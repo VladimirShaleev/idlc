@@ -45,6 +45,7 @@ DOCMCHAR ([^ \r\n\t\{\}[\]`]|^[`]{3}|\\\{|\\\}|\\\[|\\\])
 "method"    { context().setDeclaring(); return token::METHOD; }
 "arg"       { context().setDeclaring(); return token::ARG; }
 "prop"      { context().setDeclaring(); return token::PROP; }
+"event"     { context().setDeclaring(); return token::EVENT; }
 "handle"    { context().setDeclaring(); return token::HANDLE; }
 "func"      { context().setDeclaring(); return token::FUNC; }
 "callback"  { context().setDeclaring(); return token::CALLBACK; }

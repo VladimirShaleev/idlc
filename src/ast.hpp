@@ -337,11 +337,16 @@ struct ASTProperty : ASTDecl {
     void accept(Visitor& visitor) override;
 };
 
+struct ASTEvent : ASTDecl {
+    void accept(Visitor& visitor) override;
+};
+
 struct ASTInterface : ASTType {
     void accept(Visitor& visitor) override;
 
     std::vector<ASTMethod*> methods;
     std::vector<ASTProperty*> props;
+    std::vector<ASTEvent*> events;
 };
 
 struct ASTHandle : ASTType {
@@ -590,6 +595,10 @@ struct Visitor {
         discarded(node);
     }
 
+    virtual void visit(ASTEvent* node) {
+        discarded(node);
+    }
+
     virtual void visit(ASTArg* node) {
         discarded(node);
     }
@@ -811,6 +820,10 @@ inline void ASTMethod::accept(Visitor& visitor) {
 }
 
 inline void ASTProperty::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+inline void ASTEvent::accept(Visitor& visitor) {
     visitor.visit(this);
 }
 

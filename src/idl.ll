@@ -44,6 +44,7 @@ DOCMCHAR ([^ \r\n\t\{\}[\]`]|^[`]{3}|\\\{|\\\}|\\\[|\\\])
 "arg"       { context().setDeclaring(); return token::ARG; }
 "prop"      { context().setDeclaring(); return token::PROP; }
 "handle"    { context().setDeclaring(); return token::HANDLE; }
+"func"      { context().setDeclaring(); return token::FUNC; }
 
 "@"                        { BEGIN(DOCSTR); return context().isDeclaring() ? token::IDOC : token::DOC; }
 <DOCSTR>{DOCCHAR}+         { yylval->emplace<std::string>(unescape(YYText())); return token::STR; }

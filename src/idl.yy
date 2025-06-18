@@ -82,6 +82,7 @@
 %token ARG
 %token PROP
 %token HANDLE
+%token FUNC
 
 %token <std::string> STR
 %token <std::string> ID
@@ -201,6 +202,7 @@ decl
     | ARG { auto node = alloc_node(ASTArg, @1); $$ = node; }
     | PROP { auto node = alloc_node(ASTProperty, @1); $$ = node; }
     | HANDLE { auto node = alloc_node(ASTHandle, @1); $$ = node; }
+    | FUNC { auto node = alloc_node(ASTFunc, @1); $$ = node; }
     ;
 
 attr_list

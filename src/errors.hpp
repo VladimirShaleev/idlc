@@ -85,7 +85,10 @@ enum Error {
     E2068,
     E2069,
     E2070,
-    E2071
+    E2071,
+    E2072,
+    E2073,
+    E2074
 };
 
 template <Warning Code, typename... Args>
@@ -232,7 +235,7 @@ inline std::string err_str(Args&&... args) {
         ss << "methods can only be added to a interface type";
     }
     if constexpr (Code == E2044) {
-        ss << "arguments can only be added to a method";
+        ss << "arguments can only be added to a method or function";
     }
     if constexpr (Code == E2045) {
         ss << "out of memory";
@@ -322,7 +325,17 @@ inline std::string err_str(Args&&... args) {
         ss << fmt::format("the handle type must be struct for '{}'", args...);
     }
     if constexpr (Code == E2071) {
-        ss << fmt::format("the structure '{}' specified in the handle type '{}' must be marked with the 'handle' attribute", args...);
+        ss << fmt::format(
+            "the structure '{}' specified in the handle type '{}' must be marked with the 'handle' attribute", args...);
+    }
+    if constexpr (Code == E2072) {
+        ss << "function can only be added to a interface type";
+    }
+    if constexpr (Code == E2073) {
+        ss << fmt::format("function '{}' argument '{}' cannot be marked with the 'this' attribute", args...);
+    }
+    if constexpr (Code == E2074) {
+        ss << fmt::format("argument '{}' of function '{}' cannot be of type 'Void'", args...);
     }
     return ss.str();
 }

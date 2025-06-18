@@ -290,11 +290,18 @@ struct ASTHandle : ASTType {
     void accept(Visitor& visitor) override;
 };
 
+struct ASTFunc : ASTDecl {
+    void accept(Visitor& visitor) override;
+
+    std::vector<ASTArg*> args;
+};
+
 struct ASTApi : ASTDecl {
     void accept(Visitor& visitor) override;
 
     std::vector<ASTEnum*> enums;
     std::vector<ASTStruct*> structs;
+    std::vector<ASTFunc*> funcs;
     std::vector<ASTInterface*> interfaces;
     std::vector<ASTHandle*> handles;
 };
@@ -451,6 +458,10 @@ struct Visitor {
     }
 
     virtual void visit(ASTHandle* node) {
+        discarded(node);
+    }
+
+    virtual void visit(ASTFunc* node) {
         discarded(node);
     }
 
@@ -619,6 +630,10 @@ inline void ASTInterface::accept(Visitor& visitor) {
 }
 
 inline void ASTHandle::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+inline void ASTFunc::accept(Visitor& visitor) {
     visitor.visit(this);
 }
 

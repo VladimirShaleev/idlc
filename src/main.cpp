@@ -1,6 +1,5 @@
 #include <argparse/argparse.hpp>
 
-#include "generator_c.hpp"
 #include "parser.hpp"
 #include "scanner.hpp"
 #include "version.hpp"
@@ -9,6 +8,8 @@ enum struct GeneratorType {
     C,
     Cpp
 };
+
+void generateC(idl::Context& ctx, const std::filesystem::path& out);
 
 void addGeneratorArg(argparse::ArgumentParser& program) {
     auto& arg = program.add_argument("-g", "--generator");
@@ -74,15 +75,14 @@ int main(int argc, char* argv[]) {
 
     context.prepareEnumConsts();
     context.prepareStructs();
+    context.prepareFunctions();
     context.prepareMethods();
     context.prepareProperties();
     context.prepareHandles();
 
-    const auto generator = getGeneratorArg(program);
-    switch (generator) {
+    switch (getGeneratorArg(program)) {
         case GeneratorType::C: {
-            GeneratorC gen{};
-            gen.generate(context, output);
+            generateC(context, output);
             break;
         }
         case GeneratorType::Cpp: {

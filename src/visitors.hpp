@@ -106,6 +106,22 @@ struct CName : Visitor {
         }
     }
 
+    void visit(ASTStruct* node) override {
+        str = cname(node) + "_t";
+    }
+
+    void visit(ASTField* node) override {
+        str = convert(node->name, Case::SnakeCase);
+    }
+
+    void visit(ASTInterface* node) override {
+        str = cname(node) + "_t";
+    }
+
+    void visit(ASTHandle* node) override {
+        str = cname(node) + "_h";
+    }
+
     void discarded(ASTNode*) override {
         assert(!"C name is missing");
     }
@@ -213,6 +229,10 @@ struct AllowedAttrs : Visitor {
         allowed = { add<ASTAttrType>(), add<ASTAttrValue>(), add<ASTAttrThis>() };
     }
 
+    void visit(ASTFunc* node) override {
+        allowed = { add<ASTAttrType>(), add<ASTAttrPlatform>() };
+    }
+
     template <typename Attr>
     static std::pair<std::type_index, std::string> add() {
         return { typeid(Attr), getName<Attr>() };
@@ -288,6 +308,15 @@ struct ChildsAggregator : Visitor {
         }
     }
 
+    void visit(ASTFunc* node) override {
+        if (auto parent = getParent<ASTApi>()) {
+            parent->funcs.push_back(node);
+            node->parent = parent;
+        } else {
+            assert(!"unreachable code");
+        }
+    }
+
     void visit(ASTMethod* node) override {
         if (auto parent = getParent<ASTInterface>()) {
             parent->methods.push_back(node);
@@ -298,9 +327,13 @@ struct ChildsAggregator : Visitor {
     }
 
     void visit(ASTArg* node) override {
-        if (auto parent = getParent<ASTMethod>()) {
-            parent->args.push_back(node);
-            node->parent = parent;
+        auto parent = getParent<ASTMethod, ASTFunc>();
+        if (auto method = parent->template as<ASTMethod>()) {
+            method->args.push_back(node);
+            node->parent = method;
+        } else if (auto func = parent->template as<ASTFunc>()) {
+            func->args.push_back(node);
+            node->parent = func;
         } else {
             throw Exception(node->location, err_str<E2044>());
         }
@@ -323,6 +356,17 @@ struct ChildsAggregator : Visitor {
             current = current->parent;
         }
         return current->as<Node>();
+    }
+
+    template <typename Node1, typename Node2>
+    ASTNode* getParent() noexcept {
+        static_assert(std::is_base_of<ASTNode, Node1>::value, "Node1 must be inherited from ASTNode");
+        static_assert(std::is_base_of<ASTNode, Node2>::value, "Node2 must be inherited from ASTNode");
+        ASTNode* current = prevNode;
+        while (current && !current->is<Node1>() && !current->is<Node2>()) {
+            current = current->parent;
+        }
+        return current;
     }
 
     ASTDecl* prevNode;

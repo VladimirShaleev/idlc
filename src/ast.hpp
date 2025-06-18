@@ -354,7 +354,7 @@ struct ASTFunc : ASTDecl {
     std::vector<ASTArg*> args;
 };
 
-struct ASTCallback : ASTDecl {
+struct ASTCallback : ASTType {
     void accept(Visitor& visitor) override;
 
     std::vector<ASTArg*> args;

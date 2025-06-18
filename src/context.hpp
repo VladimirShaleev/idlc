@@ -68,7 +68,7 @@ public:
         _symbols[fullname] = decl;
     }
 
-    ASTDecl* findSymbol(ASTDecl* decl, const idl::location& loc, const std::string& name) {
+    ASTDecl* findSymbol(ASTDecl* decl, const idl::location& loc, const std::string& name, bool onlyType = false) {
         auto nameLower = name;
         std::transform(nameLower.begin(), nameLower.end(), nameLower.begin(), [](auto c) {
             return std::tolower(c);
@@ -81,16 +81,22 @@ public:
                 if (actualName != expectedName) {
                     err<E2037>(loc, actualName, expectedName);
                 }
-                return it->second;
+                if (onlyType) {
+                    if (it->second->is<ASTType>()) {
+                        return it->second;
+                    }
+                } else {
+                    return it->second;
+                }
             }
             decl = decl->parent->as<ASTDecl>();
         }
         err<E2032>(loc, name);
     }
 
-    ASTDecl* findSymbol(ASTDecl* decl, const idl::location& loc, ASTDeclRef* declRef) {
+    ASTDecl* findSymbol(ASTDecl* decl, const idl::location& loc, ASTDeclRef* declRef, bool onlyType = false) {
         if (!declRef->decl) {
-            auto symbol   = findSymbol(decl, loc, declRef->name);
+            auto symbol   = findSymbol(decl, loc, declRef->name, onlyType);
             declRef->decl = symbol;
             return symbol;
         } else {
@@ -100,7 +106,7 @@ public:
 
     ASTType* resolveType(ASTDeclRef* declRef) {
         auto parent = declRef->parent->is<ASTAttr>() ? declRef->parent->parent : declRef->parent;
-        auto decl   = findSymbol(parent->as<ASTDecl>(), declRef->location, declRef);
+        auto decl   = findSymbol(parent->as<ASTDecl>(), declRef->location, declRef, true);
 
         if (auto type = decl->as<ASTType>()) {
             return type;

@@ -220,6 +220,14 @@ struct AttrName : Visitor {
         str = "userdata";
     }
 
+    void visit(ASTAttrErrorCode* node) override {
+        str = "errorcode";
+    }
+
+    void visit(ASTAttrResult* node) override {
+        str = "result";
+    }
+
     void discarded(ASTNode*) override {
         assert(!"attribute name is missing");
     }
@@ -229,7 +237,9 @@ struct AttrName : Visitor {
 
 struct AllowedAttrs : Visitor {
     void visit(struct ASTEnum*) override {
-        allowed = { add<ASTAttrFlags>(), add<ASTAttrHex>(), add<ASTAttrPlatform>(), add<ASTAttrCName>() };
+        allowed = {
+            add<ASTAttrFlags>(), add<ASTAttrHex>(), add<ASTAttrPlatform>(), add<ASTAttrCName>(), add<ASTAttrErrorCode>()
+        };
     }
 
     void visit(struct ASTEnumConst*) override {
@@ -265,12 +275,12 @@ struct AllowedAttrs : Visitor {
     }
 
     void visit(ASTArg* node) override {
-        allowed = { add<ASTAttrType>(),  add<ASTAttrValue>(), add<ASTAttrThis>(),    add<ASTAttrCName>(),
-                    add<ASTAttrConst>(), add<ASTAttrRef>(),   add<ASTAttrUserData>() };
+        allowed = { add<ASTAttrType>(),  add<ASTAttrValue>(), add<ASTAttrThis>(),     add<ASTAttrCName>(),
+                    add<ASTAttrConst>(), add<ASTAttrRef>(),   add<ASTAttrUserData>(), add<ASTAttrResult>() };
     }
 
     void visit(ASTFunc* node) override {
-        allowed = { add<ASTAttrType>(), add<ASTAttrPlatform>(), add<ASTAttrCName>() };
+        allowed = { add<ASTAttrType>(), add<ASTAttrPlatform>(), add<ASTAttrCName>(), add<ASTAttrErrorCode>() };
     }
 
     void visit(ASTCallback* node) override {

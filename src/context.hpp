@@ -334,6 +334,7 @@ public:
                 needAddRetType.push_back(node);
             }
             int countUserData = 0;
+            int countResult   = 0;
             for (auto arg : node->args) {
                 if (!arg->template findAttr<ASTAttrType>()) {
                     needAddArgType.push_back(arg);
@@ -342,8 +343,12 @@ public:
                     err<E2083>(arg->location, node->fullname(), arg->name);
                 }
                 countUserData += arg->template findAttr<ASTAttrUserData>() ? 1 : 0;
+                countResult += arg->template findAttr<ASTAttrResult>() ? 1 : 0;
                 if (countUserData > 1) {
                     err<E2082>(arg->location);
+                }
+                if (countResult > 1) {
+                    err<E2084>(arg->location);
                 }
             }
         });
@@ -383,6 +388,7 @@ public:
                 needAddRetType.push_back(node);
             }
             int countUserData = 0;
+            int countResult   = 0;
             for (auto arg : node->args) {
                 if (!arg->template findAttr<ASTAttrType>()) {
                     needAddArgType.push_back(arg);
@@ -391,8 +397,12 @@ public:
                     err<E2073>(arg->location, node->fullname(), arg->name);
                 }
                 countUserData += arg->template findAttr<ASTAttrUserData>() ? 1 : 0;
+                countResult += arg->template findAttr<ASTAttrResult>() ? 1 : 0;
                 if (countUserData > 1) {
                     err<E2082>(arg->location);
+                }
+                if (countResult > 1) {
+                    err<E2084>(arg->location);
                 }
             }
         });
@@ -414,11 +424,18 @@ public:
         }
         filter<ASTFunc>([this](auto node) {
             auto attr = node->template findAttr<ASTAttrType>();
-            resolveType(attr->type);
+            auto type = resolveType(attr->type);
             for (auto arg : node->args) {
                 auto argAttr = arg->template findAttr<ASTAttrType>();
                 if (dynamic_cast<ASTVoid*>(resolveType(argAttr->type)) != nullptr) {
                     err<E2074>(arg->location, arg->name, node->fullname());
+                }
+            }
+            if (node->template findAttr<ASTAttrErrorCode>()) {
+                auto argType        = node->args[0]->template findAttr<ASTAttrType>()->type->decl;
+                auto argIsErrorCode = argType->template findAttr<ASTAttrErrorCode>() != nullptr;
+                if (!type->template is<ASTStr>() || node->args.size() != 1 || !argIsErrorCode) {
+                    err<E2085>(node->location);
                 }
             }
         });
@@ -458,13 +475,18 @@ public:
                 }
             }
             int countUserData = 0;
+            int countResult   = 0;
             for (auto arg : node->args) {
                 if (!arg->template findAttr<ASTAttrType>()) {
                     needAddArgType.push_back(arg);
                 }
                 countUserData += arg->template findAttr<ASTAttrUserData>() ? 1 : 0;
+                countResult += arg->template findAttr<ASTAttrResult>() ? 1 : 0;
                 if (countUserData > 1) {
                     err<E2082>(arg->location);
+                }
+                if (countResult > 1) {
+                    err<E2084>(arg->location);
                 }
             }
             return true;

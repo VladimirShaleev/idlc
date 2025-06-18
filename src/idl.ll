@@ -77,29 +77,31 @@ DOCMCHAR ([^ \r\n\t\{\}[\]`]|^[`]{3}|\\\{|\\\}|\\\[|\\\])
 <DOCMSTR>.      { err<E2001>(*yylloc, YYText()); }
 <DOCMSTR>"```"  { BEGIN(DOCSTR); }
 
-"["                 { BEGIN(ATTRCTX); return YYText()[0]; }
-<ATTRCTX>"flags"    { return token::ATTRFLAGS; }
-<ATTRCTX>"hex"      { return token::ATTRHEX; }
-<ATTRCTX>"platform" { BEGIN(ATTRARGPATFORM); return token::ATTRPLATFORM; }
-<ATTRCTX>"value"    { BEGIN(ATTRARGVALUE); return token::ATTRVALUE; }
-<ATTRCTX>"type"     { BEGIN(ATTRARGTYPE); return token::ATTRTYPE; }
-<ATTRCTX>"static"   { return token::ATTRSTATIC; }
-<ATTRCTX>"ctor"     { return token::ATTRCTOR; }
-<ATTRCTX>"this"     { return token::ATTRTHIS; }
-<ATTRCTX>"get"      { BEGIN(ATTRARGTYPE); return token::ATTRGET; }
-<ATTRCTX>"set"      { BEGIN(ATTRARGTYPE); return token::ATTRSET; }
-<ATTRCTX>"handle"   { return token::ATTRHANDLE; }
-<ATTRCTX>"cname"    { BEGIN(ATTRARGCNAME); return token::ATTRCNAME; }
-<ATTRCTX>"array"    { BEGIN(ATTRARGARRAY); return token::ATTRARRAY; }
-<ATTRCTX>"const"    { return token::ATTRCONST; }
-<ATTRCTX>"ref"      { return token::ATTRREF; }
-<ATTRCTX>"userdata" { return token::ATTRUSERDATA; }
-<ATTRCTX>","        { return YYText()[0]; }
-<ATTRCTX>" "        ;
-<ATTRCTX>\n         { yylloc->lines(); }
-<ATTRCTX>[a-z]+     { err<E2015>(*yylloc, YYText()); }
-<ATTRCTX>[^\]\(]    { err<E2001>(*yylloc, YYText()); }
-<ATTRCTX>"]"        { BEGIN(INITIAL); return YYText()[0]; }
+"["                  { BEGIN(ATTRCTX); return YYText()[0]; }
+<ATTRCTX>"flags"     { return token::ATTRFLAGS; }
+<ATTRCTX>"hex"       { return token::ATTRHEX; }
+<ATTRCTX>"platform"  { BEGIN(ATTRARGPATFORM); return token::ATTRPLATFORM; }
+<ATTRCTX>"value"     { BEGIN(ATTRARGVALUE); return token::ATTRVALUE; }
+<ATTRCTX>"type"      { BEGIN(ATTRARGTYPE); return token::ATTRTYPE; }
+<ATTRCTX>"static"    { return token::ATTRSTATIC; }
+<ATTRCTX>"ctor"      { return token::ATTRCTOR; }
+<ATTRCTX>"this"      { return token::ATTRTHIS; }
+<ATTRCTX>"get"       { BEGIN(ATTRARGTYPE); return token::ATTRGET; }
+<ATTRCTX>"set"       { BEGIN(ATTRARGTYPE); return token::ATTRSET; }
+<ATTRCTX>"handle"    { return token::ATTRHANDLE; }
+<ATTRCTX>"cname"     { BEGIN(ATTRARGCNAME); return token::ATTRCNAME; }
+<ATTRCTX>"array"     { BEGIN(ATTRARGARRAY); return token::ATTRARRAY; }
+<ATTRCTX>"const"     { return token::ATTRCONST; }
+<ATTRCTX>"ref"       { return token::ATTRREF; }
+<ATTRCTX>"userdata"  { return token::ATTRUSERDATA; }
+<ATTRCTX>"errorcode" { return token::ATTRERRORCODE; }
+<ATTRCTX>"result"    { return token::ATTRRESULT; }
+<ATTRCTX>","         { return YYText()[0]; }
+<ATTRCTX>" "         ;
+<ATTRCTX>\n          { yylloc->lines(); }
+<ATTRCTX>[a-z]+      { err<E2015>(*yylloc, YYText()); }
+<ATTRCTX>[^\]\(]     { err<E2001>(*yylloc, YYText()); }
+<ATTRCTX>"]"         { BEGIN(INITIAL); return YYText()[0]; }
 
 <ATTRARGVALUE>"("                 { return YYText()[0]; }
 <ATTRARGVALUE>")"                 { BEGIN(ATTRCTX); return YYText()[0]; }

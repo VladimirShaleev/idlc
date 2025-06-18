@@ -76,6 +76,8 @@
 %token ATTRCONST
 %token ATTRREF
 %token ATTRUSERDATA
+%token ATTRERRORCODE
+%token ATTRRESULT
 
 %token API
 %token ENUM
@@ -107,6 +109,8 @@
 %type <ASTAttr*> attr_const
 %type <ASTAttr*> attr_ref
 %type <ASTAttr*> attr_userdata
+%type <ASTAttr*> attr_errorcode
+%type <ASTAttr*> attr_result
 %type <ASTAttr*> attr_get
 %type <ASTAttr*> attr_set
 %type <ASTAttr*> attr_handle
@@ -233,6 +237,8 @@ attr_item
     | attr_const { $$ = $1; }
     | attr_ref { $$ = $1; }
     | attr_userdata { $$ = $1; }
+    | attr_errorcode { $$ = $1; }
+    | attr_result { $$ = $1; }
     | attr_get { $$ = $1; }
     | attr_set { $$ = $1; }
     | attr_handle { $$ = $1; }
@@ -336,6 +342,14 @@ attr_ref
 
 attr_userdata
     : ATTRUSERDATA { auto node = alloc_node(ASTAttrUserData, @1); $$ = node; }
+    ;
+
+attr_errorcode
+    : ATTRERRORCODE { auto node = alloc_node(ASTAttrErrorCode, @1); $$ = node; }
+    ;
+
+attr_result
+    : ATTRRESULT { auto node = alloc_node(ASTAttrResult, @1); $$ = node; }
     ;
 
 attr_get

@@ -94,7 +94,8 @@ enum Error {
     E2077,
     E2078,
     E2079,
-    E2080
+    E2080,
+    E2081
 };
 
 template <Warning Code, typename... Args>
@@ -363,6 +364,9 @@ inline std::string err_str(Args&&... args) {
     if constexpr (Code == E2080) {
         ss << fmt::format("the 'array' attribute for array '{}' must point to an integer field for a dynamic array",
                           args...);
+    }
+    if constexpr (Code == E2081) {
+        ss << fmt::format("an struct '{}' must contain at least one field", args...);
     }
     return ss.str();
 }

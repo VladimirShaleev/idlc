@@ -171,6 +171,7 @@ public:
         addBuiltin("Float32", "float32", "32 bit float point", ASTFloat32{});
         addBuiltin("Float64", "float64", "64 bit float point", ASTFloat64{});
         addBuiltin("Str", "utf8", "utf8 string", ASTStr{});
+        addBuiltin("Data", "data", "data pointer", ASTData{});
     }
 
     template <typename Exception>
@@ -250,6 +251,9 @@ public:
         std::vector<ASTField*> needAddType{};
         std::vector<ASTField*> needAddRef{};
         filter<ASTStruct>([this, &needAddType, &needAddRef](auto node) {
+            if (node->fields.empty()) {
+                err<E2081>(node->location, node->fullname());
+            }
             for (auto field : node->fields) {
                 if (!field->template findAttr<ASTAttrType>()) {
                     needAddType.push_back(field);

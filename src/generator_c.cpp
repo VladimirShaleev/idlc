@@ -386,7 +386,10 @@ static void generateCallbacks(
             for (size_t i = 0; i < node->args.size(); ++i) {
                 auto arg = node->args[i];
                 arg->template findAttr<ASTAttrType>()->type->decl->accept(name);
-                const auto argType = name.str;
+                auto argType = name.str;
+                if (arg->template findAttr<ASTAttrOut>()) {
+                    argType += '*';
+                }
                 arg->accept(name);
                 const auto argName = name.str;
                 if (i == 0) {
@@ -471,7 +474,10 @@ static void generateCore(idl::Context& ctx,
         } else {
             for (size_t i = 0; i < args.size(); ++i) {
                 args[i]->findAttr<ASTAttrType>()->type->decl->accept(name);
-                const auto typeStr = name.str;
+                auto typeStr = name.str;
+                if (args[i]->findAttr<ASTAttrOut>()) {
+                    typeStr += '*';
+                }
                 args[i]->accept(name);
                 const auto nameStr = name.str;
                 if (i == 0) {

@@ -37,6 +37,25 @@ static Header createHeader(idl::Context& ctx, const std::filesystem::path& out, 
 static void writeDoc(Header& header, ASTDoc* doc, bool align) {
 }
 
+static std::pair<std::string, std::string> fieldTypeName(ASTField* field) {
+    auto attrType  = field->template findAttr<ASTAttrType>();
+    auto attrArray = field->template findAttr<ASTAttrArray>();
+    auto attrConst = field->template findAttr<ASTAttrConst>() != nullptr;
+    auto attrRef   = field->template findAttr<ASTAttrRef>() != nullptr;
+    CName name;
+    attrType->type->decl->accept(name);
+    auto type = attrConst ? "const " + name.str : name.str;
+    if (attrRef) {
+        type += '*';
+    }
+    field->accept(name);
+    auto fieldName = name.str;
+    if (attrArray && !attrArray->ref) {
+        fieldName += attrArray->size > 1 ? '[' + std::to_string(attrArray->size) + ']' : "";
+    }
+    return { type, fieldName };
+}
+
 template <typename... Includes>
 static void beginHeader(idl::Context& ctx, Header& header, bool externC, const Includes&... includes) {
     fmt::println(header.stream, "#ifndef {}", header.includeGuard);
@@ -236,19 +255,15 @@ inline {API}_CONSTEXPR_14 {api}_enum_t& operator^=({api}_enum_t& lhr, {api}_enum
     fmt::println(header.stream, "");
     ctx.filter<ASTStruct>([&header, &api](auto node) {
         if (node->template findAttr<ASTAttrHandle>()) {
-            CName name;
             size_t maxLength = 0;
             std::vector<std::pair<std::string, std::string>> typeNames;
             for (auto field : node->fields) {
-                field->accept(name);
-                auto fieldName = name.str;
-                auto attr      = field->template findAttr<ASTAttrType>();
-                attr->type->decl->accept(name);
-                typeNames.emplace_back(name.str, fieldName);
-                if (name.str.length() > maxLength) {
-                    maxLength = name.str.length();
+                typeNames.emplace_back(fieldTypeName(field));
+                if (typeNames.back().first.length() > maxLength) {
+                    maxLength = typeNames.back().first.length();
                 }
             }
+            CName name;
             node->accept(name);
             name.str = upper(name.str).substr(0, name.str.length() - 2);
             fmt::println(header.stream, "#define {}({}_name) \\", name.str, api);
@@ -359,19 +374,15 @@ static void generateStructs(
                 hasEnumsHeader ? "enums" : "");
     ctx.filter<ASTStruct>([&header](auto node) {
         if (!node->template findAttr<ASTAttrHandle>()) {
-            CName name{};
             size_t maxLength = 0;
             std::vector<std::pair<std::string, std::string>> typeNames;
             for (auto field : node->fields) {
-                field->accept(name);
-                auto fieldName = name.str;
-                auto attr      = field->template findAttr<ASTAttrType>();
-                attr->type->decl->accept(name);
-                typeNames.emplace_back(name.str, fieldName);
-                if (name.str.length() > maxLength) {
-                    maxLength = name.str.length();
+                typeNames.emplace_back(fieldTypeName(field));
+                if (typeNames.back().first.length() > maxLength) {
+                    maxLength = typeNames.back().first.length();
                 }
             }
+            CName name{};
             node->accept(name);
             fmt::println(header.stream, "typedef struct");
             fmt::println(header.stream, "{{");

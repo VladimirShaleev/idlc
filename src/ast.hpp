@@ -148,6 +148,22 @@ struct ASTAttrCName : ASTAttr {
     std::string name;
 };
 
+struct ASTAttrArray : ASTAttr {
+    void accept(Visitor& visitor) override;
+
+    bool ref{};
+    int size{};
+    struct ASTDeclRef* decl{};
+};
+
+struct ASTAttrConst : ASTAttr {
+    void accept(Visitor& visitor) override;
+};
+
+struct ASTAttrRef : ASTAttr {
+    void accept(Visitor& visitor) override;
+};
+
 struct ASTDecl : ASTNode {
     std::string name;
     std::vector<ASTAttr*> attrs;
@@ -192,6 +208,10 @@ struct ASTTrivialType : ASTType {};
 
 struct ASTBuiltinType : ASTTrivialType {};
 
+struct ASTIntegerType : ASTBuiltinType {};
+
+struct ASTFloatType : ASTBuiltinType {};
+
 struct ASTVoid : ASTBuiltinType {
     void accept(Visitor& visitor) override;
 };
@@ -208,43 +228,43 @@ struct ASTBool : ASTBuiltinType {
     void accept(Visitor& visitor) override;
 };
 
-struct ASTInt8 : ASTBuiltinType {
+struct ASTInt8 : ASTIntegerType {
     void accept(Visitor& visitor) override;
 };
 
-struct ASTUint8 : ASTBuiltinType {
+struct ASTUint8 : ASTIntegerType {
     void accept(Visitor& visitor) override;
 };
 
-struct ASTInt16 : ASTBuiltinType {
+struct ASTInt16 : ASTIntegerType {
     void accept(Visitor& visitor) override;
 };
 
-struct ASTUint16 : ASTBuiltinType {
+struct ASTUint16 : ASTIntegerType {
     void accept(Visitor& visitor) override;
 };
 
-struct ASTInt32 : ASTBuiltinType {
+struct ASTInt32 : ASTIntegerType {
     void accept(Visitor& visitor) override;
 };
 
-struct ASTUint32 : ASTBuiltinType {
+struct ASTUint32 : ASTIntegerType {
     void accept(Visitor& visitor) override;
 };
 
-struct ASTInt64 : ASTBuiltinType {
+struct ASTInt64 : ASTIntegerType {
     void accept(Visitor& visitor) override;
 };
 
-struct ASTUint64 : ASTBuiltinType {
+struct ASTUint64 : ASTIntegerType {
     void accept(Visitor& visitor) override;
 };
 
-struct ASTFloat32 : ASTBuiltinType {
+struct ASTFloat32 : ASTFloatType {
     void accept(Visitor& visitor) override;
 };
 
-struct ASTFloat64 : ASTBuiltinType {
+struct ASTFloat64 : ASTFloatType {
     void accept(Visitor& visitor) override;
 };
 
@@ -376,6 +396,18 @@ struct Visitor {
     }
 
     virtual void visit(ASTAttrCName* node) {
+        discarded(node);
+    }
+
+    virtual void visit(ASTAttrArray* node) {
+        discarded(node);
+    }
+
+    virtual void visit(ASTAttrConst* node) {
+        discarded(node);
+    }
+
+    virtual void visit(ASTAttrRef* node) {
         discarded(node);
     }
 
@@ -552,6 +584,18 @@ inline void ASTAttrSet::accept(Visitor& visitor) {
 }
 
 inline void ASTAttrCName::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+inline void ASTAttrArray::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+inline void ASTAttrConst::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+inline void ASTAttrRef::accept(Visitor& visitor) {
     visitor.visit(this);
 }
 

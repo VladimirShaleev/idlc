@@ -89,7 +89,12 @@ enum Error {
     E2072,
     E2073,
     E2074,
-    E2075
+    E2075,
+    E2076,
+    E2077,
+    E2078,
+    E2079,
+    E2080
 };
 
 template <Warning Code, typename... Args>
@@ -340,6 +345,24 @@ inline std::string err_str(Args&&... args) {
     }
     if constexpr (Code == E2075) {
         ss << "the 'cname' attribute must specify a string in the argument";
+    }
+    if constexpr (Code == E2076) {
+        ss << "the 'array' attribute must specify a size in the argument";
+    }
+    if constexpr (Code == E2077) {
+        ss << fmt::format("fixed size array '{}' of structure '{}' must be of size 1 or more", args...);
+    }
+    if constexpr (Code == E2078) {
+        ss << fmt::format(
+            "the 'array' attribute of the '{}' must point to a field of the structure or set fixed size value",
+            args...);
+    }
+    if constexpr (Code == E2079) {
+        ss << "the reference to the dynamic size array is located outside the visibility of the structure";
+    }
+    if constexpr (Code == E2080) {
+        ss << fmt::format("the 'array' attribute for array '{}' must point to an integer field for a dynamic array",
+                          args...);
     }
     return ss.str();
 }

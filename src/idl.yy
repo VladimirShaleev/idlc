@@ -72,6 +72,9 @@
 %token ATTRSET
 %token ATTRHANDLE
 %token ATTRCNAME
+%token ATTRARRAY
+%token ATTRCONST
+%token ATTRREF
 
 %token API
 %token ENUM
@@ -98,6 +101,9 @@
 %type <ASTAttr*> attr_platform
 %type <ASTAttr*> attr_type
 %type <ASTAttr*> attr_cname
+%type <ASTAttr*> attr_array
+%type <ASTAttr*> attr_const
+%type <ASTAttr*> attr_ref
 %type <ASTAttr*> attr_get
 %type <ASTAttr*> attr_set
 %type <ASTAttr*> attr_handle
@@ -219,6 +225,9 @@ attr_item
     | attr_value { $$ = $1; }
     | attr_type { $$ = $1; }
     | attr_cname { $$ = $1; }
+    | attr_array { $$ = $1; }
+    | attr_const { $$ = $1; }
+    | attr_ref { $$ = $1; }
     | attr_get { $$ = $1; }
     | attr_set { $$ = $1; }
     | attr_handle { $$ = $1; }
@@ -291,6 +300,33 @@ attr_cname
         node->name = $3;
         $$ = node;
     }
+    ;
+
+attr_array
+    : ATTRARRAY { throw syntax_error(@1, err_str<E2076>()); }
+    | ATTRARRAY '(' ')' { throw syntax_error(@1, err_str<E2076>()); }
+    | ATTRARRAY '(' NUM ')' {
+        auto node = alloc_node(ASTAttrArray, @1);
+        node->size = $3;
+        $$ = node;
+    }
+    | ATTRARRAY '(' REF ')' {
+        auto ref = alloc_node(ASTDeclRef, @3);
+        ref->name = $3;
+        auto node = alloc_node(ASTAttrArray, @1);
+        node->ref = true;
+        node->decl = ref;
+        ref->parent = node;
+        $$ = node;
+    }
+    ;
+
+attr_const
+    : ATTRCONST { auto node = alloc_node(ASTAttrConst, @1); $$ = node; }
+    ;
+
+attr_ref
+    : ATTRREF { auto node = alloc_node(ASTAttrRef, @1); $$ = node; }
     ;
 
 attr_get

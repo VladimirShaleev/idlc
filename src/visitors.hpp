@@ -17,11 +17,8 @@ struct CName : Visitor {
     }
 
     void visit(ASTStr* node) override {
-        ASTStr type{};
-        type.parent = node->parent;
-        type.name   = "Utf8";
-        str         = cname(&type) + "_t";
-        native      = "const char*";
+        str    = cname(node) + "_t";
+        native = "const char*";
     }
 
     void visit(ASTBool* node) override {
@@ -30,11 +27,8 @@ struct CName : Visitor {
     }
 
     void visit(ASTInt8* node) override {
-        ASTInt8 type{};
-        type.parent = node->parent;
-        type.name   = "Sint8";
-        str         = cname(&type) + "_t";
-        native      = "int8_t";
+        str    = cname(node) + "_t";
+        native = "int8_t";
     }
 
     void visit(ASTUint8* node) override {
@@ -43,11 +37,8 @@ struct CName : Visitor {
     }
 
     void visit(ASTInt16* node) override {
-        ASTInt16 type{};
-        type.parent = node->parent;
-        type.name   = "Sint18";
-        str         = cname(&type) + "_t";
-        native      = "int16_t";
+        str    = cname(node) + "_t";
+        native = "int16_t";
     }
 
     void visit(ASTUint16* node) override {
@@ -56,11 +47,8 @@ struct CName : Visitor {
     }
 
     void visit(ASTInt32* node) override {
-        ASTInt32 type{};
-        type.parent = node->parent;
-        type.name   = "Sint32";
-        str         = cname(&type) + "_t";
-        native      = "int32_t";
+        str    = cname(node) + "_t";
+        native = "int32_t";
     }
 
     void visit(ASTUint32* node) override {
@@ -69,11 +57,8 @@ struct CName : Visitor {
     }
 
     void visit(ASTInt64* node) override {
-        ASTInt64 type{};
-        type.parent = node->parent;
-        type.name   = "Sint64";
-        str         = cname(&type) + "_t";
-        native      = "int64_t";
+        str    = cname(node) + "_t";
+        native = "int64_t";
     }
 
     void visit(ASTUint64* node) override {
@@ -194,6 +179,18 @@ struct AttrName : Visitor {
         str = "cname";
     }
 
+    void visit(ASTAttrArray* node) override {
+        str = "array";
+    }
+
+    void visit(ASTAttrConst* node) override {
+        str = "const";
+    }
+
+    void visit(ASTAttrRef* node) override {
+        str = "ref";
+    }
+
     void discarded(ASTNode*) override {
         assert(!"attribute name is missing");
     }
@@ -215,7 +212,8 @@ struct AllowedAttrs : Visitor {
     }
 
     void visit(ASTField* node) override {
-        allowed = { add<ASTAttrType>(), add<ASTAttrValue>(), add<ASTAttrCName>() };
+        allowed = { add<ASTAttrType>(),  add<ASTAttrValue>(), add<ASTAttrCName>(),
+                    add<ASTAttrArray>(), add<ASTAttrConst>(), add<ASTAttrRef>() };
     }
 
     void visit(ASTInterface* node) override {
@@ -227,9 +225,8 @@ struct AllowedAttrs : Visitor {
     }
 
     void visit(ASTMethod* node) override {
-        allowed = {
-            add<ASTAttrType>(), add<ASTAttrPlatform>(), add<ASTAttrStatic>(), add<ASTAttrCtor>(), add<ASTAttrCName>()
-        };
+        allowed = { add<ASTAttrType>(), add<ASTAttrPlatform>(), add<ASTAttrStatic>(),
+                    add<ASTAttrCtor>(), add<ASTAttrCName>(),    add<ASTAttrConst>() };
     }
 
     void visit(ASTProperty* node) override {
@@ -239,7 +236,8 @@ struct AllowedAttrs : Visitor {
     }
 
     void visit(ASTArg* node) override {
-        allowed = { add<ASTAttrType>(), add<ASTAttrValue>(), add<ASTAttrThis>(), add<ASTAttrCName>() };
+        allowed = { add<ASTAttrType>(),  add<ASTAttrValue>(), add<ASTAttrThis>(),
+                    add<ASTAttrCName>(), add<ASTAttrConst>(), add<ASTAttrRef>() };
     }
 
     void visit(ASTFunc* node) override {

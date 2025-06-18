@@ -129,7 +129,8 @@ public:
 
         const auto loc = idl::location(idl::position(&filename, 1, 1));
 
-        auto addBuiltin = [this, &loc]<typename Node>(std::string&& name, const std::string& detail, Node) {
+        auto addBuiltin =
+            [this, &loc]<typename Node>(std::string&& name, std::string&& cname, const std::string& detail, Node) {
             std::vector<ASTNode*> doc{};
             size_t prevPos = 0;
             size_t pos     = 0;
@@ -147,23 +148,29 @@ public:
             node->doc         = allocNode<ASTDoc, Exception>(loc);
             node->doc->detail = std::move(doc);
             node->doc->parent = node;
+
+            auto attr    = allocNode<ASTAttrCName>(loc);
+            attr->name   = cname;
+            attr->parent = node;
+            node->attrs.push_back(attr);
+
             addSymbol<Exception>(node);
         };
 
-        addBuiltin("Void", "void type", ASTVoid{});
-        addBuiltin("Char", "symbol type", ASTChar{});
-        addBuiltin("Bool", "boolean type", ASTBool{});
-        addBuiltin("Int8", "8 bit signed integer", ASTInt8{});
-        addBuiltin("Uint8", "8 bit unsigned integer", ASTUint8{});
-        addBuiltin("Int16", "16 bit signed integer", ASTInt16{});
-        addBuiltin("Uint16", "16 bit unsigned integer", ASTUint16{});
-        addBuiltin("Int32", "32 bit signed integer", ASTInt32{});
-        addBuiltin("Uint32", "32 bit unsigned integer", ASTUint32{});
-        addBuiltin("Int64", "64 bit signed integer", ASTInt64{});
-        addBuiltin("Uint64", "64 bit unsigned integer", ASTUint64{});
-        addBuiltin("Float32", "32 bit float point", ASTFloat32{});
-        addBuiltin("Float64", "64 bit float point", ASTFloat64{});
-        addBuiltin("Str", "utf8 string", ASTStr{});
+        addBuiltin("Void", "void", "void type", ASTVoid{});
+        addBuiltin("Char", "char", "symbol type", ASTChar{});
+        addBuiltin("Bool", "bool", "boolean type", ASTBool{});
+        addBuiltin("Int8", "sint8", "8 bit signed integer", ASTInt8{});
+        addBuiltin("Uint8", "uint8", "8 bit unsigned integer", ASTUint8{});
+        addBuiltin("Int16", "sint16", "16 bit signed integer", ASTInt16{});
+        addBuiltin("Uint16", "uint16", "16 bit unsigned integer", ASTUint16{});
+        addBuiltin("Int32", "sint32", "32 bit signed integer", ASTInt32{});
+        addBuiltin("Uint32", "uint32", "32 bit unsigned integer", ASTUint32{});
+        addBuiltin("Int64", "sint64", "64 bit signed integer", ASTInt64{});
+        addBuiltin("Uint64", "uint64", "64 bit unsigned integer", ASTUint64{});
+        addBuiltin("Float32", "float32", "32 bit float point", ASTFloat32{});
+        addBuiltin("Float64", "float64", "64 bit float point", ASTFloat64{});
+        addBuiltin("Str", "utf8", "utf8 string", ASTStr{});
     }
 
     template <typename Exception>
@@ -241,10 +248,20 @@ public:
 
     void prepareStructs() {
         std::vector<ASTField*> needAddType{};
-        filter<ASTStruct>([this, &needAddType](auto node) {
+        std::vector<ASTField*> needAddRef{};
+        filter<ASTStruct>([this, &needAddType, &needAddRef](auto node) {
             for (auto field : node->fields) {
                 if (!field->template findAttr<ASTAttrType>()) {
                     needAddType.push_back(field);
+                }
+                if (auto attr = field->template findAttr<ASTAttrArray>()) {
+                    if (attr->ref) {
+                        if (field->template findAttr<ASTAttrRef>() == nullptr) {
+                            needAddRef.push_back(field);
+                        }
+                    } else if (attr->size < 1) {
+                        err<E2077>(field->location, field->name, node->fullname());
+                    }
                 }
             }
         });
@@ -256,11 +273,50 @@ public:
             attr->type->parent = attr;
             field->attrs.push_back(attr);
         }
-        filter<ASTStruct>([this, &needAddType](auto node) {
+        for (auto field : needAddRef) {
+            auto attr    = allocNode<ASTAttrRef>(field->location);
+            attr->parent = field;
+            field->attrs.push_back(attr);
+        }
+        filter<ASTStruct>([this](auto node) {
             for (auto field : node->fields) {
                 auto attr = field->template findAttr<ASTAttrType>();
                 if (resolveType(attr->type)->template is<ASTVoid>()) {
                     err<E2068>(field->location, field->name, node->fullname());
+                }
+            }
+        });
+        filter<ASTStruct>([this](auto node) {
+            for (auto field : node->fields) {
+                if (auto attr = field->template findAttr<ASTAttrArray>(); attr && attr->ref) {
+                    auto symbol = findSymbol(node, attr->location, attr->decl);
+                    if (auto sizeField = symbol->template as<ASTField>()) {
+                        auto parent1 = node;
+                        auto parent2 = symbol;
+                        while (true) {
+                            auto st = parent1->parent->template as<ASTStruct>();
+                            if (st == nullptr) {
+                                break;
+                            }
+                            parent1 = st;
+                        }
+                        while (true) {
+                            auto st = parent2->parent->template as<ASTStruct>();
+                            if (st == nullptr) {
+                                break;
+                            }
+                            parent2 = st;
+                        }
+                        if (parent1 != parent2) {
+                            err<E2079>(field->location);
+                        }
+                        auto type = resolveType(sizeField->template findAttr<ASTAttrType>()->type);
+                        if (!type->template is<ASTIntegerType>()) {
+                            err<E2080>(attr->location, field->fullname());
+                        }
+                    } else {
+                        err<E2078>(attr->location, field->fullname());
+                    }
                 }
             }
         });

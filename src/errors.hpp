@@ -99,7 +99,11 @@ enum Error {
     E2082,
     E2083,
     E2084,
-    E2085
+    E2085,
+    E2086,
+    E2087,
+    E2088,
+    E2089
 };
 
 template <Warning Code, typename... Args>
@@ -384,6 +388,19 @@ inline std::string err_str(Args&&... args) {
     if constexpr (Code == E2085) {
         ss << "The function to convert an error code to a string must return a string and take one argument (the error "
               "code)";
+    }
+    if constexpr (Code == E2086) {
+        ss << "The method for incrementing the reference counter of an object must be non-static and take one "
+              "argument 'this'";
+    }
+    if constexpr (Code == E2087) {
+        ss << "The method for destroy of an object must be non-static and take one argument 'this'";
+    }
+    if constexpr (Code == E2088) {
+        ss << "there can only be one method to increment reference counter";
+    }
+    if constexpr (Code == E2089) {
+        ss << "there can only be one method to destroy object";
     }
     return ss.str();
 }

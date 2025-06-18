@@ -79,6 +79,7 @@ int main(int argc, char* argv[]) {
     context.prepareFunctions();
     context.prepareMethods();
     context.prepareProperties();
+    context.prepareInterfaces();
     context.prepareHandles();
 
     switch (getGeneratorArg(program)) {
@@ -87,6 +88,8 @@ int main(int argc, char* argv[]) {
             break;
         }
         case GeneratorType::Cpp: {
+            generateC(context, output);
+            // generateCpp(context, output);
             break;
         }
     }

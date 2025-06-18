@@ -521,6 +521,16 @@ public:
                     err<E2051>(arg->location, arg->name, node->fullname());
                 }
             }
+            if (node->template findAttr<ASTAttrRef>()) {
+                if (node->template findAttr<ASTAttrStatic>() || node->args.size() != 1) {
+                    err<E2086>(node->location);
+                }
+            }
+            if (node->template findAttr<ASTAttrDestroy>()) {
+                if (node->template findAttr<ASTAttrStatic>() || node->args.size() != 1) {
+                    err<E2087>(node->location);
+                }
+            }
             return true;
         });
     }
@@ -623,6 +633,23 @@ public:
             attr->type->parent = attr;
             node->attrs.push_back(attr);
         }
+    }
+
+    void prepareInterfaces() {
+        filter<ASTInterface>([this](auto node) {
+            int refMethodCount     = 0;
+            int destroyMethodCount = 0;
+            for (auto method : node->methods) {
+                refMethodCount += method->template findAttr<ASTAttrRef>() ? 1 : 0;
+                destroyMethodCount += method->template findAttr<ASTAttrDestroy>() ? 1 : 0;
+                if (refMethodCount > 1) {
+                    err<E2088>(method->location);
+                }
+                if (destroyMethodCount > 1) {
+                    err<E2089>(method->location);
+                }
+            }
+        });
     }
 
     void prepareHandles() {

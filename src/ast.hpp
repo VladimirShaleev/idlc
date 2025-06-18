@@ -176,6 +176,10 @@ struct ASTAttrResult : ASTAttr {
     void accept(Visitor& visitor) override;
 };
 
+struct ASTAttrDestroy : ASTAttr {
+    void accept(Visitor& visitor) override;
+};
+
 struct ASTDecl : ASTNode {
     std::string name;
     std::vector<ASTAttr*> attrs;
@@ -446,6 +450,10 @@ struct Visitor {
         discarded(node);
     }
 
+    virtual void visit(ASTAttrDestroy* node) {
+        discarded(node);
+    }
+
     virtual void visit(ASTAttrHandle* node) {
         discarded(node);
     }
@@ -651,6 +659,10 @@ inline void ASTAttrErrorCode::accept(Visitor& visitor) {
 }
 
 inline void ASTAttrResult::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+inline void ASTAttrDestroy::accept(Visitor& visitor) {
     visitor.visit(this);
 }
 

@@ -228,6 +228,10 @@ struct AttrName : Visitor {
         str = "result";
     }
 
+    void visit(ASTAttrDestroy* node) override {
+        str = "destroy";
+    }
+
     void discarded(ASTNode*) override {
         assert(!"attribute name is missing");
     }
@@ -264,8 +268,8 @@ struct AllowedAttrs : Visitor {
     }
 
     void visit(ASTMethod* node) override {
-        allowed = { add<ASTAttrType>(), add<ASTAttrPlatform>(), add<ASTAttrStatic>(),
-                    add<ASTAttrCtor>(), add<ASTAttrCName>(),    add<ASTAttrConst>() };
+        allowed = { add<ASTAttrType>(),  add<ASTAttrPlatform>(), add<ASTAttrStatic>(), add<ASTAttrCtor>(),
+                    add<ASTAttrCName>(), add<ASTAttrConst>(),    add<ASTAttrRef>(),    add<ASTAttrDestroy>() };
     }
 
     void visit(ASTProperty* node) override {

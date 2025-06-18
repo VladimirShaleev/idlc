@@ -95,7 +95,9 @@ enum Error {
     E2078,
     E2079,
     E2080,
-    E2081
+    E2081,
+    E2082,
+    E2083,
 };
 
 template <Warning Code, typename... Args>
@@ -242,7 +244,7 @@ inline std::string err_str(Args&&... args) {
         ss << "methods can only be added to a interface type";
     }
     if constexpr (Code == E2044) {
-        ss << "arguments can only be added to a method or function";
+        ss << "arguments can only be added to a method, function or callback";
     }
     if constexpr (Code == E2045) {
         ss << "out of memory";
@@ -367,6 +369,12 @@ inline std::string err_str(Args&&... args) {
     }
     if constexpr (Code == E2081) {
         ss << fmt::format("an struct '{}' must contain at least one field", args...);
+    }
+    if constexpr (Code == E2082) {
+        ss << "there can be only one argument with the 'userdata' attribute";
+    }
+    if constexpr (Code == E2083) {
+        ss << fmt::format("callback '{}' argument '{}' cannot be marked with the 'this' attribute", args...);
     }
     return ss.str();
 }

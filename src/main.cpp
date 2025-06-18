@@ -75,6 +75,7 @@ int main(int argc, char* argv[]) {
 
     context.prepareEnumConsts();
     context.prepareStructs();
+    context.prepareCallbacks();
     context.prepareFunctions();
     context.prepareMethods();
     context.prepareProperties();

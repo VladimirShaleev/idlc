@@ -358,8 +358,59 @@ static void generateEnums(idl::Context& ctx, const std::filesystem::path& out, b
     endHeader(ctx, header, true);
 }
 
-static void generateStructs(
-    idl::Context& ctx, const std::filesystem::path& out, bool hasTypesHeader, bool hasEnumsHeader, bool hasStructs) {
+static void generateCallbacks(
+    idl::Context& ctx, const std::filesystem::path& out, bool hasTypesHeader, bool hasEnumsHeader, bool hasCallbacks) {
+    if (!hasCallbacks) {
+        std::filesystem::remove(out / headerStr(ctx, "callbacks"));
+        return;
+    }
+    auto header = createHeader(ctx, out, "callbacks");
+    beginHeader(ctx,
+                header,
+                true,
+                hasTypesHeader ? "" : "platform",
+                hasTypesHeader ? "types" : "",
+                hasEnumsHeader ? "enums" : "");
+    ctx.filter<ASTCallback>([&header](auto node) {
+        CName name;
+        node->template findAttr<ASTAttrType>()->type->decl->accept(name);
+        const auto returnType = name.str;
+        node->accept(name);
+        const auto callbackName = name.str;
+        const auto decl         = fmt::format("(*{})(", callbackName);
+        fmt::println(header.stream, "typedef {}", returnType);
+        fmt::print(header.stream, "{}", decl);
+        if (node->args.empty()) {
+            fmt::print(header.stream, "void");
+        } else {
+            for (size_t i = 0; i < node->args.size(); ++i) {
+                auto arg = node->args[i];
+                arg->template findAttr<ASTAttrType>()->type->decl->accept(name);
+                const auto argType = name.str;
+                arg->accept(name);
+                const auto argName = name.str;
+                if (i == 0) {
+                    fmt::print(header.stream, "{} {}", argType, argName);
+                } else {
+                    fmt::print(header.stream, "{:>{}} {}", argType, decl.length() + argType.length(), argName);
+                }
+                if (i + 1 < node->args.size()) {
+                    fmt::println(header.stream, ",");
+                }
+            }
+        }
+        fmt::println(header.stream, ");");
+        fmt::println(header.stream, "");
+    });
+    endHeader(ctx, header, true);
+}
+
+static void generateStructs(idl::Context& ctx,
+                            const std::filesystem::path& out,
+                            bool hasTypesHeader,
+                            bool hasEnumsHeader,
+                            bool hasCallbacksHeader,
+                            bool hasStructs) {
     if (!hasStructs) {
         std::filesystem::remove(out / headerStr(ctx, "structs"));
         return;
@@ -371,7 +422,8 @@ static void generateStructs(
                 true,
                 hasTypesHeader ? "" : "platform",
                 hasTypesHeader ? "types" : "",
-                hasEnumsHeader ? "enums" : "");
+                hasEnumsHeader ? "enums" : "",
+                hasCallbacksHeader ? "callbacks" : "");
     ctx.filter<ASTStruct>([&header](auto node) {
         if (!node->template findAttr<ASTAttrHandle>()) {
             size_t maxLength = 0;
@@ -400,6 +452,7 @@ static void generateCore(idl::Context& ctx,
                          const std::filesystem::path& out,
                          bool hasTypesHeader,
                          bool hasEnumsHeader,
+                         bool hasCallbacksHeader,
                          bool hasStructsHeader) {
     auto header = createHeader(ctx, out, "core");
     beginHeader(ctx,
@@ -409,6 +462,7 @@ static void generateCore(idl::Context& ctx,
                 (hasTypesHeader || hasStructsHeader || hasEnumsHeader) ? "" : "platform",
                 hasTypesHeader ? "types" : "",
                 hasEnumsHeader ? "enums" : "",
+                hasCallbacksHeader ? "callbacks" : "",
                 hasStructsHeader ? "structs" : "");
     endHeader(ctx, header, true);
 }
@@ -421,6 +475,9 @@ void generateC(idl::Context& ctx, const std::filesystem::path& out) {
         return false;
     });
     auto hasEnums      = !ctx.filter<ASTEnum>([](auto) {
+        return false;
+    });
+    auto hasCallbacks  = !ctx.filter<ASTCallback>([](auto) {
         return false;
     });
     bool hasStructs    = false;
@@ -437,6 +494,7 @@ void generateC(idl::Context& ctx, const std::filesystem::path& out) {
     generatePlatform(ctx, out);
     generateTypes(ctx, out, hasInterfaces, hasHandles);
     generateEnums(ctx, out, hasEnums);
-    generateStructs(ctx, out, hasTypes, hasEnums, hasStructs);
-    generateCore(ctx, out, hasTypes, hasEnums, hasStructs);
+    generateCallbacks(ctx, out, hasTypes, hasEnums, hasCallbacks);
+    generateStructs(ctx, out, hasTypes, hasEnums, hasCallbacks, hasStructs);
+    generateCore(ctx, out, hasTypes, hasEnums, hasCallbacks, hasStructs);
 }

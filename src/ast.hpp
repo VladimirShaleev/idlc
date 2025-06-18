@@ -164,6 +164,10 @@ struct ASTAttrRef : ASTAttr {
     void accept(Visitor& visitor) override;
 };
 
+struct ASTAttrUserData : ASTAttr {
+    void accept(Visitor& visitor) override;
+};
+
 struct ASTDecl : ASTNode {
     std::string name;
     std::vector<ASTAttr*> attrs;
@@ -326,11 +330,18 @@ struct ASTFunc : ASTDecl {
     std::vector<ASTArg*> args;
 };
 
+struct ASTCallback : ASTDecl {
+    void accept(Visitor& visitor) override;
+
+    std::vector<ASTArg*> args;
+};
+
 struct ASTApi : ASTDecl {
     void accept(Visitor& visitor) override;
 
     std::vector<ASTEnum*> enums;
     std::vector<ASTStruct*> structs;
+    std::vector<ASTCallback*> callbacks;
     std::vector<ASTFunc*> funcs;
     std::vector<ASTInterface*> interfaces;
     std::vector<ASTHandle*> handles;
@@ -412,6 +423,10 @@ struct Visitor {
     }
 
     virtual void visit(ASTAttrRef* node) {
+        discarded(node);
+    }
+
+    virtual void visit(ASTAttrUserData* node) {
         discarded(node);
     }
 
@@ -515,6 +530,10 @@ struct Visitor {
         discarded(node);
     }
 
+    virtual void visit(ASTCallback* node) {
+        discarded(node);
+    }
+
     virtual void visit(ASTMethod* node) {
         discarded(node);
     }
@@ -604,6 +623,10 @@ inline void ASTAttrConst::accept(Visitor& visitor) {
 }
 
 inline void ASTAttrRef::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+inline void ASTAttrUserData::accept(Visitor& visitor) {
     visitor.visit(this);
 }
 
@@ -704,6 +727,10 @@ inline void ASTHandle::accept(Visitor& visitor) {
 }
 
 inline void ASTFunc::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+inline void ASTCallback::accept(Visitor& visitor) {
     visitor.visit(this);
 }
 

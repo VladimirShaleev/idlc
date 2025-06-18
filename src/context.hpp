@@ -326,6 +326,55 @@ public:
         });
     }
 
+    void prepareCallbacks() {
+        std::vector<ASTCallback*> needAddRetType{};
+        std::vector<ASTArg*> needAddArgType{};
+        filter<ASTCallback>([this, &needAddRetType, &needAddArgType](auto node) {
+            if (!node->template findAttr<ASTAttrType>()) {
+                needAddRetType.push_back(node);
+            }
+            int countUserData = 0;
+            for (auto arg : node->args) {
+                if (!arg->template findAttr<ASTAttrType>()) {
+                    needAddArgType.push_back(arg);
+                }
+                if (arg->template findAttr<ASTAttrThis>()) {
+                    err<E2083>(arg->location, node->fullname(), arg->name);
+                }
+                countUserData += arg->template findAttr<ASTAttrUserData>() ? 1 : 0;
+                if (countUserData > 1) {
+                    err<E2082>(arg->location);
+                }
+            }
+        });
+        for (auto node : needAddRetType) {
+            auto attr          = allocNode<ASTAttrType>(node->location);
+            attr->parent       = node;
+            attr->type         = allocNode<ASTDeclRef>(node->location);
+            attr->type->name   = "Void";
+            attr->type->parent = attr;
+            node->attrs.push_back(attr);
+        }
+        for (auto node : needAddArgType) {
+            auto attr          = allocNode<ASTAttrType>(node->location);
+            attr->parent       = node;
+            attr->type         = allocNode<ASTDeclRef>(node->location);
+            attr->type->name   = "Int32";
+            attr->type->parent = attr;
+            node->attrs.push_back(attr);
+        }
+        filter<ASTCallback>([this](auto node) {
+            auto attr = node->template findAttr<ASTAttrType>();
+            resolveType(attr->type);
+            for (auto arg : node->args) {
+                auto argAttr = arg->template findAttr<ASTAttrType>();
+                if (dynamic_cast<ASTVoid*>(resolveType(argAttr->type)) != nullptr) {
+                    err<E2074>(arg->location, arg->name, node->fullname());
+                }
+            }
+        });
+    }
+
     void prepareFunctions() {
         std::vector<ASTFunc*> needAddRetType{};
         std::vector<ASTArg*> needAddArgType{};
@@ -333,12 +382,17 @@ public:
             if (!node->template findAttr<ASTAttrType>()) {
                 needAddRetType.push_back(node);
             }
+            int countUserData = 0;
             for (auto arg : node->args) {
                 if (!arg->template findAttr<ASTAttrType>()) {
                     needAddArgType.push_back(arg);
                 }
                 if (arg->template findAttr<ASTAttrThis>()) {
                     err<E2073>(arg->location, node->fullname(), arg->name);
+                }
+                countUserData += arg->template findAttr<ASTAttrUserData>() ? 1 : 0;
+                if (countUserData > 1) {
+                    err<E2082>(arg->location);
                 }
             }
         });
@@ -403,9 +457,14 @@ public:
                     err<E2048>(node->location, node->fullname());
                 }
             }
+            int countUserData = 0;
             for (auto arg : node->args) {
                 if (!arg->template findAttr<ASTAttrType>()) {
                     needAddArgType.push_back(arg);
+                }
+                countUserData += arg->template findAttr<ASTAttrUserData>() ? 1 : 0;
+                if (countUserData > 1) {
+                    err<E2082>(arg->location);
                 }
             }
             return true;

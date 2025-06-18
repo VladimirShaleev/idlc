@@ -75,6 +75,7 @@
 %token ATTRARRAY
 %token ATTRCONST
 %token ATTRREF
+%token ATTRUSERDATA
 
 %token API
 %token ENUM
@@ -87,6 +88,7 @@
 %token PROP
 %token HANDLE
 %token FUNC
+%token CALLBACK
 
 %token <std::string> STR
 %token <std::string> ID
@@ -104,6 +106,7 @@
 %type <ASTAttr*> attr_array
 %type <ASTAttr*> attr_const
 %type <ASTAttr*> attr_ref
+%type <ASTAttr*> attr_userdata
 %type <ASTAttr*> attr_get
 %type <ASTAttr*> attr_set
 %type <ASTAttr*> attr_handle
@@ -211,6 +214,7 @@ decl
     | PROP { auto node = alloc_node(ASTProperty, @1); $$ = node; }
     | HANDLE { auto node = alloc_node(ASTHandle, @1); $$ = node; }
     | FUNC { auto node = alloc_node(ASTFunc, @1); $$ = node; }
+    | CALLBACK { auto node = alloc_node(ASTCallback, @1); $$ = node; }
     ;
 
 attr_list
@@ -228,6 +232,7 @@ attr_item
     | attr_array { $$ = $1; }
     | attr_const { $$ = $1; }
     | attr_ref { $$ = $1; }
+    | attr_userdata { $$ = $1; }
     | attr_get { $$ = $1; }
     | attr_set { $$ = $1; }
     | attr_handle { $$ = $1; }
@@ -327,6 +332,10 @@ attr_const
 
 attr_ref
     : ATTRREF { auto node = alloc_node(ASTAttrRef, @1); $$ = node; }
+    ;
+
+attr_userdata
+    : ATTRUSERDATA { auto node = alloc_node(ASTAttrUserData, @1); $$ = node; }
     ;
 
 attr_get

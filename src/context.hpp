@@ -445,7 +445,10 @@ public:
         std::vector<ASTMethod*> needAddRetType{};
         std::vector<ASTMethod*> needAddStatic{};
         std::vector<ASTArg*> needAddArgType{};
-        filter<ASTMethod>([this, &needAddRetType, &needAddStatic, &needAddArgType](auto node) {
+        std::vector<ASTArg*> needAddArgIn{};
+        std::vector<ASTArg*> needAddArgOut{};
+        filter<ASTMethod>(
+            [this, &needAddRetType, &needAddStatic, &needAddArgType, &needAddArgIn, &needAddArgOut](auto node) {
             const auto isStatic = node->template findAttr<ASTAttrStatic>();
             const auto isCtor   = node->template findAttr<ASTAttrCtor>();
             if (!node->template findAttr<ASTAttrType>()) {
@@ -480,6 +483,14 @@ public:
                 if (!arg->template findAttr<ASTAttrType>()) {
                     needAddArgType.push_back(arg);
                 }
+                auto hasOut = arg->template findAttr<ASTAttrOut>() != nullptr;
+                if (arg->template findAttr<ASTAttrResult>() && !hasOut) {
+                    needAddArgOut.push_back(arg);
+                    hasOut = true;
+                }
+                if (!hasOut && !arg->template findAttr<ASTAttrIn>()) {
+                    needAddArgIn.push_back(arg);
+                }
                 countUserData += arg->template findAttr<ASTAttrUserData>() ? 1 : 0;
                 countResult += arg->template findAttr<ASTAttrResult>() ? 1 : 0;
                 if (countUserData > 1) {
@@ -510,6 +521,16 @@ public:
             attr->type         = allocNode<ASTDeclRef>(node->location);
             attr->type->name   = "Int32";
             attr->type->parent = attr;
+            node->attrs.push_back(attr);
+        }
+        for (auto node : needAddArgIn) {
+            auto attr    = allocNode<ASTAttrIn>(node->location);
+            attr->parent = node;
+            node->attrs.push_back(attr);
+        }
+        for (auto node : needAddArgOut) {
+            auto attr    = allocNode<ASTAttrOut>(node->location);
+            attr->parent = node;
             node->attrs.push_back(attr);
         }
         filter<ASTMethod>([this](auto node) {

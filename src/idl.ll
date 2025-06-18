@@ -97,6 +97,8 @@ DOCMCHAR ([^ \r\n\t\{\}[\]`]|^[`]{3}|\\\{|\\\}|\\\[|\\\])
 <ATTRCTX>"errorcode" { return token::ATTRERRORCODE; }
 <ATTRCTX>"result"    { return token::ATTRRESULT; }
 <ATTRCTX>"destroy"   { return token::ATTRDESTROY; }
+<ATTRCTX>"in"        { return token::ATTRIN; }
+<ATTRCTX>"out"       { return token::ATTROUT; }
 <ATTRCTX>","         { return YYText()[0]; }
 <ATTRCTX>" "         ;
 <ATTRCTX>\n          { yylloc->lines(); }

@@ -115,7 +115,14 @@ enum Error {
     E2098,
     E2099,
     E2100,
-    E2101
+    E2101,
+    E2102,
+    E2103,
+    E2104,
+    E2105,
+    E2106,
+    E2107,
+    E2108
 };
 
 template <Warning Code, typename... Args>
@@ -456,6 +463,28 @@ inline std::string err_str(Args&&... args) {
     }
     if constexpr (Code == E2101) {
         ss << fmt::format("the event type '{}' does not match the setter method '{}' argument type '{}'", args...);
+    }
+    if constexpr (Code == E2102) {
+        ss << fmt::format("the argument '{}' of a method, function, or callback ('{}') cannot be a fixed-size array",
+                          args...);
+    }
+    if constexpr (Code == E2103) {
+        ss << "the reference to the dynamic size array is located outside the visibility of the method";
+    }
+    if constexpr (Code == E2104) {
+        ss << fmt::format("the 'array' attribute of the '{}' must point to a argument of the method", args...);
+    }
+    if constexpr (Code == E2105) {
+        ss << "the reference to the dynamic size array is located outside the visibility of the function";
+    }
+    if constexpr (Code == E2106) {
+        ss << fmt::format("the 'array' attribute of the '{}' must point to a argument of the function", args...);
+    }
+    if constexpr (Code == E2107) {
+        ss << "the reference to the dynamic size array is located outside the visibility of the callback";
+    }
+    if constexpr (Code == E2108) {
+        ss << fmt::format("the 'array' attribute of the '{}' must point to a argument of the callback", args...);
     }
     return ss.str();
 }

@@ -300,7 +300,7 @@ struct AllowedAttrs : Visitor {
     void visit(ASTArg* node) override {
         allowed = { add<ASTAttrType>(),  add<ASTAttrValue>(), add<ASTAttrThis>(),     add<ASTAttrCName>(),
                     add<ASTAttrConst>(), add<ASTAttrRef>(),   add<ASTAttrUserData>(), add<ASTAttrResult>(),
-                    add<ASTAttrIn>(),    add<ASTAttrOut>() };
+                    add<ASTAttrIn>(),    add<ASTAttrOut>(),   add<ASTAttrArray>() };
     }
 
     void visit(ASTFunc* node) override {

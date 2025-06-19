@@ -330,7 +330,8 @@ public:
     void prepareCallbacks() {
         std::vector<ASTCallback*> needAddRetType{};
         std::vector<ASTArg*> needAddArgType{};
-        filter<ASTCallback>([this, &needAddRetType, &needAddArgType](ASTCallback* node) {
+        std::vector<ASTArg*> needAddRef{};
+        filter<ASTCallback>([this, &needAddRetType, &needAddArgType, &needAddRef](ASTCallback* node) {
             if (!node->findAttr<ASTAttrType>()) {
                 needAddRetType.push_back(node);
             }
@@ -351,6 +352,15 @@ public:
                 if (countResult > 1) {
                     err<E2084>(arg->location);
                 }
+                if (auto attr = arg->findAttr<ASTAttrArray>()) {
+                    if (attr->ref) {
+                        if (arg->findAttr<ASTAttrRef>() == nullptr) {
+                            needAddRef.push_back(arg);
+                        }
+                    } else {
+                        err<E2102>(arg->location, arg->name, node->fullname());
+                    }
+                }
             }
         });
         for (auto node : needAddRetType) {
@@ -369,6 +379,11 @@ public:
             attr->type->parent = attr;
             node->attrs.push_back(attr);
         }
+        for (auto node : needAddRef) {
+            auto attr    = allocNode<ASTAttrRef>(node->location);
+            attr->parent = node;
+            node->attrs.push_back(attr);
+        }
         filter<ASTCallback>([this](ASTCallback* node) {
             auto attr = node->findAttr<ASTAttrType>();
             resolveType(attr->type);
@@ -377,6 +392,21 @@ public:
                 if (resolveType(argAttr->type)->is<ASTVoid>()) {
                     err<E2074>(arg->location, arg->name, node->fullname());
                 }
+                if (auto attr = arg->findAttr<ASTAttrArray>(); attr) {
+                    assert(attr->ref);
+                    auto symbol = findSymbol(node, attr->location, attr->decl);
+                    if (auto sizeField = symbol->as<ASTArg>()) {
+                        if (arg->parent != sizeField->parent) {
+                            err<E2107>(arg->location);
+                        }
+                        auto type = resolveType(sizeField->findAttr<ASTAttrType>()->type);
+                        if (!type->is<ASTIntegerType>()) {
+                            err<E2080>(attr->location, arg->fullname());
+                        }
+                    } else {
+                        err<E2108>(attr->location, arg->fullname());
+                    }
+                }
             }
         });
     }
@@ -384,7 +414,8 @@ public:
     void prepareFunctions() {
         std::vector<ASTFunc*> needAddRetType{};
         std::vector<ASTArg*> needAddArgType{};
-        filter<ASTFunc>([this, &needAddRetType, &needAddArgType](ASTFunc* node) {
+        std::vector<ASTArg*> needAddRef{};
+        filter<ASTFunc>([this, &needAddRetType, &needAddArgType, &needAddRef](ASTFunc* node) {
             if (!node->findAttr<ASTAttrType>()) {
                 needAddRetType.push_back(node);
             }
@@ -405,6 +436,15 @@ public:
                 if (countResult > 1) {
                     err<E2084>(arg->location);
                 }
+                if (auto attr = arg->findAttr<ASTAttrArray>()) {
+                    if (attr->ref) {
+                        if (arg->findAttr<ASTAttrRef>() == nullptr) {
+                            needAddRef.push_back(arg);
+                        }
+                    } else {
+                        err<E2102>(arg->location, arg->name, node->fullname());
+                    }
+                }
             }
         });
         for (auto node : needAddRetType) {
@@ -423,6 +463,11 @@ public:
             attr->type->parent = attr;
             node->attrs.push_back(attr);
         }
+        for (auto node : needAddRef) {
+            auto attr    = allocNode<ASTAttrRef>(node->location);
+            attr->parent = node;
+            node->attrs.push_back(attr);
+        }
         filter<ASTFunc>([this](ASTFunc* node) {
             auto attr = node->findAttr<ASTAttrType>();
             auto type = resolveType(attr->type);
@@ -430,6 +475,21 @@ public:
                 auto argAttr = arg->findAttr<ASTAttrType>();
                 if (resolveType(argAttr->type)->is<ASTVoid>()) {
                     err<E2074>(arg->location, arg->name, node->fullname());
+                }
+                if (auto attr = arg->findAttr<ASTAttrArray>(); attr) {
+                    assert(attr->ref);
+                    auto symbol = findSymbol(node, attr->location, attr->decl);
+                    if (auto sizeField = symbol->as<ASTArg>()) {
+                        if (arg->parent != sizeField->parent) {
+                            err<E2105>(arg->location);
+                        }
+                        auto type = resolveType(sizeField->findAttr<ASTAttrType>()->type);
+                        if (!type->is<ASTIntegerType>()) {
+                            err<E2080>(attr->location, arg->fullname());
+                        }
+                    } else {
+                        err<E2106>(attr->location, arg->fullname());
+                    }
                 }
             }
             if (node->findAttr<ASTAttrErrorCode>()) {
@@ -448,8 +508,10 @@ public:
         std::vector<ASTArg*> needAddArgType{};
         std::vector<ASTArg*> needAddArgIn{};
         std::vector<ASTArg*> needAddArgOut{};
+        std::vector<ASTArg*> needAddRef{};
         filter<ASTMethod>(
-            [this, &needAddRetType, &needAddStatic, &needAddArgType, &needAddArgIn, &needAddArgOut](ASTMethod* node) {
+            [this, &needAddRetType, &needAddStatic, &needAddArgType, &needAddArgIn, &needAddArgOut, &needAddRef](
+                ASTMethod* node) {
             const auto isStatic = node->findAttr<ASTAttrStatic>();
             const auto isCtor   = node->findAttr<ASTAttrCtor>();
             if (!node->findAttr<ASTAttrType>()) {
@@ -500,6 +562,15 @@ public:
                 if (countResult > 1) {
                     err<E2084>(arg->location);
                 }
+                if (auto attr = arg->findAttr<ASTAttrArray>()) {
+                    if (attr->ref) {
+                        if (arg->findAttr<ASTAttrRef>() == nullptr) {
+                            needAddRef.push_back(arg);
+                        }
+                    } else {
+                        err<E2102>(arg->location, arg->name, node->fullname());
+                    }
+                }
             }
             return true;
         });
@@ -534,6 +605,11 @@ public:
             attr->parent = node;
             node->attrs.push_back(attr);
         }
+        for (auto node : needAddRef) {
+            auto attr    = allocNode<ASTAttrRef>(node->location);
+            attr->parent = node;
+            node->attrs.push_back(attr);
+        }
         filter<ASTMethod>([this](ASTMethod* node) {
             auto attr = node->findAttr<ASTAttrType>();
             resolveType(attr->type);
@@ -541,6 +617,21 @@ public:
                 auto argAttr = arg->findAttr<ASTAttrType>();
                 if (resolveType(argAttr->type)->is<ASTVoid>()) {
                     err<E2051>(arg->location, arg->name, node->fullname());
+                }
+                if (auto attr = arg->findAttr<ASTAttrArray>(); attr) {
+                    assert(attr->ref);
+                    auto symbol = findSymbol(node, attr->location, attr->decl);
+                    if (auto sizeField = symbol->as<ASTArg>()) {
+                        if (arg->parent != sizeField->parent) {
+                            err<E2103>(arg->location);
+                        }
+                        auto type = resolveType(sizeField->findAttr<ASTAttrType>()->type);
+                        if (!type->is<ASTIntegerType>()) {
+                            err<E2080>(attr->location, arg->fullname());
+                        }
+                    } else {
+                        err<E2104>(attr->location, arg->fullname());
+                    }
                 }
             }
             if (node->findAttr<ASTAttrRef>()) {

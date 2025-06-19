@@ -674,15 +674,30 @@ public:
                     if (isStaticProp != isStaticGetter) {
                         err<E2055>(getter->location, method->fullname(), node->fullname());
                     }
+                    getterType          = resolveType(method->findAttr<ASTAttrType>()->type);
                     const auto argCount = method->args.size();
-                    if (isStaticProp && argCount != 0) {
-                        err<E2056>(getter->location, method->fullname());
-                    } else if (!isStaticProp && argCount != 1) {
-                        err<E2057>(getter->location, method->fullname());
-                    }
-                    getterType = resolveType(method->findAttr<ASTAttrType>()->type);
                     if (getterType->is<ASTVoid>()) {
-                        err<E2058>(getter->location, method->fullname());
+                        bool isValidProp = false;
+                        auto count       = isStaticProp ? 2 : 3;
+                        if (argCount == count) {
+                            auto res = std::find_if(method->args.begin(), method->args.end(), [](ASTArg* arg) {
+                                return arg->findAttr<ASTAttrResult>() != nullptr;
+                            });
+                            if (res != method->args.end() && (*res)->findAttr<ASTAttrArray>()) {
+                                if ((*res)->findAttr<ASTAttrArray>()->decl->decl->findAttr<ASTAttrOut>()) {
+                                    isValidProp = true;
+                                }
+                            }
+                        }
+                        if (!isValidProp) {
+                            err<E2058>(getter->location, method->fullname());
+                        }
+                    } else {
+                        if (isStaticProp && argCount != 0) {
+                            err<E2056>(getter->location, method->fullname());
+                        } else if (!isStaticProp && argCount != 1) {
+                            err<E2057>(getter->location, method->fullname());
+                        }
                     }
                 } else {
                     err<E2053>(getter->location, decl->fullname());

@@ -24,7 +24,10 @@ static std::string includeGuardStr(idl::Context& ctx, std::string postfix = "") 
     return convert(ctx.api()->name, Case::ScreamingSnakeCase) + (postfix.length() ? "_" + upper(postfix) : "") + "_H";
 }
 
-static Header createHeader(idl::Context& ctx, const std::filesystem::path& out, const std::string& postfix, bool externC) {
+static Header createHeader(idl::Context& ctx,
+                           const std::filesystem::path& out,
+                           const std::string& postfix,
+                           bool externC) {
     auto header = out / headerStr(ctx, postfix);
     auto guard  = includeGuardStr(ctx, postfix);
     auto stream = std::ofstream(header);
@@ -50,14 +53,15 @@ static std::string getDeclTypeCName(ASTDecl* decl) {
     return name.str;
 }
 
-static std::string getDeclCName(ASTDecl* decl) {
+static std::string getDeclCName(ASTDecl* decl, int removePostfix = 0) {
     CName name;
     decl->accept(name);
-    return name.str;
+    return removePostfix == 0 ? name.str : name.str.substr(0, name.str.length() - removePostfix);
 }
 
 static ASTLiteral* getDeclValueLiteral(ASTDecl* decl) {
-    assert(decl->findAttr<ASTAttrValue>() != nullptr);;
+    assert(decl->findAttr<ASTAttrValue>() != nullptr);
+    ;
     return decl->findAttr<ASTAttrValue>()->value;
 }
 
@@ -163,7 +167,8 @@ static void generateVersion(idl::Context& ctx, const std::filesystem::path& out)
 )";
 
     beginHeader(ctx, header);
-    fmt::println(header.stream, tmp, fmt::arg("API", API), fmt::arg("major", 0), fmt::arg("minor", 0), fmt::arg("micro", 0));
+    fmt::println(
+        header.stream, tmp, fmt::arg("API", API), fmt::arg("major", 0), fmt::arg("minor", 0), fmt::arg("micro", 0));
     endHeader(ctx, header);
 }
 
@@ -248,8 +253,7 @@ static void generatePlatform(idl::Context& ctx, const std::filesystem::path& out
         fmt::println(header.stream, "typedef {:<{}} {};", native, maxLength, type);
     }
     fmt::println(header.stream, "");
-    fmt::println(header.stream,
-                 R"(#ifdef __cplusplus
+    constexpr auto tmpFlags = R"(#ifdef __cplusplus
 # define {API}_FLAGS({api}_enum_t) \
 extern "C++" {{ \
 inline {API}_CONSTEXPR {api}_enum_t operator~({api}_enum_t lhr) noexcept {{ \
@@ -276,10 +280,8 @@ inline {API}_CONSTEXPR_14 {api}_enum_t& operator^=({api}_enum_t& lhr, {api}_enum
 }}
 #else
 # define {API}_FLAGS({api}_enum_t)
-#endif)",
-                 fmt::arg("API", API),
-                 fmt::arg("api", api),
-                 fmt::arg("int", intType));
+#endif)";
+    fmt::println(header.stream, tmpFlags, fmt::arg("API", API), fmt::arg("api", api), fmt::arg("int", intType));
     fmt::println(header.stream, "");
     fmt::println(header.stream, "#define {}_TYPE({}_name) \\", API, api);
     fmt::println(header.stream, "typedef struct _##{}_name* {}_name##_t;", api, api);
@@ -288,16 +290,15 @@ inline {API}_CONSTEXPR_14 {api}_enum_t& operator^=({api}_enum_t& lhr, {api}_enum
         if (node->findAttr<ASTAttrHandle>()) {
             size_t maxLength = 0;
             std::vector<std::pair<std::string, std::string>> typeNames;
+            typeNames.reserve(node->fields.size());
             for (auto field : node->fields) {
                 typeNames.emplace_back(getTypeAndName(field));
                 if (typeNames.back().first.length() > maxLength) {
                     maxLength = typeNames.back().first.length();
                 }
             }
-            CName name;
-            node->accept(name);
-            name.str = upper(name.str).substr(0, name.str.length() - 2);
-            fmt::println(header.stream, "#define {}({}_name) \\", name.str, api);
+            auto name = getDeclCName(node, 2);
+            fmt::println(header.stream, "#define {}({}_name) \\", upper(name), api);
             fmt::println(header.stream, "typedef struct {{ \\");
             for (const auto& [key, value] : typeNames) {
                 fmt::println(header.stream, "{:<{}}{:<{}} {}; \\", ' ', 4, key, maxLength, value);
@@ -314,26 +315,20 @@ static void generateTypes(idl::Context& ctx, const std::filesystem::path& out, b
         std::filesystem::remove(out / headerStr(ctx, "types"));
         return;
     }
-
-    auto API    = convert(ctx.api()->name, Case::ScreamingSnakeCase);
+    auto API    = getApiPrefix(ctx, true);
     auto header = createHeader(ctx, out, "types", true);
-
     beginHeader(ctx, header, "platform");
     if (hasInterfaces) {
         ctx.filter<ASTInterface>([&header, &API](auto node) {
-            CName name;
-            node->accept(name);
-            name.str = name.str.substr(0, name.str.length() - 2);
-            fmt::println(header.stream, "{}_TYPE({})", API, name.str);
+            auto name = getDeclCName(node, 2);
+            fmt::println(header.stream, "{}_TYPE({})", API, name);
         });
         fmt::println(header.stream, "");
     }
     if (hasHandles) {
         ctx.filter<ASTHandle>([&header, &API](auto node) {
-            CName name;
-            node->accept(name);
-            name.str = name.str.substr(0, name.str.length() - 2);
-            fmt::println(header.stream, "{}_HANDLE({})", API, name.str);
+            auto name = getDeclCName(node, 2);
+            fmt::println(header.stream, "{}_HANDLE({})", API, name);
         });
         fmt::println(header.stream, "");
     }
@@ -345,8 +340,7 @@ static void generateEnums(idl::Context& ctx, const std::filesystem::path& out, b
         std::filesystem::remove(out / headerStr(ctx, "enums"));
         return;
     }
-
-    auto API    = convert(ctx.api()->name, Case::ScreamingSnakeCase);
+    auto API    = getApiPrefix(ctx, true);
     auto header = createHeader(ctx, out, "enums", true);
     beginHeader(ctx, header, "platform");
     ctx.filter<ASTEnum>([&header, &API](ASTEnum* node) {
@@ -360,28 +354,23 @@ static void generateEnums(idl::Context& ctx, const std::filesystem::path& out, b
                 maxLength = consts.back().first.length();
             }
         }
-        CName name{};
         ASTEnumConst ec{};
         ec.parent = node;
         ec.name   = "MaxEnum";
-        ec.accept(name);
-        if (node->findAttr<ASTAttrFlags>()) {
-            name.str = name.str.substr(0, name.str.length() - 4);
+        auto name = getDeclCName(&ec, node->findAttr<ASTAttrFlags>() ? 4 : 0);
+        consts.emplace_back(name, "0x7FFFFFFF");
+        if (name.length() > maxLength) {
+            maxLength = name.length();
         }
-        consts.emplace_back(name.str, "0x7FFFFFFF");
-        if (name.str.length() > maxLength) {
-            maxLength = name.str.length();
-        }
-        node->accept(name);
-
         fmt::println(header.stream, "typedef enum");
         fmt::println(header.stream, "{{");
         for (const auto& [key, value] : consts) {
             fmt::println(header.stream, "{:<{}}{:<{}} = {}", ' ', 4, key, maxLength, value);
         }
-        fmt::println(header.stream, "}} {};", name.str);
+        name = getDeclCName(node);
+        fmt::println(header.stream, "}} {};", name);
         if (node->findAttr<ASTAttrFlags>()) {
-            fmt::println(header.stream, "{}_FLAGS({})", API, name.str);
+            fmt::println(header.stream, "{}_FLAGS({})", API, name);
         }
         fmt::println(header.stream, "");
     });
@@ -395,19 +384,11 @@ static void generateCallbacks(
         return;
     }
     auto header = createHeader(ctx, out, "callbacks", true);
-    beginHeader(ctx,
-                header,
-                hasTypesHeader ? "" : "platform",
-                hasTypesHeader ? "types" : "",
-                hasEnumsHeader ? "enums" : "");
+    beginHeader(
+        ctx, header, hasTypesHeader ? "" : "platform", hasTypesHeader ? "types" : "", hasEnumsHeader ? "enums" : "");
     ctx.filter<ASTCallback>([&header](ASTCallback* node) {
-        CName name;
-        getDeclType(node)->accept(name);
-        const auto returnType = name.str;
-        node->accept(name);
-        const auto callbackName = name.str;
-        const auto decl         = fmt::format("(*{})(", callbackName);
-        fmt::println(header.stream, "typedef {}", returnType);
+        const auto decl = fmt::format("(*{})(", getDeclCName(node));
+        fmt::println(header.stream, "typedef {}", getDeclTypeCName(node));
         fmt::print(header.stream, "{}", decl);
         if (node->args.empty()) {
             fmt::print(header.stream, "void");
@@ -440,7 +421,6 @@ static void generateStructs(idl::Context& ctx,
         std::filesystem::remove(out / headerStr(ctx, "structs"));
         return;
     }
-
     auto header = createHeader(ctx, out, "structs", true);
     beginHeader(ctx,
                 header,
@@ -458,14 +438,12 @@ static void generateStructs(idl::Context& ctx,
                     maxLength = typeNames.back().first.length();
                 }
             }
-            CName name{};
-            node->accept(name);
             fmt::println(header.stream, "typedef struct");
             fmt::println(header.stream, "{{");
             for (const auto& [key, value] : typeNames) {
                 fmt::println(header.stream, "{:<{}}{:<{}} {};", ' ', 4, key, maxLength, value);
             }
-            fmt::println(header.stream, "}} {};", name.str);
+            fmt::println(header.stream, "}} {};", getDeclCName(node));
             fmt::println(header.stream, "");
         }
     });
@@ -478,18 +456,13 @@ static void generateCore(idl::Context& ctx,
                          bool hasEnumsHeader,
                          bool hasCallbacksHeader,
                          bool hasStructsHeader) {
-    auto api       = convert(ctx.api()->name, Case::SnakeCase);
-    auto dllPublic = api + "_api";
+    auto api       = getApiPrefix(ctx, false);
+    auto importApi = api + "_api";
     auto header    = createHeader(ctx, out, "core", true);
-    auto printFunc = [&dllPublic, &header](ASTDecl* decl, const std::vector<ASTArg*>& args) {
-        CName name;
-        getDeclType(decl)->accept(name);
-        fmt::println(header.stream, "{} {}", dllPublic, name.str);
-
-        decl->accept(name);
-        auto declStr = fmt::format("{}(", name.str);
+    auto printFunc = [&importApi, &header](ASTDecl* decl, const std::vector<ASTArg*>& args) {
+        fmt::println(header.stream, "{} {}", importApi, getDeclTypeCName(decl));
+        auto declStr = fmt::format("{}(", getDeclCName(decl));
         fmt::print(header.stream, "{}", declStr);
-
         if (args.empty()) {
             fmt::print(header.stream, "void");
         } else {
@@ -527,18 +500,14 @@ static void generateCore(idl::Context& ctx,
 }
 
 void generateC(idl::Context& ctx, const std::filesystem::path& out) {
-    auto hasInterfaces = !ctx.filter<ASTInterface>([](auto) {
+    auto finish = [](auto) {
         return false;
-    });
-    auto hasHandles    = !ctx.filter<ASTHandle>([](auto) {
-        return false;
-    });
-    auto hasEnums      = !ctx.filter<ASTEnum>([](auto) {
-        return false;
-    });
-    auto hasCallbacks  = !ctx.filter<ASTCallback>([](auto) {
-        return false;
-    });
+    };
+    auto hasInterfaces = !ctx.filter<ASTInterface>(finish);
+    auto hasHandles    = !ctx.filter<ASTHandle>(finish);
+    auto hasTypes      = hasInterfaces || hasHandles;
+    auto hasEnums      = !ctx.filter<ASTEnum>(finish);
+    auto hasCallbacks  = !ctx.filter<ASTCallback>(finish);
     bool hasStructs    = false;
     ctx.filter<ASTStruct>([&hasStructs](ASTStruct* node) {
         if (!node->findAttr<ASTAttrHandle>()) {
@@ -547,7 +516,6 @@ void generateC(idl::Context& ctx, const std::filesystem::path& out) {
         }
         return true;
     });
-    auto hasTypes = hasInterfaces || hasHandles;
 
     generateVersion(ctx, out);
     generatePlatform(ctx, out);

@@ -1,4 +1,5 @@
 #include <argparse/argparse.hpp>
+#include <regex>
 
 #include "parser.hpp"
 #include "scanner.hpp"
@@ -43,10 +44,12 @@ GeneratorType getGeneratorArg(argparse::ArgumentParser& program) {
 int main(int argc, char* argv[]) {
     auto input  = std::filesystem::path();
     auto output = std::filesystem::current_path();
+    std::string apiver;
 
     argparse::ArgumentParser program("idlc", IDLC_VERSION_STRING);
     program.add_argument("input").store_into(input).help("input .idl file");
     program.add_argument("-o", "--output").store_into(output).help("output directory");
+    program.add_argument("--apiver").store_into(apiver).help("api version");
     addGeneratorArg(program);
 #ifdef YYDEBUG
     auto debug = false;
@@ -59,6 +62,25 @@ int main(int argc, char* argv[]) {
         std::cerr << exc.what() << std::endl;
         std::cerr << program;
         return EXIT_FAILURE;
+    }
+
+    std::optional<idl::ApiVersion> version{};
+    if (program.is_used("--apiver")) {
+        std::regex pattern("^([0-9]+)\\.([0-9]+)\\.([0-9]+)");
+        std::smatch matches;
+        if (std::regex_match(apiver, matches, pattern)) {
+            try {
+                version = idl::ApiVersion{ std::stoi(matches[1].str()),
+                                           std::stoi(matches[2].str()),
+                                           std::stoi(matches[3].str()) };
+            } catch (const std::exception& e) {
+                std::cerr << "invalid version number (out of range)";
+                return EXIT_FAILURE;
+            }
+        } else {
+            std::cerr << "invalid version format";
+            return EXIT_FAILURE;
+        }
     }
 
     idl::Context context{};
@@ -82,6 +104,7 @@ int main(int argc, char* argv[]) {
     context.prepareEvents();
     context.prepareInterfaces();
     context.prepareHandles();
+    context.apiVersion(version);
 
     switch (getGeneratorArg(program)) {
         case GeneratorType::C: {

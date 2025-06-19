@@ -253,6 +253,10 @@ struct AttrName : Visitor {
         str = "tokenizer";
     }
 
+    void visit(ASTAttrVersion* node) override {
+        str = "version";
+    }
+
     void discarded(ASTNode*) override {
         assert(!"attribute name is missing");
     }
@@ -261,12 +265,12 @@ struct AttrName : Visitor {
 };
 
 struct AllowedAttrs : Visitor {
-    void visit(struct ASTEnum*) override {
+    void visit(ASTEnum*) override {
         allowed = { add<ASTAttrFlags>(), add<ASTAttrHex>(),       add<ASTAttrPlatform>(),
                     add<ASTAttrCName>(), add<ASTAttrTokenizer>(), add<ASTAttrErrorCode>() };
     }
 
-    void visit(struct ASTEnumConst*) override {
+    void visit(ASTEnumConst*) override {
         allowed = { add<ASTAttrType>(), add<ASTAttrValue>(), add<ASTAttrCName>(), add<ASTAttrTokenizer>() };
     }
 
@@ -307,6 +311,10 @@ struct AllowedAttrs : Visitor {
         allowed = { add<ASTAttrType>(),      add<ASTAttrValue>(), add<ASTAttrThis>(), add<ASTAttrCName>(),
                     add<ASTAttrTokenizer>(), add<ASTAttrConst>(), add<ASTAttrRef>(),  add<ASTAttrUserData>(),
                     add<ASTAttrResult>(),    add<ASTAttrIn>(),    add<ASTAttrOut>(),  add<ASTAttrArray>() };
+    }
+
+    void visit(ASTApi* node) override {
+        allowed = { add<ASTAttrVersion>() };
     }
 
     void visit(ASTFunc* node) override {

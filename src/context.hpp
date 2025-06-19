@@ -13,6 +13,12 @@
 
 namespace idl {
 
+struct ApiVersion {
+    int major{};
+    int minor{};
+    int micro{};
+};
+
 class Context final {
 public:
     ~Context() {
@@ -21,7 +27,7 @@ public:
         }
     }
 
-    const ASTApi* api() const noexcept {
+    ASTApi* api() noexcept {
         return _api;
     }
 
@@ -913,6 +919,14 @@ public:
         });
     }
 
+    const std::optional<ApiVersion>& apiVersion() const noexcept {
+        return _version;
+    }
+
+    void apiVersion(std::optional<ApiVersion> version) noexcept {
+        _version = version;
+    }
+
     template <typename Node, typename Pred>
     bool filter(Pred&& pred) {
         static_assert(std::is_base_of<ASTNode, Node>::value, "Node must be inherited from ASTNode");
@@ -1016,6 +1030,7 @@ private:
         deps.pop_back();
     }
 
+    std::optional<ApiVersion> _version{};
     ASTApi* _api{};
     std::vector<ASTNode*> _nodes{};
     std::unordered_map<std::string, struct ASTDecl*> _symbols{};

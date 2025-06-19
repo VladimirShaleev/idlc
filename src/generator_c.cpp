@@ -145,6 +145,18 @@ static void endHeader(idl::Context& ctx, Header& header) {
 static void generateVersion(idl::Context& ctx, const std::filesystem::path& out) {
     auto API    = getApiPrefix(ctx, true);
     auto header = createHeader(ctx, out, "version", false);
+    auto major  = 0;
+    auto minor  = 0;
+    auto micro  = 0;
+    if (ctx.apiVersion()) {
+        major = ctx.apiVersion().value().major;
+        minor = ctx.apiVersion().value().minor;
+        micro = ctx.apiVersion().value().micro;
+    } else if (auto version = ctx.api()->findAttr<ASTAttrVersion>()) {
+        major = version->major;
+        minor = version->minor;
+        micro = version->micro;
+    }
 
     constexpr auto tmp = R"(#define {API}_VERSION_MAJOR {major}
 #define {API}_VERSION_MINOR {minor}
@@ -167,8 +179,12 @@ static void generateVersion(idl::Context& ctx, const std::filesystem::path& out)
 )";
 
     beginHeader(ctx, header);
-    fmt::println(
-        header.stream, tmp, fmt::arg("API", API), fmt::arg("major", 0), fmt::arg("minor", 0), fmt::arg("micro", 0));
+    fmt::println(header.stream,
+                 tmp,
+                 fmt::arg("API", API),
+                 fmt::arg("major", major),
+                 fmt::arg("minor", minor),
+                 fmt::arg("micro", micro));
     endHeader(ctx, header);
 }
 

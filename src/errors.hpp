@@ -123,7 +123,8 @@ enum Error {
     E2106,
     E2107,
     E2108,
-    E2109
+    E2109,
+    E2110
 };
 
 template <Warning Code, typename... Args>
@@ -489,6 +490,9 @@ inline std::string err_str(Args&&... args) {
     }
     if constexpr (Code == E2109) {
         ss << "the 'tokenizer' attribute must specify a indices string in the argument";
+    }
+    if constexpr (Code == E2110) {
+        ss << "the 'version' attribute must specify a semver in the argument";
     }
     return ss.str();
 }

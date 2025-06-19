@@ -82,6 +82,7 @@
 %token ATTRIN
 %token ATTROUT
 %token ATTRTOKENIZER
+%token ATTRVERSION
 
 %token API
 %token ENUM
@@ -113,6 +114,7 @@
 %type <ASTAttr*> attr_cname
 %type <ASTAttr*> attr_array
 %type <ASTAttr*> attr_tokenizer
+%type <ASTAttr*> attr_version
 %type <ASTAttr*> attr_const
 %type <ASTAttr*> attr_ref
 %type <ASTAttr*> attr_userdata
@@ -246,6 +248,7 @@ attr_item
     | attr_cname { $$ = $1; }
     | attr_array { $$ = $1; }
     | attr_tokenizer { $$ = $1; }
+    | attr_version { $$ = $1; }
     | attr_const { $$ = $1; }
     | attr_ref { $$ = $1; }
     | attr_userdata { $$ = $1; }
@@ -365,6 +368,19 @@ attr_tokenizer
         node->nums = tokens;
         $$ = node;
     }
+    ;
+
+attr_version
+    : ATTRVERSION { throw syntax_error(@1, err_str<E2110>()); }
+    | ATTRVERSION '(' ')' { throw syntax_error(@1, err_str<E2110>()); }
+    | ATTRVERSION '(' NUM ',' NUM ',' NUM ')' {
+        auto node = alloc_node(ASTAttrVersion, @1);
+        node->major = $3;
+        node->minor = $5;
+        node->micro = $7;
+        $$ = node;
+    }
+    ;
 
 attr_const
     : ATTRCONST { auto node = alloc_node(ASTAttrConst, @1); $$ = node; }

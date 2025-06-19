@@ -104,7 +104,18 @@ enum Error {
     E2087,
     E2088,
     E2089,
-    E2090
+    E2090,
+    E2091,
+    E2092,
+    E2093,
+    E2094,
+    E2095,
+    E2096,
+    E2097,
+    E2098,
+    E2099,
+    E2100,
+    E2101
 };
 
 template <Warning Code, typename... Args>
@@ -405,6 +416,46 @@ inline std::string err_str(Args&&... args) {
     }
     if constexpr (Code == E2090) {
         ss << "events can only be added to a interface type";
+    }
+    if constexpr (Code == E2091) {
+        ss << fmt::format("the event '{}' must contain at least the 'get' attribute or the 'set' attribute or both",
+                          args...);
+    }
+    if constexpr (Code == E2092) {
+        ss << fmt::format("event getter '{}' from '{}' refers to a method '{}' from another interface '{}'", args...);
+    }
+    if constexpr (Code == E2093) {
+        ss << fmt::format(
+            "if the getter method '{}' is static, then the event '{}' must also be static, and vice versa", args...);
+    }
+    if constexpr (Code == E2094) {
+        ss << fmt::format("static getter '{}' for event must have no arguments or one argument 'userdata'", args...);
+    }
+    if constexpr (Code == E2095) {
+        ss << fmt::format("getter '{}' for event must have one arguments or two arguments 'this' and 'userdata'",
+                          args...);
+    }
+    if constexpr (Code == E2096) {
+        ss << fmt::format("event setter '{}' from '{}' refers to a method '{}' from another interface '{}'", args...);
+    }
+    if constexpr (Code == E2097) {
+        ss << fmt::format(
+            "if the setter method '{}' is static, then the event '{}' must also be static, and vice versa", args...);
+    }
+    if constexpr (Code == E2098) {
+        ss << fmt::format("static setter '{}' for event must have one argument or setter and 'userdata' arguments",
+                          args...);
+    }
+    if constexpr (Code == E2099) {
+        ss << fmt::format("setter '{}' for event must have two arguments 'this' and 'setter' or three arguments "
+                          "'this', 'setter' and 'userdata'",
+                          args...);
+    }
+    if constexpr (Code == E2100) {
+        ss << fmt::format("the event type '{}' does not match the return type '{}' of the getter method '{}'", args...);
+    }
+    if constexpr (Code == E2101) {
+        ss << fmt::format("the event type '{}' does not match the setter method '{}' argument type '{}'", args...);
     }
     return ss.str();
 }

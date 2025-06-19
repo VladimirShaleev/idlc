@@ -195,16 +195,17 @@ struct ASTDecl : ASTNode {
 
     template <typename Attr>
     Attr* findAttr() noexcept {
+        static_assert(std::is_base_of<ASTAttr, Attr>::value, "Attr must be inherited from ASTAttr");
         auto it = std::find_if(attrs.begin(), attrs.end(), [](auto attr) {
             return typeid(*attr) == typeid(Attr);
         });
-        return it != attrs.end() ? dynamic_cast<Attr*>(*it) : nullptr;
+        return it != attrs.end() ? (*it)->template as<Attr>() : nullptr;
     }
 
     std::string fullname() const {
         assert(name.length() > 0);
         std::string str{};
-        if (auto parentDecl = dynamic_cast<ASTDecl*>(parent)) {
+        if (auto parentDecl = parent->as<ASTDecl>()) {
             str = parentDecl->fullname() + '.';
         }
         return str + name;

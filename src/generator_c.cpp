@@ -38,10 +38,10 @@ static void writeDoc(Header& header, ASTDoc* doc, bool align) {
 }
 
 static std::pair<std::string, std::string> fieldTypeName(ASTField* field) {
-    auto attrType  = field->template findAttr<ASTAttrType>();
-    auto attrArray = field->template findAttr<ASTAttrArray>();
-    auto attrConst = field->template findAttr<ASTAttrConst>() != nullptr;
-    auto attrRef   = field->template findAttr<ASTAttrRef>() != nullptr;
+    auto attrType  = field->findAttr<ASTAttrType>();
+    auto attrArray = field->findAttr<ASTAttrArray>();
+    auto attrConst = field->findAttr<ASTAttrConst>() != nullptr;
+    auto attrRef   = field->findAttr<ASTAttrRef>() != nullptr;
     CName name;
     attrType->type->decl->accept(name);
     auto type = attrConst ? "const " + name.str : name.str;
@@ -160,15 +160,15 @@ static void generatePlatform(idl::Context& ctx, const std::filesystem::path& out
 
     size_t maxNativeTypeLength = 0;
     std::vector<std::pair<std::string, std::string>> trivialTypes;
-    ctx.filter<ASTBuiltinType>([&trivialTypes, &intType, &maxNativeTypeLength](auto node) {
-        if (!node->template as<ASTVoid>()) {
+    ctx.filter<ASTBuiltinType>([&trivialTypes, &intType, &maxNativeTypeLength](ASTBuiltinType* node) {
+        if (!node->as<ASTVoid>()) {
             CName name;
             node->accept(name);
             trivialTypes.emplace_back(name.native, name.str);
             if (name.native.length() > maxNativeTypeLength) {
                 maxNativeTypeLength = name.native.length();
             }
-            if (node->template as<ASTInt32>()) {
+            if (node->as<ASTInt32>()) {
                 intType = name.str;
             }
         }
@@ -268,8 +268,8 @@ inline {API}_CONSTEXPR_14 {api}_enum_t& operator^=({api}_enum_t& lhr, {api}_enum
     fmt::println(header.stream, "#define {}_TYPE({}_name) \\", API, api);
     fmt::println(header.stream, "typedef struct _##{}_name* {}_name##_t;", api, api);
     fmt::println(header.stream, "");
-    ctx.filter<ASTStruct>([&header, &api](auto node) {
-        if (node->template findAttr<ASTAttrHandle>()) {
+    ctx.filter<ASTStruct>([&header, &api](ASTStruct* node) {
+        if (node->findAttr<ASTAttrHandle>()) {
             size_t maxLength = 0;
             std::vector<std::pair<std::string, std::string>> typeNames;
             for (auto field : node->fields) {
@@ -333,8 +333,8 @@ static void generateEnums(idl::Context& ctx, const std::filesystem::path& out, b
     auto API    = convert(ctx.api()->name, Case::ScreamingSnakeCase);
     auto header = createHeader(ctx, out, "enums");
     beginHeader(ctx, header, true, "platform");
-    ctx.filter<ASTEnum>([&header, &API](auto node) {
-        const auto isHexOut = node->template findAttr<ASTAttrHex>() != nullptr;
+    ctx.filter<ASTEnum>([&header, &API](ASTEnum* node) {
+        const auto isHexOut = node->findAttr<ASTAttrHex>() != nullptr;
         std::vector<std::pair<std::string, std::string>> consts;
         consts.reserve(node->consts.size());
         size_t maxLength = 0;
@@ -350,7 +350,7 @@ static void generateEnums(idl::Context& ctx, const std::filesystem::path& out, b
         ec.parent = node;
         ec.name   = "MaxEnum";
         ec.accept(name);
-        if (node->template findAttr<ASTAttrFlags>()) {
+        if (node->findAttr<ASTAttrFlags>()) {
             name.str = name.str.substr(0, name.str.length() - 4);
         }
         consts.emplace_back(name.str, "0x7FFFFFFF");
@@ -365,7 +365,7 @@ static void generateEnums(idl::Context& ctx, const std::filesystem::path& out, b
             fmt::println(header.stream, "{:<{}}{:<{}} = {}", ' ', 4, key, maxLength, value);
         }
         fmt::println(header.stream, "}} {};", name.str);
-        if (node->template findAttr<ASTAttrFlags>()) {
+        if (node->findAttr<ASTAttrFlags>()) {
             fmt::println(header.stream, "{}_FLAGS({})", API, name.str);
         }
         fmt::println(header.stream, "");
@@ -386,9 +386,9 @@ static void generateCallbacks(
                 hasTypesHeader ? "" : "platform",
                 hasTypesHeader ? "types" : "",
                 hasEnumsHeader ? "enums" : "");
-    ctx.filter<ASTCallback>([&header](auto node) {
+    ctx.filter<ASTCallback>([&header](ASTCallback* node) {
         CName name;
-        node->template findAttr<ASTAttrType>()->type->decl->accept(name);
+        node->findAttr<ASTAttrType>()->type->decl->accept(name);
         const auto returnType = name.str;
         node->accept(name);
         const auto callbackName = name.str;
@@ -435,8 +435,8 @@ static void generateStructs(idl::Context& ctx,
                 hasTypesHeader ? "types" : "",
                 hasEnumsHeader ? "enums" : "",
                 hasCallbacksHeader ? "callbacks" : "");
-    ctx.filter<ASTStruct>([&header](auto node) {
-        if (!node->template findAttr<ASTAttrHandle>()) {
+    ctx.filter<ASTStruct>([&header](ASTStruct* node) {
+        if (!node->findAttr<ASTAttrHandle>()) {
             size_t maxLength = 0;
             std::vector<std::pair<std::string, std::string>> typeNames;
             for (auto field : node->fields) {
@@ -470,7 +470,7 @@ static void generateCore(idl::Context& ctx,
     auto header    = createHeader(ctx, out, "core");
     auto printFunc = [&dllPublic, &header](ASTDecl* decl, const std::vector<ASTArg*>& args) {
         CName name;
-        decl->template findAttr<ASTAttrType>()->type->decl->accept(name);
+        decl->findAttr<ASTAttrType>()->type->decl->accept(name);
         fmt::println(header.stream, "{} {}", dllPublic, name.str);
 
         decl->accept(name);
@@ -528,8 +528,8 @@ void generateC(idl::Context& ctx, const std::filesystem::path& out) {
         return false;
     });
     bool hasStructs    = false;
-    ctx.filter<ASTStruct>([&hasStructs](auto node) {
-        if (!node->template findAttr<ASTAttrHandle>()) {
+    ctx.filter<ASTStruct>([&hasStructs](ASTStruct* node) {
+        if (!node->findAttr<ASTAttrHandle>()) {
             hasStructs = true;
             return false;
         }

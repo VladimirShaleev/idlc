@@ -493,14 +493,14 @@ void addNode(idl::Context& context, ASTDecl* prev, ASTDecl* decl)
 {
     if (prev == nullptr)
     {
-        if (dynamic_cast<ASTApi*>(decl) == nullptr)
+        if (!decl->is<ASTApi>())
         {
             throw idl::Parser::syntax_error(decl->location, err_str<E2012>());
         }
         context.initBuiltins<idl::Parser::syntax_error>();
         return;
     }
-    if (dynamic_cast<ASTApi*>(decl) != nullptr)
+    if (decl->is<ASTApi>())
     {
         throw idl::Parser::syntax_error(decl->location, err_str<E2004>());
     }

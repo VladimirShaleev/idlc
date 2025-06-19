@@ -49,8 +49,31 @@ inline std::vector<std::string> tokenize(const std::string& str) {
     return tokens;
 }
 
-inline std::string convert(const std::string& str, Case caseConvention) {
-    auto tokens = tokenize(str);
+inline std::vector<std::string> tokenize(const std::string& str, const std::vector<int>& nums) {
+    std::vector<std::string> tokens;
+    size_t pos = 0;
+    for (int num : nums) {
+        if (pos >= str.length()) {
+            break;
+        }
+        if (num < 0) {
+            auto skip = size_t(-num);
+            pos       = std::min(pos + skip, str.length());
+        } else if (num > 0) {
+            auto take   = size_t(num);
+            auto endPos = std::min(pos + take, str.length());
+            tokens.push_back(str.substr(pos, endPos - pos));
+            pos = endPos;
+        }
+    }
+    if (pos < str.length()) {
+        tokens.push_back(str.substr(pos));
+    }
+    return tokens;
+}
+
+inline std::string convert(const std::string& str, Case caseConvention, const std::vector<int>* nums = nullptr) {
+    auto tokens = nums ? tokenize(str, *nums) : tokenize(str);
 
     char prevSymbol = '\0';
     std::ostringstream ss;

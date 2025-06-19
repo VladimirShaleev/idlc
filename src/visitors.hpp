@@ -145,7 +145,11 @@ struct CName : Visitor {
         if (auto attr = decl->findAttr<ASTAttrCName>()) {
             return attr->name;
         }
-        return convert(decl->name, upper ? Case::ScreamingSnakeCase : Case::SnakeCase);
+        std::vector<int>* nums = nullptr;
+        if (auto attr = decl->findAttr<ASTAttrTokenizer>()) {
+            nums = &attr->nums;
+        }
+        return convert(decl->name, upper ? Case::ScreamingSnakeCase : Case::SnakeCase, nums);
     }
 
     static std::string cname(ASTDecl* decl, bool upper = false) {
@@ -245,6 +249,10 @@ struct AttrName : Visitor {
         str = "out";
     }
 
+    void visit(ASTAttrTokenizer* node) override {
+        str = "tokenizer";
+    }
+
     void discarded(ASTNode*) override {
         assert(!"attribute name is missing");
     }
@@ -254,61 +262,63 @@ struct AttrName : Visitor {
 
 struct AllowedAttrs : Visitor {
     void visit(struct ASTEnum*) override {
-        allowed = {
-            add<ASTAttrFlags>(), add<ASTAttrHex>(), add<ASTAttrPlatform>(), add<ASTAttrCName>(), add<ASTAttrErrorCode>()
-        };
+        allowed = { add<ASTAttrFlags>(), add<ASTAttrHex>(),       add<ASTAttrPlatform>(),
+                    add<ASTAttrCName>(), add<ASTAttrTokenizer>(), add<ASTAttrErrorCode>() };
     }
 
     void visit(struct ASTEnumConst*) override {
-        allowed = { add<ASTAttrType>(), add<ASTAttrValue>(), add<ASTAttrCName>() };
+        allowed = { add<ASTAttrType>(), add<ASTAttrValue>(), add<ASTAttrCName>(), add<ASTAttrTokenizer>() };
     }
 
     void visit(ASTStruct* node) override {
-        allowed = { add<ASTAttrPlatform>(), add<ASTAttrHandle>(), add<ASTAttrCName>() };
+        allowed = { add<ASTAttrPlatform>(), add<ASTAttrHandle>(), add<ASTAttrCName>(), add<ASTAttrTokenizer>() };
     }
 
     void visit(ASTField* node) override {
-        allowed = { add<ASTAttrType>(),  add<ASTAttrValue>(), add<ASTAttrCName>(),
+        allowed = { add<ASTAttrType>(),  add<ASTAttrValue>(), add<ASTAttrCName>(), add<ASTAttrTokenizer>(),
                     add<ASTAttrArray>(), add<ASTAttrConst>(), add<ASTAttrRef>() };
     }
 
     void visit(ASTInterface* node) override {
-        allowed = { add<ASTAttrPlatform>(), add<ASTAttrCName>() };
+        allowed = { add<ASTAttrPlatform>(), add<ASTAttrCName>(), add<ASTAttrTokenizer>() };
     }
 
     void visit(ASTHandle* node) override {
-        allowed = { add<ASTAttrPlatform>(), add<ASTAttrType>(), add<ASTAttrCName>() };
+        allowed = { add<ASTAttrPlatform>(), add<ASTAttrType>(), add<ASTAttrCName>(), add<ASTAttrTokenizer>() };
     }
 
     void visit(ASTMethod* node) override {
-        allowed = { add<ASTAttrType>(),  add<ASTAttrPlatform>(), add<ASTAttrStatic>(), add<ASTAttrCtor>(),
-                    add<ASTAttrCName>(), add<ASTAttrConst>(),    add<ASTAttrRef>(),    add<ASTAttrDestroy>() };
+        allowed = { add<ASTAttrType>(),  add<ASTAttrPlatform>(), add<ASTAttrStatic>(),
+                    add<ASTAttrCtor>(),  add<ASTAttrCName>(),    add<ASTAttrTokenizer>(),
+                    add<ASTAttrConst>(), add<ASTAttrRef>(),      add<ASTAttrDestroy>() };
     }
 
     void visit(ASTProperty* node) override {
-        allowed = {
-            add<ASTAttrType>(), add<ASTAttrPlatform>(), add<ASTAttrStatic>(), add<ASTAttrGet>(), add<ASTAttrSet>()
-        };
+        allowed = { add<ASTAttrType>(), add<ASTAttrPlatform>(), add<ASTAttrStatic>(),   add<ASTAttrGet>(),
+                    add<ASTAttrSet>(),  add<ASTAttrCName>(),    add<ASTAttrTokenizer>() };
     }
 
     void visit(ASTEvent* node) override {
-        allowed = {
-            add<ASTAttrType>(), add<ASTAttrPlatform>(), add<ASTAttrStatic>(), add<ASTAttrGet>(), add<ASTAttrSet>()
-        };
+        allowed = { add<ASTAttrType>(), add<ASTAttrPlatform>(), add<ASTAttrStatic>(),   add<ASTAttrGet>(),
+                    add<ASTAttrSet>(),  add<ASTAttrCName>(),    add<ASTAttrTokenizer>() };
     }
 
     void visit(ASTArg* node) override {
-        allowed = { add<ASTAttrType>(),  add<ASTAttrValue>(), add<ASTAttrThis>(),     add<ASTAttrCName>(),
-                    add<ASTAttrConst>(), add<ASTAttrRef>(),   add<ASTAttrUserData>(), add<ASTAttrResult>(),
-                    add<ASTAttrIn>(),    add<ASTAttrOut>(),   add<ASTAttrArray>() };
+        allowed = { add<ASTAttrType>(),      add<ASTAttrValue>(), add<ASTAttrThis>(), add<ASTAttrCName>(),
+                    add<ASTAttrTokenizer>(), add<ASTAttrConst>(), add<ASTAttrRef>(),  add<ASTAttrUserData>(),
+                    add<ASTAttrResult>(),    add<ASTAttrIn>(),    add<ASTAttrOut>(),  add<ASTAttrArray>() };
     }
 
     void visit(ASTFunc* node) override {
-        allowed = { add<ASTAttrType>(), add<ASTAttrPlatform>(), add<ASTAttrCName>(), add<ASTAttrErrorCode>() };
+        allowed = { add<ASTAttrType>(),
+                    add<ASTAttrPlatform>(),
+                    add<ASTAttrCName>(),
+                    add<ASTAttrTokenizer>(),
+                    add<ASTAttrErrorCode>() };
     }
 
     void visit(ASTCallback* node) override {
-        allowed = { add<ASTAttrType>(), add<ASTAttrPlatform>(), add<ASTAttrCName>() };
+        allowed = { add<ASTAttrType>(), add<ASTAttrPlatform>(), add<ASTAttrCName>(), add<ASTAttrTokenizer>() };
     }
 
     template <typename Attr>

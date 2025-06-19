@@ -188,6 +188,12 @@ struct ASTAttrOut : ASTAttr {
     void accept(Visitor& visitor) override;
 };
 
+struct ASTAttrTokenizer : ASTAttr {
+    void accept(Visitor& visitor) override;
+
+    std::vector<int> nums;
+};
+
 struct ASTDecl : ASTNode {
     std::string name;
     std::vector<ASTAttr*> attrs;
@@ -480,6 +486,10 @@ struct Visitor {
         discarded(node);
     }
 
+    virtual void visit(ASTAttrTokenizer* node) {
+        discarded(node);
+    }
+
     virtual void visit(ASTAttrHandle* node) {
         discarded(node);
     }
@@ -705,6 +715,10 @@ inline void ASTAttrIn::accept(Visitor& visitor) {
 }
 
 inline void ASTAttrOut::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+inline void ASTAttrTokenizer::accept(Visitor& visitor) {
     visitor.visit(this);
 }
 

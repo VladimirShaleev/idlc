@@ -122,7 +122,8 @@ enum Error {
     E2105,
     E2106,
     E2107,
-    E2108
+    E2108,
+    E2109
 };
 
 template <Warning Code, typename... Args>
@@ -485,6 +486,9 @@ inline std::string err_str(Args&&... args) {
     }
     if constexpr (Code == E2108) {
         ss << fmt::format("the 'array' attribute of the '{}' must point to a argument of the callback", args...);
+    }
+    if constexpr (Code == E2109) {
+        ss << "the 'tokenizer' attribute must specify a indices string in the argument";
     }
     return ss.str();
 }

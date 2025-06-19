@@ -81,6 +81,7 @@
 %token ATTRDESTROY
 %token ATTRIN
 %token ATTROUT
+%token ATTRTOKENIZER
 
 %token API
 %token ENUM
@@ -99,6 +100,7 @@
 %token <std::string> STR
 %token <std::string> ID
 %token <std::string> REF
+%token <std::string> TOKINDX
 %token <int64_t> NUM
 %token <bool> BOOL
 %token <ASTAttrPlatform::Type> ATTRPLATFORMARG
@@ -110,6 +112,7 @@
 %type <ASTAttr*> attr_type
 %type <ASTAttr*> attr_cname
 %type <ASTAttr*> attr_array
+%type <ASTAttr*> attr_tokenizer
 %type <ASTAttr*> attr_const
 %type <ASTAttr*> attr_ref
 %type <ASTAttr*> attr_userdata
@@ -242,6 +245,7 @@ attr_item
     | attr_type { $$ = $1; }
     | attr_cname { $$ = $1; }
     | attr_array { $$ = $1; }
+    | attr_tokenizer { $$ = $1; }
     | attr_const { $$ = $1; }
     | attr_ref { $$ = $1; }
     | attr_userdata { $$ = $1; }
@@ -342,6 +346,25 @@ attr_array
         $$ = node;
     }
     ;
+
+attr_tokenizer
+    : ATTRTOKENIZER { throw syntax_error(@1, err_str<E2109>()); }
+    | ATTRTOKENIZER '(' ')' { throw syntax_error(@1, err_str<E2109>()); }
+    | ATTRTOKENIZER '(' TOKINDX ')' {
+        std::vector<int> tokens;  
+        std::stringstream ss($3);  
+        std::string token;  
+        while (std::getline(ss, token, '-')) {  
+            if (token[0] == '^') {
+                tokens.push_back(-std::stoi(token.substr(1)));  
+            } else {
+                tokens.push_back(std::stoi(token));  
+            }
+        }
+        auto node = alloc_node(ASTAttrTokenizer, @1);
+        node->nums = tokens;
+        $$ = node;
+    }
 
 attr_const
     : ATTRCONST { auto node = alloc_node(ASTAttrConst, @1); $$ = node; }

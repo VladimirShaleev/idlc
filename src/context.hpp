@@ -170,11 +170,19 @@ public:
             size_t pos     = 0;
             std::string str;
             while ((pos = detail.find(' ', prevPos)) != std::string::npos) {
+                if (!doc.empty()) {
+                    doc.push_back(intern<Exception>(loc, std::string(" ")));
+                }
                 str     = detail.substr(prevPos, pos - prevPos);
                 prevPos = pos + 1;
                 doc.push_back(intern<Exception>(loc, str));
             }
-            doc.push_back(intern<Exception>(loc, detail.substr(prevPos)));
+            if (prevPos < detail.length()) {
+                if (!doc.empty()) {
+                    doc.push_back(intern<Exception>(loc, std::string(" ")));
+                }
+                doc.push_back(intern<Exception>(loc, detail.substr(prevPos)));
+            }
 
             auto node         = allocNode<Node, Exception>(loc);
             node->name        = std::move(name);

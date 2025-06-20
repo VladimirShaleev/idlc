@@ -503,8 +503,8 @@ static void generateVersion(idl::Context& ctx, const std::filesystem::path& out)
     };
 
     ASTDoc doc{};
-    doc.brief  = addDocField({ "Define version of library" });
-    doc.detail = addDocField({ "This file defines version macros and version making macros" });
+    doc.brief  = addDocField({ "Define version of library." });
+    doc.detail = addDocField({ "This file defines version macros and version making macros." });
     ASTFile file{};
     file.name = "version";
     file.doc  = &doc;
@@ -526,15 +526,19 @@ static void generatePlatform(idl::Context& ctx, const std::filesystem::path& out
     auto header    = createHeader(ctx, out, "platform", false);
     auto intType   = std::string();
 
-    size_t maxLength = 0;
-    std::vector<std::pair<std::string, std::string>> trivialTypes;
-    ctx.filter<ASTBuiltinType>([&trivialTypes, &intType, &maxLength](ASTBuiltinType* node) {
+    size_t maxLength     = 0;
+    size_t maxLengthType = 0;
+    std::vector<std::tuple<std::string, std::string, ASTDecl*>> trivialTypes;
+    ctx.filter<ASTBuiltinType>([&trivialTypes, &intType, &maxLength, &maxLengthType](ASTBuiltinType* node) {
         if (!node->as<ASTVoid>()) {
             CName name;
             node->accept(name);
-            trivialTypes.emplace_back(name.native, name.str);
+            trivialTypes.emplace_back(name.native, name.str, node);
             if (name.native.length() > maxLength) {
                 maxLength = name.native.length();
+            }
+            if (name.str.length() > maxLengthType) {
+                maxLengthType = name.str.length();
             }
             if (node->as<ASTInt32>()) {
                 intType = name.str;
@@ -542,7 +546,57 @@ static void generatePlatform(idl::Context& ctx, const std::filesystem::path& out
         }
     });
 
+    std::vector<ASTLiteralStr> strings;
+    strings.reserve(20);
+    auto addDocField = [&strings](std::vector<std::string>&& data) {
+        std::vector<ASTNode*> nodes;
+        for (const auto& str : data) {
+            strings.push_back({});
+            strings.back().value = str;
+            nodes.push_back(&strings.back());
+        }
+        return nodes;
+    };
+
+    ASTDoc doc{};
+    doc.brief  = addDocField({ "Platform-specific definitions and utilities." });
+    doc.detail = addDocField({ "This header provides cross-platform macros, type definitions, and utility",
+                               "\n",
+                               "macros for the " + ctx.api()->name + " library. It handles:",
+                               "\n",
+                               "- Platform detection (Windows, macOS, iOS, Android, Linux, Web)",
+                               "\n",
+                               "- Symbol visibility control (DLL import/export on Windows)",
+                               "\n",
+                               "- C/C++ interoperability",
+                               "\n",
+                               "- Type definitions for consistent data sizes across platforms",
+                               "\n",
+                               "- Bit flag operations for enumerations (C++ only).",
+                               "\n" });
+    ASTFile file{};
+    file.name = "platform";
+    file.doc  = &doc;
+    generateDoc(header, ctx.api(), false, &file);
     beginHeader(ctx, header);
+    fmt::println(header.stream, "/**");
+    fmt::println(header.stream, " * @def     {}_BEGIN", API);
+    fmt::println(header.stream, " * @brief   Begins a C-linkage declaration block.");
+    fmt::println(header.stream,
+                 " * @details In C++, expands to `extern \"C\" {{` to ensure C-compatible symbol naming.");
+    fmt::println(header.stream, " *          In pure C environments, expands to nothing.");
+    fmt::println(header.stream, " * @sa      {}_END", API);
+    fmt::println(header.stream, " *");
+    fmt::println(header.stream, " */");
+    fmt::println(header.stream, "");
+    fmt::println(header.stream, "/**");
+    fmt::println(header.stream, " * @def     {}_END", API);
+    fmt::println(header.stream, " * @brief   Ends a C-linkage declaration block.");
+    fmt::println(header.stream, " * @details Closes the scope opened by #GERIUM_BEGIN.");
+    fmt::println(header.stream, " * @sa      {}_BEGIN", API);
+    fmt::println(header.stream, " *");
+    fmt::println(header.stream, " */");
+    fmt::println(header.stream, "");
     fmt::println(header.stream, "#ifdef __cplusplus");
     fmt::println(header.stream, "# define {}_BEGIN extern \"C\" {{", API);
     fmt::println(header.stream, "# define {}_END   }}", API);
@@ -550,6 +604,20 @@ static void generatePlatform(idl::Context& ctx, const std::filesystem::path& out
     fmt::println(header.stream, "# define {}_BEGIN", API);
     fmt::println(header.stream, "# define {}_END", API);
     fmt::println(header.stream, "#endif");
+    fmt::println(header.stream, "");
+    fmt::println(header.stream, "/**");
+    fmt::println(header.stream, " * @def     {}", importAPI);
+    fmt::println(header.stream, " * @brief   Controls symbol visibility for shared library builds.");
+    fmt::println(header.stream,
+                 " * @details This macro is used to control symbol visibility when building or using the library.");
+    fmt::println(header.stream,
+                 " *          On Windows (**MSVC**) with dynamic linking (non-static build), it expands to "
+                 "`__declspec(dllimport)`.");
+    fmt::println(header.stream,
+                 " *          In all other cases (static builds or non-Windows platforms), it expands to nothing.");
+    fmt::println(header.stream, " *          This allows proper importing of symbols from DLLs on Windows platforms.");
+    fmt::println(header.stream, " * @note    Define `GERIUM_STATIC_BUILD` for static library configuration.");
+    fmt::println(header.stream, " */");
     fmt::println(header.stream, "");
     fmt::println(header.stream, "#ifndef {}", importAPI);
     fmt::println(header.stream, "# if defined(_MSC_VER) && !defined({}_STATIC_BUILD)", API);
@@ -595,12 +663,35 @@ static void generatePlatform(idl::Context& ctx, const std::filesystem::path& out
     fmt::println(header.stream, "#  define {}_CONSTEXPR_14", API);
     fmt::println(header.stream, "#endif");
     fmt::println(header.stream, "");
+    fmt::println(header.stream, "/**");
+    fmt::println(header.stream, " * @name  Platform-independent type definitions");
+    fmt::println(header.stream, " * @brief Fixed-size types guaranteed to work across all supported platforms");
+    fmt::println(header.stream, " * @{{");
+    fmt::println(header.stream, " **/");
     fmt::println(header.stream, "#include <stdint.h>");
-    for (const auto& [native, type] : trivialTypes) {
-        fmt::println(header.stream, "typedef {:<{}} {};", native, maxLength, type);
+    for (const auto& [native, type, decl] : trivialTypes) {
+        fmt::print(header.stream, "typedef {:<{}} {:<{}}", native, maxLength, type + ';', maxLengthType + 1);
+        generateInlineDoc(header, decl);
+        fmt::println(header.stream, "");
     }
+    fmt::println(header.stream, "/**");
+    fmt::println(header.stream, " * @}}");
+    fmt::println(header.stream, " */");
     fmt::println(header.stream, "");
-    constexpr auto tmpFlags = R"(#ifdef __cplusplus
+    constexpr auto tmpFlags = R"(/**
+ * @def       {API}_FLAGS
+ * @brief     Enables bit flag operations for enumerations (C++ only).
+ * @details   Generates overloaded bitwise operators for type-safe flag manipulation:
+ *            - Bitwise NOT (~)
+ *            - OR (|, |=)
+ *            - AND (&, &=)
+ *            - XOR (^, ^=)
+ * 
+ * @param[in] {api}_enum_t Enumeration type to enhance with flag operations
+ * @note      Only active in C++ mode. In C, expands to nothing.
+ */
+
+#ifdef __cplusplus
 # define {API}_FLAGS({api}_enum_t) \
 extern "C++" {{ \
 inline {API}_CONSTEXPR {api}_enum_t operator~({api}_enum_t lhr) noexcept {{ \
@@ -630,10 +721,17 @@ inline {API}_CONSTEXPR_14 {api}_enum_t& operator^=({api}_enum_t& lhr, {api}_enum
 #endif)";
     fmt::println(header.stream, tmpFlags, fmt::arg("API", API), fmt::arg("api", api), fmt::arg("int", intType));
     fmt::println(header.stream, "");
+    fmt::println(header.stream, "/**");
+    fmt::println(header.stream, " * @def       {}_TYPE", API);
+    fmt::println(header.stream, " * @brief     Declares an opaque handle type.");
+    fmt::println(header.stream, " * @details   Creates a typedef for a pointer to an incomplete struct type,");
+    fmt::println(header.stream, " *            providing type safety while hiding implementation details.");
+    fmt::println(header.stream, " * @param[in] {}_name Base name for the type (suffix `_t` will be added)", api);
+    fmt::println(header.stream, " */");
     fmt::println(header.stream, "#define {}_TYPE({}_name) \\", API, api);
     fmt::println(header.stream, "typedef struct _##{}_name* {}_name##_t;", api, api);
     fmt::println(header.stream, "");
-    ctx.filter<ASTStruct>([&header, &api](ASTStruct* node) {
+    ctx.filter<ASTStruct>([&header, &API, &api](ASTStruct* node) {
         if (node->findAttr<ASTAttrHandle>()) {
             size_t maxLength = 0;
             std::vector<std::pair<std::string, std::string>> typeNames;
@@ -645,6 +743,15 @@ inline {API}_CONSTEXPR_14 {api}_enum_t& operator^=({api}_enum_t& lhr, {api}_enum
                 }
             }
             auto name = getDeclCName(node, 2);
+
+            fmt::println(header.stream, "/**");
+            fmt::println(header.stream, " * @def       {}_HANDLE", API);
+            fmt::println(header.stream, " * @brief     Declares an index-based handle type.");
+            fmt::println(header.stream, " * @details   Creates a struct containing an index value, typically used for");
+            fmt::println(header.stream, " *            resource handles in API designs that avoid direct pointers.");
+            fmt::println(
+                header.stream, " * @param[in] {}_name Base name for the handle type (suffix `_h` will be added)", api);
+            fmt::println(header.stream, " */");
             fmt::println(header.stream, "#define {}({}_name) \\", upper(name), api);
             fmt::println(header.stream, "typedef struct {{ \\");
             for (const auto& [key, value] : typeNames) {

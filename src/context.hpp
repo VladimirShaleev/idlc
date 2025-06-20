@@ -919,6 +919,33 @@ public:
         });
     }
 
+    void prepareDocumentation() {
+        filter<ASTDecl>([this](ASTDecl* node) {
+            if (node->doc) {
+                auto prepare = [this, node](const std::vector<ASTNode*>& nodes) {
+                    for (auto doc : nodes) {
+                        if (auto declRef = doc->as<ASTDeclRef>()) {
+                            findSymbol(node, declRef->location, declRef);
+                        }
+                    }
+                };
+                auto prepares = [&prepare](const std::vector<std::vector<ASTNode*>>& nodes) {
+                    for (auto node : nodes) {
+                        prepare(node);
+                    }
+                };
+                prepare(node->doc->brief);
+                prepare(node->doc->detail);
+                prepare(node->doc->ret);
+                prepare(node->doc->copyright);
+                prepares(node->doc->authors);
+                prepares(node->doc->note);
+                prepares(node->doc->warn);
+                prepares(node->doc->see);
+            }
+        });
+    }
+
     const std::optional<ApiVersion>& apiVersion() const noexcept {
         return _version;
     }

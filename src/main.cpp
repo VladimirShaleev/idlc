@@ -104,6 +104,7 @@ int main(int argc, char* argv[]) {
     context.prepareEvents();
     context.prepareInterfaces();
     context.prepareHandles();
+    context.prepareDocumentation();
     context.apiVersion(version);
 
     switch (getGeneratorArg(program)) {

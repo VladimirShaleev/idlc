@@ -142,6 +142,103 @@ static void endHeader(idl::Context& ctx, Header& header) {
     fmt::println(header.stream, "#endif /* {} */", header.includeGuard);
 }
 
+static void generateDocField(Header& header, const std::vector<ASTNode*>& nodes, size_t indents) {
+    bool first = true;
+    for (auto node : nodes) {
+        if (!first) {
+            fmt::print(header.stream, " ");
+        }
+        if (auto str = node->as<ASTLiteralStr>()) {
+            fmt::print(header.stream, "{}", str->value);
+            if (str->value == "\n") {
+                fmt::print(header.stream, " * {:<{}} ", ' ', indents);
+            }
+        } else if (auto ref = node->as<ASTDeclRef>()) {
+            fmt::print(header.stream, "::{}", getDeclCName(ref->decl));
+        } else {
+            assert(!"unreachable code");
+        }
+        first = false;
+    }
+    fmt::println(header.stream, "");
+}
+
+static void generateDoc(idl::Context& ctx, Header& header, ASTDecl* node, bool printLicense = false) {
+    if (!node->doc) {
+        return;
+    }
+
+    size_t maxLength = 0;
+    auto calcLength = [&maxLength](std::string_view field, const auto& nodes) {
+        if (!nodes.empty()) {
+            if (field.length() > maxLength) {
+                maxLength = field.length();
+            }
+        }
+    };
+
+    auto printDocField = [&header, &maxLength](std::string_view field, const std::vector<ASTNode*>& nodes) {
+        if (!nodes.empty()) {
+            auto at = field.length() > 0 ? "@" : "";
+            fmt::print(header.stream, " * {}{:<{}} ", at, field, maxLength);
+            generateDocField(header, nodes, maxLength);
+        }
+    };
+
+    auto printDocFields = [&header, &printDocField](std::string_view field, const std::vector<std::vector<ASTNode*>>& nodes, bool parblock = false) {
+        for (const auto& node : nodes) {
+            if (parblock && nodes.size() > 1) {
+                fmt::println(header.stream, " * @parblock");
+            }
+            printDocField(field, node);
+            if (parblock && nodes.size() > 1) {
+                fmt::println(header.stream, " * @endparblock");
+            }
+        }
+    };
+
+    std::string_view file = "file";
+    std::string_view author = node->doc->authors.size() > 1 ? "authors" : "author";
+    std::string_view brief = "brief";
+    std::string_view details = "details";
+    std::string_view ret = "return";
+    std::string_view copyright = "copyright";
+    std::string_view note = "note";
+    std::string_view warning = "warning";
+    std::string_view sa = "sa";
+
+    calcLength(author, node->doc->authors);
+    calcLength(brief, node->doc->brief);
+    calcLength(details, node->doc->detail);
+    calcLength(ret, node->doc->ret);
+    calcLength(copyright, node->doc->copyright);
+    calcLength(note, node->doc->note);
+    calcLength(warning, node->doc->warn);
+    calcLength(sa, node->doc->see);
+
+    fmt::println(header.stream, "/**");
+    if (node->is<ASTApi>()) {
+        if (file.length() > maxLength) {
+            maxLength = file.length();
+        }
+        fmt::println(header.stream, " * @{:<{}} {}", file, maxLength, header.filename);
+    }
+    printDocFields(author, node->doc->authors);
+    printDocField(brief, node->doc->brief);
+    printDocField(details, node->doc->detail);
+    printDocField(ret, node->doc->ret);
+    printDocFields(note, node->doc->note, true);
+    printDocFields(warning, node->doc->warn, true);
+    printDocFields(sa, node->doc->see);
+    printDocField(copyright, node->doc->copyright);
+    if (printLicense && !node->doc->copyright.empty()) {
+        maxLength = 0;
+        fmt::println(header.stream, " *");
+        printDocField("", node->doc->license);
+    }
+    fmt::println(header.stream, " */");
+}
+
 static void generateVersion(idl::Context& ctx, const std::filesystem::path& out) {
     auto API    = getApiPrefix(ctx, true);
     auto header = createHeader(ctx, out, "version", false);
@@ -358,8 +455,9 @@ static void generateEnums(idl::Context& ctx, const std::filesystem::path& out, b
     }
     auto API    = getApiPrefix(ctx, true);
     auto header = createHeader(ctx, out, "enums", true);
+    generateDoc(ctx, header, ctx.api());
     beginHeader(ctx, header, "platform");
-    ctx.filter<ASTEnum>([&header, &API](ASTEnum* node) {
+    ctx.filter<ASTEnum>([&ctx, &header, &API](ASTEnum* node) {
         const auto isHexOut = node->findAttr<ASTAttrHex>() != nullptr;
         std::vector<std::pair<std::string, std::string>> consts;
         consts.reserve(node->consts.size());
@@ -378,6 +476,7 @@ static void generateEnums(idl::Context& ctx, const std::filesystem::path& out, b
         if (name.length() > maxLength) {
             maxLength = name.length();
         }
+        generateDoc(ctx, header, node);
         fmt::println(header.stream, "typedef enum");
         fmt::println(header.stream, "{{");
         for (const auto& [key, value] : consts) {
@@ -498,6 +597,7 @@ static void generateCore(idl::Context& ctx,
         fmt::println(header.stream, "");
     };
 
+    generateDoc(ctx, header, ctx.api(), true);
     beginHeader(ctx,
                 header,
                 "version",

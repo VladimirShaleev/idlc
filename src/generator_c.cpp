@@ -42,6 +42,7 @@ static Header createHeader(idl::Context& ctx,
                            const std::filesystem::path& out,
                            const std::string& postfix,
                            bool externC) {
+    std::filesystem::create_directories(out);
     auto header = out / headerStr(ctx, postfix);
     auto guard  = includeGuardStr(ctx, postfix);
     auto stream = std::ofstream(header);
@@ -248,10 +249,10 @@ static void generateDoc(Header& header, ASTDecl* node, bool printLicense = false
         }
         fmt::println(header.stream, " * @{:<{}} {}", file, maxLength, header.filename);
     }
-    printDocFields(author, node->doc->authors);
     printDocField(brief, briefNodes);
     printDocField(details, detailNodes);
     printDocField(ret, node->doc->ret);
+    printDocFields(author, node->doc->authors);
     printDocFields(note, node->doc->note, true);
     printDocFields(warning, node->doc->warn, true);
     printDocFields(sa, node->doc->see);
@@ -347,6 +348,7 @@ struct DeclGenerator : Visitor {
     }
 
     void visit(ASTCallback* node) override {
+        generateDoc(header, node);
         const auto decl = fmt::format("(*{})(", getDeclCName(node));
         fmt::println(header.stream, "typedef {}", getDeclTypeCName(node));
         fmt::print(header.stream, "{}", decl);
@@ -419,26 +421,94 @@ static void generateVersion(idl::Context& ctx, const std::filesystem::path& out)
         micro = version->micro;
     }
 
-    constexpr auto tmp = R"(#define {API}_VERSION_MAJOR {major}
+    constexpr auto tmp = R"(/**
+ * @brief \a major version of {API}_VERSION
+ * @sa    {API}_VERSION
+ * @sa    {API}_VERSION_STRING
+ */
+#define {API}_VERSION_MAJOR {major}
+
+/**
+ * @brief \a minor version of {API}_VERSION
+ * @sa    {API}_VERSION
+ * @sa    {API}_VERSION_STRING
+ */
 #define {API}_VERSION_MINOR {minor}
+
+/**
+ * @brief \a micro version of {API}_VERSION
+ * @sa    {API}_VERSION
+ * @sa    {API}_VERSION_STRING
+ */
 #define {API}_VERSION_MICRO {micro}
 
+/**
+ * @brief     Make encode version from params \a major, \a minor and \a micro
+ * @param[in] major part of {API}_VERSION
+ * @param[in] minor part of {API}_VERSION
+ * @param[in] micro part of {API}_VERSION
+ * @sa        {API}_VERSION_STRING
+ */
 #define {API}_VERSION_ENCODE(major, minor, micro) (((unsigned long) major) << 16 | (minor) << 8 | (micro))
 
+/**
+ * @brief     Make string of version from params \a major, \a minor and \a micro
+ * @param[in] major part of {API}_VERSION
+ * @param[in] minor part of {API}_VERSION
+ * @param[in] micro part of {API}_VERSION
+ * @note      For internal use
+ * @sa        {API}_VERSION_STRING
+ */
 #define {API}_VERSION_STRINGIZE_(major, minor, micro) #major "." #minor "." #micro
+
+/**
+ * @brief     Make string of version from params \a major, \a minor and \a micro
+ * @param[in] major part of {API}_VERSION
+ * @param[in] minor part of {API}_VERSION
+ * @param[in] micro part of {API}_VERSION
+ * @sa        {API}_VERSION_STRING
+ */
 #define {API}_VERSION_STRINGIZE(major, minor, micro)  {API}_VERSION_STRINGIZE_(major, minor, micro)
 
+/**
+ * @brief   Define version of library (integer value)
+ * @details Version integer value
+ * @sa      Use {API}_VERSION_STRING for get string of version
+ */
 #define {API}_VERSION {API}_VERSION_ENCODE( \
     {API}_VERSION_MAJOR, \
     {API}_VERSION_MINOR, \
     {API}_VERSION_MICRO)
 
+/**
+ * @brief   Define string version of library
+ * @details Version string in format \a major.\a minor.\a micro
+ * @sa      Use {API}_VERSION for get integer value of version
+ */
 #define {API}_VERSION_STRING {API}_VERSION_STRINGIZE( \
     {API}_VERSION_MAJOR, \
     {API}_VERSION_MINOR, \
     {API}_VERSION_MICRO)
 )";
+    std::vector<ASTLiteralStr> strings;
+    strings.reserve(10);
+    auto addDocField = [&strings](std::vector<std::string>&& data) {
+        std::vector<ASTNode*> nodes;
+        for (const auto& str : data) {
+            strings.push_back({});
+            strings.back().value = str;
+            nodes.push_back(&strings.back());
+        }
+        return nodes;
+    };
 
+    ASTDoc doc{};
+    doc.brief  = addDocField({ "Define version of library" });
+    doc.detail = addDocField({ "This file defines version macros and version making macros" });
+    ASTFile file{};
+    file.name = "version";
+    file.doc  = &doc;
+    generateDoc(header, ctx.api(), false, &file);
     beginHeader(ctx, header);
     fmt::println(header.stream,
                  tmp,

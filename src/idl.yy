@@ -34,11 +34,11 @@
     #define add_attrs(node, attrs) \
         scanner.context().addAttrs<idl::Parser::syntax_error>(node, attrs)
     #define intern(loc, str) \
-        scanner.context().intern<idl::Parser::syntax_error>(loc, str)
+        scanner.context().intern<idl::Parser::syntax_error>(loc, std::string(str))
     #define intern_bool(loc, b) \
-        scanner.context().intern<idl::Parser::syntax_error>(loc, b)
+        scanner.context().intern<idl::Parser::syntax_error>(loc, bool(b))
     #define intern_int(loc, num) \
-        scanner.context().intern<idl::Parser::syntax_error>(loc, num)
+        scanner.context().intern<idl::Parser::syntax_error>(loc, int64_t(num))
     
     void addNode(idl::Context&, ASTDecl*, ASTDecl*);
     void addDoc(ASTDoc*, const std::vector<ASTNode*>&, char);
@@ -549,40 +549,65 @@ void addNode(idl::Context& context, ASTDecl* prev, ASTDecl* decl)
     context.addSymbol<idl::Parser::syntax_error>(decl);
 }
 
+std::vector<ASTNode*> prepareDoc(const std::vector<ASTNode*>& doc) {
+    std::vector<ASTNode*> result;
+    result.reserve(doc.size());
+    for (size_t i = 0; i < doc.size(); ++i)
+    {
+        if (i == 0 && doc[i]->is<ASTLiteralStr>() && doc[i]->as<ASTLiteralStr>()->value[0] == ' ')
+        {
+        }
+        else if (i + 1 == doc.size() && doc[i]->is<ASTLiteralStr>() && doc[i]->as<ASTLiteralStr>()->value[0] == ' ')
+        {
+        }
+        else if (i + 1 < doc.size() && 
+            doc[i]->is<ASTLiteralStr>() && doc[i]->as<ASTLiteralStr>()->value[0] == ' ' && 
+            doc[i + 1]->is<ASTLiteralStr>() && doc[i + 1]->as<ASTLiteralStr>()->value[0] == '\n')
+        {
+        }
+        else
+        {
+            result.push_back(doc[i]);
+        }
+    }
+    return result;
+}
+
 void addDoc(ASTDoc* node, const std::vector<ASTNode*>& doc, char type)
 {
+    auto field = prepareDoc(doc);
     switch (type)
     {
         case 'b':
             if (!node->brief.empty()) throw idl::Parser::syntax_error(node->location, err_str<E2007>());
-            node->brief = doc;
+            node->brief = field;
             break;
         case 'd':
             if (!node->detail.empty()) throw idl::Parser::syntax_error(node->location, err_str<E2008>());
-            node->detail = doc;
+            node->detail = field;
             break;
         case 'c':
             if (!node->copyright.empty()) throw idl::Parser::syntax_error(node->location, err_str<E2009>());
-            node->copyright = doc;
+            node->copyright = field;
             break;
         case 'l':
             if (!node->license.empty()) throw idl::Parser::syntax_error(node->location, err_str<E2010>());
-            node->license = doc;
+            node->license = field;
             break;
         case 'a':
-            node->authors.push_back(doc);
+            node->authors.push_back(field);
             break;
         case 's':
-            node->see.push_back(doc);
+            node->see.push_back(field);
             break;
         case 'n':
-            node->note.push_back(doc);
+            node->note.push_back(field);
             break;
         case 'w':
-            node->warn.push_back(doc);
+            node->warn.push_back(field);
             break;
         case 'r':
-            node->ret = doc;
+            node->ret = field;
             break;
     }
 }

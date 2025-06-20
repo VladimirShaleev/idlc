@@ -159,13 +159,10 @@ static void endHeader(idl::Context& ctx, Header& header) {
 static void generateDocField(Header& header, const std::vector<ASTNode*>& nodes, size_t indents) {
     bool first = true;
     for (auto node : nodes) {
-        if (!first) {
-            fmt::print(header.stream, " ");
-        }
         if (auto str = node->as<ASTLiteralStr>()) {
             fmt::print(header.stream, "{}", str->value);
             if (str->value == "\n") {
-                fmt::print(header.stream, " * {:<{}} ", ' ', indents);
+                fmt::print(header.stream, " *{:<{}}", ' ', indents);
             }
         } else if (auto ref = node->as<ASTDeclRef>()) {
             DocRef docRef;
@@ -196,8 +193,8 @@ static void generateDoc(idl::Context& ctx, Header& header, ASTDecl* node, bool p
     auto printDocField = [&header, &maxLength](std::string_view field, const std::vector<ASTNode*>& nodes) {
         if (!nodes.empty()) {
             auto at = field.length() > 0 ? "@" : "";
-            fmt::print(header.stream, " * {}{:<{}} ", at, field, maxLength);
-            generateDocField(header, nodes, maxLength);
+            fmt::print(header.stream, " * {}{:<{}}", at, field, maxLength + (field.length() > 0 ? 1 : 0));
+            generateDocField(header, nodes, maxLength + (field.length() > 0 ? 3 : 1));
         }
     };
 

@@ -67,18 +67,28 @@ DOCMCHAR ([^ \r\n\t\{\}[\]`]|^[`]{3}|\\\{|\\\}|\\\[|\\\])
 <DOCSTR>[\{\}]             { return YYText()[0]; }
 <DOCSTR>\n                 { yylloc->lines(); BEGIN(INITIAL); }
 <DOCSTR>\t                 { err<E2002>(*yylloc); }
-<DOCSTR>" "                ;
+<DOCSTR>[ ]+               { yylval->emplace<std::string>(" "); return token::STR; }
 <DOCSTR>.                  { err<E2001>(*yylloc, YYText()); }
 <DOCSTR>"```\n"            { yylloc->lines(); BEGIN(DOCMSTR); }
 
-<DOCMSTR>{DOCMCHAR}+ { yylval->emplace<std::string>(unescape(YYText())); return token::STR; }
-<DOCMSTR>[\{\}] { return YYText()[0]; }
-<DOCMSTR>^[ ]+  ;
-<DOCMSTR>\n     { yylloc->lines(); yylval->emplace<std::string>(YYText()); return token::STR; }
-<DOCMSTR>\t     { err<E2002>(*yylloc); }
-<DOCMSTR>" "    ;
-<DOCMSTR>.      { err<E2001>(*yylloc, YYText()); }
-<DOCMSTR>"```"  { BEGIN(DOCSTR); }
+<DOCMSTR>{DOCMCHAR}+    { yylval->emplace<std::string>(unescape(YYText())); return token::STR; }
+<DOCMSTR>^[ ]+          {
+    if (lineIndent < 0) {
+        lineIndent = yyleng;
+    } else {
+        const auto spaces = yyleng - lineIndent;
+        if (spaces > 0) {
+            yylval->emplace<std::string>(fmt::format("{:<{}}", ' ', spaces));
+            return token::STR;
+        }
+    }
+}
+<DOCMSTR>[\{\}]         { return YYText()[0]; }
+<DOCMSTR>\n             { yylloc->lines(); yylval->emplace<std::string>(YYText()); return token::STR; }
+<DOCMSTR>\t             { err<E2002>(*yylloc); }
+<DOCMSTR>[ ]+           { yylval->emplace<std::string>(YYText()); return token::STR; }
+<DOCMSTR>.              { err<E2001>(*yylloc, YYText()); }
+<DOCMSTR>"```"          { BEGIN(DOCSTR); lineIndent = -1; }
 
 "["                  { BEGIN(ATTRCTX); return YYText()[0]; }
 <ATTRCTX>"flags"     { return token::ATTRFLAGS; }

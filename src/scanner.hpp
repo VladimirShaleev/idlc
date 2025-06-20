@@ -92,6 +92,8 @@ public:
         }
     }
 
+    int lineIndent = -1;
+
 private:
     struct Import {
         ~Import() {

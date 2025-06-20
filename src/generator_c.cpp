@@ -159,7 +159,8 @@ static void endHeader(idl::Context& ctx, Header& header) {
 static void generateDocField(Header& header,
                              const std::vector<ASTNode*>& nodes,
                              size_t indents,
-                             const std::string& prefix) {
+                             const std::string& prefix,
+                             bool inlineDoc = false) {
     bool first = true;
     for (auto node : nodes) {
         if (auto str = node->as<ASTLiteralStr>()) {
@@ -176,7 +177,9 @@ static void generateDocField(Header& header,
         }
         first = false;
     }
-    fmt::println(header.stream, "");
+    if (!inlineDoc) {
+        fmt::println(header.stream, "");
+    }
 }
 
 static void generateDoc(Header& header, ASTDecl* node, bool printLicense = false, ASTFile* fileDecl = nullptr) {
@@ -262,6 +265,74 @@ static void generateDoc(Header& header, ASTDecl* node, bool printLicense = false
     }
     fmt::println(header.stream, " */");
 }
+
+static void generateInlineDoc(Header& header, ASTDecl* node) {
+    if (node->doc && !node->doc->detail.empty()) {
+        fmt::print(header.stream, " /**< ");
+        generateDocField(header, node->doc->detail, 0, "", true);
+        fmt::print(header.stream, " */");
+    }
+}
+
+struct DeclGenerator : Visitor {
+    DeclGenerator(Header& h, idl::Context& context) noexcept : header(h), ctx(context) {
+    }
+
+    void visit(ASTEnum* node) override {
+        const auto isHexOut = node->findAttr<ASTAttrHex>() != nullptr;
+        std::vector<std::tuple<std::string, std::string, ASTDecl*>> consts;
+        consts.reserve(node->consts.size());
+        size_t maxLength = 0;
+        for (auto ec : node->consts) {
+            consts.emplace_back(getDeclCName(ec), getDeclValue(ec, isHexOut) + ',', ec);
+            if (std::get<0>(consts.back()).length() > maxLength) {
+                maxLength = std::get<0>(consts.back()).length();
+            }
+        }
+        ASTEnumConst ec{};
+        ec.parent = node;
+        ec.name   = "MaxEnum";
+        auto name = getDeclCName(&ec, node->findAttr<ASTAttrFlags>() ? 4 : 0);
+        consts.emplace_back(name, "0x7FFFFFFF", nullptr);
+        if (name.length() > maxLength) {
+            maxLength = name.length();
+        }
+        generateDoc(header, node);
+        fmt::println(header.stream, "typedef enum");
+        fmt::println(header.stream, "{{");
+        for (const auto& [key, value, decl] : consts) {
+            fmt::print(header.stream, "{:<{}}{:<{}} = {}", ' ', 4, key, maxLength, value);
+            if (decl) {
+                generateInlineDoc(header, decl);
+            } else {
+                fmt::print(header.stream, " /**< Max value of enum (not used) */");
+            }
+            fmt::println(header.stream, "");
+        }
+        name = getDeclCName(node);
+        fmt::println(header.stream, "}} {};", name);
+        if (node->findAttr<ASTAttrFlags>()) {
+            auto API = getApiPrefix(ctx, true);
+            fmt::println(header.stream, "{}_FLAGS({})", API, name);
+        }
+        fmt::println(header.stream, "");
+    }
+
+    void visit(ASTStruct* node) override {
+    }
+
+    void visit(ASTFunc* node) override {
+    }
+
+    void visit(ASTCallback* node) override {
+    }
+
+    void visit(ASTMethod* node) override {
+    }
+
+    Header& header;
+    idl::Context& ctx;
+};
 
 static void generateVersion(idl::Context& ctx, const std::filesystem::path& out) {
     auto API    = getApiPrefix(ctx, true);
@@ -647,13 +718,16 @@ static void generateMain(idl::Context& ctx, const std::filesystem::path& out) {
 }
 
 static void generateFile(idl::Context& ctx, const std::filesystem::path& out, ASTFile* file, ASTFile* prevFile) {
-    auto API    = getApiPrefix(ctx, true);
     auto header = createHeader(ctx, out, convert(file->name, Case::LispCase), true);
     generateDoc(header, ctx.api(), false, file);
     if (prevFile) {
         beginHeader(ctx, header, convert(prevFile->name, Case::LispCase));
     } else {
         beginHeader(ctx, header, "version", "platform");
+    }
+    DeclGenerator generator(header, ctx);
+    for (auto decl : file->decls) {
+        decl->accept(generator);
     }
     endHeader(ctx, header);
 }
@@ -687,6 +761,6 @@ void generateC(idl::Context& ctx, const std::filesystem::path& out) {
     // generateEnums(ctx, out, hasEnums);
     // generateCallbacks(ctx, out, hasTypes, hasEnums, hasCallbacks);
     // generateStructs(ctx, out, hasTypes, hasEnums, hasCallbacks, hasStructs);
-    generateCore(ctx, out, hasTypes, hasEnums, hasCallbacks, hasStructs);
-    generateMain(ctx, out);
+    // generateCore(ctx, out, hasTypes, hasEnums, hasCallbacks, hasStructs);
+    // generateMain(ctx, out);
 }

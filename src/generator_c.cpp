@@ -156,13 +156,16 @@ static void endHeader(idl::Context& ctx, Header& header) {
     fmt::println(header.stream, "#endif /* {} */", header.includeGuard);
 }
 
-static void generateDocField(Header& header, const std::vector<ASTNode*>& nodes, size_t indents) {
+static void generateDocField(Header& header,
+                             const std::vector<ASTNode*>& nodes,
+                             size_t indents,
+                             const std::string& prefix) {
     bool first = true;
     for (auto node : nodes) {
         if (auto str = node->as<ASTLiteralStr>()) {
             fmt::print(header.stream, "{}", str->value);
             if (str->value == "\n") {
-                fmt::print(header.stream, " *{:<{}}", ' ', indents);
+                fmt::print(header.stream, " *{:<{}}{}", ' ', indents, prefix);
             }
         } else if (auto ref = node->as<ASTDeclRef>()) {
             DocRef docRef;
@@ -190,11 +193,13 @@ static void generateDoc(idl::Context& ctx, Header& header, ASTDecl* node, bool p
         }
     };
 
-    auto printDocField = [&header, &maxLength](std::string_view field, const std::vector<ASTNode*>& nodes) {
+    auto printDocField = [&header, &maxLength](std::string_view field,
+                                               const std::vector<ASTNode*>& nodes,
+                                               const std::string prefix = "") {
         if (!nodes.empty()) {
             auto at = field.length() > 0 ? "@" : "";
-            fmt::print(header.stream, " * {}{:<{}}", at, field, maxLength + (field.length() > 0 ? 1 : 0));
-            generateDocField(header, nodes, maxLength + (field.length() > 0 ? 3 : 1));
+            fmt::print(header.stream, " * {}{:<{}}{}", at, field, maxLength + (field.length() > 0 ? 1 : 0), prefix);
+            generateDocField(header, nodes, maxLength + (field.length() > 0 ? 3 : 1), prefix);
         }
     };
 
@@ -249,7 +254,9 @@ static void generateDoc(idl::Context& ctx, Header& header, ASTDecl* node, bool p
     if (printLicense && !node->doc->copyright.empty()) {
         maxLength = 0;
         fmt::println(header.stream, " *");
-        printDocField("", node->doc->license);
+        // add 4 spaces to the beginning of lines so doxygen will consider it a block
+        std::string indent4 = "    ";
+        printDocField("", node->doc->license, indent4);
     }
     fmt::println(header.stream, " */");
 }

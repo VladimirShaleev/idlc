@@ -422,58 +422,91 @@ static void generateVersion(idl::Context& ctx, const std::filesystem::path& out)
     }
 
     constexpr auto tmp = R"(/**
- * @brief \a major version of {API}_VERSION
+ * @name  Version Components
+ * @brief Individual components of the library version
+ * @{{
+ */
+
+/**
+ * @brief Major version number (API-breaking changes)
  * @sa    {API}_VERSION
  * @sa    {API}_VERSION_STRING
  */
 #define {API}_VERSION_MAJOR {major}
 
 /**
- * @brief \a minor version of {API}_VERSION
+ * @brief Minor version number (backwards-compatible additions)
  * @sa    {API}_VERSION
  * @sa    {API}_VERSION_STRING
  */
 #define {API}_VERSION_MINOR {minor}
 
 /**
- * @brief \a micro version of {API}_VERSION
+ * @brief Micro version number (bug fixes and patches)
  * @sa    {API}_VERSION
  * @sa    {API}_VERSION_STRING
  */
 #define {API}_VERSION_MICRO {micro}
 
+/** @}} */
+
 /**
- * @brief     Make encode version from params \a major, \a minor and \a micro
- * @param[in] major part of {API}_VERSION
- * @param[in] minor part of {API}_VERSION
- * @param[in] micro part of {API}_VERSION
- * @sa        {API}_VERSION_STRING
+ * @name  Version Utilities
+ * @brief Macros for working with version numbers
+ * @{{
+ */
+
+/**
+ * @brief     Encodes version components into a single integer
+ * @details   Combines major, minor, and micro versions into a 32-bit value:
+ *            - Bits 24-31: Major version
+ *            - Bits 16-23: Minor version
+ *            - Bits 0-15: Micro version
+ * @param[in] major Major version number
+ * @param[in] minor Minor version number
+ * @param[in] micro Micro version number
+ * @return    Encoded version as unsigned long
+ * @sa        {API}_VERSION
  */
 #define {API}_VERSION_ENCODE(major, minor, micro) (((unsigned long) major) << 16 | (minor) << 8 | (micro))
 
 /**
- * @brief     Make string of version from params \a major, \a minor and \a micro
- * @param[in] major part of {API}_VERSION
- * @param[in] minor part of {API}_VERSION
- * @param[in] micro part of {API}_VERSION
- * @note      For internal use
- * @sa        {API}_VERSION_STRING
+ * @brief     Internal macro for string version generation
+ * @details   Helper macro that stringizes version components (e.g., {major}, {minor}, {micro} -> "{major}.{minor}.{micro}")
+ * @param[in] major Major version number
+ * @param[in] minor Minor version number
+ * @param[in] micro Micro version number
+ * @return    Stringified version
+ * @note      For internal use only
+ * @private
  */
 #define {API}_VERSION_STRINGIZE_(major, minor, micro) #major "." #minor "." #micro
 
 /**
- * @brief     Make string of version from params \a major, \a minor and \a micro
- * @param[in] major part of {API}_VERSION
- * @param[in] minor part of {API}_VERSION
- * @param[in] micro part of {API}_VERSION
+ * @def       {API}_VERSION_STRINGIZE
+ * @brief     Creates version string from components
+ * @details   Generates a string literal from version components (e.g., {major}, {minor}, {micro} -> "{major}.{minor}.{micro}")
+ * @param[in] major Major version number
+ * @param[in] minor Minor version number
+ * @param[in] micro Micro version number
+ * @return    Stringified version
  * @sa        {API}_VERSION_STRING
  */
 #define {API}_VERSION_STRINGIZE(major, minor, micro)  {API}_VERSION_STRINGIZE_(major, minor, micro)
 
+/** @}} */
+
 /**
- * @brief   Define version of library (integer value)
- * @details Version integer value
- * @sa      Use {API}_VERSION_STRING for get string of version
+ * @name  Current Version
+ * @brief Macros representing the current library version
+ * @{{
+ */
+
+/**
+ * @brief   Encoded library version as integer
+ * @details Combined version value suitable for numeric comparisons.
+ *          Use #{API}_VERSION_STRING for human-readable format.
+ * @sa      {API}_VERSION_STRING
  */
 #define {API}_VERSION {API}_VERSION_ENCODE( \
     {API}_VERSION_MAJOR, \
@@ -481,17 +514,21 @@ static void generateVersion(idl::Context& ctx, const std::filesystem::path& out)
     {API}_VERSION_MICRO)
 
 /**
- * @brief   Define string version of library
- * @details Version string in format \a major.\a minor.\a micro
- * @sa      Use {API}_VERSION for get integer value of version
+ * @def     {API}_VERSION_STRING
+ * @brief   Library version as human-readable string
+ * @details Version string in "MAJOR.MINOR.MICRO" format (e.g., "{major}.{minor}.{micro}").
+ *          Use #{API}_VERSION for numeric comparisons.
+ * @sa      {API}_VERSION
  */
 #define {API}_VERSION_STRING {API}_VERSION_STRINGIZE( \
     {API}_VERSION_MAJOR, \
     {API}_VERSION_MINOR, \
     {API}_VERSION_MICRO)
+
+/** @}} */
 )";
     std::vector<ASTLiteralStr> strings;
-    strings.reserve(10);
+    strings.reserve(20);
     auto addDocField = [&strings](std::vector<std::string>&& data) {
         std::vector<ASTNode*> nodes;
         for (const auto& str : data) {
@@ -503,8 +540,19 @@ static void generateVersion(idl::Context& ctx, const std::filesystem::path& out)
     };
 
     ASTDoc doc{};
-    doc.brief  = addDocField({ "Define version of library." });
-    doc.detail = addDocField({ "This file defines version macros and version making macros." });
+    doc.brief  = addDocField({ "Library version information and utilities." });
+    doc.detail = addDocField({ "This header provides version information for the " + ctx.api()->name + " library,",
+                               "\n",
+                               "including version number components and macros for version comparison",
+                               "\n",
+                               "and string generation. It supports:",
+                               "\n",
+                               "- Major/Minor/Micro version components",
+                               "\n",
+                               "- Integer version encoding",
+                               "\n",
+                               "- String version generation",
+                               "\n" });
     ASTFile file{};
     file.name = "version";
     file.doc  = &doc;
@@ -592,7 +640,7 @@ static void generatePlatform(idl::Context& ctx, const std::filesystem::path& out
     fmt::println(header.stream, "/**");
     fmt::println(header.stream, " * @def     {}_END", API);
     fmt::println(header.stream, " * @brief   Ends a C-linkage declaration block.");
-    fmt::println(header.stream, " * @details Closes the scope opened by #GERIUM_BEGIN.");
+    fmt::println(header.stream, " * @details Closes the scope opened by #{}_BEGIN.", API);
     fmt::println(header.stream, " * @sa      {}_BEGIN", API);
     fmt::println(header.stream, " *");
     fmt::println(header.stream, " */");
@@ -616,7 +664,7 @@ static void generatePlatform(idl::Context& ctx, const std::filesystem::path& out
     fmt::println(header.stream,
                  " *          In all other cases (static builds or non-Windows platforms), it expands to nothing.");
     fmt::println(header.stream, " *          This allows proper importing of symbols from DLLs on Windows platforms.");
-    fmt::println(header.stream, " * @note    Define `GERIUM_STATIC_BUILD` for static library configuration.");
+    fmt::println(header.stream, " * @note    Define `{}_STATIC_BUILD` for static library configuration.", API);
     fmt::println(header.stream, " */");
     fmt::println(header.stream, "");
     fmt::println(header.stream, "#ifndef {}", importAPI);
@@ -667,16 +715,14 @@ static void generatePlatform(idl::Context& ctx, const std::filesystem::path& out
     fmt::println(header.stream, " * @name  Platform-independent type definitions");
     fmt::println(header.stream, " * @brief Fixed-size types guaranteed to work across all supported platforms");
     fmt::println(header.stream, " * @{{");
-    fmt::println(header.stream, " **/");
+    fmt::println(header.stream, " */");
     fmt::println(header.stream, "#include <stdint.h>");
     for (const auto& [native, type, decl] : trivialTypes) {
         fmt::print(header.stream, "typedef {:<{}} {:<{}}", native, maxLength, type + ';', maxLengthType + 1);
         generateInlineDoc(header, decl);
         fmt::println(header.stream, "");
     }
-    fmt::println(header.stream, "/**");
-    fmt::println(header.stream, " * @}}");
-    fmt::println(header.stream, " */");
+    fmt::println(header.stream, "/** @}} */");
     fmt::println(header.stream, "");
     constexpr auto tmpFlags = R"(/**
  * @def       {API}_FLAGS

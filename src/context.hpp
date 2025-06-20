@@ -1,6 +1,7 @@
 #ifndef CONTEXT_HPP
 #define CONTEXT_HPP
 
+#include <chrono>
 #include <sstream>
 #include <unordered_map>
 
@@ -52,17 +53,17 @@ public:
 
     template <typename Exception = void>
     ASTLiteral* intern(const idl::location& loc, const std::string& str) {
-        return internLiteral<Exception, ASTLiteralStr>(loc, "str|" + str, str);
+        return internLiteral<ASTLiteralStr, Exception>(loc, "str|" + str, str);
     }
 
     template <typename Exception = void>
     ASTLiteral* intern(const idl::location& loc, bool b) {
-        return internLiteral<Exception, ASTLiteralBool>(loc, "bool|" + std::to_string(b), b);
+        return internLiteral<ASTLiteralBool, Exception>(loc, "bool|" + std::to_string(b), b);
     }
 
     template <typename Exception = void>
     ASTLiteral* intern(const idl::location& loc, int64_t num) {
-        return internLiteral<Exception, ASTLiteralInt>(loc, "int|" + std::to_string(num), num);
+        return internLiteral<ASTLiteralInt, Exception>(loc, "int|" + std::to_string(num), num);
     }
 
     template <typename Exception>
@@ -72,6 +73,15 @@ public:
             throw Exception(decl->location, err_str<E2030>(decl->fullname()));
         }
         _symbols[fullname] = decl;
+    }
+
+    template <typename Exception>
+    void addDocSymbol(ASTDocDecl* decl) {
+        const auto fullname = decl->fullnameLowecase();
+        if (_docSymbols.contains(fullname)) {
+            throw Exception(decl->location, err_str<E2030>(decl->fullname()));
+        }
+        _docSymbols[fullname] = decl;
     }
 
     ASTDecl* findSymbol(ASTDecl* decl, const idl::location& loc, const std::string& name, bool onlyType = false) {
@@ -105,6 +115,20 @@ public:
             auto symbol   = findSymbol(decl, loc, declRef->name, onlyType);
             declRef->decl = symbol;
             return symbol;
+        } else {
+            return declRef->decl;
+        }
+    }
+
+    ASTDecl* findDocSymbol(ASTDeclRef* declRef) {
+        if (!declRef->decl) {
+            auto nameLower = declRef->name;
+            std::transform(nameLower.begin(), nameLower.end(), nameLower.begin(), [](auto c) {
+                return std::tolower(c);
+            });
+            auto it       = _docSymbols.find(nameLower);
+            declRef->decl = it != _docSymbols.end() ? it->second : nullptr;
+            return declRef->decl;
         } else {
             return declRef->decl;
         }
@@ -179,6 +203,13 @@ public:
         addBuiltin("Str", "utf8", "utf8 string", ASTStr{});
         addBuiltin("Data", "data", "pointer to data", ASTData{});
         addBuiltin("ConstData", "cdata", "pointer to immutable data", ASTConstData{});
+
+        const std::chrono::time_point now{ std::chrono::system_clock::now() };
+        const std::chrono::year_month_day ymd{ std::chrono::floor<std::chrono::days>(now) };
+        auto year   = allocNode<ASTYear, Exception>(loc);
+        year->name  = "Year";
+        year->value = static_cast<int>(ymd.year());
+        addDocSymbol<Exception>(year);
     }
 
     template <typename Exception>
@@ -925,6 +956,7 @@ public:
                 auto prepare = [this, node](const std::vector<ASTNode*>& nodes) {
                     for (auto doc : nodes) {
                         if (auto declRef = doc->as<ASTDeclRef>()) {
+                            findDocSymbol(declRef);
                             findSymbol(node, declRef->location, declRef);
                         }
                     }
@@ -938,6 +970,7 @@ public:
                 prepare(node->doc->detail);
                 prepare(node->doc->ret);
                 prepare(node->doc->copyright);
+                prepare(node->doc->license);
                 prepares(node->doc->authors);
                 prepares(node->doc->note);
                 prepares(node->doc->warn);
@@ -973,7 +1006,7 @@ public:
     }
 
 private:
-    template <typename Exception, typename Node, typename Value>
+    template <typename Node, typename Exception, typename Value>
     ASTLiteral* internLiteral(const idl::location& loc, const std::string& keyStr, const Value& value) {
         const auto key = XXH64(keyStr.c_str(), keyStr.length(), 0);
         if (auto it = _literals.find(key); it != _literals.end()) {
@@ -1061,6 +1094,7 @@ private:
     ASTApi* _api{};
     std::vector<ASTNode*> _nodes{};
     std::unordered_map<std::string, struct ASTDecl*> _symbols{};
+    std::unordered_map<std::string, struct ASTDocDecl*> _docSymbols{};
     std::unordered_map<uint64_t, ASTLiteral*> _literals{};
     bool _declaring{};
 };

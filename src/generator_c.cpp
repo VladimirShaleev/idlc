@@ -16,6 +16,20 @@ struct Header {
     }
 };
 
+struct DocRef : Visitor {
+    void visit(ASTYear* node) override {
+        str = std::to_string(node->value);
+    }
+
+    void discarded(ASTNode* node) override {
+        CName name;
+        node->accept(name);
+        str = name.str;
+    }
+
+    std::string str;
+};
+
 static std::string headerStr(idl::Context& ctx, std::string postfix = "") {
     return convert(ctx.api()->name, Case::LispCase) + (postfix.length() ? "-" + lower(postfix) : "") + ".h";
 }
@@ -154,7 +168,9 @@ static void generateDocField(Header& header, const std::vector<ASTNode*>& nodes,
                 fmt::print(header.stream, " * {:<{}} ", ' ', indents);
             }
         } else if (auto ref = node->as<ASTDeclRef>()) {
-            fmt::print(header.stream, "::{}", getDeclCName(ref->decl));
+            DocRef docRef;
+            ref->decl->accept(docRef);
+            fmt::print(header.stream, "{}", docRef.str);
         } else {
             assert(!"unreachable code");
         }
@@ -169,7 +185,7 @@ static void generateDoc(idl::Context& ctx, Header& header, ASTDecl* node, bool p
     }
 
     size_t maxLength = 0;
-    auto calcLength = [&maxLength](std::string_view field, const auto& nodes) {
+    auto calcLength  = [&maxLength](std::string_view field, const auto& nodes) {
         if (!nodes.empty()) {
             if (field.length() > maxLength) {
                 maxLength = field.length();
@@ -185,7 +201,9 @@ static void generateDoc(idl::Context& ctx, Header& header, ASTDecl* node, bool p
         }
     };
 
-    auto printDocFields = [&header, &printDocField](std::string_view field, const std::vector<std::vector<ASTNode*>>& nodes, bool parblock = false) {
+    auto printDocFields = [&header, &printDocField](std::string_view field,
+                                                    const std::vector<std::vector<ASTNode*>>& nodes,
+                                                    bool parblock = false) {
         for (const auto& node : nodes) {
             if (parblock && nodes.size() > 1) {
                 fmt::println(header.stream, " * @parblock");
@@ -197,15 +215,15 @@ static void generateDoc(idl::Context& ctx, Header& header, ASTDecl* node, bool p
         }
     };
 
-    std::string_view file = "file";
-    std::string_view author = node->doc->authors.size() > 1 ? "authors" : "author";
-    std::string_view brief = "brief";
-    std::string_view details = "details";
-    std::string_view ret = "return";
+    std::string_view file      = "file";
+    std::string_view author    = node->doc->authors.size() > 1 ? "authors" : "author";
+    std::string_view brief     = "brief";
+    std::string_view details   = "details";
+    std::string_view ret       = "return";
     std::string_view copyright = "copyright";
-    std::string_view note = "note";
-    std::string_view warning = "warning";
-    std::string_view sa = "sa";
+    std::string_view note      = "note";
+    std::string_view warning   = "warning";
+    std::string_view sa        = "sa";
 
     calcLength(author, node->doc->authors);
     calcLength(brief, node->doc->brief);

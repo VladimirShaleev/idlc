@@ -345,6 +345,53 @@ struct AllowedAttrs : Visitor {
     std::map<std::type_index, std::string> allowed;
 };
 
+struct ValidateDoc : Visitor {
+    void visit(ASTApi* node) override {
+    }
+
+    void visit(ASTEnum* node) override {
+    }
+
+    void visit(ASTEnumConst* node) override {
+    }
+
+    void visit(ASTStruct* node) override {
+    }
+
+    void visit(ASTField* node) override {
+    }
+
+    void visit(ASTHandle* node) override {
+    }
+
+    void visit(ASTCallback* node) override {
+    }
+
+    void visit(ASTFunc* node) override {
+    }
+
+    void visit(ASTInterface* node) override {
+    }
+
+    void visit(ASTMethod* node) override {
+    }
+
+    void visit(ASTArg* node) override {
+    }
+
+    void discarded(ASTNode* node) override {
+        if (!node->is<ASTBuiltinType>()) {
+            assert(!"Validator is missing");
+        }
+    }
+
+    void checkBase(ASTDecl* decl) {
+        if (decl->doc->brief.empty() && decl->doc->detail.empty()) {
+            
+        }
+    }
+};
+
 template <typename Exception>
 struct ChildsAggregator : Visitor {
     ChildsAggregator(ASTDecl* node) noexcept : prevNode(node) {

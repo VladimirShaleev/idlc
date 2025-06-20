@@ -206,6 +206,7 @@ struct ASTDecl : ASTNode {
     std::string name;
     std::vector<ASTAttr*> attrs;
     ASTDoc* doc{};
+    struct ASTFile* file{};
 
     template <typename Attr>
     Attr* findAttr() noexcept {
@@ -388,6 +389,12 @@ struct ASTCallback : ASTType {
     std::vector<ASTArg*> args;
 };
 
+struct ASTFile : ASTDecl {
+    void accept(Visitor& visitor) override;
+
+    std::vector<ASTDecl*> decls;
+};
+
 struct ASTApi : ASTDecl {
     void accept(Visitor& visitor) override;
 
@@ -397,6 +404,7 @@ struct ASTApi : ASTDecl {
     std::vector<ASTFunc*> funcs;
     std::vector<ASTInterface*> interfaces;
     std::vector<ASTHandle*> handles;
+    std::vector<ASTFile*> files;
 };
 
 struct Visitor {
@@ -638,6 +646,10 @@ struct Visitor {
         discarded(node);
     }
 
+    virtual void visit(ASTFile* node) {
+        discarded(node);
+    }
+
     virtual void discarded(ASTNode* node) {
     }
 };
@@ -875,6 +887,10 @@ inline void ASTEvent::accept(Visitor& visitor) {
 }
 
 inline void ASTArg::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+inline void ASTFile::accept(Visitor& visitor) {
     visitor.visit(this);
 }
 

@@ -79,6 +79,9 @@ public:
         assert(!_imports.empty());
         _imports.pop_back();
         _needUpdateLoc = true;
+        if (_imports.size() > 0) {
+            _ctx.popFile();
+        }
         return !_imports.empty();
     }
 

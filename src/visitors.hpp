@@ -465,6 +465,15 @@ struct ChildsAggregator : Visitor {
         }
     }
 
+    void visit(ASTFile* node) override {
+        if (auto parent = getParent<ASTApi>()) {
+            parent->files.push_back(node);
+            node->parent = parent;
+        } else {
+            assert(!"unreachable code");
+        }
+    }
+
     template <typename Node>
     Node* getParent() noexcept {
         static_assert(std::is_base_of<ASTNode, Node>::value, "Node must be inherited from ASTNode");

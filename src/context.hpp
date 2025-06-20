@@ -73,6 +73,10 @@ public:
             throw Exception(decl->location, err_str<E2030>(decl->fullname()));
         }
         _symbols[fullname] = decl;
+        if (!_files.empty()) {
+            decl->file = _files.back();
+            _files.back()->decls.push_back(decl);
+        }
     }
 
     template <typename Exception>
@@ -987,6 +991,14 @@ public:
         _version = version;
     }
 
+    void pushFile(ASTFile* file) {
+        _files.push_back(file);
+    }
+
+    void popFile() {
+        _files.pop_back();
+    }
+
     template <typename Node, typename Pred>
     bool filter(Pred&& pred) {
         static_assert(std::is_base_of<ASTNode, Node>::value, "Node must be inherited from ASTNode");
@@ -1096,6 +1108,7 @@ private:
     std::unordered_map<std::string, struct ASTDecl*> _symbols{};
     std::unordered_map<std::string, struct ASTDocDecl*> _docSymbols{};
     std::unordered_map<uint64_t, ASTLiteral*> _literals{};
+    std::vector<ASTFile*> _files{};
     bool _declaring{};
 };
 

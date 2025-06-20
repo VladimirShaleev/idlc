@@ -182,8 +182,10 @@ DOCMCHAR ([^ \r\n\t\{\}[\]`]|^[`]{3}|\\\{|\\\}|\\\[|\\\])
 <ATTRARGVERSION>[0-9]+ { yylval->emplace<int>(std::stoi(YYText())); return token::NUM; }
 <ATTRARGVERSION>.      { err<E2001>(*yylloc, YYText()); }
 
+"b166074c3cba4005a198513772597880" { context().setDeclaring(); return token::FILEDOC; }
 import[ ]+ { BEGIN(IMPORT); }
-<IMPORT>[-\.a-zA-Z0-9_]+ { 
+<IMPORT>[-\.a-zA-Z0-9_]+ {
+    std::string importName = YYText();
     int c;
     while ((c = yyinput()) && c != '\n') {
         if (c != ' ') {
@@ -193,6 +195,15 @@ import[ ]+ { BEGIN(IMPORT); }
     yylloc->lines();
     import(*yylloc, yytext);
     BEGIN(INITIAL);
+    unput('\n'), unput('\n');
+    for (auto it = importName.rbegin(); it != importName.rend(); ++it) {
+        unput(*it);
+    }
+    unput(' ');
+    unput('0'), unput('8'), unput('8'), unput('7'), unput('9'), unput('5'), unput('2'), unput('7');
+    unput('7'), unput('3'), unput('1'), unput('5'), unput('8'), unput('9'), unput('1'), unput('a');
+    unput('5'), unput('0'), unput('0'), unput('4'), unput('a'), unput('b'), unput('c'), unput('3');
+    unput('c'), unput('4'), unput('7'), unput('0'), unput('6'), unput('6'), unput('1'), unput('b');
 }
 <IMPORT>.|\n { err<E2001>(*yylloc, YYText()); }
 

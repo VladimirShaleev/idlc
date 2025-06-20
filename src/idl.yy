@@ -97,6 +97,7 @@
 %token HANDLE
 %token FUNC
 %token CALLBACK
+%token FILEDOC
 
 %token <std::string> STR
 %token <std::string> ID
@@ -232,6 +233,7 @@ decl
     | HANDLE { auto node = alloc_node(ASTHandle, @1); $$ = node; }
     | FUNC { auto node = alloc_node(ASTFunc, @1); $$ = node; }
     | CALLBACK { auto node = alloc_node(ASTCallback, @1); $$ = node; }
+    | FILEDOC { auto node = alloc_node(ASTFile, @1); $$ = node; }
     ;
 
 attr_list
@@ -546,7 +548,14 @@ void addNode(idl::Context& context, ASTDecl* prev, ASTDecl* decl)
     
     ChildsAggregator<idl::Parser::syntax_error> aggregator = prev;
     decl->accept(aggregator);
-    context.addSymbol<idl::Parser::syntax_error>(decl);
+    if (auto file = decl->as<ASTFile>())
+    {
+        context.pushFile(file);
+    }
+    else 
+    {
+        context.addSymbol<idl::Parser::syntax_error>(decl);
+    }
 }
 
 std::vector<ASTNode*> prepareDoc(const std::vector<ASTNode*>& doc) {

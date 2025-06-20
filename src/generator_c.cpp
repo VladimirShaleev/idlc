@@ -179,7 +179,7 @@ static void generateDocField(Header& header,
     fmt::println(header.stream, "");
 }
 
-static void generateDoc(idl::Context& ctx, Header& header, ASTDecl* node, bool printLicense = false) {
+static void generateDoc(Header& header, ASTDecl* node, bool printLicense = false, ASTFile* fileDecl = nullptr) {
     if (!node->doc) {
         return;
     }
@@ -227,9 +227,11 @@ static void generateDoc(idl::Context& ctx, Header& header, ASTDecl* node, bool p
     std::string_view warning   = "warning";
     std::string_view sa        = "sa";
 
+    auto& briefNodes  = fileDecl && !fileDecl->doc->brief.empty() ? fileDecl->doc->brief : node->doc->brief;
+    auto& detailNodes = fileDecl && !fileDecl->doc->detail.empty() ? fileDecl->doc->detail : node->doc->detail;
     calcLength(author, node->doc->authors);
-    calcLength(brief, node->doc->brief);
-    calcLength(details, node->doc->detail);
+    calcLength(brief, briefNodes);
+    calcLength(details, detailNodes);
     calcLength(ret, node->doc->ret);
     calcLength(copyright, node->doc->copyright);
     calcLength(note, node->doc->note);
@@ -244,8 +246,8 @@ static void generateDoc(idl::Context& ctx, Header& header, ASTDecl* node, bool p
         fmt::println(header.stream, " * @{:<{}} {}", file, maxLength, header.filename);
     }
     printDocFields(author, node->doc->authors);
-    printDocField(brief, node->doc->brief);
-    printDocField(details, node->doc->detail);
+    printDocField(brief, briefNodes);
+    printDocField(details, detailNodes);
     printDocField(ret, node->doc->ret);
     printDocFields(note, node->doc->note, true);
     printDocFields(warning, node->doc->warn, true);
@@ -477,7 +479,7 @@ static void generateEnums(idl::Context& ctx, const std::filesystem::path& out, b
     }
     auto API    = getApiPrefix(ctx, true);
     auto header = createHeader(ctx, out, "enums", true);
-    generateDoc(ctx, header, ctx.api());
+    generateDoc(header, ctx.api());
     beginHeader(ctx, header, "platform");
     ctx.filter<ASTEnum>([&ctx, &header, &API](ASTEnum* node) {
         const auto isHexOut = node->findAttr<ASTAttrHex>() != nullptr;
@@ -498,7 +500,7 @@ static void generateEnums(idl::Context& ctx, const std::filesystem::path& out, b
         if (name.length() > maxLength) {
             maxLength = name.length();
         }
-        generateDoc(ctx, header, node);
+        generateDoc(header, node);
         fmt::println(header.stream, "typedef enum");
         fmt::println(header.stream, "{{");
         for (const auto& [key, value] : consts) {
@@ -619,7 +621,7 @@ static void generateCore(idl::Context& ctx,
         fmt::println(header.stream, "");
     };
 
-    generateDoc(ctx, header, ctx.api(), true);
+    generateDoc(header, ctx.api());
     beginHeader(ctx,
                 header,
                 "version",
@@ -634,6 +636,25 @@ static void generateCore(idl::Context& ctx,
     ctx.filter<ASTMethod>([&header, &printFunc](auto node) {
         printFunc(node, node->args);
     });
+    endHeader(ctx, header);
+}
+
+static void generateMain(idl::Context& ctx, const std::filesystem::path& out) {
+    auto header = createHeader(ctx, out, "", false);
+    generateDoc(header, ctx.api(), true);
+    beginHeader(ctx, header, "core");
+    endHeader(ctx, header);
+}
+
+static void generateFile(idl::Context& ctx, const std::filesystem::path& out, ASTFile* file, ASTFile* prevFile) {
+    auto API    = getApiPrefix(ctx, true);
+    auto header = createHeader(ctx, out, convert(file->name, Case::LispCase), true);
+    generateDoc(header, ctx.api(), false, file);
+    if (prevFile) {
+        beginHeader(ctx, header, convert(prevFile->name, Case::LispCase));
+    } else {
+        beginHeader(ctx, header, "version", "platform");
+    }
     endHeader(ctx, header);
 }
 
@@ -658,8 +679,14 @@ void generateC(idl::Context& ctx, const std::filesystem::path& out) {
     generateVersion(ctx, out);
     generatePlatform(ctx, out);
     generateTypes(ctx, out, hasInterfaces, hasHandles);
-    generateEnums(ctx, out, hasEnums);
-    generateCallbacks(ctx, out, hasTypes, hasEnums, hasCallbacks);
-    generateStructs(ctx, out, hasTypes, hasEnums, hasCallbacks, hasStructs);
+    ASTFile* prevFile = nullptr;
+    for (auto file : ctx.api()->files) {
+        generateFile(ctx, out, file, prevFile);
+        prevFile = file;
+    }
+    // generateEnums(ctx, out, hasEnums);
+    // generateCallbacks(ctx, out, hasTypes, hasEnums, hasCallbacks);
+    // generateStructs(ctx, out, hasTypes, hasEnums, hasCallbacks, hasStructs);
     generateCore(ctx, out, hasTypes, hasEnums, hasCallbacks, hasStructs);
+    generateMain(ctx, out);
 }

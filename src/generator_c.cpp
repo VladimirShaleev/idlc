@@ -45,6 +45,12 @@ struct DocRef : Visitor {
         str += name.str;
     }
 
+    void visit(ASTMethod* node) override {
+        CName name;
+        node->accept(name);
+        str = "::" + name.str;
+    }
+
     void discarded(ASTNode* node) override {
         CName name;
         node->accept(name);

@@ -222,6 +222,24 @@ public:
         year->name  = "Year";
         year->value = static_cast<int>(ymd.year());
         addDocSymbol<Exception>(year);
+
+        auto major   = allocNode<ASTMajor, Exception>(loc);
+        auto minor   = allocNode<ASTMinor, Exception>(loc);
+        auto micro   = allocNode<ASTMicro, Exception>(loc);
+        major->name  = "Major";
+        minor->name  = "Minor";
+        micro->name  = "Micro";
+        major->value = 0;
+        minor->value = 0;
+        micro->value = 0;
+        if (auto version = api()->findAttr<ASTAttrVersion>()) {
+            major->value = version->major;
+            minor->value = version->minor;
+            micro->value = version->micro;
+        }
+        addDocSymbol<Exception>(major);
+        addDocSymbol<Exception>(minor);
+        addDocSymbol<Exception>(micro);
     }
 
     template <typename Exception>
@@ -379,8 +397,11 @@ public:
     void prepareCallbacks() {
         std::vector<ASTCallback*> needAddRetType{};
         std::vector<ASTArg*> needAddArgType{};
+        std::vector<ASTArg*> needAddArgIn{};
+        std::vector<ASTArg*> needAddArgOut{};
         std::vector<ASTArg*> needAddRef{};
-        filter<ASTCallback>([this, &needAddRetType, &needAddArgType, &needAddRef](ASTCallback* node) {
+        filter<ASTCallback>(
+            [this, &needAddRetType, &needAddArgType, &needAddArgIn, &needAddArgOut, &needAddRef](ASTCallback* node) {
             if (!node->findAttr<ASTAttrType>()) {
                 needAddRetType.push_back(node);
             }
@@ -389,6 +410,14 @@ public:
             for (auto arg : node->args) {
                 if (!arg->findAttr<ASTAttrType>()) {
                     needAddArgType.push_back(arg);
+                }
+                auto hasOut = arg->findAttr<ASTAttrOut>() != nullptr;
+                if (arg->findAttr<ASTAttrResult>() && !hasOut) {
+                    needAddArgOut.push_back(arg);
+                    hasOut = true;
+                }
+                if (!hasOut && !arg->findAttr<ASTAttrIn>()) {
+                    needAddArgIn.push_back(arg);
                 }
                 if (arg->findAttr<ASTAttrThis>()) {
                     err<E2083>(arg->location, node->fullname(), arg->name);
@@ -428,6 +457,16 @@ public:
             attr->type->parent = attr;
             node->attrs.push_back(attr);
         }
+        for (auto node : needAddArgIn) {
+            auto attr    = allocNode<ASTAttrIn>(node->location);
+            attr->parent = node;
+            node->attrs.push_back(attr);
+        }
+        for (auto node : needAddArgOut) {
+            auto attr    = allocNode<ASTAttrOut>(node->location);
+            attr->parent = node;
+            node->attrs.push_back(attr);
+        }
         for (auto node : needAddRef) {
             auto attr    = allocNode<ASTAttrRef>(node->location);
             attr->parent = node;
@@ -463,8 +502,11 @@ public:
     void prepareFunctions() {
         std::vector<ASTFunc*> needAddRetType{};
         std::vector<ASTArg*> needAddArgType{};
+        std::vector<ASTArg*> needAddArgIn{};
+        std::vector<ASTArg*> needAddArgOut{};
         std::vector<ASTArg*> needAddRef{};
-        filter<ASTFunc>([this, &needAddRetType, &needAddArgType, &needAddRef](ASTFunc* node) {
+        filter<ASTFunc>(
+            [this, &needAddRetType, &needAddArgType, &needAddArgIn, &needAddArgOut, &needAddRef](ASTFunc* node) {
             if (!node->findAttr<ASTAttrType>()) {
                 needAddRetType.push_back(node);
             }
@@ -473,6 +515,14 @@ public:
             for (auto arg : node->args) {
                 if (!arg->findAttr<ASTAttrType>()) {
                     needAddArgType.push_back(arg);
+                }
+                auto hasOut = arg->findAttr<ASTAttrOut>() != nullptr;
+                if (arg->findAttr<ASTAttrResult>() && !hasOut) {
+                    needAddArgOut.push_back(arg);
+                    hasOut = true;
+                }
+                if (!hasOut && !arg->findAttr<ASTAttrIn>()) {
+                    needAddArgIn.push_back(arg);
                 }
                 if (arg->findAttr<ASTAttrThis>()) {
                     err<E2073>(arg->location, node->fullname(), arg->name);
@@ -510,6 +560,16 @@ public:
             attr->type         = allocNode<ASTDeclRef>(node->location);
             attr->type->name   = "Int32";
             attr->type->parent = attr;
+            node->attrs.push_back(attr);
+        }
+        for (auto node : needAddArgIn) {
+            auto attr    = allocNode<ASTAttrIn>(node->location);
+            attr->parent = node;
+            node->attrs.push_back(attr);
+        }
+        for (auto node : needAddArgOut) {
+            auto attr    = allocNode<ASTAttrOut>(node->location);
+            attr->parent = node;
             node->attrs.push_back(attr);
         }
         for (auto node : needAddRef) {
@@ -999,6 +1059,18 @@ public:
 
     void apiVersion(std::optional<ApiVersion> version) noexcept {
         _version = version;
+        filter<ASTMajor>([this](ASTMajor* node) {
+            node->value = _version.value_or(ApiVersion{}).major;
+            return false;
+        });
+        filter<ASTMinor>([this](ASTMinor* node) {
+            node->value = _version.value_or(ApiVersion{}).minor;
+            return false;
+        });
+        filter<ASTMicro>([this](ASTMicro* node) {
+            node->value = _version.value_or(ApiVersion{}).micro;
+            return false;
+        });
     }
 
     void pushFile(ASTFile* file) {

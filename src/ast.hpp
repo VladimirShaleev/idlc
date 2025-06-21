@@ -243,6 +243,24 @@ struct ASTYear : ASTDocDecl {
     int value{};
 };
 
+struct ASTMajor : ASTDocDecl {
+    void accept(Visitor& visitor) override;
+
+    int value{};
+};
+
+struct ASTMinor : ASTDocDecl {
+    void accept(Visitor& visitor) override;
+
+    int value{};
+};
+
+struct ASTMicro : ASTDocDecl {
+    void accept(Visitor& visitor) override;
+
+    int value{};
+};
+
 struct ASTDeclRef : ASTNode {
     void accept(Visitor& visitor) override;
 
@@ -427,6 +445,18 @@ struct Visitor {
     }
 
     virtual void visit(ASTYear* node) {
+        discarded(node);
+    }
+
+    virtual void visit(ASTMajor* node) {
+        discarded(node);
+    }
+
+    virtual void visit(ASTMinor* node) {
+        discarded(node);
+    }
+
+    virtual void visit(ASTMicro* node) {
         discarded(node);
     }
 
@@ -671,6 +701,18 @@ inline void ASTLiteralConsts::accept(Visitor& visitor) {
 }
 
 inline void ASTYear::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+inline void ASTMajor::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+inline void ASTMinor::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+inline void ASTMicro::accept(Visitor& visitor) {
     visitor.visit(this);
 }
 

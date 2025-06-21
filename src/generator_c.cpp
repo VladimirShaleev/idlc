@@ -21,6 +21,18 @@ struct DocRef : Visitor {
         str = std::to_string(node->value);
     }
 
+    void visit(ASTMajor* node) override {
+        str = std::to_string(node->value);
+    }
+
+    void visit(ASTMinor* node) override {
+        str = std::to_string(node->value);
+    }
+
+    void visit(ASTMicro* node) override {
+        str = std::to_string(node->value);
+    }
+
     void discarded(ASTNode* node) override {
         CName name;
         node->accept(name);
@@ -183,7 +195,11 @@ static void generateDocField(Header& header,
     }
 }
 
-static void generateDoc(Header& header, ASTDecl* node, bool printLicense = false, ASTFile* fileDecl = nullptr) {
+static void generateDoc(Header& header,
+                        ASTDecl* node,
+                        bool printLicense                = false,
+                        ASTFile* fileDecl                = nullptr,
+                        const std::vector<ASTArg*>* args = nullptr) {
     if (!node->doc) {
         return;
     }
@@ -221,15 +237,18 @@ static void generateDoc(Header& header, ASTDecl* node, bool printLicense = false
         }
     };
 
-    std::string_view file      = "file";
-    std::string_view author    = node->doc->authors.size() > 1 ? "authors" : "author";
-    std::string_view brief     = "brief";
-    std::string_view details   = "details";
-    std::string_view ret       = "return";
-    std::string_view copyright = "copyright";
-    std::string_view note      = "note";
-    std::string_view warning   = "warning";
-    std::string_view sa        = "sa";
+    std::string_view file       = "file";
+    std::string_view author     = node->doc->authors.size() > 1 ? "authors" : "author";
+    std::string_view brief      = "brief";
+    std::string_view details    = "details";
+    std::string_view paramin    = "param[in]";
+    std::string_view paramout   = "param[out]";
+    std::string_view paraminout = "param[in,out]";
+    std::string_view ret        = "return";
+    std::string_view copyright  = "copyright";
+    std::string_view note       = "note";
+    std::string_view warning    = "warning";
+    std::string_view sa         = "sa";
 
     auto& briefNodes  = fileDecl && !fileDecl->doc->brief.empty() ? fileDecl->doc->brief : node->doc->brief;
     auto& detailNodes = fileDecl && !fileDecl->doc->detail.empty() ? fileDecl->doc->detail : node->doc->detail;
@@ -241,7 +260,21 @@ static void generateDoc(Header& header, ASTDecl* node, bool printLicense = false
     calcLength(note, node->doc->note);
     calcLength(warning, node->doc->warn);
     calcLength(sa, node->doc->see);
-
+    if (args) {
+        for (auto arg : *args) {
+            const auto isIn  = arg->findAttr<ASTAttrIn>() != nullptr;
+            const auto isOut = arg->findAttr<ASTAttrOut>() != nullptr;
+            if (isIn && isOut) {
+                calcLength(paraminout, arg->doc->detail);
+            } else if (isIn) {
+                calcLength(paramin, arg->doc->detail);
+            } else if (isOut) {
+                calcLength(paramout, arg->doc->detail);
+            } else {
+                assert(!"unreachable code");
+            }
+        }
+    }
     fmt::println(header.stream, "/**");
     if (node->is<ASTApi>()) {
         if (file.length() > maxLength) {
@@ -361,7 +394,7 @@ struct DeclGenerator : Visitor {
     }
 
     void visit(ASTCallback* node) override {
-        generateDoc(header, node);
+        generateDoc(header, node, false, nullptr, &node->args);
         const auto decl = fmt::format("(*{})(", getDeclCName(node));
         fmt::println(header.stream, "typedef {}", getDeclTypeCName(node));
         fmt::print(header.stream, "{}", decl);
@@ -389,7 +422,7 @@ struct DeclGenerator : Visitor {
     }
 
     void printFunc(ASTDecl* decl, const std::vector<ASTArg*>& args) {
-        generateDoc(header, decl);
+        generateDoc(header, decl, false, nullptr, &args);
         auto api       = getApiPrefix(ctx, false);
         auto importApi = api + "_api";
         fmt::println(header.stream, "{} {}", importApi, getDeclTypeCName(decl));

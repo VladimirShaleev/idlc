@@ -345,38 +345,67 @@ struct AllowedAttrs : Visitor {
     std::map<std::type_index, std::string> allowed;
 };
 
-struct ValidateDoc : Visitor {
+struct DocValidator : Visitor {
     void visit(ASTApi* node) override {
+        checkBase(node);
+        if (node->doc->authors.empty()) {
+            warn<W1001>(node->doc->location, node->fullname());
+        }
+        if (node->doc->copyright.empty()) {
+            warn<W1002>(node->doc->location, node->fullname());
+        }
     }
 
     void visit(ASTEnum* node) override {
+        checkBase(node);
     }
 
     void visit(ASTEnumConst* node) override {
+        checkBase(node);
     }
 
     void visit(ASTStruct* node) override {
+        checkBase(node);
     }
 
     void visit(ASTField* node) override {
+        checkBase(node);
     }
 
     void visit(ASTHandle* node) override {
+        checkBase(node);
     }
 
     void visit(ASTCallback* node) override {
+        checkBase(node);
     }
 
     void visit(ASTFunc* node) override {
+        checkBase(node);
     }
 
     void visit(ASTInterface* node) override {
+        checkBase(node);
     }
 
     void visit(ASTMethod* node) override {
+        checkBase(node);
     }
 
     void visit(ASTArg* node) override {
+        checkBase(node);
+    }
+
+    void visit(ASTProperty* node) override {
+        checkBase(node);
+    }
+
+    void visit(ASTFile* node) override {
+        checkBase(node);
+    }
+
+    void visit(ASTEvent* node) override {
+        checkBase(node);
     }
 
     void discarded(ASTNode* node) override {
@@ -387,7 +416,7 @@ struct ValidateDoc : Visitor {
 
     void checkBase(ASTDecl* decl) {
         if (decl->doc->brief.empty() && decl->doc->detail.empty()) {
-            
+            err<E2111>(decl->doc->location, decl->fullname());
         }
     }
 };

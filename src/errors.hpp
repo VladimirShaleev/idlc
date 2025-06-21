@@ -12,6 +12,7 @@
 
 enum Warning {
     W1001 = 1001,
+    W1002
 };
 
 enum Error {
@@ -124,15 +125,21 @@ enum Error {
     E2107,
     E2108,
     E2109,
-    E2110
+    E2110,
+    E2111
 };
 
 template <Warning Code, typename... Args>
 inline std::string warn_str(Args&&... args) {
     std::ostringstream ss;
-    ss << "[" << Code << "] ";
+    ss << "[W" << Code << "] ";
     if constexpr (Code == W1001) {
-        std::cerr << "TODO";
+        ss << fmt::format("there is no information about the author ('author' attribte) in the '{}' declaration",
+                          args...);
+    }
+    if constexpr (Code == W1002) {
+        ss << fmt::format("the declaration '{}' does not contain information about copyright (attribute 'copyright')",
+                          args...);
     }
     return ss.str();
 }
@@ -493,6 +500,11 @@ inline std::string err_str(Args&&... args) {
     }
     if constexpr (Code == E2110) {
         ss << "the 'version' attribute must specify a semver in the argument";
+    }
+    if constexpr (Code == E2111) {
+        ss << fmt::format("the '{}' declaration does not have a brief ('brief' attribute) or detailed description "
+                          "('detail' attribute)",
+                          args...);
     }
     return ss.str();
 }

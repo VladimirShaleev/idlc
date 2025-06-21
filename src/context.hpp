@@ -965,7 +965,7 @@ public:
     void prepareDocumentation() {
         filter<ASTDecl>([this](ASTDecl* node) {
             if (node->doc) {
-                ValidateDoc validator;
+                DocValidator validator;
                 node->accept(validator);
                 auto prepare = [this, node](const std::vector<ASTNode*>& nodes) {
                     for (auto doc : nodes) {

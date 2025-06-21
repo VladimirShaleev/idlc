@@ -267,10 +267,23 @@ static void generateDoc(Header& header, ASTDecl* node, bool printLicense = false
     fmt::println(header.stream, " */");
 }
 
-static void generateInlineDoc(Header& header, ASTDecl* node) {
+static void generateInlineDoc(Header& header, ASTDecl* node, bool includeBrief = false, bool briefOnly = false) {
     if (node->doc && !node->doc->detail.empty()) {
         fmt::print(header.stream, " /**< ");
-        generateDocField(header, node->doc->detail, 0, "", true);
+        if (includeBrief && !node->doc->brief.empty()) {
+            generateDocField(header, node->doc->brief, 0, "", true);
+            if (auto str = node->doc->brief.back()->as<ASTLiteralStr>()) {
+                if (!std::ispunct(str->value.back())) {
+                    fmt::print(header.stream, ".");
+                }
+                if (!briefOnly) {
+                    fmt::print(header.stream, " ");
+                }
+            }
+        }
+        if (!briefOnly) {
+            generateDocField(header, node->doc->detail, 0, "", true);
+        }
         fmt::print(header.stream, " */");
     }
 }
@@ -799,7 +812,7 @@ inline {API}_CONSTEXPR_14 {api}_enum_t& operator^=({api}_enum_t& lhr, {api}_enum
                 header.stream, " * @param[in] {}_name Base name for the handle type (suffix `_h` will be added)", api);
             fmt::println(header.stream, " */");
             fmt::println(header.stream, "#define {}({}_name) \\", upper(name), api);
-            fmt::println(header.stream, "typedef struct {{ \\");
+            fmt::println(header.stream, "typedef struct _##{}_name {{ \\", api);
             for (const auto& [key, value] : typeNames) {
                 fmt::println(header.stream, "{:<{}}{:<{}} {}; \\", ' ', 4, key, maxLength, value);
             }
@@ -817,19 +830,89 @@ static void generateTypes(idl::Context& ctx, const std::filesystem::path& out, b
     }
     auto API    = getApiPrefix(ctx, true);
     auto header = createHeader(ctx, out, "types", true);
+
+    std::vector<ASTLiteralStr> strings;
+    strings.reserve(20);
+    auto addDocField = [&strings](std::vector<std::string>&& data) {
+        std::vector<ASTNode*> nodes;
+        for (const auto& str : data) {
+            strings.push_back({});
+            strings.back().value = str;
+            nodes.push_back(&strings.back());
+        }
+        return nodes;
+    };
+
+    ASTDoc doc{};
+    doc.brief = addDocField({ "Core type definitions for the " + ctx.api()->name + " framework." });
+    doc.detail =
+        addDocField({ "This header defines the fundamental object types and handles used throughout",
+                      "\n",
+                      "the " + ctx.api()->name + " framework. It provides forward declarations for all major system",
+                      "\n",
+                      "components using opaque pointer types (#" + API + "_TYPE) and index-based handles",
+                      "\n",
+                      "(#" + API + "_HANDLE) for better type safety and abstraction." });
+    ASTFile file{};
+    file.name = "types";
+    file.doc  = &doc;
+    generateDoc(header, ctx.api(), false, &file);
     beginHeader(ctx, header, "platform");
     if (hasInterfaces) {
-        ctx.filter<ASTInterface>([&header, &API](auto node) {
+        size_t maxLength = 0;
+        std::vector<std::pair<std::string, ASTDecl*>> decls;
+        ctx.filter<ASTInterface>([&API, &decls, &maxLength](auto node) {
             auto name = getDeclCName(node, 2);
-            fmt::println(header.stream, "{}_TYPE({})", API, name);
+            decls.emplace_back(fmt::format("{}_TYPE({})", API, name), node);
+            if (decls.back().first.length() > maxLength) {
+                maxLength = decls.back().first.length();
+            }
         });
+        fmt::println(header.stream, "/**");
+        fmt::println(header.stream, " * @name    Opaque Object Types");
+        fmt::println(header.stream,
+                     " * @brief   Forward declarations for framework objects using opaque pointer types");
+        fmt::println(header.stream,
+                     " * @details These macros generate typedefs for pointers to incomplete struct types,");
+        fmt::println(header.stream,
+                     " *          providing type safety while hiding implementation details. Each represents");
+        fmt::println(header.stream, " *          a major subsystem in the {} framework.", ctx.api()->name);
+        fmt::println(header.stream, " * @sa      {}_TYPE", API);
+        fmt::println(header.stream, " * @{{");
+        fmt::println(header.stream, " */");
+        for (const auto& [str, decl] : decls) {
+            fmt::print(header.stream, "{:<{}}", str, maxLength);
+            generateInlineDoc(header, decl, true, true);
+            fmt::println(header.stream, "");
+        }
+        fmt::println(header.stream, "/** @}} */");
         fmt::println(header.stream, "");
     }
     if (hasHandles) {
-        ctx.filter<ASTHandle>([&header, &API](auto node) {
+        size_t maxLength = 0;
+        std::vector<std::pair<std::string, ASTHandle*>> decls;
+        ctx.filter<ASTHandle>([&API, &decls, &maxLength](auto node) {
             auto name = getDeclCName(node, 2);
-            fmt::println(header.stream, "{}_HANDLE({})", API, name);
+            decls.emplace_back(fmt::format("{}_HANDLE({})", API, name), node);
+            if (decls.back().first.length() > maxLength) {
+                maxLength = decls.back().first.length();
+            }
         });
+        fmt::println(header.stream, "/**");
+        fmt::println(header.stream, " * @name    Resource Handles");
+        fmt::println(header.stream, " * @brief   Index-based handles");
+        fmt::println(header.stream, " * @details These macros generate lightweight handle types,");
+        fmt::println(header.stream, " *          using indices rather than pointers for better memory management");
+        fmt::println(header.stream, " *          and cross-API compatibility. Each handle contains an internal index.");
+        fmt::println(header.stream, " * @sa      {}_HANDLE", API);
+        fmt::println(header.stream, " * @{{");
+        fmt::println(header.stream, " */");
+        for (const auto& [str, decl] : decls) {
+            fmt::print(header.stream, "{:<{}}", str, maxLength);
+            generateInlineDoc(header, decl);
+            fmt::println(header.stream, "");
+        }
+        fmt::println(header.stream, "/** @}} */");
         fmt::println(header.stream, "");
     }
     endHeader(ctx, header);

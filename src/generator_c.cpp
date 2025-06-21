@@ -33,6 +33,10 @@ struct DocRef : Visitor {
         str = std::to_string(node->value);
     }
 
+    void visit(ASTDocBool* node) override {
+        str = node->value ? "TRUE" : "FALSE";
+    }
+
     void discarded(ASTNode* node) override {
         CName name;
         node->accept(name);
@@ -215,10 +219,17 @@ static void generateDoc(Header& header,
 
     auto printDocField = [&header, &maxLength](std::string_view field,
                                                const std::vector<ASTNode*>& nodes,
-                                               const std::string prefix = "") {
+                                               const std::string prefix  = "",
+                                               const std::string argName = "") {
         if (!nodes.empty()) {
             auto at = field.length() > 0 ? "@" : "";
-            fmt::print(header.stream, " * {}{:<{}}{}", at, field, maxLength + (field.length() > 0 ? 1 : 0), prefix);
+            fmt::print(header.stream,
+                       " * {}{:<{}}{}{}",
+                       at,
+                       field,
+                       maxLength + (field.length() > 0 ? 1 : 0),
+                       prefix,
+                       argName.empty() ? "" : argName + " ");
             generateDocField(header, nodes, maxLength + (field.length() > 0 ? 3 : 1), prefix);
         }
     };
@@ -284,6 +295,20 @@ static void generateDoc(Header& header,
     }
     printDocField(brief, briefNodes);
     printDocField(details, detailNodes);
+    if (args) {
+        for (auto arg : *args) {
+            const auto isIn    = arg->findAttr<ASTAttrIn>() != nullptr;
+            const auto isOut   = arg->findAttr<ASTAttrOut>() != nullptr;
+            const auto argName = getDeclCName(arg);
+            if (isIn && isOut) {
+                printDocField(paraminout, arg->doc->detail, "", argName);
+            } else if (isIn) {
+                printDocField(paramin, arg->doc->detail, "", argName);
+            } else if (isOut) {
+                printDocField(paramout, arg->doc->detail, "", argName);
+            }
+        }
+    }
     printDocField(ret, node->doc->ret);
     printDocFields(author, node->doc->authors);
     printDocFields(note, node->doc->note, true);

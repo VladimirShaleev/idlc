@@ -240,6 +240,15 @@ public:
         addDocSymbol<Exception>(major);
         addDocSymbol<Exception>(minor);
         addDocSymbol<Exception>(micro);
+
+        auto True    = allocNode<ASTDocBool, Exception>(loc);
+        auto False   = allocNode<ASTDocBool, Exception>(loc);
+        True->name   = "True";
+        False->name  = "False";
+        True->value  = true;
+        False->value = false;
+        addDocSymbol<Exception>(True);
+        addDocSymbol<Exception>(False);
     }
 
     template <typename Exception>

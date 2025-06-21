@@ -261,6 +261,12 @@ struct ASTMicro : ASTDocDecl {
     int value{};
 };
 
+struct ASTDocBool : ASTDocDecl {
+    void accept(Visitor& visitor) override;
+
+    bool value{};
+};
+
 struct ASTDeclRef : ASTNode {
     void accept(Visitor& visitor) override;
 
@@ -457,6 +463,10 @@ struct Visitor {
     }
 
     virtual void visit(ASTMicro* node) {
+        discarded(node);
+    }
+
+    virtual void visit(ASTDocBool* node) {
         discarded(node);
     }
 
@@ -713,6 +723,10 @@ inline void ASTMinor::accept(Visitor& visitor) {
 }
 
 inline void ASTMicro::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+inline void ASTDocBool::accept(Visitor& visitor) {
     visitor.visit(this);
 }
 

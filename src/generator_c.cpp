@@ -37,6 +37,14 @@ struct DocRef : Visitor {
         str = node->value ? "TRUE" : "FALSE";
     }
 
+    void visit(ASTField* node) override {
+        CName name;
+        node->parent->accept(name);
+        str = name.str + "::";
+        node->accept(name);
+        str += name.str;
+    }
+
     void discarded(ASTNode* node) override {
         CName name;
         node->accept(name);
@@ -92,7 +100,6 @@ static std::string getDeclCName(ASTDecl* decl, int removePostfix = 0) {
 
 static ASTLiteral* getDeclValueLiteral(ASTDecl* decl) {
     assert(decl->findAttr<ASTAttrValue>() != nullptr);
-    ;
     return decl->findAttr<ASTAttrValue>()->value;
 }
 
@@ -982,7 +989,7 @@ static void generateFile(idl::Context& ctx, const std::filesystem::path& out, AS
     if (prevFile) {
         beginHeader(ctx, header, convert(prevFile->name, Case::LispCase));
     } else {
-        beginHeader(ctx, header, "version", "platform", "types");
+        beginHeader(ctx, header, "version", "types");
     }
     DeclGenerator generator(header, ctx);
     for (auto decl : file->decls) {
@@ -997,7 +1004,7 @@ static void generateMain(idl::Context& ctx, const std::filesystem::path& out, AS
     if (prevFile) {
         beginHeader(ctx, header, convert(prevFile->name, Case::LispCase));
     } else {
-        beginHeader(ctx, header, "version", "platform", "types");
+        beginHeader(ctx, header, "version", "types");
     }
     DeclGenerator generator(header, ctx);
     ctx.filter<ASTDecl>([&generator](ASTDecl* decl) {

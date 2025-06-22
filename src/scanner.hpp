@@ -52,8 +52,9 @@ public:
             _imports.back()->location = loc;
             _imports.back()->line     = yylineno;
         }
+        auto initLineNum = _imports.empty() ? 1 : std::numeric_limits<position::counter_type>::max() - 1;
         _imports.emplace_back(std::make_unique<Import>(
-            this, path, filenamePtr, idl::location(idl::position(filenamePtr, 1, 1)), 1, nullptr, nullptr));
+            this, path, filenamePtr, idl::location(idl::position(filenamePtr, initLineNum, 1)), 1, nullptr, nullptr));
         auto& import  = *_imports.back();
         import.stream = new std::ifstream(path);
         if (import.stream->fail()) {

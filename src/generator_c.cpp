@@ -37,6 +37,12 @@ struct DocRef : Visitor {
         str = node->value ? "TRUE" : "FALSE";
     }
 
+    void visit(ASTEnumConst* node) override {
+        CName name;
+        node->accept(name);
+        str = "::" + name.str;
+    }
+
     void visit(ASTField* node) override {
         CName name;
         node->parent->accept(name);

@@ -108,6 +108,7 @@ DOCMCHAR ([^ \r\n\t\{\}[\]`]|^[`]{3}|\\\{|\\\}|\\\[|\\\])
 <ATTRCTX>"ref"       { return token::ATTRREF; }
 <ATTRCTX>"userdata"  { return token::ATTRUSERDATA; }
 <ATTRCTX>"errorcode" { return token::ATTRERRORCODE; }
+<ATTRCTX>"noerror"   { return token::ATTRNOERROR; }
 <ATTRCTX>"result"    { return token::ATTRRESULT; }
 <ATTRCTX>"destroy"   { return token::ATTRDESTROY; }
 <ATTRCTX>"in"        { return token::ATTRIN; }

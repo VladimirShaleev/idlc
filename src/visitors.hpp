@@ -233,6 +233,10 @@ struct AttrName : Visitor {
         str = "errorcode";
     }
 
+    void visit(ASTAttrNoError* node) override {
+        str = "noerror";
+    }
+
     void visit(ASTAttrResult* node) override {
         str = "result";
     }
@@ -271,7 +275,7 @@ struct AllowedAttrs : Visitor {
     }
 
     void visit(ASTEnumConst*) override {
-        allowed = { add<ASTAttrType>(), add<ASTAttrValue>(), add<ASTAttrCName>(), add<ASTAttrTokenizer>() };
+        allowed = { add<ASTAttrType>(), add<ASTAttrValue>(), add<ASTAttrCName>(), add<ASTAttrTokenizer>(), add<ASTAttrNoError>() };
     }
 
     void visit(ASTStruct* node) override {

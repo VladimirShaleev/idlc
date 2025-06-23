@@ -126,7 +126,8 @@ enum Error {
     E2108,
     E2109,
     E2110,
-    E2111
+    E2111,
+    E2112
 };
 
 template <Warning Code, typename... Args>
@@ -504,6 +505,11 @@ inline std::string err_str(Args&&... args) {
     if constexpr (Code == E2111) {
         ss << fmt::format("the '{}' declaration does not have a brief ('brief' attribute) or detailed description "
                           "('detail' attribute)",
+                          args...);
+    }
+    if constexpr (Code == E2112) {
+        ss << fmt::format("it is not possible to add the 'noerror' attribute to the '{}' constant because the '{}' "
+                          "enum does not have the 'errorcode' attribute.",
                           args...);
     }
     return ss.str();

@@ -77,6 +77,7 @@
 %token ATTRREF
 %token ATTRUSERDATA
 %token ATTRERRORCODE
+%token ATTRNOERROR
 %token ATTRRESULT
 %token ATTRDESTROY
 %token ATTRIN
@@ -120,6 +121,7 @@
 %type <ASTAttr*> attr_ref
 %type <ASTAttr*> attr_userdata
 %type <ASTAttr*> attr_errorcode
+%type <ASTAttr*> attr_noerror
 %type <ASTAttr*> attr_result
 %type <ASTAttr*> attr_destroy
 %type <ASTAttr*> attr_in
@@ -255,6 +257,7 @@ attr_item
     | attr_ref { $$ = $1; }
     | attr_userdata { $$ = $1; }
     | attr_errorcode { $$ = $1; }
+    | attr_noerror { $$ = $1; }
     | attr_result { $$ = $1; }
     | attr_destroy { $$ = $1; }
     | attr_in { $$ = $1; }
@@ -398,6 +401,10 @@ attr_userdata
 
 attr_errorcode
     : ATTRERRORCODE { auto node = alloc_node(ASTAttrErrorCode, @1); $$ = node; }
+    ;
+
+attr_noerror
+    : ATTRNOERROR { auto node = alloc_node(ASTAttrNoError, @1); $$ = node; }
     ;
 
 attr_result

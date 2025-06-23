@@ -293,6 +293,9 @@ public:
                 if (!ec->findAttr<ASTAttrType>()) {
                     needAddTypeAttrs.push_back(ec);
                 }
+                if (ec->findAttr<ASTAttrNoError>() && !en->findAttr<ASTAttrErrorCode>()) {
+                    err<E2112>(ec->location, ec->name, en->fullname());
+                }
             }
             return true;
         });

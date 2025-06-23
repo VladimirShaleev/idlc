@@ -172,6 +172,10 @@ struct ASTAttrErrorCode : ASTAttr {
     void accept(Visitor& visitor) override;
 };
 
+struct ASTAttrNoError : ASTAttr {
+    void accept(Visitor& visitor) override;
+};
+
 struct ASTAttrResult : ASTAttr {
     void accept(Visitor& visitor) override;
 };
@@ -538,6 +542,10 @@ struct Visitor {
         discarded(node);
     }
 
+    virtual void visit(ASTAttrNoError* node) {
+        discarded(node);
+    }
+
     virtual void visit(ASTAttrResult* node) {
         discarded(node);
     }
@@ -795,6 +803,10 @@ inline void ASTAttrUserData::accept(Visitor& visitor) {
 }
 
 inline void ASTAttrErrorCode::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+inline void ASTAttrNoError::accept(Visitor& visitor) {
     visitor.visit(this);
 }
 

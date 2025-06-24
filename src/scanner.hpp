@@ -51,7 +51,7 @@ public:
 
     void import(const idl::location& loc, const std::filesystem::path& file, bool isRelative = true) {
         if (isRelative && file.is_absolute()) {
-            err<IDL_RESULT_E2041>(loc, file.string());
+            err<IDL_STATUS_E2041>(loc, file.string());
         }
         const auto [path, source, needRelease] = findFile(loc, file);
         const auto filename = path.is_absolute() ? std::filesystem::relative(path, _basePath).string() : path.string();
@@ -90,7 +90,7 @@ public:
             import.stream = new std::ifstream(path);
             if (import.stream->fail()) {
                 delete import.stream;
-                err<IDL_RESULT_E2042>(loc, path.string());
+                err<IDL_STATUS_E2042>(loc, path.string());
                 return;
             }
         }
@@ -191,7 +191,7 @@ private:
 
         if (file.is_absolute()) {
             if (!std::filesystem::exists(file) || !std::filesystem::is_regular_file(file)) {
-                err<IDL_RESULT_E2041>(loc, file.string());
+                err<IDL_STATUS_E2041>(loc, file.string());
             }
             return { file, nullptr, false };
         }
@@ -240,7 +240,7 @@ private:
             } catch (const std::filesystem::filesystem_error&) {
             }
         }
-        err<IDL_RESULT_E2041>(loc, file.string());
+        err<IDL_STATUS_E2041>(loc, file.string());
     }
 
     std::string normalize(const std::filesystem::path& path) const {

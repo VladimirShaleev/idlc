@@ -2,9 +2,19 @@
 @ Enumeration of codes for results, warnings and errors. [detail]
 enum Result [errorcode]
     const Success [noerror] @ Operation completed successfully.
+    const ErrorUnknown @ Unknown error.
+    const ErrorOutOfMemory @ Out of memory.
+    const ErrorInvalidArg @ Invalid argument.
+    const ErrorFileOpen @ Failed to open file.
+    const ErrorCompilation @ Compilation failed.
 
-    const W1001 : 1001 [noerror,tokenizer(0)] @ Missing 'author' attribute
-    const W1002 [noerror,tokenizer(0)] @ Missing 'copyright' attribute
+@ TODO.
+@ TODO. [detail]
+enum Status
+    const OK @ Status OK
+
+    const W1001 : 1001 [tokenizer(0)] @ Missing 'author' attribute
+    const W1002 [tokenizer(0)] @ Missing 'copyright' attribute
 
     const E2001 : 2001 [tokenizer(0)] @ Unexpected character
     const E2002 [tokenizer(0)] @ TODO:
@@ -122,22 +132,24 @@ enum Result [errorcode]
 
 @ TODO.
 @ TODO. [detail]
-struct Error
-    field Code {Uint32} @ TODO.
+struct Message
+    field Status {Status} @ TODO.
     field Message {Str} @ TODO.
+    field Filename {Str} @ TODO.
+    field Line {Uint32} @ TODO.
+    field Column {Uint32} @ TODO.
 
-@ TODO.
-@ TODO. [detail]
-struct Warning
-    field Code {Uint32} @ TODO.
-    field Message {Str} @ TODO.
+@ Converts error code to descriptive string.
+@ Provides error message for debugging. [detail]
+@ Corresponding error message. [return]
+func ResultToString {Str} [errorcode]
+    arg Result {Result} @ Error code value.
 
 @ TODO.
 @ TODO. [detail]
 interface CompilationResult
-    prop Status [get(GetStatus)] @ TODO.
-    prop Errors [get(GetErrors)] @ TODO.
-    prop Warnings [get(GetWarnings)] @ TODO.
+    prop PropHasWarnings [get(HasWarnings),tokenizer(^4)] @ TODO.
+    prop PropHasErrors [get(HasErrors),tokenizer(^4)] @ TODO.
 
     @ Increments reference count.
     @ Manages compilation result instance lifetime. [detail]
@@ -155,19 +167,18 @@ interface CompilationResult
     @ TODO.
     @ TODO. [detail]
     @ TODO. [return]
-    method GetStatus {Result} [const]
-        arg Compiler {CompilationResult} [this] @ TODO.
+    method HasWarnings {Bool} [const]
+        arg CompilationResult {CompilationResult} [this] @ TODO.
 
     @ TODO.
     @ TODO. [detail]
-    method GetErrors [const]
-        arg Compiler {CompilationResult} [this] @ TODO.
-        arg ErrorCount {Uint32} [in,out] @ TODO.
-        arg Errors {Error} [result,array(ErrorCount)] @ TODO.
+    @ TODO. [return]
+    method HasErrors {Bool} [const]
+        arg CompilationResult {CompilationResult} [this] @ TODO.
 
     @ TODO.
     @ TODO. [detail]
-    method GetWarnings [const]
-        arg Compiler {CompilationResult} [this] @ TODO.
-        arg WarningCount {Uint32} [in,out] @ TODO.
-        arg Warnings {Error} [result,array(WarningCount)] @ TODO.
+    method GetMessages [const]
+        arg CompilationResult {CompilationResult} [this] @ TODO.
+        arg MessageCount {Uint32} [in,out] @ TODO.
+        arg Messages {Message} [result,array(MessageCount)] @ TODO.

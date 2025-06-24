@@ -38,9 +38,9 @@ public:
             return exc.result();
         } */
         catch (const std::bad_alloc&) {
-            return IDL_RESULT_E2045;
+            return IDL_RESULT_ERROR_OUT_OF_MEMORY;
         } catch (...) {
-            return IDL_RESULT_E2113;
+            return IDL_RESULT_ERROR_UNKNOWN;
         }
     }
 

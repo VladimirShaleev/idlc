@@ -1,3 +1,4 @@
+#include "compilation_result.hpp"
 #include "options.hpp"
 #include "parser.hpp"
 #include "scanner.hpp"
@@ -13,9 +14,10 @@ public:
     idl_result_t compile(idl_generator_t generator,
                          idl_utf8_t file,
                          std::span<const idl_source_t> sources,
-                         Options* options) noexcept {
+                         Options* options,
+                         CompilationResult* result) noexcept {
         try {
-            Context context{};
+            Context context{ options, result };
             Scanner scanner{ context, options, sources, file ? file : "" };
             Parser parser{ scanner };
 #ifdef YYDEBUG
@@ -24,7 +26,7 @@ public:
             auto code = parser.parse();
 
             if (code != 0) {
-                return idl_result_t(1);
+                return IDL_RESULT_ERROR_COMPILATION;
             }
 
             context.prepareEnumConsts();
@@ -58,7 +60,22 @@ public:
                     break;
             }
         } catch (const Exception& exc) {
-            return exc.code();
+            if (result) {
+                result->addMessage(exc);
+            }
+            return IDL_RESULT_ERROR_COMPILATION;
+        } catch (const std::bad_alloc&) {
+            if (result) {
+                Exception exc(IDL_STATUS_E2045, "<input>", 0, 0, "out of memory");
+                result->addMessage(exc);
+            }
+            return IDL_RESULT_ERROR_OUT_OF_MEMORY;
+        } catch (...) {
+            if (result) {
+                Exception exc(IDL_STATUS_E2113, "<input>", 0, 0, "unknown error");
+                result->addMessage(exc);
+            }
+            return IDL_RESULT_ERROR_UNKNOWN;
         }
         return IDL_RESULT_SUCCESS;
     }
@@ -72,6 +89,25 @@ idl_uint32_t idl_version(void) {
 
 idl_utf8_t idl_version_string(void) {
     return IDL_VERSION_STRING;
+}
+
+idl_utf8_t idl_result_to_string(idl_result_t result) {
+    switch (result) {
+        case IDL_RESULT_SUCCESS:
+            return "no error has occurred";
+        case IDL_RESULT_ERROR_UNKNOWN:
+            return "unknown error";
+        case IDL_RESULT_ERROR_OUT_OF_MEMORY:
+            return "out of memory";
+        case IDL_RESULT_ERROR_INVALID_ARG:
+            return "invalid argument";
+        case IDL_RESULT_ERROR_FILE_OPEN:
+            return "failed to open file";
+        case IDL_RESULT_ERROR_COMPILATION:
+            return "compilation failed";
+        default:
+            return "<unknown result>";
+    }
 }
 
 idl_result_t idl_options_create(idl_options_t* options) {
@@ -196,6 +232,45 @@ idl_result_t idl_compiler_compile(idl_compiler_t compiler,
                                   const idl_source_t* sources,
                                   idl_options_t options,
                                   idl_compilation_result_t* result) {
-    return compiler->as<idl::Compiler>()->compile(
-        generator, file, std::span{ sources, source_count }, options ? options->as<idl::Options>() : nullptr);
+    if (result) {
+        const auto resultCode = idl::Object::create<idl::CompilationResult>(*result);
+        if (resultCode != IDL_RESULT_SUCCESS) {
+            return resultCode;
+        }
+    }
+    return compiler->as<idl::Compiler>()->compile(generator,
+                                                  file,
+                                                  std::span{ sources, source_count },
+                                                  options ? options->as<idl::Options>() : nullptr,
+                                                  result ? (*result)->as<idl::CompilationResult>() : nullptr);
+}
+
+idl_compilation_result_t idl_compilation_result_reference(idl_compilation_result_t compilation_result) {
+    assert(compilation_result);
+    compilation_result->reference();
+    return compilation_result;
+}
+
+void idl_compilation_result_destroy(idl_compilation_result_t compilation_result) {
+    if (compilation_result) {
+        compilation_result->destroy();
+    }
+}
+
+idl_bool_t idl_compilation_result_has_warnings(idl_compilation_result_t compilation_result) {
+    assert(compilation_result);
+    return compilation_result->as<idl::CompilationResult>()->hasWarnings();
+}
+
+idl_bool_t idl_compilation_result_has_errors(idl_compilation_result_t compilation_result) {
+    assert(compilation_result);
+    return compilation_result->as<idl::CompilationResult>()->hasErrors();
+}
+
+void idl_compilation_result_get_messages(idl_compilation_result_t compilation_result,
+                                         idl_uint32_t* message_count,
+                                         idl_message_t* messages) {
+    assert(compilation_result);
+    assert(message_count);
+    return compilation_result->as<idl::CompilationResult>()->getMessages(*message_count, messages);
 }

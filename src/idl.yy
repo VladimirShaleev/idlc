@@ -160,8 +160,8 @@ node
     ;
 
 def_with_attrs_and_doc
-    : def_with_attrs { err<IDL_RESULT_E2005>(@1, $1->fullname()); }
-    | doc def_with_attrs idoc { err<IDL_RESULT_E2021>(@2); }
+    : def_with_attrs { err<IDL_STATUS_E2005>(@1, $1->fullname()); }
+    | doc def_with_attrs idoc { err<IDL_STATUS_E2021>(@2); }
     | doc def_with_attrs {
         $2->doc = $1;
         $1->parent = $2;
@@ -279,8 +279,8 @@ attr_hex
     ;
 
 attr_platform
-    : ATTRPLATFORM { err<IDL_RESULT_E2016>(@1); }
-    | ATTRPLATFORM '(' ')' { err<IDL_RESULT_E2016>(@1); }
+    : ATTRPLATFORM { err<IDL_STATUS_E2016>(@1); }
+    | ATTRPLATFORM '(' ')' { err<IDL_STATUS_E2016>(@1); }
     | ATTRPLATFORM '(' attr_platform_arg_list ')' {
         auto node = alloc_node(ASTAttrPlatform, @1);
         node->platforms = $3;
@@ -289,8 +289,8 @@ attr_platform
     ;
 
 attr_value
-    : ATTRVALUE { err<IDL_RESULT_E2023>(@1); }
-    | ATTRVALUE '(' ')' { err<IDL_RESULT_E2023>(@1); }
+    : ATTRVALUE { err<IDL_STATUS_E2023>(@1); }
+    | ATTRVALUE '(' ')' { err<IDL_STATUS_E2023>(@1); }
     | ATTRVALUE '(' NUM ')' {
         auto node = alloc_node(ASTAttrValue, @1);
         node->value = intern_int(@3, $3);
@@ -314,8 +314,8 @@ attr_value
     ;
 
 attr_type
-    : ATTRTYPE { err<IDL_RESULT_E2049>(@1); }
-    | ATTRTYPE '(' ')' { err<IDL_RESULT_E2049>(@1); }
+    : ATTRTYPE { err<IDL_STATUS_E2049>(@1); }
+    | ATTRTYPE '(' ')' { err<IDL_STATUS_E2049>(@1); }
     | ATTRTYPE '(' REF ')' {
         auto ref = alloc_node(ASTDeclRef, @3);
         ref->name = $3;
@@ -327,8 +327,8 @@ attr_type
     ;
 
 attr_cname
-    : ATTRCNAME { err<IDL_RESULT_E2075>(@1); }
-    | ATTRCNAME '(' ')' { err<IDL_RESULT_E2075>(@1); }
+    : ATTRCNAME { err<IDL_STATUS_E2075>(@1); }
+    | ATTRCNAME '(' ')' { err<IDL_STATUS_E2075>(@1); }
     | ATTRCNAME '(' STR ')' {
         auto node = alloc_node(ASTAttrCName, @1);
         node->name = $3;
@@ -337,8 +337,8 @@ attr_cname
     ;
 
 attr_array
-    : ATTRARRAY { err<IDL_RESULT_E2076>(@1); }
-    | ATTRARRAY '(' ')' { err<IDL_RESULT_E2076>(@1); }
+    : ATTRARRAY { err<IDL_STATUS_E2076>(@1); }
+    | ATTRARRAY '(' ')' { err<IDL_STATUS_E2076>(@1); }
     | ATTRARRAY '(' NUM ')' {
         auto node = alloc_node(ASTAttrArray, @1);
         node->size = $3;
@@ -356,8 +356,8 @@ attr_array
     ;
 
 attr_tokenizer
-    : ATTRTOKENIZER { err<IDL_RESULT_E2109>(@1); }
-    | ATTRTOKENIZER '(' ')' { err<IDL_RESULT_E2109>(@1); }
+    : ATTRTOKENIZER { err<IDL_STATUS_E2109>(@1); }
+    | ATTRTOKENIZER '(' ')' { err<IDL_STATUS_E2109>(@1); }
     | ATTRTOKENIZER '(' TOKINDX ')' {
         std::vector<int> tokens;  
         std::stringstream ss($3);  
@@ -376,8 +376,8 @@ attr_tokenizer
     ;
 
 attr_version
-    : ATTRVERSION { err<IDL_RESULT_E2110>(@1); }
-    | ATTRVERSION '(' ')' { err<IDL_RESULT_E2110>(@1); }
+    : ATTRVERSION { err<IDL_STATUS_E2110>(@1); }
+    | ATTRVERSION '(' ')' { err<IDL_STATUS_E2110>(@1); }
     | ATTRVERSION '(' NUM ',' NUM ',' NUM ')' {
         auto node = alloc_node(ASTAttrVersion, @1);
         node->major = $3;
@@ -428,8 +428,8 @@ attr_out
     ;
 
 attr_get
-    : ATTRGET { err<IDL_RESULT_E2050>(@1); }
-    | ATTRGET '(' ')' { err<IDL_RESULT_E2050>(@1); }
+    : ATTRGET { err<IDL_STATUS_E2050>(@1); }
+    | ATTRGET '(' ')' { err<IDL_STATUS_E2050>(@1); }
     | ATTRGET '(' REF ')' {
         auto ref = alloc_node(ASTDeclRef, @3);
         ref->name = $3;
@@ -441,8 +441,8 @@ attr_get
     ;
 
 attr_set
-    : ATTRSET { err<IDL_RESULT_E2050>(@1); }
-    | ATTRSET '(' ')' { err<IDL_RESULT_E2050>(@1); }
+    : ATTRSET { err<IDL_STATUS_E2050>(@1); }
+    | ATTRSET '(' ')' { err<IDL_STATUS_E2050>(@1); }
     | ATTRSET '(' REF ')' {
         auto ref = alloc_node(ASTDeclRef, @3);
         ref->name = $3;
@@ -493,7 +493,7 @@ attr_platform_arg_list
             std::transform(str.begin(), str.end(), str.begin(), [](auto c) {
                 return std::tolower(c);
             });
-            err<IDL_RESULT_E2018>(@3, str);
+            err<IDL_STATUS_E2018>(@3, str);
         }
         $$ = ASTAttrPlatform::Type($1 | $3);
     }
@@ -510,7 +510,7 @@ idoc
     ;
 
 doc_decl
-    : DOC { err<IDL_RESULT_E2006>(@$); }
+    : DOC { err<IDL_STATUS_E2006>(@$); }
     | DOC doc_field              { $$ = std::make_pair($2, 'b'); }
     | DOC doc_field DOCBRIEF     { $$ = std::make_pair($2, 'b'); }
     | DOC doc_field DOCDETAIL    { $$ = std::make_pair($2, 'd'); }
@@ -524,7 +524,7 @@ doc_decl
     ;
 
 idoc_decl
-    : IDOC { err<IDL_RESULT_E2006>(@$); }
+    : IDOC { err<IDL_STATUS_E2006>(@$); }
     | IDOC doc_field           { $$ = std::make_pair($2, 'd'); }
     | IDOC doc_field DOCDETAIL { $$ = std::make_pair($2, 'd'); }
     ;
@@ -547,14 +547,14 @@ void addNode(idl::Context& context, ASTDecl* prev, ASTDecl* decl)
     {
         if (!decl->is<ASTApi>())
         {
-            err<IDL_RESULT_E2012>(decl->location);
+            err<IDL_STATUS_E2012>(decl->location);
         }
         context.initBuiltins();
         return;
     }
     if (decl->is<ASTApi>())
     {
-        err<IDL_RESULT_E2004>(decl->location);
+        err<IDL_STATUS_E2004>(decl->location);
     }
     
     idl::ChildsAggregator aggregator = prev;
@@ -599,19 +599,19 @@ void addDoc(ASTDoc* node, const std::vector<ASTNode*>& doc, char type)
     switch (type)
     {
         case 'b':
-            if (!node->brief.empty()) err<IDL_RESULT_E2007>(node->location);
+            if (!node->brief.empty()) err<IDL_STATUS_E2007>(node->location);
             node->brief = field;
             break;
         case 'd':
-            if (!node->detail.empty()) err<IDL_RESULT_E2008>(node->location);
+            if (!node->detail.empty()) err<IDL_STATUS_E2008>(node->location);
             node->detail = field;
             break;
         case 'c':
-            if (!node->copyright.empty()) err<IDL_RESULT_E2009>(node->location);
+            if (!node->copyright.empty()) err<IDL_STATUS_E2009>(node->location);
             node->copyright = field;
             break;
         case 'l':
-            if (!node->license.empty()) err<IDL_RESULT_E2010>(node->location);
+            if (!node->license.empty()) err<IDL_STATUS_E2010>(node->location);
             node->license = field;
             break;
         case 'a':
@@ -634,5 +634,5 @@ void addDoc(ASTDoc* node, const std::vector<ASTNode*>& doc, char type)
 
 void idl::Parser::error(const location_type& loc, const std::string& message)
 {
-    err<IDL_RESULT_E2113>(loc);
+    err<IDL_STATUS_E2113>(loc);
 }

@@ -34,9 +34,10 @@ idl_generator_t getGeneratorArg(argparse::ArgumentParser& program) {
 }
 
 int main(int argc, char* argv[]) {
-    auto input   = std::filesystem::path();
-    auto output  = std::filesystem::current_path();
-    auto imports = std::vector<std::string>();
+    auto warnAsErr = false;
+    auto input     = std::filesystem::path();
+    auto output    = std::filesystem::current_path();
+    auto imports   = std::vector<std::string>();
     std::string apiver;
 
     argparse::ArgumentParser program("idlc", IDL_VERSION_STRING);
@@ -44,6 +45,7 @@ int main(int argc, char* argv[]) {
     program.add_argument("-o", "--output").store_into(output).help("output directory");
     program.add_argument("--apiver").store_into(apiver).help("api version");
     program.add_argument("-i", "--imports").append().store_into(imports).help("import dirs");
+    program.add_argument("-w", "--warnings").store_into(warnAsErr).help("warnings as errors");
     addGeneratorArg(program);
 
     try {
@@ -64,11 +66,11 @@ int main(int argc, char* argv[]) {
                                              (idl_uint32_t) std::stoi(matches[2].str()),
                                              (idl_uint32_t) std::stoi(matches[3].str()) };
             } catch (const std::exception& e) {
-                std::cerr << "invalid version number (out of range)";
+                std::cerr << "invalid version number (out of range)" << std::endl;
                 return EXIT_FAILURE;
             }
         } else {
-            std::cerr << "invalid version format";
+            std::cerr << "invalid version format" << std::endl;
             return EXIT_FAILURE;
         }
     }
@@ -80,21 +82,54 @@ int main(int argc, char* argv[]) {
     }
 
     idl_options_t options{};
-    idl_options_create(&options);
+    auto code = idl_options_create(&options);
+    if (code != IDL_RESULT_SUCCESS) {
+        std::cerr << idl_result_to_string(code) << std::endl;
+        return EXIT_FAILURE;
+    }
+
     idl_options_set_debug_mode(options, 0);
-    // idl_options_set_warnings_as_errors(options, 1);
+    idl_options_set_warnings_as_errors(options, warnAsErr ? 1 : 0);
     idl_options_set_output_dir(options, outputDir.c_str());
     idl_options_set_import_dirs(options, (idl_uint32_t) dirs.size(), dirs.data());
     idl_options_set_version(options, version ? &version.value() : nullptr);
 
     idl_compiler_t compiler{};
-    auto res = idl_compiler_create(&compiler);
+    idl_compiler_create(&compiler);
+    if (code != IDL_RESULT_SUCCESS) {
+        idl_options_destroy(options);
+        std::cerr << idl_result_to_string(code) << std::endl;
+        return EXIT_FAILURE;
+    }
 
     idl_compilation_result_t result{};
-    res = idl_compiler_compile(compiler, getGeneratorArg(program), inputFile.c_str(), 0, nullptr, options, &result);
+    code = idl_compiler_compile(compiler, getGeneratorArg(program), inputFile.c_str(), 0, nullptr, options, &result);
 
+    if (result) {
+        if (idl_compilation_result_has_errors(result) || idl_compilation_result_has_warnings(result)) {
+            idl_uint32_t count{};
+            idl_compilation_result_get_messages(result, &count, nullptr);
+            std::vector<idl_message_t> messages;
+            messages.resize(count);
+            idl_compilation_result_get_messages(result, &count, messages.data());
+            for (const auto& message : messages) {
+                if (message.status >= IDL_STATUS_E2001) {
+                    std::cerr << "error [E";
+                } else {
+                    if (idl_options_get_warnings_as_errors(options)) {
+                        std::cerr << "error [W";
+                    } else {
+                        std::cerr << "warning [W";
+                    }
+                }
+                std::cerr << (int) message.status << "]: " << message.message << " at " << message.filename << ':'
+                          << message.line << ':' << message.column << '.' << std::endl;
+            }
+        }
+        idl_compilation_result_destroy(result);
+    }
     idl_compiler_destroy(compiler);
     idl_options_destroy(options);
 
-    return EXIT_SUCCESS;
+    return code == IDL_RESULT_SUCCESS ? EXIT_SUCCESS : EXIT_FAILURE;
 }

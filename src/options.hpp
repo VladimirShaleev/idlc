@@ -1,7 +1,6 @@
 #ifndef IDL_OPTIONS_HPP
 #define IDL_OPTIONS_HPP
 
-#include "context.hpp"
 #include "object.hpp"
 
 struct _idl_options : public idl::Object {};

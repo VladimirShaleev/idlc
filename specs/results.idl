@@ -1,0 +1,173 @@
+@ Code.
+@ Enumeration of codes for results, warnings and errors. [detail]
+enum Result [errorcode]
+    const Success [noerror] @ Operation completed successfully.
+
+    const W1001 : 1001 [noerror,tokenizer(0)] @ Missing 'author' attribute
+    const W1002 [noerror,tokenizer(0)] @ Missing 'copyright' attribute
+
+    const E2001 : 2001 [tokenizer(0)] @ Unexpected character
+    const E2002 [tokenizer(0)] @ TODO:
+    const E2003 [tokenizer(0)] @ TODO:
+    const E2004 [tokenizer(0)] @ TODO:
+    const E2005 [tokenizer(0)] @ TODO:
+    const E2006 [tokenizer(0)] @ TODO:
+    const E2007 [tokenizer(0)] @ TODO:
+    const E2008 [tokenizer(0)] @ TODO:
+    const E2009 [tokenizer(0)] @ TODO:
+    const E2010 [tokenizer(0)] @ TODO:
+    const E2011 [tokenizer(0)] @ TODO:
+    const E2012 [tokenizer(0)] @ TODO:
+    const E2013 [tokenizer(0)] @ TODO:
+    const E2014 [tokenizer(0)] @ TODO:
+    const E2015 [tokenizer(0)] @ TODO:
+    const E2016 [tokenizer(0)] @ TODO:
+    const E2017 [tokenizer(0)] @ TODO:
+    const E2018 [tokenizer(0)] @ TODO:
+    const E2019 [tokenizer(0)] @ TODO:
+    const E2020 [tokenizer(0)] @ TODO:
+    const E2021 [tokenizer(0)] @ TODO:
+    const E2022 [tokenizer(0)] @ TODO:
+    const E2023 [tokenizer(0)] @ TODO:
+    const E2024 [tokenizer(0)] @ TODO:
+    const E2025 [tokenizer(0)] @ TODO:
+    const E2026 [tokenizer(0)] @ TODO:
+    const E2027 [tokenizer(0)] @ TODO:
+    const E2028 [tokenizer(0)] @ TODO:
+    const E2029 [tokenizer(0)] @ TODO:
+    const E2030 [tokenizer(0)] @ TODO:
+    const E2031 [tokenizer(0)] @ TODO:
+    const E2032 [tokenizer(0)] @ TODO:
+    const E2033 [tokenizer(0)] @ TODO:
+    const E2034 [tokenizer(0)] @ TODO:
+    const E2035 [tokenizer(0)] @ TODO:
+    const E2036 [tokenizer(0)] @ TODO:
+    const E2037 [tokenizer(0)] @ TODO:
+    const E2038 [tokenizer(0)] @ TODO:
+    const E2039 [tokenizer(0)] @ TODO:
+    const E2040 [tokenizer(0)] @ TODO:
+    const E2041 [tokenizer(0)] @ TODO:
+    const E2042 [tokenizer(0)] @ TODO:
+    const E2043 [tokenizer(0)] @ TODO:
+    const E2044 [tokenizer(0)] @ TODO:
+    const E2045 [tokenizer(0)] @ TODO:
+    const E2046 [tokenizer(0)] @ TODO:
+    const E2047 [tokenizer(0)] @ TODO:
+    const E2048 [tokenizer(0)] @ TODO:
+    const E2049 [tokenizer(0)] @ TODO:
+    const E2050 [tokenizer(0)] @ TODO:
+    const E2051 [tokenizer(0)] @ TODO:
+    const E2052 [tokenizer(0)] @ TODO:
+    const E2053 [tokenizer(0)] @ TODO:
+    const E2054 [tokenizer(0)] @ TODO:
+    const E2055 [tokenizer(0)] @ TODO:
+    const E2056 [tokenizer(0)] @ TODO:
+    const E2057 [tokenizer(0)] @ TODO:
+    const E2058 [tokenizer(0)] @ TODO:
+    const E2059 [tokenizer(0)] @ TODO:
+    const E2060 [tokenizer(0)] @ TODO:
+    const E2061 [tokenizer(0)] @ TODO:
+    const E2062 [tokenizer(0)] @ TODO:
+    const E2063 [tokenizer(0)] @ TODO:
+    const E2064 [tokenizer(0)] @ TODO:
+    const E2065 [tokenizer(0)] @ TODO:
+    const E2066 [tokenizer(0)] @ TODO:
+    const E2067 [tokenizer(0)] @ TODO:
+    const E2068 [tokenizer(0)] @ TODO:
+    const E2069 [tokenizer(0)] @ TODO:
+    const E2070 [tokenizer(0)] @ TODO:
+    const E2071 [tokenizer(0)] @ TODO:
+    const E2072 [tokenizer(0)] @ TODO:
+    const E2073 [tokenizer(0)] @ TODO:
+    const E2074 [tokenizer(0)] @ TODO:
+    const E2075 [tokenizer(0)] @ TODO:
+    const E2076 [tokenizer(0)] @ TODO:
+    const E2077 [tokenizer(0)] @ TODO:
+    const E2078 [tokenizer(0)] @ TODO:
+    const E2079 [tokenizer(0)] @ TODO:
+    const E2080 [tokenizer(0)] @ TODO:
+    const E2081 [tokenizer(0)] @ TODO:
+    const E2082 [tokenizer(0)] @ TODO:
+    const E2083 [tokenizer(0)] @ TODO:
+    const E2084 [tokenizer(0)] @ TODO:
+    const E2085 [tokenizer(0)] @ TODO:
+    const E2086 [tokenizer(0)] @ TODO:
+    const E2087 [tokenizer(0)] @ TODO:
+    const E2088 [tokenizer(0)] @ TODO:
+    const E2089 [tokenizer(0)] @ TODO:
+    const E2090 [tokenizer(0)] @ TODO:
+    const E2091 [tokenizer(0)] @ TODO:
+    const E2092 [tokenizer(0)] @ TODO:
+    const E2093 [tokenizer(0)] @ TODO:
+    const E2094 [tokenizer(0)] @ TODO:
+    const E2095 [tokenizer(0)] @ TODO:
+    const E2096 [tokenizer(0)] @ TODO:
+    const E2097 [tokenizer(0)] @ TODO:
+    const E2098 [tokenizer(0)] @ TODO:
+    const E2099 [tokenizer(0)] @ TODO:
+    const E2100 [tokenizer(0)] @ TODO:
+    const E2101 [tokenizer(0)] @ TODO:
+    const E2102 [tokenizer(0)] @ TODO:
+    const E2103 [tokenizer(0)] @ TODO:
+    const E2104 [tokenizer(0)] @ TODO:
+    const E2105 [tokenizer(0)] @ TODO:
+    const E2106 [tokenizer(0)] @ TODO:
+    const E2107 [tokenizer(0)] @ TODO:
+    const E2108 [tokenizer(0)] @ TODO:
+    const E2109 [tokenizer(0)] @ TODO:
+    const E2110 [tokenizer(0)] @ TODO:
+    const E2111 [tokenizer(0)] @ TODO:
+    const E2112 [tokenizer(0)] @ TODO:
+    const E2113 [tokenizer(0)] @ TODO:
+
+@ TODO.
+@ TODO. [detail]
+struct Error
+    field Code {Uint32} @ TODO.
+    field Message {Str} @ TODO.
+
+@ TODO.
+@ TODO. [detail]
+struct Warning
+    field Code {Uint32} @ TODO.
+    field Message {Str} @ TODO.
+
+@ TODO.
+@ TODO. [detail]
+interface CompilationResult
+    prop Status [get(GetStatus)] @ TODO.
+    prop Errors [get(GetErrors)] @ TODO.
+    prop Warnings [get(GetWarnings)] @ TODO.
+
+    @ Increments reference count.
+    @ Manages compilation result instance lifetime. [detail]
+    @ Reference to same compilation result. [return]
+    @ {Destroy} [see]
+    method Reference {CompilationResult} [ref]
+        arg CompilationResult {CompilationResult} [this] @ Target compilation result instance.
+
+    @ Releases compilation result instance.
+    @ Destroys when reference count reaches zero. [detail]
+    @ {Reference} [see]
+    method Destroy [destroy]
+        arg CompilationResult {CompilationResult} [this] @ Compilation result to destroy.
+
+    @ TODO.
+    @ TODO. [detail]
+    @ TODO. [return]
+    method GetStatus {Result} [const]
+        arg Compiler {CompilationResult} [this] @ TODO.
+
+    @ TODO.
+    @ TODO. [detail]
+    method GetErrors [const]
+        arg Compiler {CompilationResult} [this] @ TODO.
+        arg ErrorCount {Uint32} [in,out] @ TODO.
+        arg Errors {Error} [result,array(ErrorCount)] @ TODO.
+
+    @ TODO.
+    @ TODO. [detail]
+    method GetWarnings [const]
+        arg Compiler {CompilationResult} [this] @ TODO.
+        arg WarningCount {Uint32} [in,out] @ TODO.
+        arg Warnings {Error} [result,array(WarningCount)] @ TODO.

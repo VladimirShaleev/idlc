@@ -1,17 +1,7 @@
 #ifndef AST_HPP
 #define AST_HPP
 
-#include <algorithm>
-#include <filesystem>
-#include <map>
-#include <set>
-#include <string>
-#include <typeindex>
-#include <vector>
-
-#include <magic_enum/magic_enum.hpp>
-
-#include "errors.hpp"
+#include "idl.hpp"
 #include "location.hh"
 
 struct Visitor;

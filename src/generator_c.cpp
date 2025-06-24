@@ -38,13 +38,13 @@ struct DocRef : Visitor {
     }
 
     void visit(ASTEnumConst* node) override {
-        CName name;
+        idl::CName name;
         node->accept(name);
         str = "::" + name.str;
     }
 
     void visit(ASTField* node) override {
-        CName name;
+        idl::CName name;
         node->parent->accept(name);
         str = name.str + "::";
         node->accept(name);
@@ -52,19 +52,19 @@ struct DocRef : Visitor {
     }
 
     void visit(ASTMethod* node) override {
-        CName name;
+        idl::CName name;
         node->accept(name);
         str = "::" + name.str;
     }
 
     void visit(ASTArg* node) override {
-        CName name;
+        idl::CName name;
         node->accept(name);
         str = '*' + name.str + '*';
     }
 
     void discarded(ASTNode* node) override {
-        CName name;
+        idl::CName name;
         node->accept(name);
         str = name.str;
     }
@@ -105,13 +105,13 @@ static ASTDecl* getDeclType(ASTDecl* decl) noexcept {
 }
 
 static std::string getDeclTypeCName(ASTDecl* decl) {
-    CName name;
+    idl::CName name;
     getDeclType(decl)->accept(name);
     return name.str;
 }
 
 static std::string getDeclCName(ASTDecl* decl, int removePostfix = 0) {
-    CName name;
+    idl::CName name;
     decl->accept(name);
     return removePostfix == 0 ? name.str : name.str.substr(0, name.str.length() - removePostfix);
 }
@@ -133,7 +133,7 @@ static std::string getDeclValue(ASTDecl* decl, bool hexOut) {
             value = fmt::format("{}", integer->value);
         }
     } else if (auto refs = literal->as<ASTLiteralConsts>()) {
-        CName name;
+        idl::CName name;
         for (auto ref : refs->decls) {
             ref->decl->accept(name);
             value += value.length() > 0 ? " | " + name.str : name.str;
@@ -675,7 +675,7 @@ static void generatePlatform(idl::Context& ctx, const std::filesystem::path& out
     std::vector<std::tuple<std::string, std::string, ASTDecl*>> trivialTypes;
     ctx.filter<ASTBuiltinType>([&trivialTypes, &intType, &maxLength, &maxLengthType](ASTBuiltinType* node) {
         if (!node->as<ASTVoid>()) {
-            CName name;
+            idl::CName name;
             node->accept(name);
             trivialTypes.emplace_back(name.native, name.str, node);
             if (name.native.length() > maxLength) {

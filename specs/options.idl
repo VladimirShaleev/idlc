@@ -1,0 +1,158 @@
+@ Source code.
+@ Description of the source code. [detail]
+struct Source
+    field Name {Str} @ Name
+    field Data {Str} @ The source code is passed in case of reading from memory, otherwise set to null.
+    field Size {Uint32} @ Size of {Data} in bytes.
+
+@ TODO.
+@ TODO. [detail]
+callback ImportCallback {Bool}
+    arg Name {Str} @ TODO.
+    arg Depth {Uint32} @ TODO.
+    arg Data {Data} [userdata] @ TODO.
+    arg Source {Source} [result] @ TODO.
+
+@ TODO.
+@ TODO. [detail]
+callback ReleaseImportCallback
+    arg Source {Source} [ref] @ TODO.
+    arg Data {Data} [userdata] @ TODO.
+
+@ TODO.
+@ TODO. [detail]
+callback WriteCallback
+    arg Source {Source} [const,ref] @ TODO.
+    arg Data {Data} [userdata] @ TODO.
+
+@ TODO.
+@ TODO. [detail]
+interface Options
+    prop DebugMode [get(GetDebugMode),set(SetDebugMode)] @ Enable debug mode.
+    prop WarningsAsErrors [get(GetWarningsAsErrors),set(SetWarningsAsErrors)] @ TODO.
+    prop OutputDir [get(GetOutputDir),set(SetOutputDir)] @ TODO.
+    prop ImportDirs [get(GetImportDirs),set(SetImportDirs)] @ TODO.
+
+    event Importer [get(GetImporter),set(SetImporter)] @ TODO.
+    event ReleaseImport [get(GetReleaseImport),set(SetReleaseImport)] @ TODO.
+    event Writer [get(GetWriter),set(SetWriter)] @ TODO.
+
+    @ Creates new options instance.
+    @ TODO: [detail]
+    @ TODO: [return]
+    method Create {Result} [ctor]
+        arg Options {Options} [result] @ New options instance.
+
+    @ Increments reference count.
+    @ Manages options instance lifetime. [detail]
+    @ Reference to same options. [return]
+    @ {Destroy} [see]
+    method Reference {Options} [ref]
+        arg Options {Options} [this] @ Target options instance.
+
+    @ Releases options instance.
+    @ Destroys when reference count reaches zero. [detail]
+    @ {Reference} [see]
+    method Destroy [destroy]
+        arg Options {Options} [this] @ Options to destroy.
+
+    @ Get debug mode.
+    @ Return *{True}* is debug mode enabled. [detail]
+    @ *{True}* is enabled. [return]
+    @ {SetDebugMode} [see]
+    method GetDebugMode {Bool} [const]
+        arg Options {Options} [this] @ Target options.
+
+    @ Set debug mode.
+    @ Enable debug mode. [detail]
+    @ {GetDebugMode} [see]
+    method SetDebugMode
+        arg Options {Options} [this] @ Target options.
+        arg Enable {Bool} @ Enable debug.
+
+    @ TODO.
+    @ TODO. [detail]
+    @ TODO. [return]
+    @ {SetWarningsAsErrors} [see]
+    method GetWarningsAsErrors {Bool} [const]
+        arg Options {Options} [this] @ Target options.
+
+    @ TODO.
+    @ TODO. [detail]
+    @ {GetWarningsAsErrors} [see]
+    method SetWarningsAsErrors
+        arg Options {Options} [this] @ Target options.
+        arg Enable {Bool} @ TODO.
+
+    @ TODO.
+    @ TODO. [detail]
+    @ TODO. [return]
+    @ {SetOutputDir} [see]
+    method GetOutputDir {Str} [const]
+        arg Options {Options} [this] @ Target options.
+
+    @ TODO.
+    @ TODO. [detail]
+    @ {GetOutputDir} [see]
+    method SetOutputDir
+        arg Options {Options} [this] @ Target options.
+        arg Dir {Str} @ TODO.
+
+    @ TODO.
+    @ TODO. [detail]
+    @ TODO. [return]
+    @ {SetImportDirs} [see]
+    method GetImportDirs [const]
+        arg Options {Options} [this] @ Target options.
+        arg DirCount {Uint32} [in,out] @ Number of directories.
+        arg Dirs {Str} [result,array(DirCount)] @ Import directories.
+
+    @ TODO.
+    @ TODO. [detail]
+    @ {GetImportDirs} [see]
+    method SetImportDirs
+        arg Options {Options} [this] @ Target options.
+        arg DirCount {Uint32} @ Number of directories.
+        arg Dirs {Str} [const,array(DirCount)] @ Import directories.
+
+    @ TODO.
+    @ TODO. [detail]
+    @ TODO. [return]
+    method GetImporter {ImportCallback} [const]
+        arg Options {Options} [this] @ Target options.
+        arg Data {Data} [out,userdata] @ Callback user data pointer.
+
+    @ TODO.
+    @ TODO. [detail]
+    method SetImporter
+        arg Options {Options} [this] @ Target options.
+        arg Callback {ImportCallback} @ Callback function.
+        arg Data {Data} [userdata] @ Callback user data.
+
+    @ TODO.
+    @ TODO. [detail]
+    @ TODO. [return]
+    method GetReleaseImport {ReleaseImportCallback} [const]
+        arg Options {Options} [this] @ Target options.
+        arg Data {Data} [out,userdata] @ Callback user data pointer.
+
+    @ TODO.
+    @ TODO. [detail]
+    method SetReleaseImport
+        arg Options {Options} [this] @ Target options.
+        arg Callback {ReleaseImportCallback} @ Callback function.
+        arg Data {Data} [userdata] @ Callback user data.
+
+    @ TODO.
+    @ TODO. [detail]
+    @ TODO. [return]
+    method GetWriter {WriteCallback} [const]
+        arg Options {Options} [this] @ Target options.
+        arg Data {Data} [out,userdata] @ Callback user data pointer.
+
+    @ TODO.
+    @ TODO. [detail]
+    method SetWriter
+        arg Options {Options} [this] @ Target options.
+        arg Callback {WriteCallback} @ Callback function.
+        arg Data {Data} [userdata] @ Callback user data.

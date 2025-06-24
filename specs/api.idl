@@ -1,0 +1,95 @@
+@ IDLC    
+@ ```
+    IDLC - Interface Definition Language Compiler. It is an abstract API 
+    description language for platform- and language-independent interaction 
+    with the implemented interface.``` [detail]
+@ Vladimir Shaleev <vladimirshaleev@gmail.com> [author]
+@ MIT License [copyright]
+@ ```
+    MIT License
+
+    Copyright (c) 2025 Vladimir Shaleev
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+
+    Contributor(s):
+       Vladimir Shaleev <vladimirshaleev@gmail.com>``` [license]
+api Idl [version(0,0,0)]
+
+@ Warning/Error codes.
+@ Here are the warning and error codes that may occur during compilation. [detail]
+import Results
+
+@ TODO.
+@ TODO. [detail]
+import Options
+
+@ Generation language
+@ Enumeration possible languages for generating interfaces and wrapping C libraries for other languages. [note]
+enum Generator
+    const C @ C generator
+    // const Cpp @ TODO:
+    // const Python @ TODO:
+    // const Js @ TODO:
+    // const TypeScript @ TODO:
+    // const CSharp @ TODO:
+    // const Java @ TODO:
+
+@ Current library version as packed 32-bit value.
+@ Format: (major << 16) | (minor << 8) | micro. [detail]
+@ Return packed version number [return]
+func Version {Uint32}
+
+@ Current library version as human-readable string.
+@ Format: "major.minor.micro", eg: "{Major}.{Minor}.{Micro}". [detail]
+@ Return version string. [return]
+func VersionString {Str}
+
+@ Compiler interface.
+@ Interface for interacting with the compiler. [detail]
+interface Compiler
+    @ Creates new compiler instance.
+    @ TODO: [detail]
+    @ TODO: [return]
+    method Create {Result} [ctor]
+        arg Compiler {Compiler} [result] @ New compiler instance.
+
+    @ Increments reference count.
+    @ Manages compiler instance lifetime. [detail]
+    @ Reference to same compiler. [return]
+    @ {Destroy} [see]
+    method Reference {Compiler} [ref]
+        arg Compiler {Compiler} [this] @ Target compiler instance.
+
+    @ Releases compiler instance.
+    @ Destroys when reference count reaches zero. [detail]
+    @ {Reference} [see]
+    method Destroy [destroy]
+        arg Compiler {Compiler} [this] @ Compiler to destroy.
+
+    @ Comile IDL.
+    @ Compilation result. [return]
+    method Compile {Result}
+        arg Compiler {Compiler} [this] @ Target compiler.
+        arg Generator {Generator} @ Target of generator.
+        arg File {Str} @ Path to .idl file for compile.
+        arg SourceCount {Uint32} @ TODO
+        arg Sources {Source} [const,array(SourceCount)] @ TODO
+        arg Options {Options} @ Compile options, may be null.
+        arg Result {CompilationResult} [result] @ TODO.

@@ -1,9 +1,11 @@
-#ifndef VISITORS_HPP
-#define VISITORS_HPP
+#ifndef IDL_VISITORS_HPP
+#define IDL_VISITORS_HPP
 
 #include "ast.hpp"
 #include "case_converter.hpp"
 #include "errors.hpp"
+
+namespace idl {
 
 struct CName : Visitor {
     void visit(ASTVoid* node) override {
@@ -275,7 +277,9 @@ struct AllowedAttrs : Visitor {
     }
 
     void visit(ASTEnumConst*) override {
-        allowed = { add<ASTAttrType>(), add<ASTAttrValue>(), add<ASTAttrCName>(), add<ASTAttrTokenizer>(), add<ASTAttrNoError>() };
+        allowed = {
+            add<ASTAttrType>(), add<ASTAttrValue>(), add<ASTAttrCName>(), add<ASTAttrTokenizer>(), add<ASTAttrNoError>()
+        };
     }
 
     void visit(ASTStruct* node) override {
@@ -353,10 +357,10 @@ struct DocValidator : Visitor {
     void visit(ASTApi* node) override {
         checkBase(node);
         if (node->doc->authors.empty()) {
-            warn<W1001>(node->doc->location, node->fullname());
+            warn<IDL_RESULT_W1001>(node->doc->location, node->fullname());
         }
         if (node->doc->copyright.empty()) {
-            warn<W1002>(node->doc->location, node->fullname());
+            warn<IDL_RESULT_W1002>(node->doc->location, node->fullname());
         }
     }
 
@@ -420,12 +424,11 @@ struct DocValidator : Visitor {
 
     void checkBase(ASTDecl* decl) {
         if (decl->doc->brief.empty() && decl->doc->detail.empty()) {
-            err<E2111>(decl->doc->location, decl->fullname());
+            err<IDL_RESULT_E2111>(decl->doc->location, decl->fullname());
         }
     }
 };
 
-template <typename Exception>
 struct ChildsAggregator : Visitor {
     ChildsAggregator(ASTDecl* node) noexcept : prevNode(node) {
     }
@@ -444,7 +447,7 @@ struct ChildsAggregator : Visitor {
             parent->consts.push_back(node);
             node->parent = parent;
         } else {
-            throw Exception(node->location, err_str<E2022>());
+            err<IDL_RESULT_E2022>(node->location);
         }
     }
 
@@ -462,7 +465,7 @@ struct ChildsAggregator : Visitor {
             parent->fields.push_back(node);
             node->parent = parent;
         } else {
-            throw Exception(node->location, err_str<E2027>());
+            err<IDL_RESULT_E2027>(node->location);
         }
     }
 
@@ -507,7 +510,7 @@ struct ChildsAggregator : Visitor {
             parent->methods.push_back(node);
             node->parent = parent;
         } else {
-            throw Exception(node->location, err_str<E2043>());
+            err<IDL_RESULT_E2043>(node->location);
         }
     }
 
@@ -523,7 +526,7 @@ struct ChildsAggregator : Visitor {
             callback->args.push_back(node);
             node->parent = callback;
         } else {
-            throw Exception(node->location, err_str<E2044>());
+            err<IDL_RESULT_E2044>(node->location);
         }
     }
 
@@ -532,7 +535,7 @@ struct ChildsAggregator : Visitor {
             parent->props.push_back(node);
             node->parent = parent;
         } else {
-            throw Exception(node->location, err_str<E2043>());
+            err<IDL_RESULT_E2043>(node->location);
         }
     }
 
@@ -541,7 +544,7 @@ struct ChildsAggregator : Visitor {
             parent->events.push_back(node);
             node->parent = parent;
         } else {
-            throw Exception(node->location, err_str<E2090>());
+            err<IDL_RESULT_E2090>(node->location);
         }
     }
 
@@ -576,5 +579,7 @@ struct ChildsAggregator : Visitor {
 
     ASTDecl* prevNode;
 };
+
+} // namespace idl
 
 #endif

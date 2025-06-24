@@ -38,6 +38,7 @@ add_flex_bison_dependency(scanner parser)
 
 add_library(idl
     src/compiler.cpp
+    src/generator_c.cpp
     ${BISON_parser_OUTPUTS}
     ${FLEX_scanner_OUTPUTS})
 add_library(idlc::idl ALIAS idl)
@@ -79,11 +80,7 @@ endif()
 set(IDLC_TARGETS idl)
 
 if(IDLC_BUILD_TOOL)
-    add_executable(${PROJECT_NAME}
-        src/main.cpp
-        src/generator_c.cpp
-        ${BISON_parser_OUTPUTS}
-        ${FLEX_scanner_OUTPUTS})
+    add_executable(${PROJECT_NAME} src/main.cpp)
     add_executable(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
     target_link_libraries(${PROJECT_NAME} PRIVATE argparse::argparse)
     target_link_libraries(${PROJECT_NAME} PRIVATE fmt::fmt-header-only)

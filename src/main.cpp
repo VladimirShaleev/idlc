@@ -87,7 +87,6 @@ int main(int argc, char* argv[]) {
         std::cerr << idl_result_to_string(code) << std::endl;
         return EXIT_FAILURE;
     }
-
     idl_options_set_debug_mode(options, 0);
     idl_options_set_warnings_as_errors(options, warnAsErr ? 1 : 0);
     idl_options_set_output_dir(options, outputDir.c_str());
@@ -101,7 +100,6 @@ int main(int argc, char* argv[]) {
         std::cerr << idl_result_to_string(code) << std::endl;
         return EXIT_FAILURE;
     }
-
     idl_compilation_result_t result{};
     code = idl_compiler_compile(compiler, getGeneratorArg(program), inputFile.c_str(), 0, nullptr, options, &result);
 
@@ -127,9 +125,11 @@ int main(int argc, char* argv[]) {
             }
         }
         idl_compilation_result_destroy(result);
+    } else if (code != IDL_RESULT_SUCCESS) {
+        std::cerr << idl_result_to_string(code) << std::endl;
     }
+
     idl_compiler_destroy(compiler);
     idl_options_destroy(options);
-
     return code == IDL_RESULT_SUCCESS ? EXIT_SUCCESS : EXIT_FAILURE;
 }

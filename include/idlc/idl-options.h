@@ -24,12 +24,11 @@ typedef struct
 } idl_source_t;
 
 /**
- * @brief      TODO.
- * @details    TODO.
- * @param[in]  name TODO.
- * @param[in]  depth TODO.
- * @param[in]  data TODO.
- * @param[out] source TODO.
+ * @brief     TODO.
+ * @details   TODO.
+ * @param[in] name TODO.
+ * @param[in] depth TODO.
+ * @param[in] data TODO.
  */
 typedef idl_source_t*
 (*idl_import_callback_t)(idl_utf8_t name,

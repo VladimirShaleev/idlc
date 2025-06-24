@@ -143,7 +143,7 @@ interface CompilationResult
     @ Manages compilation result instance lifetime. [detail]
     @ Reference to same compilation result. [return]
     @ {Destroy} [see]
-    method Reference {CompilationResult} [ref]
+    method Reference {CompilationResult} [refinc]
         arg CompilationResult {CompilationResult} [this] @ Target compilation result instance.
 
     @ Releases compilation result instance.

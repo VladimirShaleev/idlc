@@ -2,6 +2,8 @@
 #include "parser.hpp"
 #include "scanner.hpp"
 
+void generateC(idl::Context& ctx, const std::filesystem::path& out);
+
 struct _idl_compiler : public idl::Object {};
 
 namespace idl {
@@ -17,7 +19,7 @@ public:
             Scanner scanner{ context, options ? options->as<Options>() : nullptr, sources, file ? file : "" };
             Parser parser{ scanner };
 #ifdef YYDEBUG
-            parser.set_debug_level(options->as<idl::Options>()->getDebugMode() ? 1 : 0);
+            parser.set_debug_level(options && options->as<idl::Options>()->getDebugMode() ? 1 : 0);
 #endif
             auto code = parser.parse();
 
@@ -37,6 +39,19 @@ public:
             context.prepareDocumentation();
             // context.apiVersion(version);
 
+            auto output = std::filesystem::current_path();
+            if (options) {
+                output = options->as<idl::Options>()->getOutputDir();
+            }
+
+            switch (generator) {
+                case IDL_GENERATOR_C:
+                    generateC(context, output);
+                    break;
+                default:
+                    assert(!"unreachable code");
+                    break;
+            }
         } catch (const Exception& exc) {
             return exc.code();
         }

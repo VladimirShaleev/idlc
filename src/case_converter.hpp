@@ -1,10 +1,7 @@
 #ifndef CASE_CONVERTER_HPP
 #define CASE_CONVERTER_HPP
 
-#include <algorithm>
-#include <cassert>
-#include <sstream>
-#include <vector>
+#include "idl.hpp"
 
 enum struct Case {
     LispCase,

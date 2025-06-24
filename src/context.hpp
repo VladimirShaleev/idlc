@@ -737,7 +737,7 @@ public:
                     }
                 }
             }
-            if (node->findAttr<ASTAttrRef>()) {
+            if (node->findAttr<ASTAttrRefInc>()) {
                 if (node->findAttr<ASTAttrStatic>() || node->args.size() != 1) {
                     err<IDL_RESULT_E2086>(node->location);
                 }

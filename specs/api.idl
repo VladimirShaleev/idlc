@@ -74,7 +74,7 @@ interface Compiler
     @ Manages compiler instance lifetime. [detail]
     @ Reference to same compiler. [return]
     @ {Destroy} [see]
-    method Reference {Compiler} [ref]
+    method Reference {Compiler} [refinc]
         arg Compiler {Compiler} [this] @ Target compiler instance.
 
     @ Releases compiler instance.

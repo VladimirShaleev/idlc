@@ -227,6 +227,10 @@ struct AttrName : Visitor {
         str = "ref";
     }
 
+    void visit(ASTAttrRefInc* node) override {
+        str = "refinc";
+    }
+
     void visit(ASTAttrUserData* node) override {
         str = "userdata";
     }
@@ -300,9 +304,9 @@ struct AllowedAttrs : Visitor {
     }
 
     void visit(ASTMethod* node) override {
-        allowed = { add<ASTAttrType>(),  add<ASTAttrPlatform>(), add<ASTAttrStatic>(),
-                    add<ASTAttrCtor>(),  add<ASTAttrCName>(),    add<ASTAttrTokenizer>(),
-                    add<ASTAttrConst>(), add<ASTAttrRef>(),      add<ASTAttrDestroy>() };
+        allowed = { add<ASTAttrType>(),    add<ASTAttrPlatform>(),  add<ASTAttrStatic>(), add<ASTAttrCtor>(),
+                    add<ASTAttrCName>(),   add<ASTAttrTokenizer>(), add<ASTAttrConst>(),  add<ASTAttrRefInc>(),
+                    add<ASTAttrDestroy>(), add<ASTAttrRef>() };
     }
 
     void visit(ASTProperty* node) override {
@@ -326,15 +330,14 @@ struct AllowedAttrs : Visitor {
     }
 
     void visit(ASTFunc* node) override {
-        allowed = { add<ASTAttrType>(),
-                    add<ASTAttrPlatform>(),
-                    add<ASTAttrCName>(),
-                    add<ASTAttrTokenizer>(),
-                    add<ASTAttrErrorCode>() };
+        allowed = { add<ASTAttrType>(),      add<ASTAttrPlatform>(),  add<ASTAttrCName>(),
+                    add<ASTAttrTokenizer>(), add<ASTAttrErrorCode>(), add<ASTAttrRef>() };
     }
 
     void visit(ASTCallback* node) override {
-        allowed = { add<ASTAttrType>(), add<ASTAttrPlatform>(), add<ASTAttrCName>(), add<ASTAttrTokenizer>() };
+        allowed = {
+            add<ASTAttrType>(), add<ASTAttrPlatform>(), add<ASTAttrCName>(), add<ASTAttrTokenizer>(), add<ASTAttrRef>()
+        };
     }
 
     template <typename Attr>

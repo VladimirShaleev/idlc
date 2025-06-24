@@ -316,8 +316,8 @@ inline std::string _err_str(Args&&... args) {
               "code)";
     }
     if constexpr (Code == IDL_RESULT_E2086) {
-        ss << "The method for incrementing the reference counter of an object must be non-static and take one "
-              "argument 'this'";
+        ss << "The method for incrementing the reference counter ('refinc' attribute) of an object must be non-static "
+              "and take one argument 'this'";
     }
     if constexpr (Code == IDL_RESULT_E2087) {
         ss << "The method for destroy of an object must be non-static and take one argument 'this'";

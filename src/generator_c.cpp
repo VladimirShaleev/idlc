@@ -2,9 +2,6 @@
 #include "case_converter.hpp"
 #include "context.hpp"
 
-#include <fmt/ostream.h>
-#include <fstream>
-
 struct Header {
     std::ofstream stream;
     std::string filename;
@@ -156,19 +153,23 @@ static bool isOutDecl(ASTDecl* decl) noexcept {
     return decl->findAttr<ASTAttrOut>() != nullptr;
 }
 
-static std::pair<std::string, std::string> getTypeAndName(ASTDecl* field) {
+static std::string getType(ASTDecl* field, bool isReturn = false) {
     auto type = getDeclTypeCName(field);
-    if (isConstDecl(field)) {
+    if ((!isReturn && isConstDecl(field)) || (isReturn && isConstDecl(field) && isRefDecl(field))) {
         type.insert(0, "const ");
     }
     if (isRefDecl(field) || isOutDecl(field)) {
         type += '*';
     }
+    return type;
+}
+
+static std::pair<std::string, std::string> getTypeAndName(ASTDecl* field) {
     auto name = getDeclCName(field);
     if (auto arr = field->findAttr<ASTAttrArray>(); arr && !arr->ref) {
         name += arr->size > 1 ? '[' + std::to_string(arr->size) + ']' : "";
     }
-    return { type, name };
+    return { getType(field), name };
 }
 
 template <typename... Includes>
@@ -446,7 +447,7 @@ struct DeclGenerator : Visitor {
     void visit(ASTCallback* node) override {
         generateDoc(header, node, false, nullptr, &node->args);
         const auto decl = fmt::format("(*{})(", getDeclCName(node));
-        fmt::println(header.stream, "typedef {}", getDeclTypeCName(node));
+        fmt::println(header.stream, "typedef {}", getType(node, true));
         fmt::print(header.stream, "{}", decl);
         if (node->args.empty()) {
             fmt::print(header.stream, "void");
@@ -475,7 +476,7 @@ struct DeclGenerator : Visitor {
         generateDoc(header, decl, false, nullptr, &args);
         auto api       = getApiPrefix(ctx, false);
         auto importApi = api + "_api";
-        fmt::println(header.stream, "{} {}", importApi, getDeclTypeCName(decl));
+        fmt::println(header.stream, "{} {}", importApi, getType(decl, true));
         auto declStr = fmt::format("{}(", getDeclCName(decl));
         fmt::print(header.stream, "{}", declStr);
         if (args.empty()) {

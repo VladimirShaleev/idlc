@@ -7,11 +7,10 @@ struct Source
 
 @ TODO.
 @ TODO. [detail]
-callback ImportCallback {Bool}
+callback ImportCallback {Source} [ref]
     arg Name {Str} @ TODO.
     arg Depth {Uint32} @ TODO.
     arg Data {Data} [userdata] @ TODO.
-    arg Source {Source} [result] @ TODO.
 
 @ TODO.
 @ TODO. [detail]
@@ -47,7 +46,7 @@ interface Options
     @ Manages options instance lifetime. [detail]
     @ Reference to same options. [return]
     @ {Destroy} [see]
-    method Reference {Options} [ref]
+    method Reference {Options} [refinc]
         arg Options {Options} [this] @ Target options instance.
 
     @ Releases options instance.

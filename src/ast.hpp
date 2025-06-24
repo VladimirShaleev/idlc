@@ -154,6 +154,10 @@ struct ASTAttrRef : ASTAttr {
     void accept(Visitor& visitor) override;
 };
 
+struct ASTAttrRefInc : ASTAttr {
+    void accept(Visitor& visitor) override;
+};
+
 struct ASTAttrUserData : ASTAttr {
     void accept(Visitor& visitor) override;
 };
@@ -524,6 +528,10 @@ struct Visitor {
         discarded(node);
     }
 
+    virtual void visit(ASTAttrRefInc* node) {
+        discarded(node);
+    }
+
     virtual void visit(ASTAttrUserData* node) {
         discarded(node);
     }
@@ -785,6 +793,10 @@ inline void ASTAttrConst::accept(Visitor& visitor) {
 }
 
 inline void ASTAttrRef::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+inline void ASTAttrRefInc::accept(Visitor& visitor) {
     visitor.visit(this);
 }
 

@@ -5,11 +5,8 @@
 %locations
 
 %{
-#include <iostream>
-#include <string>
-#include <cmath>
+#include "idl.hpp"
 #include <FlexLexer.h>
-#include "visitors.hpp"
 %}
 
 %define api.parser.class {Parser}
@@ -75,6 +72,7 @@
 %token ATTRARRAY
 %token ATTRCONST
 %token ATTRREF
+%token ATTRREFINC
 %token ATTRUSERDATA
 %token ATTRERRORCODE
 %token ATTRNOERROR
@@ -119,6 +117,7 @@
 %type <ASTAttr*> attr_version
 %type <ASTAttr*> attr_const
 %type <ASTAttr*> attr_ref
+%type <ASTAttr*> attr_refinc
 %type <ASTAttr*> attr_userdata
 %type <ASTAttr*> attr_errorcode
 %type <ASTAttr*> attr_noerror
@@ -255,6 +254,7 @@ attr_item
     | attr_version { $$ = $1; }
     | attr_const { $$ = $1; }
     | attr_ref { $$ = $1; }
+    | attr_refinc { $$ = $1; }
     | attr_userdata { $$ = $1; }
     | attr_errorcode { $$ = $1; }
     | attr_noerror { $$ = $1; }
@@ -393,6 +393,10 @@ attr_const
 
 attr_ref
     : ATTRREF { auto node = alloc_node(ASTAttrRef, @1); $$ = node; }
+    ;
+
+attr_refinc
+    : ATTRREFINC { auto node = alloc_node(ASTAttrRefInc, @1); $$ = node; }
     ;
 
 attr_userdata

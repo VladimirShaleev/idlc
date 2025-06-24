@@ -92,15 +92,15 @@ static Header createHeader(idl::Context& ctx,
     auto guard  = includeGuardStr(ctx, postfix);
     if (writer) {
         auto stream = std::make_unique<std::ostringstream>();
-        return { *stream.get(), nullptr, std::move(stream), header.filename().string(), guard,
-                 externC,       writer,  writerData };
+        auto ptr    = stream.get();
+        return { *ptr, nullptr, std::move(stream), header.filename().string(), guard, externC, writer, writerData };
     } else {
         auto stream = std::make_unique<std::ofstream>(std::ofstream(header));
         if (stream->fail()) {
-            std::cerr << fmt::format("failed to create file '{}'", header.string()) << std::endl;
-            exit(EXIT_FAILURE);
+            idl::err<IDL_STATUS_E2067>(ctx.api()->location, header.string());
         }
-        return { *stream.get(), std::move(stream), nullptr, header.filename().string(), guard, externC };
+        auto ptr = stream.get();
+        return { *ptr, std::move(stream), nullptr, header.filename().string(), guard, externC };
     }
 }
 

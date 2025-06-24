@@ -63,7 +63,7 @@ public:
             if (result) {
                 result->addMessage(exc);
             }
-            return IDL_RESULT_ERROR_COMPILATION;
+            return exc.status() == IDL_STATUS_E2067 ? IDL_RESULT_ERROR_FILE_CREATE : IDL_RESULT_ERROR_COMPILATION;
         } catch (const std::bad_alloc&) {
             if (result) {
                 Exception exc(IDL_STATUS_E2045, "<input>", 0, 0, "out of memory");
@@ -101,8 +101,8 @@ idl_utf8_t idl_result_to_string(idl_result_t result) {
             return "out of memory";
         case IDL_RESULT_ERROR_INVALID_ARG:
             return "invalid argument";
-        case IDL_RESULT_ERROR_FILE_OPEN:
-            return "failed to open file";
+        case IDL_RESULT_ERROR_FILE_CREATE:
+            return "failed to create file";
         case IDL_RESULT_ERROR_COMPILATION:
             return "compilation failed";
         default:

@@ -23,7 +23,7 @@ typedef enum
     IDL_RESULT_ERROR_UNKNOWN       = 1, /**< Unknown error. */
     IDL_RESULT_ERROR_OUT_OF_MEMORY = 2, /**< Out of memory. */
     IDL_RESULT_ERROR_INVALID_ARG   = 3, /**< Invalid argument. */
-    IDL_RESULT_ERROR_FILE_OPEN     = 4, /**< Failed to open file. */
+    IDL_RESULT_ERROR_FILE_CREATE   = 4, /**< Failed to create file. */
     IDL_RESULT_ERROR_COMPILATION   = 5, /**< Compilation failed. */
     IDL_RESULT_MAX_ENUM            = 0x7FFFFFFF /**< Max value of enum (not used) */
 } idl_result_t;

@@ -5,7 +5,7 @@ enum Result [errorcode]
     const ErrorUnknown @ Unknown error.
     const ErrorOutOfMemory @ Out of memory.
     const ErrorInvalidArg @ Invalid argument.
-    const ErrorFileOpen @ Failed to open file.
+    const ErrorFileCreate @ Failed to create file.
     const ErrorCompilation @ Compilation failed.
 
 @ TODO.

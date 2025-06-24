@@ -3,9 +3,16 @@
   "name": "idlc",
   "version": "1.0.0",
   "dependencies": [
-    "argparse",
     "fmt",
     "xxhash",
     "magic-enum"
-  ]
+  ],
+  "features": {
+    "tools": {
+      "description": "Build the idl compiler tool",
+      "dependencies": [
+        "argparse"
+      ]
+    }
+  }
 }

@@ -8,7 +8,7 @@
     "magic-enum"
   ],
   "features": {
-    "tools": {
+    "tool": {
       "description": "Build the idl compiler tool",
       "dependencies": [
         "argparse"

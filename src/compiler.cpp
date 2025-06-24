@@ -2,7 +2,7 @@
 #include "parser.hpp"
 #include "scanner.hpp"
 
-void generateC(idl::Context& ctx, const std::filesystem::path& out);
+void generateC(idl::Context& ctx, const std::filesystem::path& out, idl_write_callback_t writer, idl_data_t writerData);
 
 struct _idl_compiler : public idl::Object {};
 
@@ -13,13 +13,13 @@ public:
     idl_result_t compile(idl_generator_t generator,
                          idl_utf8_t file,
                          std::span<const idl_source_t> sources,
-                         idl_options_t options) noexcept {
+                         Options* options) noexcept {
         try {
             Context context{};
-            Scanner scanner{ context, options ? options->as<Options>() : nullptr, sources, file ? file : "" };
+            Scanner scanner{ context, options, sources, file ? file : "" };
             Parser parser{ scanner };
 #ifdef YYDEBUG
-            parser.set_debug_level(options && options->as<idl::Options>()->getDebugMode() ? 1 : 0);
+            parser.set_debug_level(options && options->getDebugMode() ? 1 : 0);
 #endif
             auto code = parser.parse();
 
@@ -39,16 +39,19 @@ public:
             context.prepareDocumentation();
 
             auto output = std::filesystem::current_path();
+            idl_write_callback_t writer{};
+            idl_data_t writerData{};
             if (options) {
-                output = options->as<idl::Options>()->getOutputDir();
-                if (auto version = options->as<idl::Options>()->getVersion()) {
+                output = options->getOutputDir();
+                writer = options->getWriter(&writerData);
+                if (auto version = options->getVersion()) {
                     context.apiVersion(*version);
                 }
             }
 
             switch (generator) {
                 case IDL_GENERATOR_C:
-                    generateC(context, output);
+                    generateC(context, output, writer, writerData);
                     break;
                 default:
                     assert(!"unreachable code");
@@ -193,5 +196,6 @@ idl_result_t idl_compiler_compile(idl_compiler_t compiler,
                                   const idl_source_t* sources,
                                   idl_options_t options,
                                   idl_compilation_result_t* result) {
-    return compiler->as<idl::Compiler>()->compile(generator, file, std::span{ sources, source_count }, options);
+    return compiler->as<idl::Compiler>()->compile(
+        generator, file, std::span{ sources, source_count }, options ? options->as<idl::Options>() : nullptr);
 }

@@ -3,9 +3,9 @@ cmake_minimum_required(VERSION 3.16)
 include(cmake/version.cmake)
 include(cmake/vcpkg.cmake)
 
-option(IDLC_BUILD_TOOLS "Build the idl compiler tool" ON)
-if(IDLC_BUILD_TOOLS)
-    list(APPEND VCPKG_MANIFEST_FEATURES "tools")
+option(IDLC_BUILD_TOOL "Build the idl compiler tool" ON)
+if(IDLC_BUILD_TOOL)
+    list(APPEND VCPKG_MANIFEST_FEATURES "tool")
 endif()
 
 project(idlc
@@ -28,7 +28,7 @@ cmake_dependent_option(IDLC_BUILD_PACKAGES "Build packages" ON
 find_package(fmt CONFIG REQUIRED)
 find_package(xxHash CONFIG REQUIRED)
 find_package(magic_enum CONFIG REQUIRED)
-if(IDLC_BUILD_TOOLS)
+if(IDLC_BUILD_TOOL)
     find_package(argparse CONFIG REQUIRED)
 endif()
 
@@ -78,7 +78,7 @@ if(MSVC)
 endif()
 set(IDLC_TARGETS idl)
 
-if(IDLC_BUILD_TOOLS)
+if(IDLC_BUILD_TOOL)
     add_executable(${PROJECT_NAME}
         src/main.cpp
         src/generator_c.cpp

@@ -33,9 +33,6 @@ idl_generator_t getGeneratorArg(argparse::ArgumentParser& program) {
     return magic_enum::enum_cast<idl_generator_t>(str, magic_enum::case_insensitive).value();
 }
 
-void write(const idl_source_t* source, idl_data_t data) {
-}
-
 int main(int argc, char* argv[]) {
     auto input   = std::filesystem::path();
     auto output  = std::filesystem::current_path();
@@ -88,7 +85,6 @@ int main(int argc, char* argv[]) {
     // idl_options_set_warnings_as_errors(options, 1);
     idl_options_set_output_dir(options, outputDir.c_str());
     idl_options_set_import_dirs(options, (idl_uint32_t) dirs.size(), dirs.data());
-    idl_options_set_writer(options, write, nullptr);
     idl_options_set_version(options, version ? &version.value() : nullptr);
 
     idl_compiler_t compiler{};

@@ -3,10 +3,14 @@
 #include "context.hpp"
 
 struct Header {
-    std::ofstream stream;
+    std::ostream& stream;
+    std::unique_ptr<std::ofstream> fstream;
+    std::unique_ptr<std::ostringstream> sstream;
     std::string filename;
     std::string includeGuard;
     bool externC;
+    idl_write_callback_t writer;
+    idl_data_t writerData;
 
     friend std::ostream& operator<<(std::ostream& os, const Header& header) {
         return os << header.filename;
@@ -80,16 +84,24 @@ static std::string includeGuardStr(idl::Context& ctx, std::string postfix = "") 
 static Header createHeader(idl::Context& ctx,
                            const std::filesystem::path& out,
                            const std::string& postfix,
-                           bool externC) {
+                           bool externC,
+                           idl_write_callback_t writer,
+                           idl_data_t writerData) {
     std::filesystem::create_directories(out);
     auto header = out / headerStr(ctx, postfix);
     auto guard  = includeGuardStr(ctx, postfix);
-    auto stream = std::ofstream(header);
-    if (stream.fail()) {
-        std::cerr << fmt::format("failed to create file '{}'", header.string()) << std::endl;
-        exit(EXIT_FAILURE);
+    if (writer) {
+        auto stream = std::make_unique<std::ostringstream>();
+        return { *stream.get(), nullptr, std::move(stream), header.filename().string(), guard,
+                 externC,       writer,  writerData };
+    } else {
+        auto stream = std::make_unique<std::ofstream>(std::ofstream(header));
+        if (stream->fail()) {
+            std::cerr << fmt::format("failed to create file '{}'", header.string()) << std::endl;
+            exit(EXIT_FAILURE);
+        }
+        return { *stream.get(), std::move(stream), nullptr, header.filename().string(), guard, externC };
     }
-    return { std::move(stream), header.filename().string(), guard, externC };
 }
 
 static std::string getApiPrefix(idl::Context& ctx, bool upper) {
@@ -197,6 +209,11 @@ static void endHeader(idl::Context& ctx, Header& header) {
         fmt::println(header.stream, "");
     }
     fmt::println(header.stream, "#endif /* {} */", header.includeGuard);
+    if (header.writer) {
+        const std::string data = header.sstream->str();
+        idl_source_t source{ header.filename.c_str(), data.c_str(), (idl_uint32_t) data.length() + 1 };
+        header.writer(&source, header.writerData);
+    }
 }
 
 static void generateDocField(Header& header,
@@ -502,9 +519,12 @@ struct DeclGenerator : Visitor {
     idl::Context& ctx;
 };
 
-static void generateVersion(idl::Context& ctx, const std::filesystem::path& out) {
+static void generateVersion(idl::Context& ctx,
+                            const std::filesystem::path& out,
+                            idl_write_callback_t writer,
+                            idl_data_t writerData) {
     auto API    = getApiPrefix(ctx, true);
-    auto header = createHeader(ctx, out, "version", false);
+    auto header = createHeader(ctx, out, "version", false, writer, writerData);
     auto major  = 0;
     auto minor  = 0;
     auto micro  = 0;
@@ -664,11 +684,14 @@ static void generateVersion(idl::Context& ctx, const std::filesystem::path& out)
     endHeader(ctx, header);
 }
 
-static void generatePlatform(idl::Context& ctx, const std::filesystem::path& out) {
+static void generatePlatform(idl::Context& ctx,
+                             const std::filesystem::path& out,
+                             idl_write_callback_t writer,
+                             idl_data_t writerData) {
     auto API       = getApiPrefix(ctx, true);
     auto api       = getApiPrefix(ctx, false);
     auto importAPI = api + "_api";
-    auto header    = createHeader(ctx, out, "platform", false);
+    auto header    = createHeader(ctx, out, "platform", false, writer, writerData);
     auto intType   = std::string();
 
     size_t maxLength     = 0;
@@ -907,13 +930,18 @@ inline {API}_CONSTEXPR_14 {api}_enum_t& operator^=({api}_enum_t& lhr, {api}_enum
     endHeader(ctx, header);
 }
 
-static void generateTypes(idl::Context& ctx, const std::filesystem::path& out, bool hasInterfaces, bool hasHandles) {
+static void generateTypes(idl::Context& ctx,
+                          const std::filesystem::path& out,
+                          bool hasInterfaces,
+                          bool hasHandles,
+                          idl_write_callback_t writer,
+                          idl_data_t writerData) {
     if (!hasInterfaces && !hasHandles) {
         std::filesystem::remove(out / headerStr(ctx, "types"));
         return;
     }
     auto API    = getApiPrefix(ctx, true);
-    auto header = createHeader(ctx, out, "types", true);
+    auto header = createHeader(ctx, out, "types", true, writer, writerData);
 
     std::vector<ASTLiteralStr> strings;
     strings.reserve(20);
@@ -1002,8 +1030,13 @@ static void generateTypes(idl::Context& ctx, const std::filesystem::path& out, b
     endHeader(ctx, header);
 }
 
-static void generateFile(idl::Context& ctx, const std::filesystem::path& out, ASTFile* file, ASTFile* prevFile) {
-    auto header = createHeader(ctx, out, convert(file->name, Case::LispCase), true);
+static void generateFile(idl::Context& ctx,
+                         const std::filesystem::path& out,
+                         ASTFile* file,
+                         ASTFile* prevFile,
+                         idl_write_callback_t writer,
+                         idl_data_t writerData) {
+    auto header = createHeader(ctx, out, convert(file->name, Case::LispCase), true, writer, writerData);
     generateDoc(header, ctx.api(), false, file);
     if (prevFile) {
         beginHeader(ctx, header, convert(prevFile->name, Case::LispCase));
@@ -1017,8 +1050,12 @@ static void generateFile(idl::Context& ctx, const std::filesystem::path& out, AS
     endHeader(ctx, header);
 }
 
-static void generateMain(idl::Context& ctx, const std::filesystem::path& out, ASTFile* prevFile) {
-    auto header = createHeader(ctx, out, "", false);
+static void generateMain(idl::Context& ctx,
+                         const std::filesystem::path& out,
+                         ASTFile* prevFile,
+                         idl_write_callback_t writer,
+                         idl_data_t writerData) {
+    auto header = createHeader(ctx, out, "", false, writer, writerData);
     generateDoc(header, ctx.api(), true);
     if (prevFile) {
         beginHeader(ctx, header, convert(prevFile->name, Case::LispCase));
@@ -1034,7 +1071,10 @@ static void generateMain(idl::Context& ctx, const std::filesystem::path& out, AS
     endHeader(ctx, header);
 }
 
-void generateC(idl::Context& ctx, const std::filesystem::path& out) {
+void generateC(idl::Context& ctx,
+               const std::filesystem::path& out,
+               idl_write_callback_t writer,
+               idl_data_t writerData) {
     auto finish = [](auto) {
         return false;
     };
@@ -1052,13 +1092,13 @@ void generateC(idl::Context& ctx, const std::filesystem::path& out) {
         return true;
     });
 
-    generateVersion(ctx, out);
-    generatePlatform(ctx, out);
-    generateTypes(ctx, out, hasInterfaces, hasHandles);
+    generateVersion(ctx, out, writer, writerData);
+    generatePlatform(ctx, out, writer, writerData);
+    generateTypes(ctx, out, hasInterfaces, hasHandles, writer, writerData);
     ASTFile* prevFile = nullptr;
     for (auto file : ctx.api()->files) {
-        generateFile(ctx, out, file, prevFile);
+        generateFile(ctx, out, file, prevFile, writer, writerData);
         prevFile = file;
     }
-    generateMain(ctx, out, prevFile);
+    generateMain(ctx, out, prevFile, writer, writerData);
 }

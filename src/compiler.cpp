@@ -37,11 +37,13 @@ public:
             context.prepareInterfaces();
             context.prepareHandles();
             context.prepareDocumentation();
-            // context.apiVersion(version);
 
             auto output = std::filesystem::current_path();
             if (options) {
                 output = options->as<idl::Options>()->getOutputDir();
+                if (auto version = options->as<idl::Options>()->getVersion()) {
+                    context.apiVersion(*version);
+                }
             }
 
             switch (generator) {
@@ -155,6 +157,16 @@ idl_write_callback_t idl_options_get_writer(idl_options_t options, idl_data_t* d
 void idl_options_set_writer(idl_options_t options, idl_write_callback_t callback, idl_data_t data) {
     assert(options);
     return options->as<idl::Options>()->setWriter(callback, data);
+}
+
+const idl_api_version_t* idl_options_get_version(idl_options_t options) {
+    assert(options);
+    return options->as<idl::Options>()->getVersion();
+}
+
+void idl_options_set_version(idl_options_t options, const idl_api_version_t* version) {
+    assert(options);
+    options->as<idl::Options>()->setVersion(version);
 }
 
 idl_result_t idl_compiler_create(idl_compiler_t* compiler) {

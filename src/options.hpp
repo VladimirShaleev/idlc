@@ -1,6 +1,7 @@
 #ifndef IDL_OPTIONS_HPP
 #define IDL_OPTIONS_HPP
 
+#include "context.hpp"
 #include "object.hpp"
 
 struct _idl_options : public idl::Object {};
@@ -91,6 +92,14 @@ public:
         _writerData = data;
     }
 
+    const idl_api_version_t* getVersion() const noexcept {
+        return _version.has_value() ? &_version.value() : nullptr;
+    }
+
+    void setVersion(const idl_api_version_t* version) noexcept {
+        _version = version ? std::make_optional(*version) : std::nullopt;
+    }
+
 private:
     bool _debugMode{};
     bool _warningsAsErrors{};
@@ -102,6 +111,7 @@ private:
     idl_data_t _releaseImportData{};
     idl_write_callback_t _writer{};
     idl_data_t _writerData{};
+    std::optional<idl_api_version_t> _version{};
 };
 
 }; // namespace idl

@@ -45,8 +45,9 @@ void write(const idl_source_t* source, idl_data_t data) {
 }
 
 int main(int argc, char* argv[]) {
-    auto currentPath    = std::filesystem::current_path().string();
-    auto currentPathPtr = currentPath.c_str();
+    auto currentPath             = std::filesystem::current_path().string();
+    auto currentPathPtr          = currentPath.c_str();
+    idl_api_version_t apiVersion = { 1, 0, 0 };
 
     idl_options_t options{};
     idl_options_create(&options);
@@ -55,6 +56,7 @@ int main(int argc, char* argv[]) {
     idl_options_set_output_dir(options, "D:\\Development\\Projects\\idlc\\include\\idlc\\");
     idl_options_set_import_dirs(options, 1, &currentPathPtr);
     idl_options_set_writer(options, write, nullptr);
+    idl_options_set_version(options, &apiVersion);
 
     idl_compiler_t compiler{};
     auto res = idl_compiler_create(&compiler);

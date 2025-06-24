@@ -7,12 +7,6 @@
 
 namespace idl {
 
-struct ApiVersion {
-    int major{};
-    int minor{};
-    int micro{};
-};
-
 class Context final {
 public:
     ~Context() {
@@ -1077,22 +1071,22 @@ public:
         });
     }
 
-    const std::optional<ApiVersion>& apiVersion() const noexcept {
+    const std::optional<idl_api_version_t>& apiVersion() const noexcept {
         return _version;
     }
 
-    void apiVersion(std::optional<ApiVersion> version) noexcept {
+    void apiVersion(std::optional<idl_api_version_t> version) noexcept {
         _version = version;
         filter<ASTMajor>([this](ASTMajor* node) {
-            node->value = _version.value_or(ApiVersion{}).major;
+            node->value = _version.value_or(idl_api_version_t{}).major;
             return false;
         });
         filter<ASTMinor>([this](ASTMinor* node) {
-            node->value = _version.value_or(ApiVersion{}).minor;
+            node->value = _version.value_or(idl_api_version_t{}).minor;
             return false;
         });
         filter<ASTMicro>([this](ASTMicro* node) {
-            node->value = _version.value_or(ApiVersion{}).micro;
+            node->value = _version.value_or(idl_api_version_t{}).micro;
             return false;
         });
     }
@@ -1208,7 +1202,7 @@ private:
         deps.pop_back();
     }
 
-    std::optional<ApiVersion> _version{};
+    std::optional<idl_api_version_t> _version{};
     ASTApi* _api{};
     std::vector<ASTNode*> _nodes{};
     std::unordered_map<std::string, struct ASTDecl*> _symbols{};

@@ -24,6 +24,17 @@ typedef struct
 } idl_source_t;
 
 /**
+ * @brief   TODO.
+ * @details TODO.
+ */
+typedef struct
+{
+    idl_uint32_t major; /**< TODO. */
+    idl_uint32_t minor; /**< TODO. */
+    idl_uint32_t micro; /**< TODO. */
+} idl_api_version_t;
+
+/**
  * @brief     TODO.
  * @details   TODO.
  * @param[in] name TODO.
@@ -241,6 +252,26 @@ idl_api void
 idl_options_set_writer(idl_options_t options,
                        idl_write_callback_t callback,
                        idl_data_t data);
+
+/**
+ * @brief     TODO.
+ * @details   TODO.
+ * @param[in] options Target options.
+ * @sa        ::idl_options_set_version
+ */
+idl_api const idl_api_version_t*
+idl_options_get_version(idl_options_t options);
+
+/**
+ * @brief     TODO.
+ * @details   TODO.
+ * @param[in] options Target options.
+ * @param[in] version TODO.
+ * @sa        ::idl_options_get_version
+ */
+idl_api void
+idl_options_set_version(idl_options_t options,
+                        const idl_api_version_t* version);
 
 IDL_END
 

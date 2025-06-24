@@ -211,30 +211,33 @@ private:
         importDirs.push_back(_basePath);
 
         for (const auto basePath : importDirs) {
-            auto fullpath = basePath / file;
-            auto filename = file.string();
-            while (true) {
-                if (!fullpath.has_extension()) {
-                    fullpath.replace_extension(".idl");
-                } else if (lowercase(fullpath.extension()) != ".idl") {
-                    fullpath += ".idl";
-                }
-                if (std::filesystem::exists(fullpath) && std::filesystem::is_regular_file(fullpath)) {
-                    return { fullpath, nullptr, false };
-                }
-                for (const auto& entry : std::filesystem::directory_iterator(fullpath.parent_path())) {
-                    const auto pathActual   = lowercase(entry.path());
-                    const auto pathExpected = lowercase(fullpath);
-                    if (pathActual == pathExpected) {
-                        return { entry.path(), nullptr, false };
+            try {
+                auto fullpath = basePath / file;
+                auto filename = file.string();
+                while (true) {
+                    if (!fullpath.has_extension()) {
+                        fullpath.replace_extension(".idl");
+                    } else if (lowercase(fullpath.extension()) != ".idl") {
+                        fullpath += ".idl";
                     }
+                    if (std::filesystem::exists(fullpath) && std::filesystem::is_regular_file(fullpath)) {
+                        return { fullpath, nullptr, false };
+                    }
+                    for (const auto& entry : std::filesystem::directory_iterator(fullpath.parent_path())) {
+                        const auto pathActual   = lowercase(entry.path());
+                        const auto pathExpected = lowercase(fullpath);
+                        if (pathActual == pathExpected) {
+                            return { entry.path(), nullptr, false };
+                        }
+                    }
+                    const auto offset = filename.find('.');
+                    if (offset == std::string::npos) {
+                        break;
+                    }
+                    filename.replace(offset, 1, 1, '/');
+                    fullpath = basePath / std::filesystem::path(filename).make_preferred();
                 }
-                const auto offset = filename.find('.');
-                if (offset == std::string::npos) {
-                    break;
-                }
-                filename.replace(offset, 1, 1, '/');
-                fullpath = basePath / std::filesystem::path(filename).make_preferred();
+            } catch (const std::filesystem::filesystem_error&) {
             }
         }
         err<IDL_RESULT_E2041>(loc, file.string());

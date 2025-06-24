@@ -3,6 +3,8 @@
 
 #include "idl.hpp"
 
+namespace idl {
+
 enum struct Case {
     LispCase,
     ScreamingLispCase,
@@ -134,5 +136,7 @@ inline std::string convert(const std::string& str, Case caseConvention, const st
     }
     return ss.str();
 }
+
+} // namespace idl
 
 #endif

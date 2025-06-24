@@ -2,6 +2,8 @@
 #include "case_converter.hpp"
 #include "context.hpp"
 
+using namespace idl;
+
 struct Header {
     std::ostream& stream;
     std::unique_ptr<std::ofstream> fstream;

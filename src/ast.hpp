@@ -4,6 +4,8 @@
 #include "idl.hpp"
 #include "location.hh"
 
+namespace idl {
+
 struct Visitor;
 
 struct ASTNode {
@@ -963,5 +965,7 @@ inline void ASTArg::accept(Visitor& visitor) {
 inline void ASTFile::accept(Visitor& visitor) {
     visitor.visit(this);
 }
+
+} // namespace idl
 
 #endif

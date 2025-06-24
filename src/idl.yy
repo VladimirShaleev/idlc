@@ -37,8 +37,8 @@
     #define intern_int(loc, num) \
         scanner.context().internInt(loc, int64_t(num))
     
-    void addNode(idl::Context&, ASTDecl*, ASTDecl*);
-    void addDoc(ASTDoc*, const std::vector<ASTNode*>&, char);
+    void addNode(idl::Context&, idl::ASTDecl*, idl::ASTDecl*);
+    void addDoc(idl::ASTDoc*, const std::vector<idl::ASTNode*>&, char);
 }
 
 %initial-action {
@@ -541,25 +541,25 @@ doc_lit_or_ref
 
 %%
 
-void addNode(idl::Context& context, ASTDecl* prev, ASTDecl* decl)
+void addNode(idl::Context& context, idl::ASTDecl* prev, idl::ASTDecl* decl)
 {
     if (prev == nullptr)
     {
-        if (!decl->is<ASTApi>())
+        if (!decl->is<idl::ASTApi>())
         {
             err<IDL_STATUS_E2012>(decl->location);
         }
         context.initBuiltins();
         return;
     }
-    if (decl->is<ASTApi>())
+    if (decl->is<idl::ASTApi>())
     {
         err<IDL_STATUS_E2004>(decl->location);
     }
     
     idl::ChildsAggregator aggregator = prev;
     decl->accept(aggregator);
-    if (auto file = decl->as<ASTFile>())
+    if (auto file = decl->as<idl::ASTFile>())
     {
         context.pushFile(file);
     }
@@ -569,20 +569,20 @@ void addNode(idl::Context& context, ASTDecl* prev, ASTDecl* decl)
     }
 }
 
-std::vector<ASTNode*> prepareDoc(const std::vector<ASTNode*>& doc) {
-    std::vector<ASTNode*> result;
+std::vector<idl::ASTNode*> prepareDoc(const std::vector<idl::ASTNode*>& doc) {
+    std::vector<idl::ASTNode*> result;
     result.reserve(doc.size());
     for (size_t i = 0; i < doc.size(); ++i)
     {
-        if (i == 0 && doc[i]->is<ASTLiteralStr>() && doc[i]->as<ASTLiteralStr>()->value[0] == ' ')
+        if (i == 0 && doc[i]->is<idl::ASTLiteralStr>() && doc[i]->as<idl::ASTLiteralStr>()->value[0] == ' ')
         {
         }
-        else if (i + 1 == doc.size() && doc[i]->is<ASTLiteralStr>() && doc[i]->as<ASTLiteralStr>()->value[0] == ' ')
+        else if (i + 1 == doc.size() && doc[i]->is<idl::ASTLiteralStr>() && doc[i]->as<idl::ASTLiteralStr>()->value[0] == ' ')
         {
         }
         else if (i + 1 < doc.size() && 
-            doc[i]->is<ASTLiteralStr>() && doc[i]->as<ASTLiteralStr>()->value[0] == ' ' && 
-            doc[i + 1]->is<ASTLiteralStr>() && doc[i + 1]->as<ASTLiteralStr>()->value[0] == '\n')
+            doc[i]->is<idl::ASTLiteralStr>() && doc[i]->as<idl::ASTLiteralStr>()->value[0] == ' ' && 
+            doc[i + 1]->is<idl::ASTLiteralStr>() && doc[i + 1]->as<idl::ASTLiteralStr>()->value[0] == '\n')
         {
         }
         else
@@ -593,7 +593,7 @@ std::vector<ASTNode*> prepareDoc(const std::vector<ASTNode*>& doc) {
     return result;
 }
 
-void addDoc(ASTDoc* node, const std::vector<ASTNode*>& doc, char type)
+void addDoc(idl::ASTDoc* node, const std::vector<idl::ASTNode*>& doc, char type)
 {
     auto field = prepareDoc(doc);
     switch (type)

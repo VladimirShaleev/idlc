@@ -42,11 +42,11 @@ int main(int argc, char* argv[]) {
 
     argparse::ArgumentParser program("idlc", IDL_VERSION_STRING);
     program.add_argument("input").store_into(input).help("input .idl file");
-    program.add_argument("-o", "--output").store_into(output).help("output directory");
-    program.add_argument("--apiver").store_into(apiver).help("api version");
-    program.add_argument("-i", "--imports").append().store_into(imports).help("import dirs");
-    program.add_argument("-w", "--warnings").store_into(warnAsErr).help("warnings as errors");
     addGeneratorArg(program);
+    program.add_argument("-o", "--output").store_into(output).help("output directory");
+    program.add_argument("-i", "--imports").append().store_into(imports).help("import directories");
+    program.add_argument("-w", "--warnings").store_into(warnAsErr).help("warnings as errors");
+    program.add_argument("--apiver").store_into(apiver).help("api version");
 
     try {
         program.parse_args(argc, argv);

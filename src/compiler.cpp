@@ -20,7 +20,7 @@ public:
             Context context{ options, result };
             Scanner scanner{ context, options, sources, file ? file : "" };
             Parser parser{ scanner };
-#ifdef YYDEBUG
+#if YYDEBUG
             parser.set_debug_level(options && options->getDebugMode() ? 1 : 0);
 #endif
             auto code = parser.parse();

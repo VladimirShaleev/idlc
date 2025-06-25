@@ -24,9 +24,8 @@ option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 option(IDLC_MSVC_DYNAMIC_RUNTIME "Link dynamic runtime library instead of static" OFF)
 cmake_dependent_option(IDLC_BUILD_PACKAGES "Build packages" ON
     "CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR" OFF)
-cmake_dependent_option(IDLC_REBUILD_API "Use idlc to build yourself" ON
-    "CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR" OFF)
 
+find_package(idlc CONFIG)
 find_package(fmt CONFIG REQUIRED)
 find_package(xxHash CONFIG REQUIRED)
 find_package(magic_enum CONFIG REQUIRED)
@@ -38,8 +37,7 @@ bison_target(parser src/idl.yy ${CMAKE_CURRENT_BINARY_DIR}/parser.cpp)
 flex_target(scanner src/idl.ll ${CMAKE_CURRENT_BINARY_DIR}/scanner.cpp)
 add_flex_bison_dependency(scanner parser)
 
-if(IDLC_REBUILD_API)
-    find_package(idlc CONFIG REQUIRED)
+if(idlc_FOUND)
     idlc_compile(NAME api WARN_AS_ERRORS
         SOURCE "${PROJECT_SOURCE_DIR}/specs/api.idl"
         OUTPUT "${PROJECT_SOURCE_DIR}/include/idlc/idl.h"

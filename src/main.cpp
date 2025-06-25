@@ -38,6 +38,7 @@ int main(int argc, char* argv[]) {
     auto input     = std::filesystem::path();
     auto output    = std::filesystem::current_path();
     auto imports   = std::vector<std::string>();
+    auto additions = std::vector<std::string>();
     std::string apiver;
 
     argparse::ArgumentParser program("idlc", IDL_VERSION_STRING);
@@ -45,6 +46,7 @@ int main(int argc, char* argv[]) {
     addGeneratorArg(program);
     program.add_argument("-o", "--output").store_into(output).help("output directory");
     program.add_argument("-i", "--imports").append().store_into(imports).help("import directories");
+    program.add_argument("-a", "--additions").append().store_into(additions).help("additional inclusions");
     program.add_argument("-w", "--warnings").store_into(warnAsErr).help("warnings as errors");
     program.add_argument("--apiver").store_into(apiver).help("api version");
 
@@ -77,8 +79,12 @@ int main(int argc, char* argv[]) {
     std::string inputFile = input.string();
     std::string outputDir = output.string();
     std::vector<idl_utf8_t> dirs;
+    std::vector<idl_utf8_t> adds;
     for (const auto& import : imports) {
         dirs.push_back(import.c_str());
+    }
+    for (const auto& addition : additions) {
+        adds.push_back(addition.c_str());
     }
 
     idl_options_t options{};
@@ -91,6 +97,7 @@ int main(int argc, char* argv[]) {
     idl_options_set_warnings_as_errors(options, warnAsErr ? 1 : 0);
     idl_options_set_output_dir(options, outputDir.c_str());
     idl_options_set_import_dirs(options, (idl_uint32_t) dirs.size(), dirs.data());
+    idl_options_set_additions(options, (idl_uint32_t) adds.size(), adds.data());
     idl_options_set_version(options, version ? &version.value() : nullptr);
 
     idl_compiler_t compiler{};

@@ -91,6 +91,24 @@ public:
         _writerData = data;
     }
 
+    void getAdditions(idl_uint32_t& additionCount, idl_utf8_t* additions) {
+        if (additions) {
+            additionCount = std::min(additionCount, (idl_uint32_t) _additions.size());
+            for (idl_uint32_t i = 0; i < additionCount; ++i) {
+                additions[i] = _additions[i].c_str();
+            }
+        } else {
+            additionCount = (idl_uint32_t) _additions.size();
+        }
+    }
+
+    void setAdditions(std::span<const idl_utf8_t> additions) {
+        _additions.resize(additions.size());
+        for (size_t i = 0; i < additions.size(); ++i) {
+            _additions[i] = additions[i];
+        }
+    }
+
     const idl_api_version_t* getVersion() const noexcept {
         return _version.has_value() ? &_version.value() : nullptr;
     }
@@ -104,6 +122,7 @@ private:
     bool _warningsAsErrors{};
     std::string _outputDir{};
     std::vector<std::string> _importDirs{};
+    std::vector<std::string> _additions{};
     idl_import_callback_t _importer{};
     idl_data_t _importerData{};
     idl_release_import_callback_t _releaseImport{};

@@ -186,17 +186,27 @@ static std::pair<std::string, std::string> getTypeAndName(ASTDecl* field) {
     return { getType(field), name };
 }
 
+template <typename Include>
+static void printInclude(idl::Context& ctx, Header& header, const Include& inc) {
+    if constexpr (std::is_same_v<std::span<idl_utf8_t>, Include>) {
+        for (const auto& str : inc) {
+            printInclude(ctx, header, str);
+        }
+    } else {
+        const std::string str = inc;
+        if (str.length() > 0) {
+            fmt::println(header.stream, "#include \"{}\"", headerStr(ctx, str));
+        }
+    }
+}
+
 template <typename... Includes>
 static void beginHeader(idl::Context& ctx, Header& header, const Includes&... includes) {
     fmt::println(header.stream, "#ifndef {}", header.includeGuard);
     fmt::println(header.stream, "#define {}", header.includeGuard);
     fmt::println(header.stream, "");
     if (sizeof...(includes) > 0) {
-        auto stum = []() {};
-        ((std::string(includes).length() > 0
-              ? fmt::println(header.stream, "#include \"{}\"", headerStr(ctx, std::string(includes)))
-              : stum()),
-         ...);
+        (printInclude(ctx, header, includes), ...);
         fmt::println(header.stream, "");
     }
     if (header.externC) {
@@ -1056,13 +1066,14 @@ static void generateMain(idl::Context& ctx,
                          const std::filesystem::path& out,
                          ASTFile* prevFile,
                          idl_write_callback_t writer,
-                         idl_data_t writerData) {
+                         idl_data_t writerData,
+                         std::span<idl_utf8_t> includes) {
     auto header = createHeader(ctx, out, "", false, writer, writerData);
     generateDoc(header, ctx.api(), true);
     if (prevFile) {
-        beginHeader(ctx, header, convert(prevFile->name, Case::LispCase));
+        beginHeader(ctx, header, convert(prevFile->name, Case::LispCase), includes);
     } else {
-        beginHeader(ctx, header, "version", "types");
+        beginHeader(ctx, header, "version", "types", includes);
     }
     DeclGenerator generator(header, ctx);
     ctx.filter<ASTDecl>([&generator](ASTDecl* decl) {
@@ -1076,7 +1087,8 @@ static void generateMain(idl::Context& ctx,
 void generateC(idl::Context& ctx,
                const std::filesystem::path& out,
                idl_write_callback_t writer,
-               idl_data_t writerData) {
+               idl_data_t writerData,
+               std::span<idl_utf8_t> includes) {
     auto finish = [](auto) {
         return false;
     };
@@ -1102,5 +1114,5 @@ void generateC(idl::Context& ctx,
         generateFile(ctx, out, file, prevFile, writer, writerData);
         prevFile = file;
     }
-    generateMain(ctx, out, prevFile, writer, writerData);
+    generateMain(ctx, out, prevFile, writer, writerData, includes);
 }

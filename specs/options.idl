@@ -38,6 +38,8 @@ interface Options
     prop WarningsAsErrors [get(GetWarningsAsErrors),set(SetWarningsAsErrors)] @ TODO.
     prop OutputDir [get(GetOutputDir),set(SetOutputDir)] @ TODO.
     prop ImportDirs [get(GetImportDirs),set(SetImportDirs)] @ TODO.
+    prop Additions [get(GetAdditions),set(SetAdditions)] @ TODO.
+    prop Version [get(GetVersion),set(SetVersion)] @ TODO.
 
     event Importer [get(GetImporter),set(SetImporter)] @ TODO.
     event ReleaseImport [get(GetReleaseImport),set(SetReleaseImport)] @ TODO.
@@ -162,6 +164,24 @@ interface Options
         arg Options {Options} [this] @ Target options.
         arg Callback {WriteCallback} @ Callback function.
         arg Data {Data} [userdata] @ Callback user data.
+
+    @ TODO.
+    @ TODO. [detail]
+    @ TODO. [return]
+    @ {SetAdditions} [see]
+    method GetAdditions [const]
+        arg Options {Options} [this] @ Target options.
+        arg AdditionCount {Uint32} [in,out] @ Number of additions.
+        arg Additions {Str} [result,array(AdditionCount)] @ Additions.
+
+    @ TODO.
+    @ TODO. [detail]
+    @ {GetAdditions} [see]
+    @ Generator specific. For C these are additional headers. [note]
+    method SetAdditions
+        arg Options {Options} [this] @ Target options.
+        arg AdditionCount {Uint32} @ Number of additions.
+        arg Additions {Str} [const,array(AdditionCount)] @ Additions.
 
     @ TODO.
     @ TODO. [detail]

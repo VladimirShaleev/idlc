@@ -3,7 +3,11 @@
 #include "parser.hpp"
 #include "scanner.hpp"
 
-void generateC(idl::Context& ctx, const std::filesystem::path& out, idl_write_callback_t writer, idl_data_t writerData);
+void generateC(idl::Context& ctx,
+               const std::filesystem::path& out,
+               idl_write_callback_t writer,
+               idl_data_t writerData,
+               std::span<idl_utf8_t> includes);
 
 struct _idl_compiler : public idl::Object {};
 
@@ -43,9 +47,14 @@ public:
             auto output = std::filesystem::current_path();
             idl_write_callback_t writer{};
             idl_data_t writerData{};
+            std::vector<idl_utf8_t> additions{};
             if (options) {
                 output = options->getOutputDir();
                 writer = options->getWriter(&writerData);
+                idl_uint32_t num{};
+                options->getAdditions(num, nullptr);
+                additions.resize(num);
+                options->getAdditions(num, additions.data());
                 if (auto version = options->getVersion()) {
                     context.apiVersion(*version);
                 }
@@ -53,7 +62,7 @@ public:
 
             switch (generator) {
                 case IDL_GENERATOR_C:
-                    generateC(context, output, writer, writerData);
+                    generateC(context, output, writer, writerData, std::span{ additions.data(), additions.size() });
                     break;
                 default:
                     assert(!"unreachable code");
@@ -196,6 +205,17 @@ idl_write_callback_t idl_options_get_writer(idl_options_t options, idl_data_t* d
 void idl_options_set_writer(idl_options_t options, idl_write_callback_t callback, idl_data_t data) {
     assert(options);
     return options->as<idl::Options>()->setWriter(callback, data);
+}
+
+void idl_options_get_additions(idl_options_t options, idl_uint32_t* addition_count, idl_utf8_t* additions) {
+    assert(options);
+    assert(addition_count);
+    return options->as<idl::Options>()->getAdditions(*addition_count, additions);
+}
+
+void idl_options_set_additions(idl_options_t options, idl_uint32_t addition_count, const idl_utf8_t* additions) {
+    assert(options);
+    options->as<idl::Options>()->setAdditions(std::span{ additions, addition_count });
 }
 
 const idl_api_version_t* idl_options_get_version(idl_options_t options) {

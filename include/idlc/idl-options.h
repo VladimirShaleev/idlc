@@ -254,6 +254,34 @@ idl_options_set_writer(idl_options_t options,
                        idl_data_t data);
 
 /**
+ * @brief         TODO.
+ * @details       TODO.
+ * @param[in]     options Target options.
+ * @param[in,out] addition_count Number of additions.
+ * @param[out]    additions Additions.
+ * @return        TODO.
+ * @sa            ::idl_options_set_additions
+ */
+idl_api void
+idl_options_get_additions(idl_options_t options,
+                          idl_uint32_t* addition_count,
+                          idl_utf8_t* additions);
+
+/**
+ * @brief     TODO.
+ * @details   TODO.
+ * @param[in] options Target options.
+ * @param[in] addition_count Number of additions.
+ * @param[in] additions Additions.
+ * @note      Generator specific. For C these are additional headers.
+ * @sa        ::idl_options_get_additions
+ */
+idl_api void
+idl_options_set_additions(idl_options_t options,
+                          idl_uint32_t addition_count,
+                          const idl_utf8_t* additions);
+
+/**
  * @brief     TODO.
  * @details   TODO.
  * @param[in] options Target options.

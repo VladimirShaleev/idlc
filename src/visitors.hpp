@@ -332,14 +332,13 @@ struct AllowedAttrs : Visitor {
     }
 
     void visit(ASTFunc* node) override {
-        allowed = { add<ASTAttrType>(),      add<ASTAttrPlatform>(),  add<ASTAttrCName>(),
-                    add<ASTAttrTokenizer>(), add<ASTAttrErrorCode>(), add<ASTAttrRef>() };
+        allowed = { add<ASTAttrType>(),      add<ASTAttrPlatform>(), add<ASTAttrCName>(), add<ASTAttrTokenizer>(),
+                    add<ASTAttrErrorCode>(), add<ASTAttrRef>(),      add<ASTAttrConst>() };
     }
 
     void visit(ASTCallback* node) override {
-        allowed = {
-            add<ASTAttrType>(), add<ASTAttrPlatform>(), add<ASTAttrCName>(), add<ASTAttrTokenizer>(), add<ASTAttrRef>()
-        };
+        allowed = { add<ASTAttrType>(),      add<ASTAttrPlatform>(), add<ASTAttrCName>(),
+                    add<ASTAttrTokenizer>(), add<ASTAttrRef>(),      add<ASTAttrConst>() };
     }
 
     template <typename Attr>

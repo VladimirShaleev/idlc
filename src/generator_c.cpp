@@ -167,9 +167,9 @@ static bool isOutDecl(ASTDecl* decl) noexcept {
     return decl->findAttr<ASTAttrOut>() != nullptr;
 }
 
-static std::string getType(ASTDecl* field, bool isReturn = false) {
+static std::string getType(ASTDecl* field) {
     auto type = getDeclTypeCName(field);
-    if ((!isReturn && isConstDecl(field)) || (isReturn && isConstDecl(field) && isRefDecl(field))) {
+    if (isConstDecl(field) && isRefDecl(field)) {
         type.insert(0, "const ");
     }
     if (isRefDecl(field) || isOutDecl(field)) {
@@ -466,7 +466,7 @@ struct DeclGenerator : Visitor {
     void visit(ASTCallback* node) override {
         generateDoc(header, node, false, nullptr, &node->args);
         const auto decl = fmt::format("(*{})(", getDeclCName(node));
-        fmt::println(header.stream, "typedef {}", getType(node, true));
+        fmt::println(header.stream, "typedef {}", getType(node));
         fmt::print(header.stream, "{}", decl);
         if (node->args.empty()) {
             fmt::print(header.stream, "void");
@@ -495,7 +495,7 @@ struct DeclGenerator : Visitor {
         generateDoc(header, decl, false, nullptr, &args);
         auto api       = getApiPrefix(ctx, false);
         auto importApi = api + "_api";
-        fmt::println(header.stream, "{} {}", importApi, getType(decl, true));
+        fmt::println(header.stream, "{} {}", importApi, getType(decl));
         auto declStr = fmt::format("{}(", getDeclCName(decl));
         fmt::print(header.stream, "{}", declStr);
         if (args.empty()) {

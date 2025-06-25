@@ -1,2 +1,3 @@
 # idlc
-API idl compiler
+
+IDL compiler

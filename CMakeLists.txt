@@ -22,8 +22,10 @@ include(cmake/bison-install.cmake)
 
 option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 option(IDLC_MSVC_DYNAMIC_RUNTIME "Link dynamic runtime library instead of static" OFF)
+cmake_dependent_option(IDLC_ENABLE_INSTALL "Enable installation" OFF
+    "CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR" ON)
 cmake_dependent_option(IDLC_BUILD_PACKAGES "Build packages" ON
-    "CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR" OFF)
+    IDLC_ENABLE_INSTALL OFF)
 
 find_package(fmt CONFIG REQUIRED)
 find_package(xxHash CONFIG REQUIRED)
@@ -133,30 +135,32 @@ if(IDLC_BUILD_TOOL)
 endif()
 add_library(idlc::idl ALIAS idl)
 
-configure_package_config_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/${PROJECT_NAME}-config.cmake.in" 
-    "${PROJECT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
-    INSTALL_DESTINATION "${CMAKE_INSTALL_DATADIR}/cmake/${PROJECT_NAME}"
-    NO_SET_AND_CHECK_MACRO
-    NO_CHECK_REQUIRED_COMPONENTS_MACRO)
-
-write_basic_package_version_file(${PROJECT_NAME}-config-version.cmake
-    VERSION ${PROJECT_VERSION}
-    COMPATIBILITY SameMajorVersion)
-
-install(TARGETS ${IDLC_TARGETS} EXPORT ${PROJECT_NAME}-targets)
-install(EXPORT ${PROJECT_NAME}-targets 
-    DESTINATION "${CMAKE_INSTALL_DATADIR}/cmake/${PROJECT_NAME}"
-    NAMESPACE ${PROJECT_NAME}::)
-install(
-    FILES
-        "${PROJECT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake"
+if(IDLC_ENABLE_INSTALL)
+    configure_package_config_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/cmake/${PROJECT_NAME}-config.cmake.in" 
         "${PROJECT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
-    DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/${PROJECT_NAME})
-install(DIRECTORY include/ DESTINATION include)
+        INSTALL_DESTINATION "${CMAKE_INSTALL_DATADIR}/cmake/${PROJECT_NAME}"
+        NO_SET_AND_CHECK_MACRO
+        NO_CHECK_REQUIRED_COMPONENTS_MACRO)
 
-if(IDLC_BUILD_PACKAGES)
-    include(cmake/package.cmake)
+    write_basic_package_version_file(${PROJECT_NAME}-config-version.cmake
+        VERSION ${PROJECT_VERSION}
+        COMPATIBILITY SameMajorVersion)
+
+    install(TARGETS ${IDLC_TARGETS} EXPORT ${PROJECT_NAME}-targets)
+    install(EXPORT ${PROJECT_NAME}-targets 
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/cmake/${PROJECT_NAME}"
+        NAMESPACE ${PROJECT_NAME}::)
+    install(
+        FILES
+            "${PROJECT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake"
+            "${PROJECT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/${PROJECT_NAME})
+    install(DIRECTORY include/ DESTINATION include)
+
+    if(IDLC_BUILD_PACKAGES)
+        include(cmake/package.cmake)
+    endif()
 endif()
 
 if(TARGET ${PROJECT_NAME})

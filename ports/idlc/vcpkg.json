@@ -1,0 +1,25 @@
+{
+  "name": "idlc",
+  "version": "0.0.0",
+  "description": "Interface Definition Language Compiler",
+  "homepage": "https://github.com/VladimirShaleev/idlc",
+  "license": "MIT",
+  "dependencies": [
+    "argparse",
+    "fmt",
+    {
+      "name": "idlc",
+      "host": true
+    },
+    "magic-enum",
+    {
+      "name": "vcpkg-cmake",
+      "host": true
+    },
+    {
+      "name": "vcpkg-cmake-config",
+      "host": true
+    },
+    "xxhash"
+  ]
+}

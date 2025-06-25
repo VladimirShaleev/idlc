@@ -1,0 +1,13 @@
+idlc provides CMake targets:
+
+  find_package(idlc CONFIG REQUIRED)
+  target_link_libraries(main PRIVATE idlc::idl)
+
+and also the CMake function:
+
+  find_package(idlc CONFIG REQUIRED)
+  idlc_compile(NAME api WARN_AS_ERRORS
+        SOURCE "${PROJECT_SOURCE_DIR}/specs/main.idl"
+        OUTPUT "${PROJECT_SOURCE_DIR}/include/main/main.h"
+        GENERATOR C)
+  add_library(main ${IDLC_api_OUTPUTS} main.cpp)

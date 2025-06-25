@@ -1,3 +1,8 @@
 {
-  "default": {}
+  "default": {
+    "idlc": {
+      "baseline": "0.0.0",
+      "port-version": 0
+    }
+  }
 }

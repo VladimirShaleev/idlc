@@ -21,6 +21,7 @@ include(cmake/flex-install.cmake)
 include(cmake/bison-install.cmake)
 
 option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
+option(IDLC_USE_IDLC "Use idlc to rebuild .idl files" ON)
 option(IDLC_MSVC_DYNAMIC_RUNTIME "Link dynamic runtime library instead of static" OFF)
 cmake_dependent_option(IDLC_ENABLE_INSTALL "Enable installation" OFF
     "CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR" ON)
@@ -33,15 +34,15 @@ find_package(magic_enum CONFIG REQUIRED)
 if(IDLC_BUILD_TOOL)
     find_package(argparse CONFIG REQUIRED)
 endif()
-if(NOT IDLC_PACKAGE_NOT_DOUND)
-    find_package(idlc CONFIG)
+if(IDLC_USE_IDLC)
+    find_package(idlc CONFIG REQUIRED)
 endif()
 
 bison_target(parser src/idl.yy ${CMAKE_CURRENT_BINARY_DIR}/parser.cpp)
 flex_target(scanner src/idl.ll ${CMAKE_CURRENT_BINARY_DIR}/scanner.cpp)
 add_flex_bison_dependency(scanner parser)
 
-if(idlc_FOUND AND NOT IDLC_PACKAGE_NOT_DOUND)
+if(IDLC_USE_IDLC)
     idlc_compile(NAME api WARN_AS_ERRORS
         SOURCE "${PROJECT_SOURCE_DIR}/specs/api.idl"
         OUTPUT "${PROJECT_SOURCE_DIR}/include/idlc/idl.h"
@@ -51,8 +52,6 @@ if(idlc_FOUND AND NOT IDLC_PACKAGE_NOT_DOUND)
             "${PROJECT_SOURCE_DIR}/specs/api.idl"
             "${PROJECT_SOURCE_DIR}/specs/options.idl"
             "${PROJECT_SOURCE_DIR}/specs/results.idl")
-else()
-    option(IDLC_PACKAGE_NOT_DOUND "Cache flag indicating that the idlc was not found." ON)
 endif()
 
 add_library(idl

@@ -25,19 +25,21 @@ option(IDLC_MSVC_DYNAMIC_RUNTIME "Link dynamic runtime library instead of static
 cmake_dependent_option(IDLC_BUILD_PACKAGES "Build packages" ON
     "CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR" OFF)
 
-find_package(idlc CONFIG)
 find_package(fmt CONFIG REQUIRED)
 find_package(xxHash CONFIG REQUIRED)
 find_package(magic_enum CONFIG REQUIRED)
 if(IDLC_BUILD_TOOL)
     find_package(argparse CONFIG REQUIRED)
 endif()
+if(NOT IDLC_PACKAGE_NOT_DOUND)
+    find_package(idlc CONFIG)
+endif()
 
 bison_target(parser src/idl.yy ${CMAKE_CURRENT_BINARY_DIR}/parser.cpp)
 flex_target(scanner src/idl.ll ${CMAKE_CURRENT_BINARY_DIR}/scanner.cpp)
 add_flex_bison_dependency(scanner parser)
 
-if(idlc_FOUND)
+if(idlc_FOUND AND NOT IDLC_PACKAGE_NOT_DOUND)
     idlc_compile(NAME api WARN_AS_ERRORS
         SOURCE "${PROJECT_SOURCE_DIR}/specs/api.idl"
         OUTPUT "${PROJECT_SOURCE_DIR}/include/idlc/idl.h"
@@ -47,6 +49,8 @@ if(idlc_FOUND)
             "${PROJECT_SOURCE_DIR}/specs/api.idl"
             "${PROJECT_SOURCE_DIR}/specs/options.idl"
             "${PROJECT_SOURCE_DIR}/specs/results.idl")
+else()
+    option(IDLC_PACKAGE_NOT_DOUND "Cache flag indicating that the idlc was not found." ON)
 endif()
 
 add_library(idl

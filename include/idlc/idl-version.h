@@ -25,7 +25,7 @@
  * @sa    IDL_VERSION
  * @sa    IDL_VERSION_STRING
  */
-#define IDL_VERSION_MAJOR 0
+#define IDL_VERSION_MAJOR 1
 
 /**
  * @brief Minor version number (backwards-compatible additions)
@@ -65,7 +65,7 @@
 
 /**
  * @brief     Internal macro for string version generation
- * @details   Helper macro that stringizes version components (e.g., 0, 0, 0 -> "0.0.0")
+ * @details   Helper macro that stringizes version components (e.g., 1, 0, 0 -> "1.0.0")
  * @param[in] major Major version number
  * @param[in] minor Minor version number
  * @param[in] micro Micro version number
@@ -78,7 +78,7 @@
 /**
  * @def       IDL_VERSION_STRINGIZE
  * @brief     Creates version string from components
- * @details   Generates a string literal from version components (e.g., 0, 0, 0 -> "0.0.0")
+ * @details   Generates a string literal from version components (e.g., 1, 0, 0 -> "1.0.0")
  * @param[in] major Major version number
  * @param[in] minor Minor version number
  * @param[in] micro Micro version number
@@ -109,7 +109,7 @@
 /**
  * @def     IDL_VERSION_STRING
  * @brief   Library version as human-readable string
- * @details Version string in "MAJOR.MINOR.MICRO" format (e.g., "0.0.0").
+ * @details Version string in "MAJOR.MINOR.MICRO" format (e.g., "1.0.0").
  *          Use #IDL_VERSION for numeric comparisons.
  * @sa      IDL_VERSION
  */

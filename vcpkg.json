@@ -4,8 +4,9 @@
   "version": "0.0.0",
   "dependencies": [
     "fmt",
-    "xxhash",
-    "magic-enum"
+    "idlc",
+    "magic-enum",
+    "xxhash"
   ],
   "features": {
     "tool": {

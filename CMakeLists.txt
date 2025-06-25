@@ -24,6 +24,8 @@ option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 option(IDLC_MSVC_DYNAMIC_RUNTIME "Link dynamic runtime library instead of static" OFF)
 cmake_dependent_option(IDLC_BUILD_PACKAGES "Build packages" ON
     "CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR" OFF)
+cmake_dependent_option(IDLC_REBUILD_API "Use idlc to build yourself" ON
+    "CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR" OFF)
 
 find_package(fmt CONFIG REQUIRED)
 find_package(xxHash CONFIG REQUIRED)
@@ -36,12 +38,25 @@ bison_target(parser src/idl.yy ${CMAKE_CURRENT_BINARY_DIR}/parser.cpp)
 flex_target(scanner src/idl.ll ${CMAKE_CURRENT_BINARY_DIR}/scanner.cpp)
 add_flex_bison_dependency(scanner parser)
 
+if(IDLC_REBUILD_API)
+    find_package(idlc CONFIG REQUIRED)
+    idlc_compile(NAME api WARN_AS_ERRORS
+        SOURCE "${PROJECT_SOURCE_DIR}/specs/api.idl"
+        OUTPUT "${PROJECT_SOURCE_DIR}/include/idlc/idl.h"
+        VERSION ${PROJECT_VERSION}
+        GENERATOR C
+        DEPENDS
+            "${PROJECT_SOURCE_DIR}/specs/api.idl"
+            "${PROJECT_SOURCE_DIR}/specs/options.idl"
+            "${PROJECT_SOURCE_DIR}/specs/results.idl")
+endif()
+
 add_library(idl
     src/compiler.cpp
     src/generator_c.cpp
+    ${IDLC_api_OUTPUTS}
     ${BISON_parser_OUTPUTS}
     ${FLEX_scanner_OUTPUTS})
-add_library(idlc::idl ALIAS idl)
 target_link_libraries(idl PRIVATE fmt::fmt-header-only)
 target_link_libraries(idl PRIVATE xxHash::xxhash)
 target_link_libraries(idl PRIVATE magic_enum::magic_enum)
@@ -86,7 +101,7 @@ if(IDLC_BUILD_TOOL)
     target_link_libraries(${PROJECT_NAME} PRIVATE fmt::fmt-header-only)
     target_link_libraries(${PROJECT_NAME} PRIVATE xxHash::xxhash)
     target_link_libraries(${PROJECT_NAME} PRIVATE magic_enum::magic_enum)
-    target_link_libraries(${PROJECT_NAME} PRIVATE idlc::idl)
+    target_link_libraries(${PROJECT_NAME} PRIVATE idl)
     target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
     target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
     target_include_directories(${PROJECT_NAME} PRIVATE "$<$<BOOL:${FLEX_INCLUDE_DIR}>:${FLEX_INCLUDE_DIR}>")
@@ -114,6 +129,7 @@ if(IDLC_BUILD_TOOL)
     endif()
     list(APPEND IDLC_TARGETS ${PROJECT_NAME})
 endif()
+add_library(idlc::idl ALIAS idl)
 
 configure_package_config_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/${PROJECT_NAME}-config.cmake.in" 
@@ -135,7 +151,38 @@ install(
         "${PROJECT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake"
         "${PROJECT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
     DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/${PROJECT_NAME})
+install(DIRECTORY include/ DESTINATION include)
 
 if(IDLC_BUILD_PACKAGES)
     include(cmake/package.cmake)
+endif()
+
+if(TARGET ${PROJECT_NAME})
+    function(idlc_compile)
+        set(options WARN_AS_ERRORS)
+        set(oneValueArgs NAME GENERATOR SOURCE OUTPUT VERSION)
+        set(multiValueArgs IMPORTS DEPENDS)
+        cmake_parse_arguments(PARSE_ARGV 0 IDLC_ARG "${options}" "${oneValueArgs}" "${multiValueArgs}")
+        set(IDLC_ARG_CMD "")
+        if(IDLC_ARG_WARN_AS_ERRORS)
+            list(APPEND IDLC_ARG_CMD "-w")
+        endif()
+        if(IDLC_ARG_VERSION)
+            list(APPEND IDLC_ARG_CMD "--apiver" ${IDLC_ARG_VERSION})
+        endif()
+        foreach(IMPORT ${IDLC_ARG_IMPORTS})
+            list(APPEND IDLC_ARG_CMD "-i" "\"${IMPORT}\"")
+        endforeach()
+        string(TOLOWER ${IDLC_ARG_GENERATOR} IDLC_ARG_GEN)
+        set(IDLC_TARGET_OUTPUTS ${IDLC_ARG_OUTPUT})
+        if(IDLC_ARG_GEN STREQUAL "c")
+            get_filename_component(IDLC_ARG_OUTPUT "${IDLC_ARG_OUTPUT}/../" ABSOLUTE)
+        endif()
+        add_custom_command(OUTPUT ${IDLC_TARGET_OUTPUTS}
+            COMMAND ${PROJECT_NAME}::${PROJECT_NAME} ${IDLC_ARG_CMD} -g ${IDLC_ARG_GEN} -o ${IDLC_ARG_OUTPUT} ${IDLC_ARG_SOURCE}
+            VERBATIM
+            DEPENDS ${IDLC_ARG_SOURCE} ${IDLC_ARG_DEPENDS}
+            COMMENT "[idlc] Building IDL")
+        set(IDLC_${IDLC_ARG_NAME}_OUTPUTS ${IDLC_TARGET_OUTPUTS} PARENT_SCOPE)  
+    endfunction()
 endif()

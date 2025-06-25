@@ -11,8 +11,6 @@ enum Result [errorcode]
 @ TODO.
 @ TODO. [detail]
 enum Status
-    const OK @ Status OK
-
     const W1001 : 1001 [tokenizer(0)] @ Missing 'author' attribute
     const W1002 [tokenizer(0)] @ Missing 'copyright' attribute
 

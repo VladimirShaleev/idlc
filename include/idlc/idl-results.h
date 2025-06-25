@@ -34,7 +34,6 @@ typedef enum
  */
 typedef enum
 {
-    IDL_STATUS_OK       = 0, /**< Status OK */
     IDL_STATUS_W1001    = 1001, /**< Missing 'author' attribute */
     IDL_STATUS_W1002    = 1002, /**< Missing 'copyright' attribute */
     IDL_STATUS_E2001    = 2001, /**< Unexpected character */

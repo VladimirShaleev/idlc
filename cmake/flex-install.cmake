@@ -1,7 +1,7 @@
 find_package(FLEX 2.6.4)
 if(NOT FLEX_FOUND)
     include(ExternalProject)
-    if(CMAKE_HOST_WIN32)
+    if(CMAKE_HOST_WIN32 OR WIN32 OR DEFINED ENV{SystemRoot})
         set(WINFLEXBISON_VERSION_INSTALL "2.5.24")
         message(STATUS "flex not found, try download flex from winflexbison ${WINFLEXBISON_VERSION_INSTALL}")
 

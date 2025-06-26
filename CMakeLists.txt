@@ -4,8 +4,12 @@ include(cmake/version.cmake)
 include(cmake/vcpkg.cmake)
 
 option(IDLC_BUILD_TOOL "Build the idl compiler tool" ON)
+option(IDLC_USE_IDLC "Use idlc to rebuild .idl files" ON)
 if(IDLC_BUILD_TOOL)
     list(APPEND VCPKG_MANIFEST_FEATURES "tool")
+endif()
+if(IDLC_USE_IDLC)
+    list(APPEND VCPKG_MANIFEST_FEATURES "idlc")
 endif()
 
 project(idlc
@@ -21,7 +25,6 @@ include(cmake/flex-install.cmake)
 include(cmake/bison-install.cmake)
 
 option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
-option(IDLC_USE_IDLC "Use idlc to rebuild .idl files" ON)
 option(IDLC_MSVC_DYNAMIC_RUNTIME "Link dynamic runtime library instead of static" OFF)
 cmake_dependent_option(IDLC_ENABLE_INSTALL "Enable installation" OFF
     "CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR" ON)
@@ -34,15 +37,13 @@ find_package(magic_enum CONFIG REQUIRED)
 if(IDLC_BUILD_TOOL)
     find_package(argparse CONFIG REQUIRED)
 endif()
-if(IDLC_USE_IDLC)
-    find_package(idlc CONFIG REQUIRED)
-endif()
 
 bison_target(parser src/idl.yy ${CMAKE_CURRENT_BINARY_DIR}/parser.cpp)
 flex_target(scanner src/idl.ll ${CMAKE_CURRENT_BINARY_DIR}/scanner.cpp)
 add_flex_bison_dependency(scanner parser)
 
 if(IDLC_USE_IDLC)
+    find_package(idlc CONFIG REQUIRED)
     idlc_compile(NAME api WARN_AS_ERRORS
         SOURCE "${PROJECT_SOURCE_DIR}/specs/api.idl"
         OUTPUT "${PROJECT_SOURCE_DIR}/include/idlc/idl.h"
@@ -60,7 +61,7 @@ add_library(idl
     ${IDLC_api_OUTPUTS}
     ${BISON_parser_OUTPUTS}
     ${FLEX_scanner_OUTPUTS})
-target_link_libraries(idl PRIVATE fmt::fmt-header-only)
+target_link_libraries(idl PRIVATE fmt::fmt)
 target_link_libraries(idl PRIVATE xxHash::xxhash)
 target_link_libraries(idl PRIVATE magic_enum::magic_enum)
 target_include_directories(idl PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -101,14 +102,8 @@ if(IDLC_BUILD_TOOL)
     add_executable(${PROJECT_NAME} src/main.cpp)
     add_executable(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
     target_link_libraries(${PROJECT_NAME} PRIVATE argparse::argparse)
-    target_link_libraries(${PROJECT_NAME} PRIVATE fmt::fmt-header-only)
-    target_link_libraries(${PROJECT_NAME} PRIVATE xxHash::xxhash)
     target_link_libraries(${PROJECT_NAME} PRIVATE magic_enum::magic_enum)
     target_link_libraries(${PROJECT_NAME} PRIVATE idl)
-    target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-    target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-    target_include_directories(${PROJECT_NAME} PRIVATE "$<$<BOOL:${FLEX_INCLUDE_DIR}>:${FLEX_INCLUDE_DIR}>")
-    target_compile_definitions(${PROJECT_NAME} PRIVATE $<$<CONFIG:Debug>:YYDEBUG>)
     target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
     set_target_properties(${PROJECT_NAME} PROPERTIES
         CXX_STANDARD_REQUIRED ON

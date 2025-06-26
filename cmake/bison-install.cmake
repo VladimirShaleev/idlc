@@ -1,7 +1,7 @@
 find_package(BISON 3.7.4)
 if(NOT BISON_FOUND)
     include(ExternalProject)
-    if(CMAKE_HOST_WIN32)
+    if(CMAKE_HOST_WIN32 OR WIN32 OR DEFINED ENV{SystemRoot})
         set(WINFLEXBISON_VERSION_INSTALL "2.5.24")
         message(STATUS "bison not found, try download bison from winflexbison ${WINFLEXBISON_VERSION_INSTALL}")
 

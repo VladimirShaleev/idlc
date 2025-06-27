@@ -26,8 +26,8 @@ include(cmake/bison-install.cmake)
 
 option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 option(IDLC_MSVC_DYNAMIC_RUNTIME "Link dynamic runtime library instead of static" OFF)
-cmake_dependent_option(IDLC_ENABLE_INSTALL "Enable installation" OFF
-    "CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR" ON)
+cmake_dependent_option(IDLC_ENABLE_INSTALL "Enable installation" ON
+    "CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR" OFF)
 cmake_dependent_option(IDLC_BUILD_PACKAGES "Build packages" ON
     IDLC_ENABLE_INSTALL OFF)
 

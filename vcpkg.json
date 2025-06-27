@@ -14,7 +14,7 @@
         "argparse"
       ]
     },
-    "idlc" : {
+    "idlc": {
       "description": "Use idlc to rebuild .idl files",
       "dependencies": [
         "idlc"

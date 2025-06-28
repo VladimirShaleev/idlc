@@ -90,7 +90,7 @@ public:
                     return it->second;
                 }
             }
-            decl = decl->parent->as<ASTDecl>();
+            decl = decl->parent ? decl->parent->as<ASTDecl>() : nullptr;
         }
         err<IDL_STATUS_E2032>(loc, name);
     }

@@ -46,7 +46,7 @@ enum Generator
     const C @ C generator
     // const Cpp @ TODO:
     // const Python @ TODO:
-    // const Js @ TODO:
+    const Js : 3 @ TODO:
     // const TypeScript @ TODO:
     // const CSharp @ TODO:
     // const Java @ TODO:

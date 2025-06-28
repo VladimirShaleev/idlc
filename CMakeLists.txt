@@ -58,6 +58,7 @@ endif()
 add_library(idl
     src/compiler.cpp
     src/generator_c.cpp
+    src/generator_js.cpp
     ${IDLC_api_OUTPUTS}
     ${BISON_parser_OUTPUTS}
     ${FLEX_scanner_OUTPUTS})

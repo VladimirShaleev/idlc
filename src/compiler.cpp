@@ -9,6 +9,12 @@ void generateC(idl::Context& ctx,
                idl_data_t writerData,
                std::span<idl_utf8_t> includes);
 
+void generateJs(idl::Context& ctx,
+                const std::filesystem::path& out,
+                idl_write_callback_t writer,
+                idl_data_t writerData,
+                std::span<idl_utf8_t> includes);
+
 struct _idl_compiler : public idl::Object {};
 
 namespace idl {
@@ -63,6 +69,9 @@ public:
             switch (generator) {
                 case IDL_GENERATOR_C:
                     generateC(context, output, writer, writerData, std::span{ additions.data(), additions.size() });
+                    break;
+                case IDL_GENERATOR_JS:
+                    generateJs(context, output, writer, writerData, std::span{ additions.data(), additions.size() });
                     break;
                 default:
                     assert(!"unreachable code");

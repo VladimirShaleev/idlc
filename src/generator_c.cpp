@@ -13,10 +13,6 @@ struct Header {
     bool externC;
     idl_write_callback_t writer;
     idl_data_t writerData;
-
-    friend std::ostream& operator<<(std::ostream& os, const Header& header) {
-        return os << header.filename;
-    }
 };
 
 struct DocRef : Visitor {

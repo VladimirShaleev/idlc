@@ -220,8 +220,10 @@ struct ASTDecl : ASTNode {
     std::string fullname() const {
         assert(name.length() > 0);
         std::string str{};
-        if (auto parentDecl = parent->as<ASTDecl>()) {
-            str = parentDecl->fullname() + '.';
+        if (parent) {
+            if (auto parentDecl = parent->as<ASTDecl>()) {
+                str = parentDecl->fullname() + '.';
+            }
         }
         return str + name;
     }

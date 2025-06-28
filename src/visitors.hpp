@@ -158,8 +158,10 @@ struct CName : Visitor {
 
     static std::string cname(ASTDecl* decl, bool upper = false) {
         auto name = cnameDecl(decl, upper);
-        if (auto parentDecl = decl->parent->as<ASTDecl>()) {
-            return cname(parentDecl, upper) + '_' + name;
+        if (decl->parent) {
+            if (auto parentDecl = decl->parent->as<ASTDecl>()) {
+                return cname(parentDecl, upper) + '_' + name;
+            }
         }
         return name;
     }

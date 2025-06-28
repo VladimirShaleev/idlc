@@ -52,8 +52,20 @@ struct JsName : Visitor {
         str = pascalCase(node);
     }
 
+    void visit(ASTField* node) override {
+        str = camelCase(node);
+    }
+
     void discarded(ASTNode*) override {
         assert(!"Js name is missing");
+    }
+
+    static std::string camelCase(ASTDecl* decl) {
+        std::vector<int>* nums = nullptr;
+        if (auto attr = decl->findAttr<ASTAttrTokenizer>()) {
+            nums = &attr->nums;
+        }
+        return convert(decl->name, Case::CamelCase, nums);
     }
 
     static std::string pascalCase(ASTDecl* decl) {
@@ -65,6 +77,46 @@ struct JsName : Visitor {
     }
 
     std::string str;
+};
+
+struct DefaultValue : Visitor {
+    void visit(ASTStr* node) override {
+        value = "String(val(\"\"))";
+    }
+
+    void visit(ASTUint32* node) override {
+        value = "0";
+    }
+
+    void visit(ASTEnum* node) override {
+        CName cname;
+        node->consts.front()->accept(cname);
+        value = cname.str;
+    }
+
+    void discarded(ASTNode*) override {
+        assert(!"Default value is missing");
+    }
+
+    std::string value;
+};
+
+struct DeclDefaultValue : Visitor {
+    void visit(ASTField* node) override {
+        if (auto attr = node->findAttr<ASTAttrValue>()) {
+        } else {
+            auto type = node->findAttr<ASTAttrType>()->type->decl;
+            DefaultValue defValue;
+            type->accept(defValue);
+            value = defValue.value;
+        }
+    }
+
+    void discarded(ASTNode*) override {
+        assert(!"Decl default value is missing");
+    }
+
+    std::string value;
 };
 
 static std::string moduleName(idl::Context& ctx) {
@@ -207,6 +259,26 @@ static void generateNonTrivialTypes(idl::Context& ctx, std::ostream& stream) {
 
             fmt::println(stream, "class {} {{", jsname.str);
             fmt::println(stream, "public:");
+
+            for (auto field : node->fields) {
+                field->accept(jsname);
+
+                DeclDefaultValue value;
+                field->accept(value);
+
+                auto isArray = field->findAttr<ASTAttrArray>() != nullptr;
+                auto isRef   = field->findAttr<ASTAttrRef>() != nullptr;
+                auto type    = field->findAttr<ASTAttrType>()->type->decl;
+                IsTrivial trivial(isArray, isRef);
+                type->accept(trivial);
+                if (trivial.trivial) {
+                    CName cname;
+                    type->accept(cname);
+                    fmt::println(stream, "    {} {}{{{}}};", cname.str, jsname.str, value.value);
+                } else {
+                }
+            }
+
             fmt::println(stream, "}};");
             fmt::println(stream, "");
         }

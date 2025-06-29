@@ -101,9 +101,32 @@ struct DefaultValue : Visitor {
     std::string value;
 };
 
-struct DeclDefaultValue : Visitor {
+struct Value : Visitor {
     void visit(ASTField* node) override {
         if (auto attr = node->findAttr<ASTAttrValue>()) {
+            if (auto intStr = attr->value->as<ASTLiteralStr>()) {
+                auto str = intStr->value;
+                auto pos = str.find('\"');
+                while (pos != std::string::npos) {
+                    str.replace(pos, 1, "\\\"");
+                    pos = str.find('\"', pos + 2);
+                }
+                value = "String(val(\"" + str + "\"))";
+            } else if (auto litInt = attr->value->as<ASTLiteralInt>()) {
+                value = std::to_string(litInt->value);
+            } else if (auto litBool = attr->value->as<ASTLiteralBool>()) {
+                value = litBool->value ? "true" : "false";
+            } else if (auto litConsts = attr->value->as<ASTLiteralConsts>()) {
+                CName cname;
+                for (auto decl : litConsts->decls) {
+                    if (value.length() > 0) {
+                        value += " | ";
+                    }
+                    auto ec = decl->decl->as<ASTEnumConst>();
+                    ec->accept(cname);
+                    value += cname.str;
+                }
+            }
         } else {
             auto type = node->findAttr<ASTAttrType>()->type->decl;
             DefaultValue defValue;
@@ -263,7 +286,7 @@ static void generateNonTrivialTypes(idl::Context& ctx, std::ostream& stream) {
             for (auto field : node->fields) {
                 field->accept(jsname);
 
-                DeclDefaultValue value;
+                Value value;
                 field->accept(value);
 
                 auto isArray = field->findAttr<ASTAttrArray>() != nullptr;

@@ -326,6 +326,18 @@ public:
                         err<IDL_STATUS_E2077>(field->location, field->name, node->fullname());
                     }
                 }
+                if (auto value = field->findAttr<ASTAttrValue>()) {
+                    if (auto literalConsts = value->value->as<ASTLiteralConsts>()) {
+                        std::set<ASTDecl*> uniqueDecls;
+                        for (auto declRef : literalConsts->decls) {
+                            auto decl = findSymbol(node, declRef->location, declRef);
+                            if (uniqueDecls.contains(decl)) {
+                                err<IDL_STATUS_E2039>(decl->location, decl->fullname());
+                            }
+                            uniqueDecls.insert(decl);
+                        }
+                    }
+                }
             }
         });
         for (auto field : needAddType) {

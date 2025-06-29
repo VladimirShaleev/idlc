@@ -13,7 +13,7 @@ struct Stream {
 };
 
 struct IsTrivial : Visitor {
-    IsTrivial(bool isArray = false, bool isRef = false) noexcept : trivial(!isArray && !isRef) {
+    IsTrivial(bool isArray = false) noexcept : trivial(!isArray) {
     }
 
     void visit(ASTStr*) override {
@@ -29,8 +29,7 @@ struct IsTrivial : Visitor {
             for (auto field : node->fields) {
                 auto type    = field->findAttr<ASTAttrType>()->type->decl;
                 auto isArray = field->findAttr<ASTAttrArray>() != nullptr;
-                auto isRef   = field->findAttr<ASTAttrRef>() != nullptr && !isArray && !type->is<ASTTrivialType>();
-                IsTrivial isTrivial(isArray, isRef);
+                IsTrivial isTrivial(isArray);
                 type->accept(isTrivial);
                 trivial = isTrivial.trivial;
                 if (!trivial) {
@@ -446,12 +445,12 @@ static void generateNonTrivialTypes(idl::Context& ctx, std::ostream& stream) {
                 field->accept(jsname);
                 auto type    = field->findAttr<ASTAttrType>()->type->decl;
                 auto isArray = field->findAttr<ASTAttrArray>() != nullptr;
-                auto isRef   = field->findAttr<ASTAttrRef>() != nullptr && !isArray && !type->is<ASTTrivialType>();
+                auto isRef   = field->findAttr<ASTAttrRef>();
 
                 Value value(isArray);
                 field->accept(value);
 
-                IsTrivial trivial(isArray, isRef);
+                IsTrivial trivial(isArray);
                 type->accept(trivial);
                 std::string typeStr;
                 if (trivial.trivial) {
@@ -472,11 +471,70 @@ static void generateNonTrivialTypes(idl::Context& ctx, std::ostream& stream) {
             const auto cStruct = cname.str;
 
             fmt::println(stream, "");
-            fmt::println(stream, "    const {}* get() {{", cStruct);
+            fmt::println(stream, "    {}* get() {{", cStruct);
             for (const auto& [field, name, type, trivial, isArray, isRef] : fields) {
                 field->accept(cname);
                 if (trivial) {
-                    fmt::println(stream, "        _raw.{} = {};", cname.str, name);
+                    fmt::println(stream, "        _raw.{} = {}{};", cname.str, isRef ? "&" : "", name);
+                } else if (isArray) {
+                    if (type->is<ASTStruct>()) {
+                        IsTrivial typeTrivial{};
+                        type->accept(typeTrivial);
+                        if (typeTrivial.trivial) {
+                            CName ctype;
+                            type->accept(ctype);
+                            fmt::println(stream, "        _raw_{} = vecFromJSArray<{}>(triv3);", name, ctype.str, name);
+                        } else {
+                            type->accept(jsname);
+                            fmt::println(stream,
+                                         "        auto raw_{}Vec = vecFromJSArray<{}*>({}, allow_raw_pointers());",
+                                         name,
+                                         jsname.str,
+                                         name);
+                            fmt::println(stream, "        _raw_{}.resize(raw_{}Vec.size());", name, name);
+                            fmt::println(stream, "        for (size_t i = 0; i < raw_{}Vec.size(); ++i) {{", name);
+                            fmt::println(stream, "            _raw_{}[i] = *raw_{}Vec[i]->get();", name, name);
+                            fmt::println(stream, "        }}");
+                        }
+                    } else if (type->is<ASTStr>()) {
+                        fmt::println(stream, "        _raw_{}Data = vecFromJSArray<std::string>({});", name, name);
+                        fmt::println(stream, "        _raw_{}.resize(_raw_{}Data.size());", name, name);
+                        fmt::println(stream, "        for (size_t i = 0; i < _raw_{}Data.size(); ++i) {{", name);
+                        fmt::println(stream, "            _raw_{}[i] = _raw_{}Data[i].c_str();", name, name);
+                        fmt::println(stream, "        }}");
+                    } else {
+                        CName ctype;
+                        type->accept(ctype);
+                        fmt::println(
+                            stream, "        _raw_{} = convertJSArrayToNumberVector<{}>({});", name, ctype.str, name);
+                    }
+                    if (field->findAttr<ASTAttrArray>()->ref) {
+                        fmt::println(stream, "        _raw.{} = _raw_{}.data();", cname.str, name);
+                    } else {
+                        fmt::println(stream,
+                                     "        for (size_t i = 0; i < std::size(_raw.{}) && i < _raw_{}.size(); ++i) {{",
+                                     cname.str,
+                                     name);
+                        fmt::println(stream, "            _raw.{}[i] = _raw_{}[i];", cname.str, name);
+                        fmt::println(stream, "        }}");
+                    }
+                } else if (type->is<ASTStr>()) {
+                    fmt::println(stream, "        _raw_{} = {}.as<std::string>();", name, name);
+                    fmt::println(stream, "        _raw.{} = _raw_{}.c_str();", cname.str, name);
+                } else if (type->is<ASTStruct>()) {
+                    if (isRef) {
+                        fmt::println(stream, "        _raw_{} = *{}.get();", name, name);
+                        fmt::println(stream, "        _raw.{} = &_raw_{};", cname.str, name);
+                    } else {
+                        fmt::println(stream, "        _raw.{} = *{}.get();", cname.str, name);
+                    }
+                } else if (type->is<ASTBool>()) {
+                    if (isRef) {
+                        fmt::println(stream, "        _raw_{} = {} ? 1 : 0;", name, name);
+                        fmt::println(stream, "        _raw.{} = {}_raw_{};", cname.str, isRef ? "&" : "", name);
+                    } else {
+                        fmt::println(stream, "        _raw.{} = {} ? 1 : 0;", cname.str, name);
+                    }
                 }
             }
             fmt::println(stream, "        return &_raw;");
@@ -499,6 +557,10 @@ static void generateNonTrivialTypes(idl::Context& ctx, std::ostream& stream) {
                     if (type->is<ASTStr>()) {
                         cname.str = "std::string";
                     }
+                    if (!(type->is<ASTBool>() && !isRef)) {
+                        fmt::println(stream, "    {} _raw_{}{{}};", cname.str, name);
+                    }
+                } else if (type->is<ASTStruct>() && isRef) {
                     fmt::println(stream, "    {} _raw_{}{{}};", cname.str, name);
                 }
             }

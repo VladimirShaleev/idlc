@@ -337,8 +337,20 @@ static bool isArray(ASTDecl* decl) noexcept {
     return decl->findAttr<ASTAttrArray>() != nullptr;
 }
 
+static bool isRef(ASTDecl* decl) noexcept {
+    return decl->findAttr<ASTAttrRef>() != nullptr;
+}
+
 static ASTDecl* getType(ASTDecl* decl) noexcept {
     return decl->findAttr<ASTAttrType>()->type->decl;
+}
+
+static std::pair<ASTDecl*, int> getSizeDecl(ASTDecl* decl) noexcept {
+    if (auto attr = decl->findAttr<ASTAttrArray>(); attr->ref) {
+        return { attr->decl->decl, 0 };
+    } else {
+        return { nullptr, attr->size };
+    }
 }
 
 static Stream createStream(idl::Context& ctx,
@@ -648,6 +660,36 @@ struct JsConverter<String, {str}> {{
             fmt::println(stream, "struct JsConverter<{}, {}> {{", jsname.str, cname.str);
             fmt::println(stream, "    static {} convert(const {}& obj) {{", jsname.str, cname.str);
             fmt::println(stream, "        return {} {{", jsname.str);
+            for (auto field : node->fields) {
+                auto type      = getType(field);
+                auto isArr     = isArray(field);
+                auto isR       = !isArr && isRef(field);
+                jsname.isArray = isArr;
+                std::string spanBegin;
+                std::string spanEnd;
+                if (isArr) {
+                    const auto [ref, size] = getSizeDecl(field);
+                    std::string value;
+                    if (ref) {
+                        CName cname;
+                        ref->accept(cname);
+                        value = "size_t(obj." + cname.str + ")";
+                    } else {
+                        value = std::to_string(size);
+                    }
+                    spanBegin = "std::span{";
+                    spanEnd   = ", " + value + "}";
+                }
+                type->accept(jsname);
+                field->accept(cname);
+                fmt::println(stream,
+                             "            jsconvert<{}>({}{}obj.{}{}),",
+                             jsname.str,
+                             isR ? "*" : "",
+                             spanBegin,
+                             cname.str,
+                             spanEnd);
+            }
             fmt::println(stream, "        }};");
             fmt::println(stream, "    }}");
             fmt::println(stream, "}};");

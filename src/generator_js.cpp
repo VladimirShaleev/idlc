@@ -380,6 +380,11 @@ static void generateIncludes(idl::Context& ctx, std::ostream& stream) {
     fmt::println(stream, "");
     fmt::println(stream, "#include \"{}\"", libHeader);
     fmt::println(stream, "");
+    fmt::println(stream, "#include <type_traits>");
+    fmt::println(stream, "#include <vector>");
+    fmt::println(stream, "#include <list>");
+    fmt::println(stream, "#include <span>");
+    fmt::println(stream, "");
     fmt::println(stream, "using namespace emscripten;");
     fmt::println(stream, "");
 }
@@ -387,7 +392,7 @@ static void generateIncludes(idl::Context& ctx, std::ostream& stream) {
 static void generateTypes(idl::Context& ctx, std::ostream& stream) {
     fmt::println(stream, "EMSCRIPTEN_DECLARE_VAL_TYPE(String);");
     ctx.filter<ASTTrivialType>([&stream](ASTTrivialType* trivialType) {
-        if (!trivialType->is<ASTVoid>()) {
+        if (!trivialType->is<ASTVoid>() && !trivialType->is<ASTChar>()) {
             JsName jsname(true);
             trivialType->accept(jsname);
             fmt::println(stream, "EMSCRIPTEN_DECLARE_VAL_TYPE({});", jsname.str);
@@ -539,7 +544,7 @@ static void generateClassDeclarations(idl::Context& ctx, std::ostream& stream) {
 static void generateArrItems(idl::Context& ctx, std::ostream& stream) {
     fmt::println(stream, "template <typename> struct ArrItem;");
     auto addArrItem = [&stream](ASTDecl* decl) {
-        if (!decl->is<ASTVoid>()) {
+        if (!decl->is<ASTVoid>() && !decl->is<ASTChar>()) {
             JsName jsname(true);
             decl->accept(jsname);
             const auto arrname = jsname.str;

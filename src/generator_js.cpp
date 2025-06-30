@@ -1008,6 +1008,27 @@ static void generateRegisterTypes(idl::Context& ctx, std::ostream& stream) {
     fmt::println(stream, "");
 }
 
+static void generateEnums(idl::Context& ctx, std::ostream& stream) {
+    ctx.filter<ASTEnum>([&stream](ASTEnum* node) {
+        if (node->findAttr<ASTAttrErrorCode>() == nullptr) {
+            CName cname;
+            node->accept(cname);
+            fmt::println(stream, "    enum_<{}>(\"{}\")", cname.str, getNameTS(node));
+            for (auto ec : node->consts) {
+                std::vector<int>* nums = nullptr;
+                if (auto attr = ec->findAttr<ASTAttrTokenizer>()) {
+                    nums = &attr->nums;
+                }
+                auto name = convert(ec->name, Case::ScreamingSnakeCase, nums);
+                ec->accept(cname);
+                fmt::println(stream, "        .value(\"{}\", {})", name, cname.str);
+            }
+            fmt::println(stream, "        ;");
+            fmt::println(stream, "");
+        }
+    });
+}
+
 static void generateEndBindings(idl::Context& ctx, std::ostream& stream) {
     fmt::println(stream, "}}");
 }
@@ -1029,5 +1050,6 @@ void generateJs(idl::Context& ctx,
     generateCConverters(ctx, stream.stream);
     generateBeginBindings(ctx, stream.stream);
     generateRegisterTypes(ctx, stream.stream);
+    generateEnums(ctx, stream.stream);
     generateEndBindings(ctx, stream.stream);
 }

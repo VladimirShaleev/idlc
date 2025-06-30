@@ -353,6 +353,52 @@ static std::pair<ASTDecl*, int> getSizeDecl(ASTDecl* decl) noexcept {
     }
 }
 
+static std::string getNameTS(ASTDecl* decl, bool isDeclArr = false) {
+    if (decl->is<ASTStr>()) {
+        return std::string("string") + (isDeclArr ? "[]" : "");
+    } else if (decl->is<ASTBool>()) {
+        return std::string("boolean") + (isDeclArr ? "[]" : "");
+    } else if (decl->is<ASTVoid>()) {
+        return "void";
+    } else if (decl->is<ASTIntegerType>() || decl->is<ASTFloatType>()) {
+        if (isDeclArr) {
+            auto type = decl->name + "Array";
+            if (decl->is<ASTInt64>() || decl->is<ASTUint64>()) {
+                type = "Big" + type;
+            }
+            return type;
+        }
+        return "number";
+    } else if (auto callback = decl->as<ASTCallback>()) {
+        std::ostringstream ss;
+        ss << '(';
+        bool first = true;
+        for (auto arg : callback->args) {
+            if (arg->findAttr<ASTAttrUserData>() != nullptr || arg->findAttr<ASTAttrResult>() != nullptr) {
+                continue;
+            }
+            if (!first) {
+                ss << ", ";
+            }
+            first = false;
+            JsName jsname;
+            arg->accept(jsname);
+            ss << jsname.str << ": " << getNameTS(getType(arg), isArray(arg));
+        }
+        ss << ") => " << getNameTS(getType(callback));
+        auto type = ss.str();
+        if (isDeclArr) {
+            type = '(' + type + ")[]";
+        }
+        return type;
+    }
+    std::vector<int>* nums = nullptr;
+    if (auto attr = decl->findAttr<ASTAttrTokenizer>()) {
+        nums = &attr->nums;
+    }
+    return convert(decl->name, Case::PascalCase, nums) + (isDeclArr ? "[]" : "");
+}
+
 static Stream createStream(idl::Context& ctx,
                            const std::filesystem::path& out,
                            idl_write_callback_t writer,
@@ -943,6 +989,25 @@ static void generateBeginBindings(idl::Context& ctx, std::ostream& stream) {
     fmt::println(stream, "EMSCRIPTEN_BINDINGS({}) {{", moduleName);
 }
 
+static void generateRegisterTypes(idl::Context& ctx, std::ostream& stream) {
+    auto isArr   = false;
+    auto addType = [&stream, &isArr](ASTDecl* decl) {
+        if (!decl->is<ASTVoid>() && !decl->is<ASTChar>()) {
+            JsName jsname(isArr);
+            decl->accept(jsname);
+            fmt::println(stream, "    register_type<{}>(\"{}\");", jsname.str, getNameTS(decl, isArr));
+        }
+    };
+    fmt::println(stream, "    register_type<String>(\"string\");");
+    ctx.filter<ASTCallback>(addType);
+    isArr = true;
+    ctx.filter<ASTTrivialType>(addType);
+    ctx.filter<ASTStruct>(addType);
+    ctx.filter<ASTInterface>(addType);
+    ctx.filter<ASTCallback>(addType);
+    fmt::println(stream, "");
+}
+
 static void generateEndBindings(idl::Context& ctx, std::ostream& stream) {
     fmt::println(stream, "}}");
 }
@@ -963,5 +1028,6 @@ void generateJs(idl::Context& ctx,
     generateJsConverters(ctx, stream.stream);
     generateCConverters(ctx, stream.stream);
     generateBeginBindings(ctx, stream.stream);
+    generateRegisterTypes(ctx, stream.stream);
     generateEndBindings(ctx, stream.stream);
 }

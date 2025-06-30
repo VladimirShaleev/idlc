@@ -391,6 +391,11 @@ static void generateIncludes(idl::Context& ctx, std::ostream& stream) {
 
 static void generateTypes(idl::Context& ctx, std::ostream& stream) {
     fmt::println(stream, "EMSCRIPTEN_DECLARE_VAL_TYPE(String);");
+    ctx.filter<ASTCallback>([&stream](ASTCallback* callback) {
+        JsName jsname;
+        callback->accept(jsname);
+        fmt::println(stream, "EMSCRIPTEN_DECLARE_VAL_TYPE({});", jsname.str);
+    });
     ctx.filter<ASTTrivialType>([&stream](ASTTrivialType* trivialType) {
         if (!trivialType->is<ASTVoid>() && !trivialType->is<ASTChar>()) {
             JsName jsname(true);
@@ -409,7 +414,7 @@ static void generateTypes(idl::Context& ctx, std::ostream& stream) {
         fmt::println(stream, "EMSCRIPTEN_DECLARE_VAL_TYPE({});", jsname.str);
     });
     ctx.filter<ASTCallback>([&stream](ASTCallback* callback) {
-        JsName jsname;
+        JsName jsname(true);
         callback->accept(jsname);
         fmt::println(stream, "EMSCRIPTEN_DECLARE_VAL_TYPE({});", jsname.str);
     });
@@ -553,6 +558,9 @@ static void generateArrItems(idl::Context& ctx, std::ostream& stream) {
             std::string typed = "";
             if (decl->is<ASTIntegerType>() || decl->is<ASTFloatType>()) {
                 typed = decl->name + "Array";
+                if (decl->is<ASTInt64>() || decl->is<ASTUint64>()) {
+                    typed = "Big" + typed;
+                }
             }
             fmt::println(
                 stream,

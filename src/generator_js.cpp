@@ -698,6 +698,233 @@ struct JsConverter<String, {str}> {{
     });
 }
 
+static void generateCConverters(idl::Context& ctx, std::ostream& stream) {
+    CName cname;
+    ASTDeclRef ref;
+    ref.parent = ctx.api();
+    ref.name   = "Char";
+    ref.decl   = nullptr;
+    ctx.resolveType(&ref)->accept(cname);
+    auto charType = cname.str;
+    ref.name      = "Bool";
+    ref.decl      = nullptr;
+    ctx.resolveType(&ref)->accept(cname);
+    auto boolType = cname.str;
+    ref.name      = "Str";
+    ref.decl      = nullptr;
+    ctx.resolveType(&ref)->accept(cname);
+    auto strType = cname.str;
+
+    fmt::println(stream,
+                 R"(struct CContext {{
+    template <typename T>
+    T* allocate() {{
+        const auto size = allocData<T>();
+        auto& buffer = buffers.back();
+        auto result = new(buffer.data.get() + buffer.offset) T{{}};
+        buffer.offset += size;
+        return result;
+    }}
+
+    template <typename T>
+    T* allocateArray(size_t count) {{
+        const auto size = allocData<T>(count);
+        auto& buffer = buffers.back();
+        auto result = new(buffer.data.get() + buffer.offset) T[count]{{}};
+        buffer.offset += size;
+        return result;
+    }}
+
+    template <typename T>
+    size_t allocData(size_t count = 1) {{
+        static_assert(std::is_trivially_default_constructible_v<T> && std::is_trivially_copyable_v<T>, "T is not trivial type");
+        constexpr auto mask = 7;
+        auto size = (sizeof(T) * count + mask) & ~mask;
+        if (buffers.empty() || buffers.back().offset + size > buffers.back().size) {{
+            buffers.push_back({{}});
+            auto allocSize = std::max(size, Buffer::defaultSize);
+            buffers.back().size = allocSize;
+            buffers.back().data = std::unique_ptr<char[]>(new char[allocSize]); 
+        }}
+        return size;
+    }}
+
+    struct Buffer {{
+        static constexpr size_t defaultSize = 1024;
+        size_t offset{{}};
+        size_t size{{}};
+        std::unique_ptr<char[]> data{{}};
+    }};
+
+    std::list<Buffer> buffers;
+}};
+
+template <typename>
+struct arr_size {{
+}};
+
+template <typename T, typename S>
+struct CConverter {{
+    static T* convert(CContext& ctx, S& obj) {{
+        if constexpr (std::is_integral_v<T>) {{
+            auto vec = convertJSArrayToNumberVector<T>(obj);
+            auto result = ctx.allocateArray<T>(vec.size());
+            memcpy(result, vec.data(), sizeof(T) * vec.size());
+            return result;
+        }} else if (std::is_same_v<T, typename ArrItem<S>::type>) {{
+            using ItemS = typename ArrItem<S>::type;
+            auto vec = vecFromJSArray<ItemS>(obj);
+            auto result = ctx.allocateArray<T>(vec.size());
+            memcpy(result, vec.data(), sizeof(T) * vec.size());
+            return result;
+        }} else {{
+            using ItemS = typename ArrItem<S>::type;
+            auto vec = vecFromJSArray<ItemS>(obj);
+            auto result = ctx.allocateArray<T>(vec.size());
+            for (size_t i = 0; i < vec.size(); ++i) {{
+                auto value = CConverter<T, ItemS>::convert(ctx, vec[i]);
+                if constexpr (std::is_same_v<T, {str}>) {{
+                    result[i] = value;
+                }} else {{
+                    result[i] = *value;
+                }}
+            }}
+            return result;
+        }}
+    }}
+}};
+
+template <typename T, typename S>
+struct CConverter<arr_size<T>, S> {{
+    static T* convert(CContext& ctx, S& obj) {{
+        auto result = ctx.allocate<T>();
+        *result = obj["length"].template as<T>();
+        return result;
+    }}
+}};
+
+template <typename T, typename S>
+inline auto cconvert(CContext& ctx, const S& obj) {{
+    return CConverter<T, S>::convert(ctx, const_cast<S&>(obj));
+}}
+
+template <typename T>
+struct CConverter<T, T> {{
+    static T* convert(CContext& ctx, T& obj) {{
+        return &obj;
+    }}
+}};
+
+template <typename T, typename S>
+struct CConverter<T, std::optional<S>> {{
+    static auto convert(CContext& ctx, std::optional<S> obj) {{
+        return obj ? cconvert<T>(ctx, obj.value()) : nullptr;
+    }}
+}};
+
+template <>
+struct CConverter<{bool}, bool> {{
+    static {bool}* convert(CContext& ctx, bool obj) {{
+        auto result = ctx.allocate<{bool}>();
+        *result = obj ? 1 : 0;
+        return result;
+    }}
+}};
+
+template <>
+struct CConverter<{str}, String> {{
+    static {str} convert(CContext& ctx, String& obj) {{
+        auto str = obj.as<std::string>();
+        auto result = ctx.allocateArray<char>(str.length() + 1);
+        memcpy(result, str.c_str(), str.length());
+        result[str.length()] = '\0';
+        return result;
+    }}
+}};
+
+template <>
+struct CConverter<{char}, String> {{
+    static {char}* convert(CContext& ctx, String& obj) {{
+        auto str = obj.as<std::string>();
+        auto result = ctx.allocate<{char}>();
+        *result = '\0';
+        if (str.length() > 0) {{
+            *result = str[0];
+        }}
+        return result;
+    }}
+}};
+)",
+                 fmt::arg("char", charType),
+                 fmt::arg("bool", boolType),
+                 fmt::arg("str", strType));
+    ctx.filter<ASTStruct>([&stream](ASTStruct* node) {
+        IsTrivial trivial;
+        node->accept(trivial);
+        if (!trivial.trivial) {
+            JsName jsname;
+            node->accept(jsname);
+            CName cname;
+            node->accept(cname);
+            fmt::println(stream, "template <>");
+            fmt::println(stream, "struct CConverter<{}, {}> {{", cname.str, jsname.str);
+            fmt::println(stream, "    static {}* convert(CContext& ctx, {}& obj) {{", cname.str, jsname.str);
+            fmt::println(stream, "        auto result = ctx.allocate<{}>();", cname.str);
+            for (auto field : node->fields) {
+                auto type  = getType(field);
+                auto isArr = isArray(field);
+                auto isR   = isArr || isRef(field) || type->is<ASTStr>();
+                JsName jsname;
+                field->accept(jsname);
+                CName cname;
+                field->accept(cname);
+                const auto fieldCName = cname.str;
+                type->accept(cname);
+                const auto typeCName = cname.str;
+                if (isArr) {
+                    auto [ref, size] = getSizeDecl(field);
+                    if (ref) {
+                        ref->accept(cname);
+                        const auto sizeName = cname.str;
+                        getType(ref)->accept(cname);
+                        fmt::println(stream,
+                                     "        result->{} = *cconvert<arr_size<{}>>(ctx, obj.{});",
+                                     sizeName,
+                                     cname.str,
+                                     jsname.str);
+                    } else {
+                        fmt::println(stream,
+                                     "        auto {}Size = *cconvert<arr_size<size_t>>(ctx, obj.{});",
+                                     jsname.str,
+                                     jsname.str);
+                        fmt::println(stream, "        auto {}MaxSize = std::size(result->{});", jsname.str, fieldCName);
+                        fmt::println(
+                            stream, "        auto {} = cconvert<{}>(ctx, obj.{});", jsname.str, typeCName, jsname.str);
+                        fmt::println(stream,
+                                     "        memcpy(result->{}, {}, std::min({}Size, {}MaxSize) * sizeof({}));",
+                                     fieldCName,
+                                     jsname.str,
+                                     jsname.str,
+                                     jsname.str,
+                                     typeCName);
+                        continue;
+                    }
+                }
+                fmt::println(stream,
+                             "        result->{} = {}cconvert<{}>(ctx, obj.{});",
+                             fieldCName,
+                             isR ? "" : "*",
+                             typeCName,
+                             jsname.str);
+            }
+            fmt::println(stream, "        return result;");
+            fmt::println(stream, "    }}");
+            fmt::println(stream, "}};");
+            fmt::println(stream, "");
+        }
+    });
+}
+
 static void generateBeginBindings(idl::Context& ctx, std::ostream& stream) {
     const auto moduleName = convert(ctx.api()->name, Case::CamelCase);
     fmt::println(stream, "EMSCRIPTEN_BINDINGS({}) {{", moduleName);
@@ -721,6 +948,7 @@ void generateJs(idl::Context& ctx,
     generateClassDeclarations(ctx, stream.stream);
     generateArrItems(ctx, stream.stream);
     generateJsConverters(ctx, stream.stream);
+    generateCConverters(ctx, stream.stream);
     generateBeginBindings(ctx, stream.stream);
     generateEndBindings(ctx, stream.stream);
 }

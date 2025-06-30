@@ -1029,6 +1029,33 @@ static void generateEnums(idl::Context& ctx, std::ostream& stream) {
     });
 }
 
+static void generateValueObjects(idl::Context& ctx, std::ostream& stream) {
+    ctx.filter<ASTStruct>([&stream](ASTStruct* node) {
+        CName cname;
+        JsName jsname;
+        node->accept(jsname);
+        IsTrivial trivial;
+        node->accept(trivial);
+        const auto typeName = jsname.str;
+        fmt::println(stream, "    value_object<{}>(\"{}\")", typeName, getNameTS(node));
+        for (auto field : node->fields) {
+            field->accept(jsname);
+            auto fieldNameJs = jsname.str;
+            std::string fieldNameCpp;
+            if (trivial.trivial) {
+                field->accept(cname);
+                fieldNameCpp = cname.str;
+            } else {
+                field->accept(jsname);
+                fieldNameCpp = jsname.str;
+            }
+            fmt::println(stream, "        .field(\"{}\", &{}::{})", fieldNameJs, typeName, fieldNameCpp);
+        }
+        fmt::println(stream, "        ;");
+        fmt::println(stream, "");
+    });
+}
+
 static void generateEndBindings(idl::Context& ctx, std::ostream& stream) {
     fmt::println(stream, "}}");
 }
@@ -1051,5 +1078,6 @@ void generateJs(idl::Context& ctx,
     generateBeginBindings(ctx, stream.stream);
     generateRegisterTypes(ctx, stream.stream);
     generateEnums(ctx, stream.stream);
+    generateValueObjects(ctx, stream.stream);
     generateEndBindings(ctx, stream.stream);
 }

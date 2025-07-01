@@ -333,6 +333,19 @@ struct Value : Visitor {
     std::string value;
 };
 
+struct Param {
+    ASTDecl* type{};
+    bool outParam{};
+    bool isVector{};
+    bool isSize{};
+    bool isResult{};
+    bool isError{};
+    ASTArg* refArg{};
+    std::string typeName;
+    std::string paramName;
+    std::string jsArgName;
+};
+
 static bool isArray(ASTDecl* decl) noexcept {
     return decl->findAttr<ASTAttrArray>() != nullptr;
 }
@@ -467,95 +480,94 @@ static void generateTypes(idl::Context& ctx, std::ostream& stream) {
     fmt::println(stream, "");
 }
 
-static void generateExceptions(idl::Context& ctx, std::ostream& stream, ASTEnum*& errcode) {
-    errcode = nullptr;
-    ctx.filter<ASTEnum>([&errcode](ASTEnum* en) {
-        if (en->findAttr<ASTAttrErrorCode>()) {
-            errcode = en;
-            return false;
-        }
-        return true;
+static void generateExceptions(idl::Context& ctx, std::ostream& stream) {
+    const auto prefix = convert(ctx.api()->name, Case::PascalCase);
+
+    ASTStr* type{};
+    ctx.filter<ASTStr>([&type](ASTStr* str) {
+        type = str;
+        return false;
     });
-    if (errcode) {
-        const auto prefix = convert(ctx.api()->name, Case::PascalCase);
 
-        CName cname;
-        ASTStr* type{};
-        ctx.filter<ASTStr>([&type](ASTStr* str) {
-            type = str;
-            return false;
-        });
+    CName cname;
+    type->accept(cname);
+    fmt::println(stream, "struct {}Exception : std::runtime_error {{", prefix);
+    fmt::println(stream, "    {}Exception({} message) : std::runtime_error(message) {{", prefix, cname.str);
+    fmt::println(stream, "    }}");
+    fmt::println(stream, "}};");
+    fmt::println(stream, "");
 
-        ASTFunc* errcodeToString = nullptr;
-        ctx.filter<ASTFunc>([&errcodeToString](ASTFunc* func) {
-            if (func->findAttr<ASTAttrErrorCode>()) {
-                errcodeToString = func;
-                return false;
-            }
-            return true;
-        });
-
-        std::string noerrorcodeFirst{};
-        auto noErrors = 0;
-        for (auto ec : errcode->consts) {
-            if (ec->findAttr<ASTAttrNoError>()) {
-                ++noErrors;
-                if (noerrorcodeFirst.empty()) {
-                    ec->accept(cname);
-                    noerrorcodeFirst = cname.str;
-                }
-            }
-        }
-
-        type->accept(cname);
-        fmt::println(stream, "struct {}Exception : std::runtime_error {{", prefix);
-        fmt::println(stream, "    {}Exception({} message) : std::runtime_error(message) {{", prefix, cname.str);
-        fmt::println(stream, "    }}");
-        fmt::println(stream, "}};");
-        fmt::println(stream, "");
-
-        errcode->accept(cname);
-        fmt::println(stream, "void checkResult({} result) {{", cname.str);
-        if (noErrors == 1 && errcodeToString) {
-            errcodeToString->accept(cname);
-            fmt::println(stream, "    if (result != {}) {{", noerrorcodeFirst);
-            fmt::println(stream, "        throw {}Exception({}(result));", prefix, cname.str);
-            fmt::println(stream, "    }}");
-        } else {
-            if (noErrors != 0) {
-                fmt::println(stream, "    switch (result) {{");
-                for (auto ec : errcode->consts) {
-                    if (ec->findAttr<ASTAttrNoError>()) {
-                        ec->accept(cname);
-                        fmt::println(stream, "        case {}:", cname.str);
+    ctx.filter<ASTEnum>([&ctx, &stream, &prefix](ASTEnum* en) {
+        if (en->findAttr<ASTAttrErrorCode>()) {
+            ASTFunc* errcodeToString = nullptr;
+            ctx.filter<ASTFunc>([en, &errcodeToString](ASTFunc* func) {
+                if (func->findAttr<ASTAttrErrorCode>()) {
+                    for (auto arg : func->args) {
+                        if (auto argType = getType(arg); argType == en) {
+                            errcodeToString = func;
+                            return false;
+                        }
                     }
                 }
-                fmt::println(stream, "            return;");
-                fmt::println(stream, "        default:");
-                fmt::println(stream, "            break;");
-                fmt::println(stream, "    }}");
+                return true;
+            });
+
+            CName cname;
+            std::string noerrorcodeFirst{};
+            auto noErrors = 0;
+            for (auto ec : en->consts) {
+                if (ec->findAttr<ASTAttrNoError>()) {
+                    ++noErrors;
+                    if (noerrorcodeFirst.empty()) {
+                        ec->accept(cname);
+                        noerrorcodeFirst = cname.str;
+                    }
+                }
             }
-            if (errcodeToString) {
+
+            en->accept(cname);
+            fmt::println(stream, "void checkResult({} result) {{", cname.str);
+            if (noErrors == 1 && errcodeToString) {
                 errcodeToString->accept(cname);
-                fmt::println(stream, "    throw {}Exception({}(result));", prefix, cname.str);
-            } else {
-                fmt::println(stream, "    switch (result) {{");
-                for (auto ec : errcode->consts) {
-                    if (!ec->findAttr<ASTAttrNoError>()) {
-                        ec->accept(cname);
-                        fmt::println(stream, "        case {}:", cname.str);
-                        fmt::println(stream, "            throw {}Exception(\"{}\");", prefix, cname.str);
-                    }
-                }
-                fmt::println(stream, "        default:");
-                fmt::println(stream, "            assert(!\"unreachable code\");");
-                fmt::println(stream, "            break;");
+                fmt::println(stream, "    if (result != {}) {{", noerrorcodeFirst);
+                fmt::println(stream, "        throw {}Exception({}(result));", prefix, cname.str);
                 fmt::println(stream, "    }}");
+            } else {
+                if (noErrors != 0) {
+                    fmt::println(stream, "    switch (result) {{");
+                    for (auto ec : en->consts) {
+                        if (ec->findAttr<ASTAttrNoError>()) {
+                            ec->accept(cname);
+                            fmt::println(stream, "        case {}:", cname.str);
+                        }
+                    }
+                    fmt::println(stream, "            return;");
+                    fmt::println(stream, "        default:");
+                    fmt::println(stream, "            break;");
+                    fmt::println(stream, "    }}");
+                }
+                if (errcodeToString) {
+                    errcodeToString->accept(cname);
+                    fmt::println(stream, "    throw {}Exception({}(result));", prefix, cname.str);
+                } else {
+                    fmt::println(stream, "    switch (result) {{");
+                    for (auto ec : en->consts) {
+                        if (!ec->findAttr<ASTAttrNoError>()) {
+                            ec->accept(cname);
+                            fmt::println(stream, "        case {}:", cname.str);
+                            fmt::println(stream, "            throw {}Exception(\"{}\");", prefix, cname.str);
+                        }
+                    }
+                    fmt::println(stream, "        default:");
+                    fmt::println(stream, "            assert(!\"unreachable code\");");
+                    fmt::println(stream, "            break;");
+                    fmt::println(stream, "    }}");
+                }
             }
+            fmt::println(stream, "}}");
+            fmt::println(stream, "");
         }
-        fmt::println(stream, "}}");
-        fmt::println(stream, "");
-    }
+    });
 }
 
 static void generateNonTrivialTypes(idl::Context& ctx, std::ostream& stream) {
@@ -984,6 +996,316 @@ struct CConverter<{char}, String> {{
     });
 }
 
+static void generateFunctionReturn(idl::Context& ctx,
+                                   std::ostream& stream,
+                                   ASTDecl* func,
+                                   const std::vector<ASTArg*>& args) {
+    ASTDecl* returnType{};
+    bool returnTypeIsArray{};
+    for (auto arg : args) {
+        if (arg->findAttr<ASTAttrResult>() != nullptr && arg->findAttr<ASTAttrErrorCode>() == nullptr) {
+            returnType        = getType(arg);
+            returnTypeIsArray = isArray(arg);
+        }
+    }
+    if (!returnType) {
+        returnType = getType(func);
+        if (returnType->findAttr<ASTAttrErrorCode>() != nullptr) {
+            returnType = nullptr;
+        }
+    }
+    std::string typeName = "void";
+    if (returnType) {
+        JsName jsname(returnTypeIsArray);
+        returnType->accept(jsname);
+        typeName = jsname.str;
+    }
+    fmt::print(stream, "    {}", typeName);
+}
+
+static void generateFunctionArgs(idl::Context& ctx,
+                                 std::ostream& stream,
+                                 ASTDecl* func,
+                                 const std::vector<ASTArg*>& args,
+                                 const std::map<ASTArg*, ASTArg*>& sizeArgs) {
+    bool first = true;
+    for (auto arg : args) {
+        if (sizeArgs.contains(arg)) {
+            continue;
+        }
+
+        if (arg->findAttr<ASTAttrThis>() != nullptr || arg->findAttr<ASTAttrResult>() != nullptr ||
+            arg->findAttr<ASTAttrUserData>() != nullptr || arg->findAttr<ASTAttrErrorCode>() != nullptr) {
+            continue;
+        }
+
+        auto argType  = getType(arg);
+        auto argIsArr = isArray(arg);
+
+        JsName jsname(argIsArr);
+        argType->accept(jsname);
+        const auto jsTypeName = jsname.str;
+
+        jsname.isArray = false;
+        arg->accept(jsname);
+        const auto jsArgName = jsname.str;
+
+        if (!first) {
+            fmt::print(stream, ", ");
+        }
+        first = false;
+
+        IsTrivial trivial;
+        argType->accept(trivial);
+        auto isR = (!trivial.trivial && !argType->is<ASTBool>()) || argType->is<ASTStruct>();
+
+        fmt::print(stream, "{}{} {}", jsTypeName, isR ? "&" : "", jsArgName);
+    }
+}
+
+static void generateFunctionCall(idl::Context& ctx,
+                                 std::ostream& stream,
+                                 ASTDecl* func,
+                                 const std::vector<ASTArg*>& args,
+                                 bool fetchOnly,
+                                 const std::map<ASTArg*, Param>& params) {
+    bool first = true;
+    for (auto arg : args) {
+        if (!first) {
+            fmt::print(stream, ", ");
+        }
+        first = false;
+        if (auto it = params.find(arg); it != params.end()) {
+            auto& param = it->second;
+            if (param.outParam) {
+                if (param.isVector) {
+                    if (fetchOnly) {
+                        fmt::print(stream, "nullptr");
+                    } else {
+                        fmt::print(stream, "{}.data()", param.paramName);
+                    }
+                } else {
+                    fmt::print(stream, "&{}", param.paramName);
+                }
+            } else {
+                bool isStr = !param.isVector && param.type->is<ASTStr>();
+                bool isIface = param.type->is<ASTInterface>();
+                bool isR   = isRef(arg) || isStr || isIface;
+                fmt::print(stream, "{}{}", isR ? "" : "*", param.paramName);
+            }
+        } else if (arg->findAttr<ASTAttrThis>()) {
+            fmt::print(stream, "_handle");
+        } else {
+            assert(!"unreachable code");
+        }
+    }
+}
+
+static void generateFunction(idl::Context& ctx, std::ostream& stream, ASTDecl* func, const std::vector<ASTArg*>& args) {
+    const auto isCtor = func->findAttr<ASTAttrCtor>() != nullptr;
+    if (isCtor) {
+        JsName jsname;
+        func->parent->accept(jsname);
+        fmt::print(stream, "    {}", jsname.str);
+    } else {
+        JsName jsname;
+        func->accept(jsname);
+        generateFunctionReturn(ctx, stream, func, args);
+        fmt::print(stream, " {}", jsname.str);
+    }
+    std::map<ASTArg*, ASTArg*> sizeArgs;
+    for (auto arg : args) {
+        if (auto attr = arg->findAttr<ASTAttrArray>()) {
+            sizeArgs[attr->decl->decl->as<ASTArg>()] = arg;
+        }
+    }
+    fmt::print(stream, "(");
+    generateFunctionArgs(ctx, stream, func, args, sizeArgs);
+    fmt::println(stream, ") {}{{", func->findAttr<ASTAttrConst>() ? "const " : "");
+
+    std::map<ASTArg*, Param> params;
+    bool needFetchSizes{};
+    bool needContext{};
+
+    for (auto arg : args) {
+        if (arg->findAttr<ASTAttrThis>()) {
+            continue;
+        }
+
+        params[arg] = {};
+        auto& param = params[arg];
+        param.type  = getType(arg);
+
+        JsName jsname;
+        arg->accept(jsname);
+        param.jsArgName = jsname.str;
+        param.paramName = jsname.str + "LocalArg";
+
+        if (auto it = sizeArgs.find(arg); it != sizeArgs.end()) {
+            param.isSize = true;
+            param.refArg = it->second;
+        }
+
+        CName cname;
+        param.type->accept(cname);
+        param.typeName = cname.str;
+
+        param.isVector = arg->findAttr<ASTAttrArray>() != nullptr;
+
+        if (arg->findAttr<ASTAttrOut>() || arg->findAttr<ASTAttrResult>()) {
+            param.isResult = arg->findAttr<ASTAttrResult>() != nullptr;
+            param.isError  = arg->findAttr<ASTAttrErrorCode>() != nullptr;
+            param.outParam = true;
+
+            if (param.isVector) {
+                param.refArg   = arg->findAttr<ASTAttrArray>()->decl->decl->as<ASTArg>();
+                param.typeName = "std::vector<" + param.typeName + '>';
+                needFetchSizes = true;
+            }
+        } else {
+            needContext = true;
+            if (param.isVector) {
+                param.typeName += '*';
+            }
+            if (param.isSize) {
+                param.refArg->accept(jsname);
+                param.jsArgName = jsname.str;
+            }
+        }
+    }
+
+    if (needContext) {
+        fmt::println(stream, "        CContext ctx;");
+    }
+
+    for (auto& [_, param] : params) {
+        if (!param.outParam) {
+            if (param.isSize) {
+                fmt::println(stream,
+                             "        auto {} = cconvert<arr_size<{}>>(ctx, {});",
+                             param.paramName,
+                             param.typeName,
+                             param.jsArgName);
+            } else {
+                fmt::println(stream,
+                             "        auto {} = cconvert<{}>(ctx, {});",
+                             param.paramName,
+                             param.typeName,
+                             param.jsArgName);
+            }
+        }
+    }
+
+    for (auto& [_, param] : params) {
+        if (param.outParam) {
+            fmt::println(stream, "        {} {}{{}};", param.typeName, param.paramName);
+        }
+    }
+
+    if (needFetchSizes) {
+        fmt::print(stream, "        ");
+        auto checkReturnError = getType(func)->findAttr<ASTAttrErrorCode>() != nullptr;
+        if (checkReturnError) {
+            fmt::print(stream, "const auto checkReturnError = ");
+        }
+
+        CName cname;
+        func->accept(cname);
+        fmt::print(stream, "{}(", cname.str);
+        generateFunctionCall(ctx, stream, func, args, true, params);
+        fmt::println(stream, ");");
+        if (checkReturnError) {
+            fmt::println(stream, "        checkResult(checkReturnError);");
+        }
+        for (const auto& [_, param] : params) {
+            if (param.outParam && param.isError) {
+                fmt::println(stream, "        checkResult({});", param.paramName);
+            }
+        }
+        for (const auto& [_, param] : params) {
+            if (param.outParam && param.isVector) {
+                auto& sizeParam = params[param.refArg];
+                fmt::println(stream, "        {}.resize({});", param.paramName, sizeParam.paramName);
+            }
+        }
+    }
+    {
+        fmt::print(stream, "        ");
+        if (!getType(func)->is<ASTVoid>()) {
+            fmt::print(stream, "auto functionReturn = ");
+        }
+        CName cname;
+        func->accept(cname);
+        fmt::print(stream, "{}(", cname.str);
+        generateFunctionCall(ctx, stream, func, args, false, params);
+        fmt::println(stream, ");");
+        if (getType(func)->findAttr<ASTAttrErrorCode>() != nullptr) {
+            fmt::println(stream, "        checkResult(functionReturn);");
+        }
+        for (const auto& [_, param] : params) {
+            if (param.outParam && param.isError) {
+                fmt::println(stream, "        checkResult({});", param.paramName);
+            }
+        }
+        for (const auto& [_, param] : params) {
+            if (param.outParam && !param.isSize && !param.isResult) {
+                // write to out js params
+            }
+        }
+    }
+
+    fmt::println(stream, "    }}");
+    fmt::println(stream, "");
+}
+
+static void generateClasses(idl::Context& ctx, std::ostream& stream) {
+    ctx.filter<ASTInterface>([&ctx, &stream](ASTInterface* node) {
+        JsName jsname;
+        node->accept(jsname);
+        const auto jsTypeStr = jsname.str;
+        CName cname;
+        node->accept(cname);
+        const auto handleTypeStr = cname.str;
+        fmt::println(stream, "class {} {{", jsTypeStr);
+        for (auto method : node->methods) {
+            if (method->findAttr<ASTAttrCtor>() != nullptr) {
+                generateFunction(ctx, stream, method, method->args);
+            }
+        }
+        // Add ctor from handle
+        for (auto method : node->methods) {
+            if (method->findAttr<ASTAttrRefInc>() != nullptr) {
+                // generateFunction(ctx, stream, method, method->args);
+            }
+        }
+        for (auto method : node->methods) {
+            if (method->findAttr<ASTAttrDestroy>() != nullptr) {
+                // generateFunction(ctx, stream, method, method->args);
+            }
+        }
+        for (auto method : node->methods) {
+            if (method->findAttr<ASTAttrCtor>() == nullptr && method->findAttr<ASTAttrRefInc>() == nullptr &&
+                method->findAttr<ASTAttrDestroy>() == nullptr) {
+                generateFunction(ctx, stream, method, method->args);
+            }
+        }
+        fmt::println(stream, "}};");
+        fmt::println(stream, "template <>");
+        fmt::println(stream, "struct JsConverter<{}, {}> {{", jsTypeStr, handleTypeStr);
+        fmt::println(stream, "    static {} convert(const {}& obj) {{", jsTypeStr, handleTypeStr);
+        fmt::println(stream, "        return {}(obj);", jsTypeStr);
+        fmt::println(stream, "    }}");
+        fmt::println(stream, "}};");
+        fmt::println(stream, "template <>");
+        fmt::println(stream, "struct CConverter<{}, {}> {{", handleTypeStr, jsTypeStr);
+        fmt::println(stream, "    static {} convert(CContext& ctx, {}& obj) {{", jsTypeStr, jsTypeStr);
+        fmt::println(stream, "        return obj.handle();");
+        fmt::println(stream, "    }}");
+        fmt::println(stream, "}};");
+        fmt::println(stream, "");
+    });
+}
+
 static void generateBeginBindings(idl::Context& ctx, std::ostream& stream) {
     const auto moduleName = convert(ctx.api()->name, Case::CamelCase);
     fmt::println(stream, "EMSCRIPTEN_BINDINGS({}) {{", moduleName);
@@ -1065,16 +1387,16 @@ void generateJs(idl::Context& ctx,
                 idl_write_callback_t writer,
                 idl_data_t writerData,
                 std::span<idl_utf8_t> includes) {
-    auto stream      = createStream(ctx, out, writer, writerData);
-    ASTEnum* errcode = nullptr;
+    auto stream = createStream(ctx, out, writer, writerData);
     generateIncludes(ctx, stream.stream);
     generateTypes(ctx, stream.stream);
-    generateExceptions(ctx, stream.stream, errcode);
+    generateExceptions(ctx, stream.stream);
     generateNonTrivialTypes(ctx, stream.stream);
     generateClassDeclarations(ctx, stream.stream);
     generateArrItems(ctx, stream.stream);
     generateJsConverters(ctx, stream.stream);
     generateCConverters(ctx, stream.stream);
+    generateClasses(ctx, stream.stream);
     generateBeginBindings(ctx, stream.stream);
     generateRegisterTypes(ctx, stream.stream);
     generateEnums(ctx, stream.stream);

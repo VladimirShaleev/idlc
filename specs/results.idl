@@ -148,6 +148,7 @@ func ResultToString {Str} [errorcode]
 interface CompilationResult
     prop PropHasWarnings [get(HasWarnings),tokenizer(^4)] @ TODO.
     prop PropHasErrors [get(HasErrors),tokenizer(^4)] @ TODO.
+    prop Messages [get(GetMessages)] @ TODO.
 
     @ Increments reference count.
     @ Manages compilation result instance lifetime. [detail]

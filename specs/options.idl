@@ -39,7 +39,6 @@ interface Options
     prop OutputDir [get(GetOutputDir),set(SetOutputDir)] @ TODO.
     prop ImportDirs [get(GetImportDirs),set(SetImportDirs)] @ TODO.
     prop Additions [get(GetAdditions),set(SetAdditions)] @ TODO.
-    prop Version [get(GetVersion),set(SetVersion)] @ TODO.
 
     event Importer [get(GetImporter),set(SetImporter)] @ TODO.
     event ReleaseImport [get(GetReleaseImport),set(SetReleaseImport)] @ TODO.

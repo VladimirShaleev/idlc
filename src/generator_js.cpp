@@ -152,6 +152,16 @@ struct JsName : Visitor {
         str = camelCase(node);
     }
 
+    void visit(ASTProperty* node) override {
+        assert(!isArray);
+        str = camelCase(node);
+    }
+
+    void visit(ASTEvent* node) override {
+        assert(!isArray);
+        str = camelCase(node);
+    }
+
     void visit(ASTVoid* node) override {
         assert(!isArray);
         str = "void";
@@ -1456,7 +1466,7 @@ static void generateFunction(idl::Context& ctx, std::ostream& stream, ASTDecl* f
     fmt::println(stream, "");
 }
 
-static void generateClasses(idl::Context& ctx, std::ostream& stream) {
+static void generateCppClasses(idl::Context& ctx, std::ostream& stream) {
     ctx.filter<ASTInterface>([&ctx, &stream](ASTInterface* node) {
         bool hasCallbacks{};
         for (auto method : node->methods) {
@@ -1658,6 +1668,93 @@ static void generateValueObjects(idl::Context& ctx, std::ostream& stream) {
     });
 }
 
+static void generateClasses(idl::Context& ctx, std::ostream& stream) {
+    ctx.filter<ASTInterface>([&stream](ASTInterface* node) {
+        std::set<ASTDecl*> excluded;
+        JsName jsname;
+        node->accept(jsname);
+        const auto typeName = jsname.str;
+        fmt::println(stream, "    class_<{}>(\"{}\")", typeName, typeName);
+        fmt::println(stream, "        .constructor()");
+        for (auto prop : node->props) {
+            prop->accept(jsname);
+            const auto propName = jsname.str;
+            auto getter         = prop->findAttr<ASTAttrGet>();
+            auto setter         = prop->findAttr<ASTAttrSet>();
+            if (getter && setter) {
+                getter->decl->decl->accept(jsname);
+                const auto getterName = jsname.str;
+                setter->decl->decl->accept(jsname);
+                const auto setterName = jsname.str;
+                fmt::println(stream,
+                             "        .property(\"{}\", &{}::{}, &{}::{})",
+                             propName,
+                             typeName,
+                             getterName,
+                             typeName,
+                             setterName);
+                excluded.insert(getter->decl->decl);
+                excluded.insert(setter->decl->decl);
+            } else if (getter) {
+                getter->decl->decl->accept(jsname);
+                const auto getterName = jsname.str;
+                fmt::println(stream, "        .property(\"{}\", &{}::{})", propName, typeName, getterName);
+                excluded.insert(getter->decl->decl);
+            } else if (setter) {
+                setter->decl->decl->accept(jsname);
+                const auto setterName = jsname.str;
+                fmt::println(stream, "        .property(\"{}\", &{}::{})", propName, typeName, setterName);
+                excluded.insert(setter->decl->decl);
+            }
+        }
+        for (auto ev : node->events) {
+            ev->accept(jsname);
+            const auto evName = jsname.str;
+            auto getter       = ev->findAttr<ASTAttrGet>();
+            auto setter       = ev->findAttr<ASTAttrSet>();
+            if (getter && setter) {
+                getter->decl->decl->accept(jsname);
+                const auto getterName = jsname.str;
+                setter->decl->decl->accept(jsname);
+                const auto setterName = jsname.str;
+                fmt::println(stream,
+                             "        .property(\"{}\", &{}::{}, &{}::{})",
+                             evName,
+                             typeName,
+                             getterName,
+                             typeName,
+                             setterName);
+                excluded.insert(getter->decl->decl);
+                excluded.insert(setter->decl->decl);
+            } else if (getter) {
+                getter->decl->decl->accept(jsname);
+                const auto getterName = jsname.str;
+                fmt::println(stream, "        .property(\"{}\", &{}::{})", evName, typeName, getterName);
+                excluded.insert(getter->decl->decl);
+            } else if (setter) {
+                setter->decl->decl->accept(jsname);
+                const auto setterName = jsname.str;
+                fmt::println(stream, "        .property(\"{}\", &{}::{})", evName, typeName, setterName);
+                excluded.insert(setter->decl->decl);
+            }
+        }
+        for (auto method : node->methods) {
+            if (excluded.contains(method)) {
+                continue;
+            }
+            if (method->findAttr<ASTAttrCtor>() || method->findAttr<ASTAttrRefInc>() ||
+                method->findAttr<ASTAttrDestroy>()) {
+                continue;
+            }
+            method->accept(jsname);
+            const auto methodName = jsname.str;
+            fmt::println(stream, "        .function(\"{}\", &{}::{})", methodName, typeName, methodName);
+        }
+        fmt::println(stream, "        ;");
+        fmt::println(stream, "");
+    });
+}
+
 static void generateEndBindings(idl::Context& ctx, std::ostream& stream) {
     fmt::println(stream, "}}");
 }
@@ -1676,11 +1773,12 @@ void generateJs(idl::Context& ctx,
     generateArrItems(ctx, stream.stream);
     generateJsConverters(ctx, stream.stream);
     generateCConverters(ctx, stream.stream);
-    generateClasses(ctx, stream.stream);
+    generateCppClasses(ctx, stream.stream);
     generateBeginBindings(ctx, stream.stream);
     generateRegisterTypes(ctx, stream.stream);
     generateRegisterOptionals(ctx, stream.stream);
     generateEnums(ctx, stream.stream);
     generateValueObjects(ctx, stream.stream);
+    generateClasses(ctx, stream.stream);
     generateEndBindings(ctx, stream.stream);
 }

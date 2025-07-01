@@ -162,6 +162,11 @@ struct JsName : Visitor {
         str = camelCase(node);
     }
 
+    void visit(ASTFunc* node) override {
+        assert(!isArray);
+        str = camelCase(node);
+    }
+
     void visit(ASTVoid* node) override {
         assert(!isArray);
         str = "void";
@@ -1585,6 +1590,14 @@ static void generateBeginBindings(idl::Context& ctx, std::ostream& stream) {
     fmt::println(stream, "EMSCRIPTEN_BINDINGS({}) {{", moduleName);
 }
 
+static void generateCppFunctions(idl::Context& ctx, std::ostream& stream) {
+    ctx.filter<ASTFunc>([&ctx, &stream](ASTFunc* node) {
+        if (!node->findAttr<ASTAttrErrorCode>()) {
+            generateFunction(ctx, stream, node, node->args);
+        }
+    });
+}
+
 static void generateRegisterTypes(idl::Context& ctx, std::ostream& stream) {
     auto isArr   = false;
     auto addType = [&stream, &isArr](ASTDecl* decl) {
@@ -1766,6 +1779,16 @@ static void generateClasses(idl::Context& ctx, std::ostream& stream) {
     });
 }
 
+static void generateFunctions(idl::Context& ctx, std::ostream& stream) {
+    ctx.filter<ASTFunc>([&stream](ASTFunc* node) {
+        if (!node->findAttr<ASTAttrErrorCode>()) {
+            JsName jsname;
+            node->accept(jsname);
+            fmt::println(stream, "    function(\"{}\", &{});", jsname.str, jsname.str);
+        }
+    });
+}
+
 static void generateEndBindings(idl::Context& ctx, std::ostream& stream) {
     fmt::println(stream, "}}");
 }
@@ -1785,11 +1808,13 @@ void generateJs(idl::Context& ctx,
     generateJsConverters(ctx, stream.stream);
     generateCConverters(ctx, stream.stream);
     generateCppClasses(ctx, stream.stream);
+    generateCppFunctions(ctx, stream.stream);
     generateBeginBindings(ctx, stream.stream);
     generateRegisterTypes(ctx, stream.stream);
     generateRegisterOptionals(ctx, stream.stream);
     generateEnums(ctx, stream.stream);
     generateValueObjects(ctx, stream.stream);
     generateClasses(ctx, stream.stream);
+    generateFunctions(ctx, stream.stream);
     generateEndBindings(ctx, stream.stream);
 }

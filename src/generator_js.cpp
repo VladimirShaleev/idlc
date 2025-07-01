@@ -335,6 +335,7 @@ struct Value : Visitor {
 
 struct Param {
     ASTDecl* type{};
+    bool inParam{};
     bool outParam{};
     bool isVector{};
     bool isSize{};
@@ -1057,9 +1058,10 @@ static void generateFunctionArgs(idl::Context& ctx,
 
         IsTrivial trivial;
         argType->accept(trivial);
-        auto isR = (!trivial.trivial && !argType->is<ASTBool>()) || argType->is<ASTStruct>();
+        auto isR     = (!trivial.trivial && !argType->is<ASTBool>()) || argType->is<ASTStruct>();
+        auto isConst = isR && (argType->is<ASTStr>() || argType->is<ASTStruct>());
 
-        fmt::print(stream, "{}{} {}", jsTypeName, isR ? "&" : "", jsArgName);
+        fmt::print(stream, "{}{}{} {}", isConst ? "const " : "", jsTypeName, isR ? "&" : "", jsArgName);
     }
 }
 
@@ -1183,11 +1185,13 @@ static void generateFunction(idl::Context& ctx, std::ostream& stream, ASTDecl* f
                 param.typeName = "std::vector<" + param.typeName + '>';
                 needFetchSizes = true;
             }
-        } else {
-            needContext = true;
-            if (param.isVector) {
-                param.typeName += '*';
+            if (arg->findAttr<ASTAttrIn>()) {
+                param.inParam = true;
+                needContext   = true;
             }
+        } else {
+            param.inParam = true;
+            needContext   = true;
             if (param.isSize) {
                 param.refArg->accept(jsname);
                 param.jsArgName = jsname.str;
@@ -1219,7 +1223,11 @@ static void generateFunction(idl::Context& ctx, std::ostream& stream, ASTDecl* f
 
     for (auto& [_, param] : params) {
         if (param.outParam) {
-            fmt::println(stream, "        {} {}{{}};", param.typeName, param.paramName);
+            std::string value = "{}";
+            if (param.inParam && !param.isSize) {
+                value = fmt::format(" = cconvert<{}>(ctx, {})", param.typeName, param.jsArgName);
+            }
+            fmt::println(stream, "        {} {}{};", param.typeName, param.paramName, value);
         }
     }
 
@@ -1271,6 +1279,7 @@ static void generateFunction(idl::Context& ctx, std::ostream& stream, ASTDecl* f
         for (const auto& [_, param] : params) {
             if (param.outParam && !param.isSize && !param.isResult) {
                 // write to out js params
+                // assert(!"not implemented");
             }
         }
     }
@@ -1299,20 +1308,37 @@ static void generateClasses(idl::Context& ctx, std::ostream& stream) {
         node->accept(cname);
         const auto handleTypeStr = cname.str;
         fmt::println(stream, "class {} {{", jsTypeStr);
+        fmt::println(stream, "public:");
         for (auto method : node->methods) {
             if (method->findAttr<ASTAttrCtor>() != nullptr) {
                 generateFunction(ctx, stream, method, method->args);
             }
         }
+        fmt::println(stream, "    {}({} handle) : _handle(handle) {{", jsTypeStr, handleTypeStr);
+        fmt::println(stream, "    }}");
+        fmt::println(stream, "");
+
         // Add ctor from handle
         for (auto method : node->methods) {
             if (method->findAttr<ASTAttrRefInc>() != nullptr) {
-                // generateFunction(ctx, stream, method, method->args);
+                method->accept(cname);
+                fmt::println(stream, "    {}(const {}& other) : _handle(other._handle) {{", jsTypeStr, jsTypeStr);
+                fmt::println(stream, "        if (_handle) {{");
+                fmt::println(stream, "            {}(_handle);", cname.str);
+                fmt::println(stream, "        }}");
+                fmt::println(stream, "    }}");
+                fmt::println(stream, "");
+                break;
             }
         }
         for (auto method : node->methods) {
             if (method->findAttr<ASTAttrDestroy>() != nullptr) {
-                // generateFunction(ctx, stream, method, method->args);
+                method->accept(cname);
+                fmt::println(stream, "    ~{}() {{", jsTypeStr);
+                fmt::println(stream, "        {}(_handle);", cname.str);
+                fmt::println(stream, "    }}");
+                fmt::println(stream, "");
+                break;
             }
         }
         for (auto method : node->methods) {
@@ -1321,6 +1347,13 @@ static void generateClasses(idl::Context& ctx, std::ostream& stream) {
                 generateFunction(ctx, stream, method, method->args);
             }
         }
+
+        fmt::println(stream, "    {} handle() noexcept {{", handleTypeStr);
+        fmt::println(stream, "        return _handle;");
+        fmt::println(stream, "    }}");
+        fmt::println(stream, "");
+        fmt::println(stream, "private:");
+        fmt::println(stream, "    {} _handle{{}};", handleTypeStr);
         fmt::println(stream, "}};");
         fmt::println(stream, "template <>");
         fmt::println(stream, "struct JsConverter<{}, {}> {{", jsTypeStr, handleTypeStr);
@@ -1330,7 +1363,7 @@ static void generateClasses(idl::Context& ctx, std::ostream& stream) {
         fmt::println(stream, "}};");
         fmt::println(stream, "template <>");
         fmt::println(stream, "struct CConverter<{}, {}> {{", handleTypeStr, jsTypeStr);
-        fmt::println(stream, "    static {} convert(CContext& ctx, {}& obj) {{", jsTypeStr, jsTypeStr);
+        fmt::println(stream, "    static {} convert(CContext& ctx, {}& obj) {{", handleTypeStr, jsTypeStr);
         fmt::println(stream, "        return obj.handle();");
         fmt::println(stream, "    }}");
         fmt::println(stream, "}};");

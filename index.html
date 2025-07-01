@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,14 +12,16 @@
             padding: 20px;
             background-color: #f5f5f5;
         }
+
         .container {
             max-width: 1000px;
             margin: 0 auto;
             background: white;
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
+
         #editor {
             width: 100%;
             height: 300px;
@@ -29,6 +32,7 @@
             resize: vertical;
             margin-bottom: 10px;
         }
+
         button {
             background-color: #4CAF50;
             color: white;
@@ -42,14 +46,17 @@
             cursor: pointer;
             border-radius: 4px;
         }
+
         button:hover {
             background-color: #45a049;
         }
+
         .tabs {
             display: flex;
             border-bottom: 1px solid #ddd;
             margin-top: 20px;
         }
+
         .tab {
             padding: 10px 20px;
             cursor: pointer;
@@ -59,11 +66,13 @@
             border-radius: 4px 4px 0 0;
             margin-right: 5px;
         }
+
         .tab.active {
             background-color: white;
             border-bottom: 1px solid white;
             margin-bottom: -1px;
         }
+
         .tab-content {
             display: none;
             padding: 20px;
@@ -73,13 +82,16 @@
             height: 300px;
             overflow-y: auto;
         }
+
         .tab-content.active {
             display: block;
         }
+
         .filename {
             font-weight: bold;
             margin-bottom: 10px;
         }
+
         pre {
             background: #f8f8f8;
             padding: 10px;
@@ -87,43 +99,52 @@
             white-space: pre-wrap;
             margin: 0;
         }
+
         .status {
             margin-top: 10px;
             padding: 10px;
             border-radius: 4px;
         }
+
         .success {
             background-color: #dff0d8;
             color: #3c763d;
         }
+
         .warning {
             background-color: #fcf8f2;
             color: #f0ad4e;
         }
+
         .error {
             background-color: #f2dede;
             color: #a94442;
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h1>IDL Compiler</h1>
         <textarea id="editor" placeholder="Enter your IDL code here..."></textarea>
-        <button id="compile">Compile</button>
+        <button id="compileC">Compile C</button>
+        <button id="compileJs">Compile JS</button>
         <div id="status" class="status" style="display: none;"></div>
-        
+
         <div class="tabs" id="tabs-container"></div>
         <div id="tab-contents"></div>
     </div>
 
     <script type="module">
-        import idlc from './idlc.js'
+        import idlc from '../dist/idlc.js'
 
         const module = await idlc();
 
+        document.querySelector("h1").textContent = "IDL Compiler (" + module.versionString() + ")";
+
         const editor = document.getElementById('editor');
-        const compileBtn = document.getElementById('compile');
+        const compileCBtn = document.getElementById('compileC');
+        const compileJsBtn = document.getElementById('compileJs');
         const tabsContainer = document.getElementById('tabs-container');
         const tabContents = document.getElementById('tab-contents');
         const statusDiv = document.getElementById('status');
@@ -202,7 +223,15 @@ interface Logger
         arg Level {LoggerLevel} @ New severity threshold.
 `;
 
-        compileBtn.addEventListener('click', () => {
+        compileCBtn.addEventListener('click', () => {
+            compileCode(module.Generator.C);
+        });
+
+        compileJsBtn.addEventListener('click', () => {
+            compileCode(module.Generator.JS);
+        });
+
+        function compileCode(generator) {
             const code = editor.value.trim();
             if (!code) {
                 clearStatus();
@@ -210,33 +239,28 @@ interface Logger
                 return;
             }
 
-            const result = compileCode(code); 
-            if (Object.keys(result).length !== 0) {
-                showResults(result);
-            }
-        });
-
-        function compileCode(code) {
             clearStatus();
             showStatus('Compiling...');
 
             const results = {};
 
-            const options = new module.Options();
-            options.debugMode = false;
+            const options = new module.Options;
+            // options.debugMode = false;
             // options.warningsAsErrors = true;
             // options.setVersion({major: 1, minor: 2, micro: 0});
-            options.setWriter(function(source) {
+            options.writer = function (source) {
                 results[source.name] = source.data;
-            });
+            };
 
-            const source1 = new module.Source;
-            source1.name = "<input>";
-            source1.data = code;
+            const source1 = {
+                name: "<input>",
+                data: code,
+                size: code.length
+            };
 
             const compiler = new module.Compiler;
-            const result = compiler.compile(module.Generator.C, undefined, [ source1 ], options);
-            
+            const result = compiler.compile(generator, undefined, [source1], options);
+
             clearStatus();
             var failed = false;
             result.messages.forEach(message => {
@@ -257,13 +281,15 @@ interface Logger
             compiler.delete();
             options.delete();
 
-            return results;
+            if (Object.keys(results).length !== 0) {
+                showResults(results);
+            }
         }
 
         function showResults(files) {
             tabsContainer.innerHTML = '';
             tabContents.innerHTML = '';
-            
+
             let first = true;
             for (const [filename, content] of Object.entries(files)) {
                 const tab = document.createElement('div');
@@ -271,7 +297,7 @@ interface Logger
                 tab.textContent = filename;
                 tab.addEventListener('click', () => switchTab(filename));
                 tabsContainer.appendChild(tab);
-                
+
                 const contentDiv = document.createElement('div');
                 contentDiv.className = `tab-content ${first ? 'active' : ''}`;
                 contentDiv.id = `tab-${filename}`;
@@ -279,7 +305,7 @@ interface Logger
                     <pre>${escapeHtml(content)}</pre>
                 `;
                 tabContents.appendChild(contentDiv);
-                
+
                 first = false;
             }
         }
@@ -291,12 +317,12 @@ interface Logger
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.remove('active');
             });
-            
+
             const tabs = document.querySelectorAll('.tab');
-            const targetTab = Array.from(tabs).find(tab => 
+            const targetTab = Array.from(tabs).find(tab =>
                 tab.textContent.trim() === filename
             );
-            
+
             if (targetTab) {
                 targetTab.classList.add('active');
                 document.getElementById(`tab-${filename}`)?.classList.add('active');
@@ -307,12 +333,12 @@ interface Logger
             const messageElement = document.createElement('div');
             messageElement.className = `status ${type}`;
             messageElement.textContent = message;
-    
+
             statusDiv.style.display = 'block';
             statusDiv.appendChild(messageElement);
             statusDiv.scrollTop = statusDiv.scrollHeight;
         }
-                
+
         function clearStatus() {
             statusDiv.innerHTML = '';
             statusDiv.style.display = 'none';
@@ -328,10 +354,11 @@ interface Logger
         }
 
         document.querySelectorAll('.tab').forEach(tab => {
-            tab.matches = tab.matches || 
-                tab.msMatchesSelector || 
+            tab.matches = tab.matches ||
+                tab.msMatchesSelector ||
                 tab.webkitMatchesSelector;
         });
     </script>
 </body>
+
 </html>

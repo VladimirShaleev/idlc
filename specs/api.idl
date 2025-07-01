@@ -92,4 +92,4 @@ interface Compiler
         arg SourceCount {Uint32} @ TODO
         arg Sources {Source} [const,array(SourceCount)] @ TODO
         arg Options {Options} [optional] @ Compile options, may be null.
-        arg Result {CompilationResult} [result,optional] @ TODO.
+        arg Result {CompilationResult} [result] @ TODO.

@@ -337,6 +337,8 @@ struct Param {
     ASTDecl* type{};
     bool inParam{};
     bool outParam{};
+    bool isUserdata{};
+    bool isCallback{};
     bool isVector{};
     bool isSize{};
     bool isResult{};
@@ -349,6 +351,11 @@ struct Param {
 
 static bool isArray(ASTDecl* decl) noexcept {
     return decl->findAttr<ASTAttrArray>() != nullptr;
+}
+
+static bool isOptional(ASTDecl* decl) noexcept {
+    return decl->findAttr<ASTAttrOptional>() != nullptr && !isArray(decl) && !decl->findAttr<ASTAttrOut>() &&
+           !decl->findAttr<ASTAttrResult>();
 }
 
 static bool isRef(ASTDecl* decl) noexcept {
@@ -1003,14 +1010,17 @@ static void generateFunctionReturnType(idl::Context& ctx,
                                        const std::vector<ASTArg*>& args) {
     ASTDecl* returnType{};
     bool returnTypeIsArray{};
+    bool returnTypeIsOptional{};
     for (auto arg : args) {
         if (arg->findAttr<ASTAttrResult>() != nullptr && arg->findAttr<ASTAttrErrorCode>() == nullptr) {
-            returnType        = getType(arg);
-            returnTypeIsArray = isArray(arg);
+            returnType           = getType(arg);
+            returnTypeIsArray    = isArray(arg);
+            returnTypeIsOptional = isOptional(arg);
         }
     }
     if (!returnType) {
-        returnType = getType(func);
+        returnType           = getType(func);
+        returnTypeIsOptional = isOptional(func);
         if (returnType->findAttr<ASTAttrErrorCode>() != nullptr) {
             returnType = nullptr;
         }
@@ -1020,6 +1030,9 @@ static void generateFunctionReturnType(idl::Context& ctx,
         JsName jsname(returnTypeIsArray);
         returnType->accept(jsname);
         typeName = jsname.str;
+        if (returnTypeIsOptional) {
+            typeName = "std::optional<" + typeName + '>';
+        }
     }
     fmt::print(stream, "    {}", typeName);
 }
@@ -1045,7 +1058,7 @@ static void generateFunctionArgs(idl::Context& ctx,
 
         JsName jsname(argIsArr);
         argType->accept(jsname);
-        const auto jsTypeName = jsname.str;
+        auto jsTypeName = jsname.str;
 
         jsname.isArray = false;
         arg->accept(jsname);
@@ -1061,6 +1074,12 @@ static void generateFunctionArgs(idl::Context& ctx,
         auto isR     = (!trivial.trivial && !argType->is<ASTBool>()) || argType->is<ASTStruct>();
         auto isConst = isR && (argType->is<ASTStr>() || argIsArr);
 
+        if (isOptional(arg)) {
+            isR        = false;
+            isConst    = false;
+            jsTypeName = "std::optional<" + jsTypeName + '>';
+        }
+
         fmt::print(stream, "{}{}{} {}", isConst ? "const " : "", jsTypeName, isR ? "&" : "", jsArgName);
     }
 }
@@ -1071,7 +1090,8 @@ static void generateFunctionCall(idl::Context& ctx,
                                  const std::vector<ASTArg*>& args,
                                  bool fetchOnly,
                                  const std::map<ASTArg*, Param>& params) {
-    bool first = true;
+    bool first   = true;
+    int userData = 0;
     for (auto arg : args) {
         if (!first) {
             fmt::print(stream, ", ");
@@ -1092,8 +1112,12 @@ static void generateFunctionCall(idl::Context& ctx,
             } else {
                 bool isStr   = !param.isVector && param.type->is<ASTStr>();
                 bool isIface = param.type->is<ASTInterface>();
-                bool isR     = isRef(arg) || isStr || isIface;
-                fmt::print(stream, "{}{}", isR ? "" : "*", param.paramName);
+                bool isR     = isRef(arg) || isStr || isIface || param.isCallback || param.isUserdata;
+                auto name    = param.paramName;
+                if (param.isUserdata) {
+                    name = "data" + std::to_string(userData++);
+                }
+                fmt::print(stream, "{}{}", isR ? "" : "*", name);
             }
         } else if (arg->findAttr<ASTAttrThis>()) {
             fmt::print(stream, "_handle");
@@ -1103,15 +1127,24 @@ static void generateFunctionCall(idl::Context& ctx,
     }
 }
 
-static void generateFunctionReturn(
-    idl::Context& ctx, std::ostream& stream, ASTDecl* func, const std::string& name, ASTDecl* type, bool isArr) {
+static void generateFunctionReturn(idl::Context& ctx,
+                                   std::ostream& stream,
+                                   ASTDecl* func,
+                                   const std::string& name,
+                                   ASTDecl* decl,
+                                   ASTDecl* type,
+                                   bool isArr) {
     if (func->findAttr<ASTAttrCtor>()) {
         fmt::println(stream, "        _handle = {};", name);
     } else {
-        auto isR = !isArr && isRef(func);
+        auto isR = !isArr && isRef(func) && !isOptional(decl);
         JsName jsname;
         jsname.isArray = isArr;
         type->accept(jsname);
+
+        if (isOptional(decl)) {
+            jsname.str = "std::optional<" + jsname.str + '>';
+        }
 
         std::string spanBegin;
         std::string spanEnd;
@@ -1189,12 +1222,22 @@ static void generateFunction(idl::Context& ctx, std::ostream& stream, ASTDecl* f
                 param.inParam = true;
                 needContext   = true;
             }
+            if (arg->findAttr<ASTAttrUserData>()) {
+                param.isUserdata = true;
+            }
         } else {
             param.inParam = true;
-            needContext   = true;
             if (param.isSize) {
                 param.refArg->accept(jsname);
                 param.jsArgName = jsname.str;
+            }
+            if (param.type->is<ASTCallback>()) {
+                param.isCallback = true;
+            } else if (arg->findAttr<ASTAttrUserData>()) {
+                param.isUserdata = true;
+                param.paramName  = param.paramName + "Data";
+            } else {
+                needContext = true;
             }
         }
     }
@@ -1203,6 +1246,7 @@ static void generateFunction(idl::Context& ctx, std::ostream& stream, ASTDecl* f
         fmt::println(stream, "        CContext ctx;");
     }
 
+    int userDataCount = 0;
     for (auto& [_, param] : params) {
         if (!param.outParam) {
             if (param.isSize) {
@@ -1211,6 +1255,100 @@ static void generateFunction(idl::Context& ctx, std::ostream& stream, ASTDecl* f
                              param.paramName,
                              param.typeName,
                              param.jsArgName);
+            } else if (param.isCallback) {
+                std::string paramData = "data" + std::to_string(userDataCount++);
+                JsName jsname;
+                func->accept(jsname);
+                fmt::println(stream,
+                             "        auto {} = storeCallback(\"{}\", {} ? &{}.value() : nullptr);",
+                             paramData,
+                             jsname.str,
+                             param.jsArgName,
+                             param.jsArgName);
+
+                fmt::print(stream, "        auto {} = {} ? [](", param.paramName, param.jsArgName);
+                bool first = true;
+                ASTArg* userdata{};
+                for (auto arg : param.type->as<ASTCallback>()->args) {
+                    if (!first) {
+                        fmt::print(stream, ", ");
+                    }
+                    first = false;
+                    if (arg->findAttr<ASTAttrConst>() && arg->findAttr<ASTAttrRef>()) {
+                        fmt::print(stream, "const ");
+                    }
+                    bool isR = false;
+                    if (arg->findAttr<ASTAttrRef>() || arg->findAttr<ASTAttrOut>()) {
+                        isR = true;
+                    }
+                    CName cname;
+                    getType(arg)->accept(cname);
+                    fmt::print(stream, "{}{} ", cname.str, isR ? "*" : "");
+                    arg->accept(jsname);
+                    fmt::print(stream, "{}", jsname.str);
+                    if (arg->findAttr<ASTAttrUserData>()) {
+                        userdata = arg;
+                    }
+                }
+                userdata->accept(jsname);
+                fmt::println(stream, ") {{");
+                fmt::println(stream,
+                             "            auto& [callback, ctx] = *((std::pair<val, std::shared_ptr<CContext>>*) {});",
+                             jsname.str);
+                fmt::print(stream, "            ");
+                if (!getType(param.type)->is<ASTVoid>()) {
+                    fmt::print(stream, "auto functionReturn = ");
+                }
+                fmt::print(stream, "callback(");
+                first = true;
+                for (auto arg : param.type->as<ASTCallback>()->args) {
+                    if (arg->findAttr<ASTAttrUserData>()) {
+                        continue;
+                    }
+                    if (!first) {
+                        fmt::print(stream, ", ");
+                    }
+                    first          = false;
+                    auto type      = getType(arg);
+                    auto isArr     = isArray(arg);
+                    auto isR       = !isArr && isRef(arg);
+                    jsname.isArray = isArr;
+                    std::string spanBegin;
+                    std::string spanEnd;
+                    if (isArr) {
+                        const auto [ref, size] = getSizeDecl(arg);
+                        std::string value;
+                        if (ref) {
+                            CName cname;
+                            ref->accept(cname);
+                            value = "size_t(" + cname.str + ")";
+                        } else {
+                            value = std::to_string(size);
+                        }
+                        spanBegin = "std::span{";
+                        spanEnd   = ", " + value + "}";
+                    }
+                    CName cname;
+                    type->accept(jsname);
+                    arg->accept(cname);
+                    fmt::print(
+                        stream, "jsconvert<{}>({}{}{}{})", jsname.str, isR ? "*" : "", spanBegin, cname.str, spanEnd);
+                }
+                fmt::println(stream, ");");
+                if (!getType(param.type)->is<ASTVoid>()) {
+                    JsName jsname;
+                    getType(param.type)->accept(jsname);
+                    if (isOptional(param.type)) {
+                        jsname.str = "std::optional<" + jsname.str + '>';
+                    }
+                    CName cname;
+                    getType(param.type)->accept(cname);
+                    fmt::println(stream, "            ctx = std::make_shared<CContext>();");
+                    fmt::println(
+                        stream, "            return cconvert<{}>(*ctx, functionReturn.as<{}>());", cname.str, jsname.str);
+                }
+                fmt::println(stream, "        }} : nullptr;");
+            } else if (param.isUserdata) {
             } else {
                 fmt::println(stream,
                              "        auto {} = cconvert<{}>(ctx, {});",
@@ -1284,15 +1422,32 @@ static void generateFunction(idl::Context& ctx, std::ostream& stream, ASTDecl* f
         }
     }
     bool returned{};
-    for (auto& [_, param] : params) {
+    for (auto& [arg, param] : params) {
         if (param.isResult && !param.isError) {
-            generateFunctionReturn(ctx, stream, func, param.paramName, param.type, param.isVector);
+            generateFunctionReturn(ctx, stream, func, param.paramName, arg, param.type, param.isVector);
             returned = true;
             break;
         }
     }
     if (!returned && !getType(func)->is<ASTVoid>() && getType(func)->findAttr<ASTAttrErrorCode>() == nullptr) {
-        generateFunctionReturn(ctx, stream, func, "functionReturn", getType(func), false);
+        if (getType(func)->is<ASTCallback>()) {
+            for (auto& [_, param] : params) {
+                if (param.isUserdata) {
+                    JsName jsname;
+                    getType(func)->accept(jsname);
+                    fmt::println(stream,
+                                 "        return {} ? std::make_optional({}((((std::pair<val, "
+                                 "std::shared_ptr<CContext>>*) {})->first))) : std::nullopt;",
+                                 param.paramName,
+                                 jsname.str,
+                                 param.paramName);
+                    break;
+                }
+            }
+
+        } else {
+            generateFunctionReturn(ctx, stream, func, "functionReturn", func, getType(func), false);
+        }
     }
 
     fmt::println(stream, "    }}");
@@ -1384,14 +1539,16 @@ static void generateClasses(idl::Context& ctx, std::ostream& stream) {
             fmt::println(stream, "    {} storeCallback(const std::string& func, val* callback) {{", cname.str);
             fmt::println(stream, "        if (callback) {{");
             fmt::println(stream,
-                         "            return ({}) &_callbacks.insert_or_assign(func, *callback).first->second;",
+                         "            return ({}) &_callbacks.insert_or_assign(func, std::make_pair(val(*callback), "
+                         "nullptr)).first->second;",
                          cname.str);
             fmt::println(stream, "        }}");
             fmt::println(stream, "        _callbacks.erase(func);");
             fmt::println(stream, "        return nullptr;");
             fmt::println(stream, "    }}");
             fmt::println(stream, "");
-            fmt::println(stream, "    std::map<std::string, val> _callbacks{{}};");
+            fmt::println(stream,
+                         "    std::map<std::string, std::pair<val, std::shared_ptr<CContext>>> _callbacks{{}};");
         }
         fmt::println(stream, "    {} _handle{{}};", handleTypeStr);
         fmt::println(stream, "}};");

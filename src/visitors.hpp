@@ -344,8 +344,8 @@ struct AllowedAttrs : Visitor {
     }
 
     void visit(ASTCallback* node) override {
-        allowed = { add<ASTAttrType>(),      add<ASTAttrPlatform>(), add<ASTAttrCName>(),
-                    add<ASTAttrTokenizer>(), add<ASTAttrRef>(),      add<ASTAttrConst>() };
+        allowed = { add<ASTAttrType>(), add<ASTAttrPlatform>(), add<ASTAttrCName>(),   add<ASTAttrTokenizer>(),
+                    add<ASTAttrRef>(),  add<ASTAttrConst>(),    add<ASTAttrOptional>() };
     }
 
     template <typename Attr>

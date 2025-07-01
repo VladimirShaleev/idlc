@@ -14,7 +14,7 @@ struct ApiVersion
 
 @ TODO.
 @ TODO. [detail]
-callback ImportCallback {Source} [ref]
+callback ImportCallback {Source} [ref,optional]
     arg Name {Str} @ TODO.
     arg Depth {Uint32} @ TODO.
     arg Data {Data} [userdata] @ TODO.
@@ -186,7 +186,7 @@ interface Options
     @ TODO.
     @ TODO. [detail]
     @ {SetVersion} [see]
-    method GetVersion {ApiVersion} [const,ref]
+    method GetVersion {ApiVersion} [const,ref,optional]
         arg Options {Options} [this] @ Target options.
 
     @ TODO.
@@ -194,4 +194,4 @@ interface Options
     @ {GetVersion} [see]
     method SetVersion
         arg Options {Options} [this] @ Target options.
-        arg Version {ApiVersion} [const,ref] @ TODO.
+        arg Version {ApiVersion} [const,ref,optional] @ TODO.

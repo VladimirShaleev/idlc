@@ -8,6 +8,7 @@ struct Stream {
     std::ostream& stream;
     std::unique_ptr<std::ofstream> fstream;
     std::unique_ptr<std::ostringstream> sstream;
+    std::string filename;
     idl_write_callback_t writer;
     idl_data_t writerData;
 };
@@ -440,11 +441,12 @@ static Stream createStream(idl::Context& ctx,
                            idl_write_callback_t writer,
                            idl_data_t writerData) {
     std::filesystem::create_directories(out);
-    auto mName = out / (convert(ctx.api()->name, Case::LispCase) + ".js.cpp");
+    auto filename = (convert(ctx.api()->name, Case::LispCase) + ".js.cpp");
+    auto mName    = out / filename;
     if (writer) {
         auto stream = std::make_unique<std::ostringstream>();
         auto ptr    = stream.get();
-        return { *ptr, nullptr, std::move(stream), writer, writerData };
+        return { *ptr, nullptr, std::move(stream), filename, writer, writerData };
     } else {
         auto stream = std::make_unique<std::ofstream>(std::ofstream(mName));
         if (stream->fail()) {
@@ -1817,4 +1819,9 @@ void generateJs(idl::Context& ctx,
     generateClasses(ctx, stream.stream);
     generateFunctions(ctx, stream.stream);
     generateEndBindings(ctx, stream.stream);
+    if (stream.writer) {
+        const std::string data = stream.sstream->str();
+        idl_source_t source{ stream.filename.c_str(), data.c_str(), (idl_uint32_t) data.length() + 1 };
+        stream.writer(&source, stream.writerData);
+    }
 }

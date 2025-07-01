@@ -1669,13 +1669,24 @@ static void generateValueObjects(idl::Context& ctx, std::ostream& stream) {
 }
 
 static void generateClasses(idl::Context& ctx, std::ostream& stream) {
-    ctx.filter<ASTInterface>([&stream](ASTInterface* node) {
+    ctx.filter<ASTInterface>([&ctx, &stream](ASTInterface* node) {
         std::set<ASTDecl*> excluded;
         JsName jsname;
         node->accept(jsname);
         const auto typeName = jsname.str;
         fmt::println(stream, "    class_<{}>(\"{}\")", typeName, typeName);
-        fmt::println(stream, "        .constructor()");
+        for (auto method : node->methods) {
+            if (method->findAttr<ASTAttrCtor>()) {
+                if (method->args.size() == 0 ||
+                    (method->args.size() == 1 && method->args[0]->findAttr<ASTAttrResult>())) {
+                    fmt::println(stream, "        .constructor()");
+                } else {
+                    std::ostringstream ss;
+                    generateFunctionArgs(ctx, ss, method, method->args, {});
+                    fmt::println(stream, "        .constructor<{}>()", ss.str());
+                }
+            }
+        }
         for (auto prop : node->props) {
             prop->accept(jsname);
             const auto propName = jsname.str;

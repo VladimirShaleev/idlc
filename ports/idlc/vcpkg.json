@@ -1,6 +1,6 @@
 {
   "name": "idlc",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Interface Definition Language Compiler",
   "homepage": "https://github.com/VladimirShaleev/idlc",
   "license": "MIT",

@@ -996,10 +996,10 @@ struct CConverter<{char}, String> {{
     });
 }
 
-static void generateFunctionReturn(idl::Context& ctx,
-                                   std::ostream& stream,
-                                   ASTDecl* func,
-                                   const std::vector<ASTArg*>& args) {
+static void generateFunctionReturnType(idl::Context& ctx,
+                                       std::ostream& stream,
+                                       ASTDecl* func,
+                                       const std::vector<ASTArg*>& args) {
     ASTDecl* returnType{};
     bool returnTypeIsArray{};
     for (auto arg : args) {
@@ -1088,9 +1088,9 @@ static void generateFunctionCall(idl::Context& ctx,
                     fmt::print(stream, "&{}", param.paramName);
                 }
             } else {
-                bool isStr = !param.isVector && param.type->is<ASTStr>();
+                bool isStr   = !param.isVector && param.type->is<ASTStr>();
                 bool isIface = param.type->is<ASTInterface>();
-                bool isR   = isRef(arg) || isStr || isIface;
+                bool isR     = isRef(arg) || isStr || isIface;
                 fmt::print(stream, "{}{}", isR ? "" : "*", param.paramName);
             }
         } else if (arg->findAttr<ASTAttrThis>()) {
@@ -1098,6 +1098,27 @@ static void generateFunctionCall(idl::Context& ctx,
         } else {
             assert(!"unreachable code");
         }
+    }
+}
+
+static void generateFunctionReturn(
+    idl::Context& ctx, std::ostream& stream, ASTDecl* func, const std::string& name, ASTDecl* type, bool isArr) {
+    if (func->findAttr<ASTAttrCtor>()) {
+        fmt::println(stream, "        _handle = {};", name);
+    } else {
+        auto isR = !isArr && isRef(func);
+        JsName jsname;
+        jsname.isArray = isArr;
+        type->accept(jsname);
+
+        std::string spanBegin;
+        std::string spanEnd;
+        if (isArr) {
+            spanBegin = "std::span{";
+            spanEnd   = ".data(), " + name + ".size()}";
+        }
+        fmt::println(
+            stream, "        return jsconvert<{}>({}{}{}{});", jsname.str, isR ? "*" : "", spanBegin, name, spanEnd);
     }
 }
 
@@ -1110,7 +1131,7 @@ static void generateFunction(idl::Context& ctx, std::ostream& stream, ASTDecl* f
     } else {
         JsName jsname;
         func->accept(jsname);
-        generateFunctionReturn(ctx, stream, func, args);
+        generateFunctionReturnType(ctx, stream, func, args);
         fmt::print(stream, " {}", jsname.str);
     }
     std::map<ASTArg*, ASTArg*> sizeArgs;
@@ -1252,6 +1273,17 @@ static void generateFunction(idl::Context& ctx, std::ostream& stream, ASTDecl* f
                 // write to out js params
             }
         }
+    }
+    bool returned{};
+    for (auto& [_, param] : params) {
+        if (param.isResult && !param.isError) {
+            generateFunctionReturn(ctx, stream, func, param.paramName, param.type, param.isVector);
+            returned = true;
+            break;
+        }
+    }
+    if (!returned && !getType(func)->is<ASTVoid>() && getType(func)->findAttr<ASTAttrErrorCode>() == nullptr) {
+        generateFunctionReturn(ctx, stream, func, "functionReturn", getType(func), false);
     }
 
     fmt::println(stream, "    }}");

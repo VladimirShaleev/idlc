@@ -508,8 +508,10 @@ public:
         std::vector<ASTArg*> needAddArgIn{};
         std::vector<ASTArg*> needAddArgOut{};
         std::vector<ASTArg*> needAddRef{};
+        std::vector<ASTDecl*> needAddOptional{};
         filter<ASTFunc>(
-            [this, &needAddRetType, &needAddArgType, &needAddArgIn, &needAddArgOut, &needAddRef](ASTFunc* node) {
+            [this, &needAddRetType, &needAddArgType, &needAddArgIn, &needAddArgOut, &needAddRef, &needAddOptional](
+                ASTFunc* node) {
             if (!node->findAttr<ASTAttrType>()) {
                 needAddRetType.push_back(node);
             }
@@ -546,6 +548,9 @@ public:
                     } else {
                         err<IDL_STATUS_E2102>(arg->location, arg->name, node->fullname());
                     }
+                    if (!arg->findAttr<ASTAttrOptional>()) {
+                        needAddOptional.push_back(arg);
+                    }
                 }
             }
         });
@@ -580,9 +585,12 @@ public:
             attr->parent = node;
             node->attrs.push_back(attr);
         }
-        filter<ASTFunc>([this](ASTFunc* node) {
-            auto attr = node->findAttr<ASTAttrType>();
-            auto type = resolveType(attr->type);
+        filter<ASTFunc>([this, &needAddOptional](ASTFunc* node) {
+            auto attr    = node->findAttr<ASTAttrType>();
+            auto retType = resolveType(attr->type);
+            if (retType->is<ASTCallback>() && !node->findAttr<ASTAttrOptional>()) {
+                needAddOptional.push_back(node);
+            }
             for (auto arg : node->args) {
                 auto argAttr = arg->findAttr<ASTAttrType>();
                 if (resolveType(argAttr->type)->is<ASTVoid>()) {
@@ -603,15 +611,23 @@ public:
                         err<IDL_STATUS_E2106>(attr->location, arg->fullname());
                     }
                 }
+                if (resolveType(argAttr->type)->is<ASTCallback>() && !arg->findAttr<ASTAttrOptional>()) {
+                    needAddOptional.push_back(arg);
+                }
             }
             if (node->findAttr<ASTAttrErrorCode>()) {
                 auto argType        = node->args[0]->findAttr<ASTAttrType>()->type->decl;
                 auto argIsErrorCode = argType->findAttr<ASTAttrErrorCode>() != nullptr;
-                if (!type->is<ASTStr>() || node->args.size() != 1 || !argIsErrorCode) {
+                if (!retType->is<ASTStr>() || node->args.size() != 1 || !argIsErrorCode) {
                     err<IDL_STATUS_E2085>(node->location);
                 }
             }
         });
+        for (auto node : needAddOptional) {
+            auto attr    = allocNode<ASTAttrOptional>(node->location);
+            attr->parent = node;
+            node->attrs.push_back(attr);
+        }
     }
 
     void prepareMethods() {
@@ -621,9 +637,15 @@ public:
         std::vector<ASTArg*> needAddArgIn{};
         std::vector<ASTArg*> needAddArgOut{};
         std::vector<ASTArg*> needAddRef{};
-        filter<ASTMethod>(
-            [this, &needAddRetType, &needAddStatic, &needAddArgType, &needAddArgIn, &needAddArgOut, &needAddRef](
-                ASTMethod* node) {
+        std::vector<ASTDecl*> needAddOptional{};
+        filter<ASTMethod>([this,
+                           &needAddRetType,
+                           &needAddStatic,
+                           &needAddArgType,
+                           &needAddArgIn,
+                           &needAddArgOut,
+                           &needAddRef,
+                           &needAddOptional](ASTMethod* node) {
             const auto isStatic = node->findAttr<ASTAttrStatic>();
             const auto isCtor   = node->findAttr<ASTAttrCtor>();
             if (!node->findAttr<ASTAttrType>()) {
@@ -682,6 +704,9 @@ public:
                     } else {
                         err<IDL_STATUS_E2102>(arg->location, arg->name, node->fullname());
                     }
+                    if (!arg->findAttr<ASTAttrOptional>()) {
+                        needAddOptional.push_back(arg);
+                    }
                 }
             }
             return true;
@@ -722,9 +747,12 @@ public:
             attr->parent = node;
             node->attrs.push_back(attr);
         }
-        filter<ASTMethod>([this](ASTMethod* node) {
-            auto attr = node->findAttr<ASTAttrType>();
-            resolveType(attr->type);
+        filter<ASTMethod>([this, &needAddOptional](ASTMethod* node) {
+            auto attr    = node->findAttr<ASTAttrType>();
+            auto retType = resolveType(attr->type);
+            if (retType->is<ASTCallback>() && !node->findAttr<ASTAttrOptional>()) {
+                needAddOptional.push_back(node);
+            }
             for (auto arg : node->args) {
                 auto argAttr = arg->findAttr<ASTAttrType>();
                 if (resolveType(argAttr->type)->is<ASTVoid>()) {
@@ -745,6 +773,9 @@ public:
                         err<IDL_STATUS_E2104>(attr->location, arg->fullname());
                     }
                 }
+                if (resolveType(argAttr->type)->is<ASTCallback>() && !arg->findAttr<ASTAttrOptional>()) {
+                    needAddOptional.push_back(arg);
+                }
             }
             if (node->findAttr<ASTAttrRefInc>()) {
                 if (node->findAttr<ASTAttrStatic>() || node->args.size() != 1) {
@@ -758,6 +789,11 @@ public:
             }
             return true;
         });
+        for (auto node : needAddOptional) {
+            auto attr    = allocNode<ASTAttrOptional>(node->location);
+            attr->parent = node;
+            node->attrs.push_back(attr);
+        }
     }
 
     void prepareProperties() {

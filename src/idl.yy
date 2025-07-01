@@ -80,6 +80,7 @@
 %token ATTRDESTROY
 %token ATTRIN
 %token ATTROUT
+%token ATTROPTIONAL
 %token ATTRTOKENIZER
 %token ATTRVERSION
 
@@ -125,6 +126,7 @@
 %type <ASTAttr*> attr_destroy
 %type <ASTAttr*> attr_in
 %type <ASTAttr*> attr_out
+%type <ASTAttr*> attr_optional
 %type <ASTAttr*> attr_get
 %type <ASTAttr*> attr_set
 %type <ASTAttr*> attr_handle
@@ -262,6 +264,7 @@ attr_item
     | attr_destroy { $$ = $1; }
     | attr_in { $$ = $1; }
     | attr_out { $$ = $1; }
+    | attr_optional { $$ = $1; }
     | attr_get { $$ = $1; }
     | attr_set { $$ = $1; }
     | attr_handle { $$ = $1; }
@@ -425,6 +428,10 @@ attr_in
 
 attr_out
     : ATTROUT { auto node = alloc_node(ASTAttrOut, @1); $$ = node; }
+    ;
+
+attr_optional
+    : ATTROPTIONAL { auto node = alloc_node(ASTAttrOptional, @1); $$ = node; }
     ;
 
 attr_get

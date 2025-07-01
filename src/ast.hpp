@@ -188,6 +188,10 @@ struct ASTAttrOut : ASTAttr {
     void accept(Visitor& visitor) override;
 };
 
+struct ASTAttrOptional : ASTAttr {
+    void accept(Visitor& visitor) override;
+};
+
 struct ASTAttrTokenizer : ASTAttr {
     void accept(Visitor& visitor) override;
 
@@ -564,6 +568,10 @@ struct Visitor {
         discarded(node);
     }
 
+    virtual void visit(ASTAttrOptional* node) {
+        discarded(node);
+    }
+
     virtual void visit(ASTAttrTokenizer* node) {
         discarded(node);
     }
@@ -829,6 +837,10 @@ inline void ASTAttrIn::accept(Visitor& visitor) {
 }
 
 inline void ASTAttrOut::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+inline void ASTAttrOptional::accept(Visitor& visitor) {
     visitor.visit(this);
 }
 

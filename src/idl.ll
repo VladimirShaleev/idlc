@@ -113,6 +113,7 @@ DOCMCHAR ([^ \r\n\t\{\}[\]`]|^[`]{3}|\\\{|\\\}|\\\[|\\\])
 <ATTRCTX>"destroy"   { return token::ATTRDESTROY; }
 <ATTRCTX>"in"        { return token::ATTRIN; }
 <ATTRCTX>"out"       { return token::ATTROUT; }
+<ATTRCTX>"optional"  { return token::ATTROPTIONAL; }
 <ATTRCTX>"tokenizer" { BEGIN(ATTRARGTOKENIZER); return token::ATTRTOKENIZER; }
 <ATTRCTX>"version"   { BEGIN(ATTRARGVERSION); return token::ATTRVERSION; }
 <ATTRCTX>","         { return YYText()[0]; }

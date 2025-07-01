@@ -88,8 +88,8 @@ interface Compiler
     method Compile {Result}
         arg Compiler {Compiler} [this] @ Target compiler.
         arg Generator {Generator} @ Target of generator.
-        arg File {Str} @ Path to .idl file for compile.
+        arg File {Str} [optional] @ Path to .idl file for compile.
         arg SourceCount {Uint32} @ TODO
         arg Sources {Source} [const,array(SourceCount)] @ TODO
-        arg Options {Options} @ Compile options, may be null.
-        arg Result {CompilationResult} [result] @ TODO.
+        arg Options {Options} [optional] @ Compile options, may be null.
+        arg Result {CompilationResult} [result,optional] @ TODO.

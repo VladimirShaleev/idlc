@@ -1059,7 +1059,7 @@ static void generateFunctionArgs(idl::Context& ctx,
         IsTrivial trivial;
         argType->accept(trivial);
         auto isR     = (!trivial.trivial && !argType->is<ASTBool>()) || argType->is<ASTStruct>();
-        auto isConst = isR && (argType->is<ASTStr>() || argType->is<ASTStruct>());
+        auto isConst = isR && (argType->is<ASTStr>() || argIsArr);
 
         fmt::print(stream, "{}{}{} {}", isConst ? "const " : "", jsTypeName, isR ? "&" : "", jsArgName);
     }
@@ -1301,6 +1301,19 @@ static void generateFunction(idl::Context& ctx, std::ostream& stream, ASTDecl* f
 
 static void generateClasses(idl::Context& ctx, std::ostream& stream) {
     ctx.filter<ASTInterface>([&ctx, &stream](ASTInterface* node) {
+        bool hasCallbacks{};
+        for (auto method : node->methods) {
+            for (auto arg : method->args) {
+                if (arg->findAttr<ASTAttrIn>() && getType(arg)->is<ASTCallback>()) {
+                    hasCallbacks = true;
+                    break;
+                }
+            }
+            if (hasCallbacks) {
+                break;
+            }
+        }
+
         JsName jsname;
         node->accept(jsname);
         const auto jsTypeStr = jsname.str;
@@ -1318,18 +1331,27 @@ static void generateClasses(idl::Context& ctx, std::ostream& stream) {
         fmt::println(stream, "    }}");
         fmt::println(stream, "");
 
-        // Add ctor from handle
+        ASTMethod* reference{};
         for (auto method : node->methods) {
             if (method->findAttr<ASTAttrRefInc>() != nullptr) {
-                method->accept(cname);
-                fmt::println(stream, "    {}(const {}& other) : _handle(other._handle) {{", jsTypeStr, jsTypeStr);
+                reference = method;
+                break;
+            }
+        }
+        if (reference || hasCallbacks) {
+            fmt::print(stream, "    {}(const {}& other) : ", jsTypeStr, jsTypeStr);
+            if (hasCallbacks) {
+                fmt::print(stream, "_callbacks(other._callbacks), ");
+            }
+            fmt::println(stream, "_handle(other._handle) {{");
+            if (reference) {
+                reference->accept(cname);
                 fmt::println(stream, "        if (_handle) {{");
                 fmt::println(stream, "            {}(_handle);", cname.str);
                 fmt::println(stream, "        }}");
-                fmt::println(stream, "    }}");
-                fmt::println(stream, "");
-                break;
             }
+            fmt::println(stream, "    }}");
+            fmt::println(stream, "");
         }
         for (auto method : node->methods) {
             if (method->findAttr<ASTAttrDestroy>() != nullptr) {
@@ -1353,6 +1375,24 @@ static void generateClasses(idl::Context& ctx, std::ostream& stream) {
         fmt::println(stream, "    }}");
         fmt::println(stream, "");
         fmt::println(stream, "private:");
+        if (hasCallbacks) {
+            ASTDeclRef dataRef{};
+            dataRef.parent = ctx.api();
+            dataRef.name   = "Data";
+            CName cname;
+            ctx.resolveType(&dataRef)->accept(cname);
+            fmt::println(stream, "    {} storeCallback(const std::string& func, val* callback) {{", cname.str);
+            fmt::println(stream, "        if (callback) {{");
+            fmt::println(stream,
+                         "            return ({}) &_callbacks.insert_or_assign(func, *callback).first->second;",
+                         cname.str);
+            fmt::println(stream, "        }}");
+            fmt::println(stream, "        _callbacks.erase(func);");
+            fmt::println(stream, "        return nullptr;");
+            fmt::println(stream, "    }}");
+            fmt::println(stream, "");
+            fmt::println(stream, "    std::map<std::string, val> _callbacks{{}};");
+        }
         fmt::println(stream, "    {} _handle{{}};", handleTypeStr);
         fmt::println(stream, "}};");
         fmt::println(stream, "template <>");

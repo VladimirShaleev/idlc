@@ -25,6 +25,7 @@ typedef enum
     IDL_RESULT_ERROR_INVALID_ARG   = 3, /**< Invalid argument. */
     IDL_RESULT_ERROR_FILE_CREATE   = 4, /**< Failed to create file. */
     IDL_RESULT_ERROR_COMPILATION   = 5, /**< Compilation failed. */
+    IDL_RESULT_ERROR_NOT_SUPPORTED = 6, /**< Not supporeted. */
     IDL_RESULT_MAX_ENUM            = 0x7FFFFFFF /**< Max value of enum (not used) */
 } idl_result_t;
 

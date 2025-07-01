@@ -132,8 +132,9 @@ int main(int argc, char* argv[]) {
             }
         }
         idl_compilation_result_destroy(result);
-    } else if (code != IDL_RESULT_SUCCESS) {
-        std::cerr << idl_result_to_string(code) << std::endl;
+    }
+    if (code != IDL_RESULT_SUCCESS) {
+        std::cerr << "error: " << idl_result_to_string(code) << std::endl;
     }
 
     idl_compiler_destroy(compiler);

@@ -7,6 +7,7 @@ enum Result [errorcode]
     const ErrorInvalidArg @ Invalid argument.
     const ErrorFileCreate @ Failed to create file.
     const ErrorCompilation @ Compilation failed.
+    const ErrorNotSupported @ Not supporeted.
 
 @ TODO.
 @ TODO. [detail]

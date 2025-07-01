@@ -36,7 +36,12 @@ public:
             auto code = parser.parse();
 
             if (code != 0) {
-                return IDL_RESULT_ERROR_COMPILATION;
+                if (result) {
+                    Exception exc(IDL_STATUS_E2113, "<input>", 0, 0, "unknown error");
+                    result->addMessage(exc);
+                } else {
+                    return IDL_RESULT_ERROR_COMPILATION;
+                }
             }
 
             context.prepareEnumConsts();
@@ -71,8 +76,12 @@ public:
                     generateC(context, output, writer, writerData, std::span{ additions.data(), additions.size() });
                     break;
                 case IDL_GENERATOR_JS:
+#ifdef IDLC_SUPPORTED_JS
                     generateJs(context, output, writer, writerData, std::span{ additions.data(), additions.size() });
                     break;
+#else
+                    return IDL_RESULT_ERROR_NOT_SUPPORTED;
+#endif
                 default:
                     assert(!"unreachable code");
                     break;
@@ -80,20 +89,23 @@ public:
         } catch (const Exception& exc) {
             if (result) {
                 result->addMessage(exc);
+            } else {
+                return exc.status() == IDL_STATUS_E2067 ? IDL_RESULT_ERROR_FILE_CREATE : IDL_RESULT_ERROR_COMPILATION;
             }
-            return exc.status() == IDL_STATUS_E2067 ? IDL_RESULT_ERROR_FILE_CREATE : IDL_RESULT_ERROR_COMPILATION;
         } catch (const std::bad_alloc&) {
             if (result) {
                 Exception exc(IDL_STATUS_E2045, "<input>", 0, 0, "out of memory");
                 result->addMessage(exc);
+            } else {
+                return IDL_RESULT_ERROR_OUT_OF_MEMORY;
             }
-            return IDL_RESULT_ERROR_OUT_OF_MEMORY;
         } catch (...) {
             if (result) {
                 Exception exc(IDL_STATUS_E2113, "<input>", 0, 0, "unknown error");
                 result->addMessage(exc);
+            } else {
+                return IDL_RESULT_ERROR_UNKNOWN;
             }
-            return IDL_RESULT_ERROR_UNKNOWN;
         }
         return IDL_RESULT_SUCCESS;
     }
@@ -123,6 +135,8 @@ idl_utf8_t idl_result_to_string(idl_result_t result) {
             return "failed to create file";
         case IDL_RESULT_ERROR_COMPILATION:
             return "compilation failed";
+        case IDL_RESULT_ERROR_NOT_SUPPORTED:
+            return "not supported";
         default:
             return "<unknown result>";
     }

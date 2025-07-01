@@ -1606,7 +1606,7 @@ static void generateRegisterTypes(idl::Context& ctx, std::ostream& stream) {
 
 static void generateRegisterOptionals(idl::Context& ctx, std::ostream& stream) {
     auto addOptional = [&stream](ASTDecl* decl) {
-        if (!decl->is<ASTVoid>() && !decl->is<ASTChar>()) {
+        if (!decl->is<ASTVoid>() && !decl->is<ASTChar>() && !decl->findAttr<ASTAttrErrorCode>()) {
             JsName jsname;
             decl->accept(jsname);
             fmt::println(stream, "    register_optional<{}>();", jsname.str);

@@ -25,6 +25,7 @@ include(cmake/flex-install.cmake)
 include(cmake/bison-install.cmake)
 
 option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
+option(IDLC_SUPPORTED_JS "Support JavaScript generator" ON)
 option(IDLC_MSVC_DYNAMIC_RUNTIME "Link dynamic runtime library instead of static" OFF)
 cmake_dependent_option(IDLC_ENABLE_INSTALL "Enable installation" ON
     "CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR" OFF)
@@ -55,10 +56,13 @@ if(IDLC_USE_IDLC)
             "${PROJECT_SOURCE_DIR}/specs/results.idl")
 endif()
 
+set(IDL_SOURCES src/compiler.cpp src/generator_c.cpp)
+if(IDLC_SUPPORTED_JS)
+    list(APPEND IDL_SOURCES src/generator_js.cpp)
+endif()
+
 add_library(idl
-    src/compiler.cpp
-    src/generator_c.cpp
-    src/generator_js.cpp
+    ${IDL_SOURCES}
     ${IDLC_api_OUTPUTS}
     ${BISON_parser_OUTPUTS}
     ${FLEX_scanner_OUTPUTS})
@@ -96,6 +100,9 @@ if(MSVC)
         set_target_properties(idl PROPERTIES
             MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
     endif()
+endif()
+if(IDLC_SUPPORTED_JS)
+    target_compile_definitions(idl PRIVATE IDLC_SUPPORTED_JS)
 endif()
 set(IDLC_TARGETS idl)
 

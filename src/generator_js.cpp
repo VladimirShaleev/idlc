@@ -1344,8 +1344,10 @@ static void generateFunction(idl::Context& ctx, std::ostream& stream, ASTDecl* f
                     CName cname;
                     getType(param.type)->accept(cname);
                     fmt::println(stream, "            ctx = std::make_shared<CContext>();");
-                    fmt::println(
-                        stream, "            return cconvert<{}>(*ctx, functionReturn.as<{}>());", cname.str, jsname.str);
+                    fmt::println(stream,
+                                 "            return cconvert<{}>(*ctx, functionReturn.as<{}>());",
+                                 cname.str,
+                                 jsname.str);
                 }
                 fmt::println(stream, "        }} : nullptr;");
             } else if (param.isUserdata) {
@@ -1592,6 +1594,22 @@ static void generateRegisterTypes(idl::Context& ctx, std::ostream& stream) {
     fmt::println(stream, "");
 }
 
+static void generateRegisterOptionals(idl::Context& ctx, std::ostream& stream) {
+    auto addOptional = [&stream](ASTDecl* decl) {
+        if (!decl->is<ASTVoid>() && !decl->is<ASTChar>()) {
+            JsName jsname;
+            decl->accept(jsname);
+            fmt::println(stream, "    register_optional<{}>();", jsname.str);
+        }
+    };
+    ctx.filter<ASTTrivialType>(addOptional);
+    ctx.filter<ASTEnum>(addOptional);
+    ctx.filter<ASTStruct>(addOptional);
+    ctx.filter<ASTInterface>(addOptional);
+    ctx.filter<ASTCallback>(addOptional);
+    fmt::println(stream, "");
+}
+
 static void generateEnums(idl::Context& ctx, std::ostream& stream) {
     ctx.filter<ASTEnum>([&stream](ASTEnum* node) {
         if (node->findAttr<ASTAttrErrorCode>() == nullptr) {
@@ -1661,6 +1679,7 @@ void generateJs(idl::Context& ctx,
     generateClasses(ctx, stream.stream);
     generateBeginBindings(ctx, stream.stream);
     generateRegisterTypes(ctx, stream.stream);
+    generateRegisterOptionals(ctx, stream.stream);
     generateEnums(ctx, stream.stream);
     generateValueObjects(ctx, stream.stream);
     generateEndBindings(ctx, stream.stream);

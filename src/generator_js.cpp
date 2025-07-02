@@ -464,8 +464,8 @@ static void generateComment(idl::Context& ctx, std::ostream& stream) {
  *
  * This file contains Embind bindings for JavaScript interoperability.
  * 
- * Building the WASM module
- * ========================
+ * Building the JavaScript module
+ * ==============================
  * You can use any build system that supports Emscripten (e.g., emcc, CMake, Makefile, etc.).
  * Below is an example using `emcc` directly:
  *

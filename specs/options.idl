@@ -138,6 +138,7 @@ interface Options
     @ Get the current import callback.
     @ Returns a callback if one has been configured. [detail]
     @ Returns a callback. [return]
+    @ {SetImporter} [see]
     method GetImporter {ImportCallback} [const]
         arg Options {Options} [this] @ Target options.
         arg Data {Data} [out,optional,userdata] @ Returning a callback user data pointer (may be null).
@@ -152,65 +153,83 @@ interface Options
         If {Compiler.Compile.File} was not passed to {Compiler.Compile} to compile from the file system, 
         then the importer will also be used to obtain the main (primary) file named *<input>*.``` [note]
     @ A typical use of an importer is to read source code from memory. [note]
+    @ {GetImporter} [see]
     method SetImporter
         arg Options {Options} [this] @ Target options.
         arg Callback {ImportCallback} @ Callback function.
         arg Data {Data} [optional,userdata] @ Callback user data.
 
-    @ TODO.
-    @ TODO. [detail]
-    @ TODO. [return]
+    @ Get the current release import callback.
+    @ Callback for releasing sources allocated via {SetImporter}. [detail]
+    @ Returns a callback. [return]
+    @ {SetReleaseImport} [see]
     method GetReleaseImport {ReleaseImportCallback} [const]
         arg Options {Options} [this] @ Target options.
-        arg Data {Data} [out,userdata] @ Callback user data pointer.
+        arg Data {Data} [out,optional,userdata] @ Returning a callback user data pointer (may be null).
 
-    @ TODO.
-    @ TODO. [detail]
+    @ Set release import callback.
+    @ ```
+        If the callback set in {SetImporter} allocates data on the heap or creates 
+        any resources, they can be freed by the callback set here.``` [detail]
+    @ {GetReleaseImport} [see]
     method SetReleaseImport
         arg Options {Options} [this] @ Target options.
         arg Callback {ReleaseImportCallback} @ Callback function.
-        arg Data {Data} [userdata] @ Callback user data.
+        arg Data {Data} [optional,userdata] @ Callback user data.
 
-    @ TODO.
-    @ TODO. [detail]
-    @ TODO. [return]
+    @ Get the current write callback.
+    @ Returns a callback if one has been configured. [detail]
+    @ Returns a callback. [return]
+    @ {SetWriter} [see]
     method GetWriter {WriteCallback} [const]
         arg Options {Options} [this] @ Target options.
-        arg Data {Data} [out,userdata] @ Callback user data pointer.
+        arg Data {Data} [out,optional,userdata] @ Returning a callback user data pointer (may be null).
 
-    @ TODO.
-    @ TODO. [detail]
+    @ Set write callback.
+    @ ```
+        Configures a callback to receive compiler output. If the callback is set, no output 
+        will be made to the file system ({SetOutputDir} will also not be used).``` [detail]
+    @ Typical uses of a writer are writing to memory or outputting to the console and the like. [note]
+    @ {GetWriter} [see]
     method SetWriter
         arg Options {Options} [this] @ Target options.
         arg Callback {WriteCallback} @ Callback function.
-        arg Data {Data} [userdata] @ Callback user data.
+        arg Data {Data} [optional,userdata] @ Callback user data.
 
-    @ TODO.
-    @ TODO. [detail]
-    @ TODO. [return]
+    @ Get additional parameters.
+    @ Returns an array of additional parameters. [detail]
+    @ Parameter array. [return]
     @ {SetAdditions} [see]
     method GetAdditions [const]
         arg Options {Options} [this] @ Target options.
         arg AdditionCount {Uint32} [in,out] @ Number of additions.
         arg Additions {Str} [result,array(AdditionCount)] @ Additions.
 
-    @ TODO.
-    @ TODO. [detail]
+    @ Set additional parameters.
+    @ Sets additional parameters specific to the generator ({Generator}). [detail]
+    @ ```
+        Supported Generators:
+        - {Generator.C} - additional headers included in the API header file;
+        - {Generator.Js} - no specific parameters.
+        ``` [note]
     @ {GetAdditions} [see]
-    @ Generator specific. For C these are additional headers. [note]
     method SetAdditions
         arg Options {Options} [this] @ Target options.
         arg AdditionCount {Uint32} @ Number of additions.
         arg Additions {Str} [const,array(AdditionCount)] @ Additions.
 
-    @ TODO.
-    @ TODO. [detail]
+    @ Get api version.
+    @ Returns the API version or null. [detail]
     @ {SetVersion} [see]
     method GetVersion {ApiVersion} [const,ref,optional]
         arg Options {Options} [this] @ Target options.
 
-    @ TODO.
-    @ TODO. [detail]
+    @ Set api version.
+    @ Sets the API version that will be saved in the compiler output. [detail]
+    @ ```
+        If not set, then the API version will be taken from the \[version(major,minor,micro)\] 
+        attribute (sample: api Sample \[version(2,3,1)\]). If the api does not have a version 
+        attribute specified, then the version will be taken as 0.0.0.``` [note]
     @ {GetVersion} [see]
     method SetVersion
         arg Options {Options} [this] @ Target options.

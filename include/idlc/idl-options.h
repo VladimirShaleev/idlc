@@ -200,6 +200,7 @@ idl_options_set_import_dirs(idl_options_t options,
  * @param[in]  options Target options.
  * @param[out] data Returning a callback user data pointer (may be null).
  * @return     Returns a callback.
+ * @sa         ::idl_options_set_importer
  */
 idl_api idl_import_callback_t
 idl_options_get_importer(idl_options_t options,
@@ -223,6 +224,7 @@ idl_options_get_importer(idl_options_t options,
  * @parblock
  * @note      A typical use of an importer is to read source code from memory.
  * @endparblock
+ * @sa        ::idl_options_get_importer
  */
 idl_api void
 idl_options_set_importer(idl_options_t options,
@@ -230,22 +232,25 @@ idl_options_set_importer(idl_options_t options,
                          idl_data_t data);
 
 /**
- * @brief      TODO.
- * @details    TODO.
+ * @brief      Get the current release import callback.
+ * @details    Callback for releasing sources allocated via ::idl_options_set_importer.
  * @param[in]  options Target options.
- * @param[out] data Callback user data pointer.
- * @return     TODO.
+ * @param[out] data Returning a callback user data pointer (may be null).
+ * @return     Returns a callback.
+ * @sa         ::idl_options_set_release_import
  */
 idl_api idl_release_import_callback_t
 idl_options_get_release_import(idl_options_t options,
                                idl_data_t* data);
 
 /**
- * @brief     TODO.
- * @details   TODO.
+ * @brief     Set release import callback.
+ * @details   If the callback set in ::idl_options_set_importer allocates data on the heap or creates
+ *            any resources, they can be freed by the callback set here.
  * @param[in] options Target options.
  * @param[in] callback Callback function.
  * @param[in] data Callback user data.
+ * @sa        ::idl_options_get_release_import
  */
 idl_api void
 idl_options_set_release_import(idl_options_t options,
@@ -253,22 +258,26 @@ idl_options_set_release_import(idl_options_t options,
                                idl_data_t data);
 
 /**
- * @brief      TODO.
- * @details    TODO.
+ * @brief      Get the current write callback.
+ * @details    Returns a callback if one has been configured.
  * @param[in]  options Target options.
- * @param[out] data Callback user data pointer.
- * @return     TODO.
+ * @param[out] data Returning a callback user data pointer (may be null).
+ * @return     Returns a callback.
+ * @sa         ::idl_options_set_writer
  */
 idl_api idl_write_callback_t
 idl_options_get_writer(idl_options_t options,
                        idl_data_t* data);
 
 /**
- * @brief     TODO.
- * @details   TODO.
+ * @brief     Set write callback.
+ * @details   Configures a callback to receive compiler output. If the callback is set, no output
+ *            will be made to the file system (::idl_options_set_output_dir will also not be used).
  * @param[in] options Target options.
  * @param[in] callback Callback function.
  * @param[in] data Callback user data.
+ * @note      Typical uses of a writer are writing to memory or outputting to the console and the like.
+ * @sa        ::idl_options_get_writer
  */
 idl_api void
 idl_options_set_writer(idl_options_t options,
@@ -276,12 +285,12 @@ idl_options_set_writer(idl_options_t options,
                        idl_data_t data);
 
 /**
- * @brief         TODO.
- * @details       TODO.
+ * @brief         Get additional parameters.
+ * @details       Returns an array of additional parameters.
  * @param[in]     options Target options.
  * @param[in,out] addition_count Number of additions.
  * @param[out]    additions Additions.
- * @return        TODO.
+ * @return        Parameter array.
  * @sa            ::idl_options_set_additions
  */
 idl_api void
@@ -290,12 +299,15 @@ idl_options_get_additions(idl_options_t options,
                           idl_utf8_t* additions);
 
 /**
- * @brief     TODO.
- * @details   TODO.
+ * @brief     Set additional parameters.
+ * @details   Sets additional parameters specific to the generator (idl_generator_t).
  * @param[in] options Target options.
  * @param[in] addition_count Number of additions.
  * @param[in] additions Additions.
- * @note      Generator specific. For C these are additional headers.
+ * @note      Supported Generators:
+ *            - ::IDL_GENERATOR_C - additional headers included in the API header file;
+ *            - ::IDL_GENERATOR_JS - no specific parameters.
+ *            
  * @sa        ::idl_options_get_additions
  */
 idl_api void
@@ -304,8 +316,8 @@ idl_options_set_additions(idl_options_t options,
                           const idl_utf8_t* additions);
 
 /**
- * @brief     TODO.
- * @details   TODO.
+ * @brief     Get api version.
+ * @details   Returns the API version or null.
  * @param[in] options Target options.
  * @sa        ::idl_options_set_version
  */
@@ -313,10 +325,13 @@ idl_api const idl_api_version_t*
 idl_options_get_version(idl_options_t options);
 
 /**
- * @brief     TODO.
- * @details   TODO.
+ * @brief     Set api version.
+ * @details   Sets the API version that will be saved in the compiler output.
  * @param[in] options Target options.
  * @param[in] version TODO.
+ * @note      If not set, then the API version will be taken from the [version(major,minor,micro)]
+ *            attribute (sample: api Sample [version(2,3,1)]). If the api does not have a version
+ *            attribute specified, then the version will be taken as 0.0.0.
  * @sa        ::idl_options_get_version
  */
 idl_api void

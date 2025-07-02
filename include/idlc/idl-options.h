@@ -62,10 +62,12 @@ typedef void
                                  idl_data_t data);
 
 /**
- * @brief     TODO.
- * @details   TODO.
- * @param[in] source TODO.
- * @param[in] data TODO.
+ * @brief     Callback to which the compilation result is passed.
+ * @details   If you need to save the compilation result to a location other than the file
+ *            system, such as the network or console output, you can use this callback.
+ * @param[in] source Source of compiler output.
+ * @param[in] data User data specified when setting up a callback.
+ * @note      The compiler can output multiple sources. The exact number depends on the selected generator idl_generator_t.
  */
 typedef void
 (*idl_write_callback_t)(const idl_source_t* source,

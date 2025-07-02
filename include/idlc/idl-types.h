@@ -25,7 +25,7 @@ IDL_BEGIN
  * @{
  */
 IDL_TYPE(idl_compilation_result) /**< Compilation result. */
-IDL_TYPE(idl_options)            /**< TODO. */
+IDL_TYPE(idl_options)            /**< Compilation options. */
 IDL_TYPE(idl_compiler)           /**< Compiler interface. */
 /** @} */
 

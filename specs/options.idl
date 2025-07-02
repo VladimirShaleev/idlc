@@ -31,24 +31,27 @@ callback ReleaseImportCallback
     arg Source {Source} [ref] @ Source for release.
     arg Data {Data} [userdata] @ User data specified when setting up a callback.
 
-@ TODO.
-@ TODO. [detail]
+@ Callback to which the compilation result is passed.
+@ ```
+    If you need to save the compilation result to a location other than the file 
+    system, such as the network or console output, you can use this callback.``` [detail]
+@ The compiler can output multiple sources. The exact number depends on the selected generator {Generator}. [note]
 callback WriteCallback
-    arg Source {Source} [const,ref] @ TODO.
-    arg Data {Data} [userdata] @ TODO.
+    arg Source {Source} [const,ref] @ Source of compiler output.
+    arg Data {Data} [userdata] @ User data specified when setting up a callback.
 
-@ TODO.
-@ TODO. [detail]
+@ Compilation options.
+@ This object specifies various compilation options. [detail]
 interface Options
-    prop DebugMode [get(GetDebugMode),set(SetDebugMode)] @ Enable debug mode.
-    prop WarningsAsErrors [get(GetWarningsAsErrors),set(SetWarningsAsErrors)] @ TODO.
-    prop OutputDir [get(GetOutputDir),set(SetOutputDir)] @ TODO.
-    prop ImportDirs [get(GetImportDirs),set(SetImportDirs)] @ TODO.
-    prop Additions [get(GetAdditions),set(SetAdditions)] @ TODO.
+    prop DebugMode [get(GetDebugMode),set(SetDebugMode)] @ Setting debug compilation output to console.
+    prop WarningsAsErrors [get(GetWarningsAsErrors),set(SetWarningsAsErrors)] @ Treat warnings as errors.
+    prop OutputDir [get(GetOutputDir),set(SetOutputDir)] @ Output directory of the compilation result.
+    prop ImportDirs [get(GetImportDirs),set(SetImportDirs)] @ Directories to search for files when importing.
+    prop Additions [get(GetAdditions),set(SetAdditions)] @ Additional parameters (specific to each generator {Generator}).
 
-    event Importer [get(GetImporter),set(SetImporter)] @ TODO.
-    event ReleaseImport [get(GetReleaseImport),set(SetReleaseImport)] @ TODO.
-    event Writer [get(GetWriter),set(SetWriter)] @ TODO.
+    event Importer [get(GetImporter),set(SetImporter)] @ Events for receiving sources (for example, when importing).
+    event ReleaseImport [get(GetReleaseImport),set(SetReleaseImport)] @ Event to release sources obtained from {Importer}.
+    event Writer [get(GetWriter),set(SetWriter)] @ Event that occurs when the compiler outputs.
 
     @ Creates new options instance.
     @ TODO: [detail]

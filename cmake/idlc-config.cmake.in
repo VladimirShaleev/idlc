@@ -22,9 +22,7 @@ if(TARGET @PROJECT_NAME@::@PROJECT_NAME@)
         endforeach()
         string(TOLOWER ${IDLC_ARG_GENERATOR} IDLC_ARG_GEN)
         set(IDLC_TARGET_OUTPUTS ${IDLC_ARG_OUTPUT})
-        if(IDLC_ARG_GEN STREQUAL "c")
-            get_filename_component(IDLC_ARG_OUTPUT "${IDLC_ARG_OUTPUT}/../" ABSOLUTE)
-        endif()
+        get_filename_component(IDLC_ARG_OUTPUT "${IDLC_ARG_OUTPUT}/../" ABSOLUTE)
         add_custom_command(OUTPUT ${IDLC_TARGET_OUTPUTS}
             COMMAND @PROJECT_NAME@::@PROJECT_NAME@ ${IDLC_ARG_CMD} -g ${IDLC_ARG_GEN} -o ${IDLC_ARG_OUTPUT} ${IDLC_ARG_SOURCE}
             VERBATIM

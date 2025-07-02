@@ -147,7 +147,8 @@ interface Options
     @ Used to resolve code sources, such as when the compiler encounters imports. [detail]
     @ ```
         If set, the importer will be used to resolve sources as the highest 
-        priority (then the directories passed to {SetImportDirs} will be used, 
+        priority (then the sources passed to {Compiler.Compile} in the {Compiler.Compile.Sources} 
+        argument will be used, then the directories passed to {SetImportDirs} will be used, 
         and then the current working directory).``` [note]
     @ ```
         If {Compiler.Compile.File} was not passed to {Compiler.Compile} to compile from the file system, 
@@ -210,7 +211,7 @@ interface Options
     @ ```
         Supported Generators:
         - {Generator.C} - additional headers included in the API header file;
-        - {Generator.Js} - no specific parameters.
+        - {Generator.JS} - no specific parameters.
         ``` [note]
     @ {GetAdditions} [see]
     method SetAdditions

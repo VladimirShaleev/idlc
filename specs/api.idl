@@ -36,20 +36,20 @@ api Idl [version(0,0,0)]
 @ Here are the warning and error codes that may occur during compilation. [detail]
 import Results
 
-@ TODO.
-@ TODO. [detail]
+@ Compiler options.
+@ This is where the structures and various compilation options are located. [detail]
 import Options
 
 @ Generation language
 @ Enumeration possible languages for generating interfaces and wrapping C libraries for other languages. [note]
 enum Generator
     const C @ C generator
-    // const Cpp @ TODO:
-    // const Python @ TODO:
-    const Js : 3 @ TODO:
-    // const TypeScript @ TODO:
-    // const CSharp @ TODO:
-    // const Java @ TODO:
+    // const Cpp @ C++ generator
+    // const Python @ Python generator
+    const JS : 3 [tokenizer(0)] @ JavaScript generator
+    // const TS [tokenizer(0)] @ TypeScript generator
+    // const CS [tokenizer(0)] @ C# generator
+    // const Java @ Java generator
 
 @ Current library version as packed 32-bit value.
 @ Format: (major << 16) | (minor << 8) | micro. [detail]
@@ -65,8 +65,8 @@ func VersionString {Str}
 @ Interface for interacting with the compiler. [detail]
 interface Compiler
     @ Creates new compiler instance.
-    @ TODO: [detail]
-    @ TODO: [return]
+    @ Creates an object for IDL compilation. [detail]
+    @ New compiler instance [return]
     method Create {Result} [ctor]
         arg Compiler {Compiler} [result] @ New compiler instance.
 
@@ -85,11 +85,21 @@ interface Compiler
 
     @ Comile IDL.
     @ Compilation result. [return]
+    @ ```
+        To read source code from memory instead of the file system, use {Sources} and/or configure 
+        the importer with {Options.SetImporter} and pass the {File} argument as empty.``` [note]
+    @ ```
+        Priorities for resolving source code imports:
+        - {Options.SetImporter} - import callback if specified;
+        - {Sources} - then the source code array, if specified;
+        - {Options.SetImportDirs} - then in the paths to the import directories, if specified;
+        - then the current working directory.
+        ``` [note]
     method Compile {Result}
         arg Compiler {Compiler} [this] @ Target compiler.
         arg Generator {Generator} @ Target of generator.
         arg File {Str} [optional] @ Path to .idl file for compile.
-        arg SourceCount {Uint32} @ TODO
-        arg Sources {Source} [const,array(SourceCount)] @ TODO
+        arg SourceCount {Uint32} @ Number of sources.
+        arg Sources {Source} [const,array(SourceCount)] @ Sources.
         arg Options {Options} [optional] @ Compile options, may be null.
-        arg Result {CompilationResult} [result] @ TODO.
+        arg Result {CompilationResult} [optional,result] @ Compilation result.

@@ -44,7 +44,7 @@
 typedef enum
 {
     IDL_GENERATOR_C        = 0, /**< C generator */
-    IDL_GENERATOR_JS       = 3, /**< TODO: */
+    IDL_GENERATOR_JS       = 3, /**< JavaScript generator */
     IDL_GENERATOR_MAX_ENUM = 0x7FFFFFFF /**< Max value of enum (not used) */
 } idl_generator_t;
 
@@ -58,7 +58,7 @@ idl_version(void);
 
 /**
  * @brief   Current library version as human-readable string.
- * @details Format: "major.minor.micro", eg: "1.4.0".
+ * @details Format: "major.minor.micro", eg: "1.5.0".
  * @return  Return version string.
  */
 idl_api idl_utf8_t
@@ -66,9 +66,9 @@ idl_version_string(void);
 
 /**
  * @brief      Creates new compiler instance.
- * @details    TODO:
+ * @details    Creates an object for IDL compilation.
  * @param[out] compiler New compiler instance.
- * @return     TODO:
+ * @return     New compiler instance
  */
 idl_api idl_result_t
 idl_compiler_create(idl_compiler_t* compiler);
@@ -97,11 +97,23 @@ idl_compiler_destroy(idl_compiler_t compiler);
  * @param[in]  compiler Target compiler.
  * @param[in]  generator Target of generator.
  * @param[in]  file Path to .idl file for compile.
- * @param[in]  source_count TODO
- * @param[in]  sources TODO
+ * @param[in]  source_count Number of sources.
+ * @param[in]  sources Sources.
  * @param[in]  options Compile options, may be null.
- * @param[out] result TODO.
+ * @param[out] result Compilation result.
  * @return     Compilation result.
+ * @parblock
+ * @note       To read source code from memory instead of the file system, use *sources* and/or configure
+ *             the importer with ::idl_options_set_importer and pass the *file* argument as empty.
+ * @endparblock
+ * @parblock
+ * @note       Priorities for resolving source code imports:
+ *             - ::idl_options_set_importer - import callback if specified;
+ *             - *sources* - then the source code array, if specified;
+ *             - ::idl_options_set_import_dirs - then in the paths to the import directories, if specified;
+ *             - then the current working directory.
+ *             
+ * @endparblock
  */
 idl_api idl_result_t
 idl_compiler_compile(idl_compiler_t compiler,

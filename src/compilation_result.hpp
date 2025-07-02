@@ -18,10 +18,6 @@ public:
         return _hasErrors;
     }
 
-    // void setFailed() noexcept {
-    //     _success = false;
-    // }
-
     void addMessage(const Exception& exc) {
         _messages.push_back({});
         auto& message    = _messages.back();

@@ -1,7 +1,7 @@
 /**
  * @file      idl-options.h
- * @brief     TODO.
- * @details   TODO.
+ * @brief     Compiler options.
+ * @details   This is where the structures and various compilation options are located.
  * @author    Vladimir Shaleev <vladimirshaleev@gmail.com>
  * @copyright MIT License
  */
@@ -214,7 +214,8 @@ idl_options_get_importer(idl_options_t options,
  * @param[in] data Callback user data.
  * @parblock
  * @note      If set, the importer will be used to resolve sources as the highest
- *            priority (then the directories passed to ::idl_options_set_import_dirs will be used,
+ *            priority (then the sources passed to ::idl_compiler_compile in the *sources*
+ *            argument will be used, then the directories passed to ::idl_options_set_import_dirs will be used,
  *            and then the current working directory).
  * @endparblock
  * @parblock

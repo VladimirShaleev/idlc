@@ -152,23 +152,23 @@ typedef enum
 } idl_status_t;
 
 /**
- * @brief   TODO.
- * @details TODO.
+ * @brief   Compilation message.
+ * @details Detailed description of warning or compilation error.
  */
 typedef struct
 {
-    idl_status_t status; /**< TODO. */
-    idl_utf8_t   message; /**< TODO. */
-    idl_utf8_t   filename; /**< TODO. */
-    idl_uint32_t line; /**< TODO. */
-    idl_uint32_t column; /**< TODO. */
+    idl_status_t status; /**< Compilation status. */
+    idl_utf8_t   message; /**< Detailed text description. */
+    idl_utf8_t   filename; /**< File in which warning or error was detected. */
+    idl_uint32_t line; /**< The line number where the warning or error was detected. */
+    idl_uint32_t column; /**< The column in which the warning or error was detected. */
 } idl_message_t;
 
 /**
  * @brief     Converts error code to descriptive string.
- * @details   Provides error message for debugging.
- * @param[in] result Error code value.
- * @return    Corresponding error message.
+ * @details   Provides a text description for the result code.
+ * @param[in] result Result code.
+ * @return    Corresponding text description of the result code.
  */
 idl_api idl_utf8_t
 idl_result_to_string(idl_result_t result);
@@ -193,29 +193,29 @@ idl_api void
 idl_compilation_result_destroy(idl_compilation_result_t compilation_result);
 
 /**
- * @brief     TODO.
- * @details   TODO.
- * @param[in] compilation_result TODO.
- * @return    TODO.
+ * @brief     Checking if there were warnings.
+ * @details   Check if there were any warnings during compilation.
+ * @param[in] compilation_result Target compilation result instance.
+ * @return    TRUE, if there are warnings.
  */
 idl_api idl_bool_t
 idl_compilation_result_has_warnings(idl_compilation_result_t compilation_result);
 
 /**
- * @brief     TODO.
- * @details   TODO.
- * @param[in] compilation_result TODO.
- * @return    TODO.
+ * @brief     Checking if there were errors.
+ * @details   Check if there were any errors during compilation.
+ * @param[in] compilation_result Target compilation result instance.
+ * @return    TRUE, if there are errors.
  */
 idl_api idl_bool_t
 idl_compilation_result_has_errors(idl_compilation_result_t compilation_result);
 
 /**
- * @brief         TODO.
- * @details       TODO.
- * @param[in]     compilation_result TODO.
- * @param[in,out] message_count TODO.
- * @param[out]    messages TODO.
+ * @brief         Returns messages with warnings and errors.
+ * @details       Returns messages with warnings and errors that occurred during compilation.
+ * @param[in]     compilation_result Target compilation result instance.
+ * @param[in,out] message_count Number of messages.
+ * @param[out]    messages Message array.
  */
 idl_api void
 idl_compilation_result_get_messages(idl_compilation_result_t compilation_result,

@@ -127,27 +127,28 @@ enum Status
     const E2110 [tokenizer(0)] @ The 'version' attribute must specify a semver in the argument.
     const E2111 [tokenizer(0)] @ The declaration does not have a brief ('brief' attribute) or detailed description ('detail' attribute).
 
-@ TODO.
-@ TODO. [detail]
+@ Compilation message.
+@ Detailed description of warning or compilation error. [detail]
 struct Message
-    field Status {Status} @ TODO.
-    field Message {Str} @ TODO.
-    field Filename {Str} @ TODO.
-    field Line {Uint32} @ TODO.
-    field Column {Uint32} @ TODO.
+    field Status {Status} @ Compilation status.
+    field Message {Str} @ Detailed text description.
+    field Filename {Str} @ File in which warning or error was detected.
+    field Line {Uint32} @ The line number where the warning or error was detected.
+    field Column {Uint32} @ The column in which the warning or error was detected.
 
 @ Converts error code to descriptive string.
-@ Provides error message for debugging. [detail]
-@ Corresponding error message. [return]
+@ Provides a text description for the result code. [detail]
+@ Corresponding text description of the result code. [return]
 func ResultToString {Str} [errorcode]
-    arg Result {Result} @ Error code value.
+    arg Result {Result} @ Result code.
 
-@ TODO.
-@ TODO. [detail]
+@ Compilation result.
+@ Provides access to get details about warnings and compilation errors. [detail]
+@ The result can be obtained after the compilation {Compiler.Compile} is completed. [note]
 interface CompilationResult
-    prop PropHasWarnings [get(HasWarnings),tokenizer(^4)] @ TODO.
-    prop PropHasErrors [get(HasErrors),tokenizer(^4)] @ TODO.
-    prop Messages [get(GetMessages)] @ TODO.
+    prop PropHasWarnings [get(HasWarnings),tokenizer(^4)] @ Property indicating whether there were warnings during compilation.
+    prop PropHasErrors [get(HasErrors),tokenizer(^4)] @ Property indicating whether there were errors during compilation.
+    prop Messages [get(GetMessages)] @ Property for getting an array of messages with warnings and errors.
 
     @ Increments reference count.
     @ Manages compilation result instance lifetime. [detail]
@@ -162,21 +163,21 @@ interface CompilationResult
     method Destroy [destroy]
         arg CompilationResult {CompilationResult} [this] @ Compilation result to destroy.
 
-    @ TODO.
-    @ TODO. [detail]
-    @ TODO. [return]
+    @ Checking if there were warnings.
+    @ Check if there were any warnings during compilation. [detail]
+    @ {True}, if there are warnings. [return]
     method HasWarnings {Bool} [const]
-        arg CompilationResult {CompilationResult} [this] @ TODO.
+        arg CompilationResult {CompilationResult} [this] @ Target compilation result instance.
 
-    @ TODO.
-    @ TODO. [detail]
-    @ TODO. [return]
+    @ Checking if there were errors.
+    @ Check if there were any errors during compilation. [detail]
+    @ {True}, if there are errors. [return]
     method HasErrors {Bool} [const]
-        arg CompilationResult {CompilationResult} [this] @ TODO.
+        arg CompilationResult {CompilationResult} [this] @ Target compilation result instance.
 
-    @ TODO.
-    @ TODO. [detail]
+    @ Returns messages with warnings and errors.
+    @ Returns messages with warnings and errors that occurred during compilation. [detail]
     method GetMessages [const]
-        arg CompilationResult {CompilationResult} [this] @ TODO.
-        arg MessageCount {Uint32} [in,out] @ TODO.
-        arg Messages {Message} [result,array(MessageCount)] @ TODO.
+        arg CompilationResult {CompilationResult} [this] @ Target compilation result instance.
+        arg MessageCount {Uint32} [in,out] @ Number of messages.
+        arg Messages {Message} [result,array(MessageCount)] @ Message array.

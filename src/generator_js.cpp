@@ -1198,7 +1198,7 @@ static void generateFunction(idl::Context& ctx, std::ostream& stream, ASTDecl* f
     }
     fmt::print(stream, "(");
     generateFunctionArgs(ctx, stream, func, args, sizeArgs);
-    auto isConst = func->findAttr<ASTAttrConst>() && !func->findAttr<ASTAttrStatic>();
+    auto isConst = func->findAttr<ASTAttrConst>() && !func->findAttr<ASTAttrStatic>() && !func->is<ASTFunc>();
     fmt::println(stream, ") {}{{", isConst ? "const " : "");
 
     std::map<ASTArg*, Param> params;
@@ -1286,7 +1286,7 @@ static void generateFunction(idl::Context& ctx, std::ostream& stream, ASTDecl* f
                 if (func->is<ASTMethod>()) {
                     storeCallback = func->findAttr<ASTAttrStatic>() ? "storeStaticCallback" : "storeCallback";
                 } else {
-                    assert(!"TODO: add callbacks for functions");
+                    storeCallback = "storeFuncCallback";
                 }
 
                 fmt::println(stream,
@@ -1639,6 +1639,39 @@ static void generateBeginBindings(idl::Context& ctx, std::ostream& stream) {
     fmt::println(stream, "EMSCRIPTEN_BINDINGS({}) {{", moduleName);
 }
 
+static void generateFuncCallbackStore(idl::Context& ctx, std::ostream& stream) {
+    bool hasCallbacks{};
+    ctx.filter<ASTFunc>([&hasCallbacks](ASTFunc* node) {
+        for (auto arg : node->args) {
+            if (arg->findAttr<ASTAttrIn>() && getType(arg)->is<ASTCallback>()) {
+                hasCallbacks = true;
+                return false;
+            }
+        }
+        return true;
+    });
+    if (hasCallbacks) {
+        ASTDeclRef dataRef{};
+        dataRef.parent = ctx.api();
+        dataRef.name   = "Data";
+        CName cname;
+        ctx.resolveType(&dataRef)->accept(cname);
+        fmt::println(stream, "{} storeFuncCallback(const std::string& func, val* callback) {{", cname.str);
+        fmt::println(stream,
+                     "    static std::map<std::string, std::pair<val, std::shared_ptr<CContext>>> callbacks{{}};");
+        fmt::println(stream, "    if (callback) {{");
+        fmt::println(stream,
+                     "        return ({}) &callbacks.insert_or_assign(func, std::make_pair(val(*callback), "
+                     "nullptr)).first->second;",
+                     cname.str);
+        fmt::println(stream, "    }}");
+        fmt::println(stream, "    callbacks.erase(func);");
+        fmt::println(stream, "    return nullptr;");
+        fmt::println(stream, "}}");
+        fmt::println(stream, "");
+    }
+}
+
 static void generateCppFunctions(idl::Context& ctx, std::ostream& stream) {
     ctx.filter<ASTFunc>([&ctx, &stream](ASTFunc* node) {
         if (!node->findAttr<ASTAttrErrorCode>()) {
@@ -1871,6 +1904,7 @@ void generateJs(idl::Context& ctx,
     generateJsConverters(ctx, stream.stream);
     generateCConverters(ctx, stream.stream);
     generateCppClasses(ctx, stream.stream);
+    generateFuncCallbackStore(ctx, stream.stream);
     generateCppFunctions(ctx, stream.stream);
     generateBeginBindings(ctx, stream.stream);
     generateRegisterTypes(ctx, stream.stream);

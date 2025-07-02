@@ -1281,9 +1281,18 @@ static void generateFunction(idl::Context& ctx, std::ostream& stream, ASTDecl* f
                 std::string paramData = "data" + std::to_string(userDataCount++);
                 JsName jsname;
                 func->accept(jsname);
+
+                std::string storeCallback;
+                if (func->is<ASTMethod>()) {
+                    storeCallback = func->findAttr<ASTAttrStatic>() ? "storeStaticCallback" : "storeCallback";
+                } else {
+                    assert(!"TODO: add callbacks for functions");
+                }
+
                 fmt::println(stream,
-                             "        auto {} = storeCallback(\"{}\", {} ? &{}.value() : nullptr);",
+                             "        auto {} = {}(\"{}\", {} ? &{}.value() : nullptr);",
                              paramData,
+                             storeCallback,
                              jsname.str,
                              param.jsArgName,
                              param.jsArgName);
@@ -1481,14 +1490,19 @@ static void generateFunction(idl::Context& ctx, std::ostream& stream, ASTDecl* f
 static void generateCppClasses(idl::Context& ctx, std::ostream& stream) {
     ctx.filter<ASTInterface>([&ctx, &stream](ASTInterface* node) {
         bool hasCallbacks{};
+        bool hasStaticCallbacks{};
         for (auto method : node->methods) {
             for (auto arg : method->args) {
                 if (arg->findAttr<ASTAttrIn>() && getType(arg)->is<ASTCallback>()) {
-                    hasCallbacks = true;
+                    if (method->findAttr<ASTAttrStatic>()) {
+                        hasStaticCallbacks = true;
+                    } else {
+                        hasCallbacks = true;
+                    }
                     break;
                 }
             }
-            if (hasCallbacks) {
+            if (hasCallbacks && hasStaticCallbacks) {
                 break;
             }
         }
@@ -1554,6 +1568,29 @@ static void generateCppClasses(idl::Context& ctx, std::ostream& stream) {
         fmt::println(stream, "    }}");
         fmt::println(stream, "");
         fmt::println(stream, "private:");
+        if (hasStaticCallbacks) {
+            ASTDeclRef dataRef{};
+            dataRef.parent = ctx.api();
+            dataRef.name   = "Data";
+            CName cname;
+            ctx.resolveType(&dataRef)->accept(cname);
+            fmt::println(
+                stream, "    static {} storeStaticCallback(const std::string& func, val* callback) {{", cname.str);
+            fmt::println(stream, "        if (callback) {{");
+            fmt::println(
+                stream,
+                "            return ({}) &_staticCallbacks.insert_or_assign(func, std::make_pair(val(*callback), "
+                "nullptr)).first->second;",
+                cname.str);
+            fmt::println(stream, "        }}");
+            fmt::println(stream, "        _staticCallbacks.erase(func);");
+            fmt::println(stream, "        return nullptr;");
+            fmt::println(stream, "    }}");
+            fmt::println(stream, "");
+            fmt::println(
+                stream,
+                "    static std::map<std::string, std::pair<val, std::shared_ptr<CContext>>> _staticCallbacks;");
+        }
         if (hasCallbacks) {
             ASTDeclRef dataRef{};
             dataRef.parent = ctx.api();
@@ -1576,6 +1613,11 @@ static void generateCppClasses(idl::Context& ctx, std::ostream& stream) {
         }
         fmt::println(stream, "    {} _handle{{}};", handleTypeStr);
         fmt::println(stream, "}};");
+        if (hasStaticCallbacks) {
+            fmt::println(stream,
+                         "std::map<std::string, std::pair<val, std::shared_ptr<CContext>>> {}::_staticCallbacks{{}};",
+                         jsTypeStr);
+        }
         fmt::println(stream, "template <>");
         fmt::println(stream, "struct JsConverter<{}, {}> {{", jsTypeStr, handleTypeStr);
         fmt::println(stream, "    static {} convert(const {}& obj) {{", jsTypeStr, handleTypeStr);

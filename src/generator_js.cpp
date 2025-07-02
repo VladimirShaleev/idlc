@@ -457,6 +457,38 @@ static Stream createStream(idl::Context& ctx,
     }
 }
 
+static void generateComment(idl::Context& ctx, std::ostream& stream) {
+    fmt::println(stream,
+                 R"(/**
+ * Auto-generated on {now:%Y-%m-%dT%H:%M:%SZ}
+ *
+ * This file contains Embind bindings for JavaScript interoperability.
+ * 
+ * Building the WASM module
+ * ========================
+ * You can use any build system that supports Emscripten (e.g., emcc, CMake, Makefile, etc.).
+ * Below is an example using `emcc` directly:
+ *
+ *   emcc {module}.js.cpp \
+ *        -I<path>/include \
+ *        -Wl,--whole-archive <path>/lib/lib{module}.a -Wl,--no-whole-archive \
+ *        -std=c++20 \
+ *        -lembind \
+ *        --emit-tsd {module}.d.ts \
+ *        -o ./dist/{module}.js \
+ *        -s WASM=1 \
+ *        -s MODULARIZE=1 \
+ *        -s ALLOW_MEMORY_GROWTH=1 \
+ *        -s EXPORT_NAME={module} 
+ * 
+ * Note: Replace `<path>` with your actual library paths.
+ * If using CMake or another build system, adjust flags accordingly.
+ */
+)",
+                 fmt::arg("module", convert(ctx.api()->name, Case::LispCase)),
+                 fmt::arg("now", fmt::gmtime(std::time(nullptr))));
+}
+
 static void generateIncludes(idl::Context& ctx, std::ostream& stream) {
     const auto libHeader = convert(ctx.api()->name, Case::LispCase) + ".h";
     fmt::println(stream, "#include <emscripten/bind.h>");
@@ -1895,6 +1927,7 @@ void generateJs(idl::Context& ctx,
                 idl_data_t writerData,
                 std::span<idl_utf8_t> includes) {
     auto stream = createStream(ctx, out, writer, writerData);
+    generateComment(ctx, stream.stream);
     generateIncludes(ctx, stream.stream);
     generateTypes(ctx, stream.stream);
     generateExceptions(ctx, stream.stream);

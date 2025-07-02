@@ -1,29 +1,35 @@
 @ Source code.
-@ Description of the source code. [detail]
+@ Used to provide source code in memory. [detail]
 struct Source
-    field Name {Str} @ Name
-    field Data {Str} @ The source code is passed in case of reading from memory, otherwise set to null.
+    field Name {Str} @ Source name (used to resolve imports)
+    field Data {ConstData} @ Source code.
     field Size {Uint32} @ Size of {Data} in bytes.
 
-@ TODO.
-@ TODO. [detail]
+@ Api version.
+@ Used to set {Options.SetVersion} the API version. [detail]
 struct ApiVersion
-    field Major {Uint32} @ TODO.
-    field Minor {Uint32} @ TODO.
-    field Micro {Uint32} @ TODO.
+    field Major {Uint32} @ Major component of the version.
+    field Minor {Uint32} @ Minor component of the version.
+    field Micro {Uint32} @ Micro component of the version.
 
-@ TODO.
-@ TODO. [detail]
+@ Callback to get sources.
+@ Used to retrieve and compile sources from memory. [detail]
+@ ```
+    Should return the source if the file can be resolved, or null to indicate 
+    to the compiler that it cannot resolve the source and should try to find 
+    the source elsewhere (e.g. via import paths)``` [return]
+@ If the callback allocates memory, then you can free it in the callback {ReleaseImportCallback}. [see]
 callback ImportCallback {Source} [ref,optional]
-    arg Name {Str} @ TODO.
-    arg Depth {Uint32} @ TODO.
-    arg Data {Data} [userdata] @ TODO.
+    arg Name {Str} @ The name of the file that the compiler is trying to get (for example, when it encounters "import").
+    arg Depth {Uint32} @ Current imports nesting level.
+    arg Data {Data} [userdata] @ User data specified when setting up a callback.
 
-@ TODO.
-@ TODO. [detail]
+@ Callback to release sources.
+@ If {ImportCallback} allocated memory dynamically for the source, you can free it here. [detail]
+@ {ImportCallback}. [see]
 callback ReleaseImportCallback
-    arg Source {Source} [ref] @ TODO.
-    arg Data {Data} [userdata] @ TODO.
+    arg Source {Source} [ref] @ Source for release.
+    arg Data {Data} [userdata] @ User data specified when setting up a callback.
 
 @ TODO.
 @ TODO. [detail]

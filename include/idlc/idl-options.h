@@ -14,32 +14,36 @@ IDL_BEGIN
 
 /**
  * @brief   Source code.
- * @details Description of the source code.
+ * @details Used to provide source code in memory.
  */
 typedef struct
 {
-    idl_utf8_t   name; /**< Name */
-    idl_utf8_t   data; /**< The source code is passed in case of reading from memory, otherwise set to null. */
+    idl_utf8_t   name; /**< Source name (used to resolve imports) */
+    idl_cdata_t  data; /**< Source code. */
     idl_uint32_t size; /**< Size of idl_source_t::data in bytes. */
 } idl_source_t;
 
 /**
- * @brief   TODO.
- * @details TODO.
+ * @brief   Api version.
+ * @details Used to set ::idl_options_set_version the API version.
  */
 typedef struct
 {
-    idl_uint32_t major; /**< TODO. */
-    idl_uint32_t minor; /**< TODO. */
-    idl_uint32_t micro; /**< TODO. */
+    idl_uint32_t major; /**< Major component of the version. */
+    idl_uint32_t minor; /**< Minor component of the version. */
+    idl_uint32_t micro; /**< Micro component of the version. */
 } idl_api_version_t;
 
 /**
- * @brief     TODO.
- * @details   TODO.
- * @param[in] name TODO.
- * @param[in] depth TODO.
- * @param[in] data TODO.
+ * @brief     Callback to get sources.
+ * @details   Used to retrieve and compile sources from memory.
+ * @param[in] name The name of the file that the compiler is trying to get (for example, when it encounters "import").
+ * @param[in] depth Current imports nesting level.
+ * @param[in] data User data specified when setting up a callback.
+ * @return    Should return the source if the file can be resolved, or null to indicate
+ *            to the compiler that it cannot resolve the source and should try to find
+ *            the source elsewhere (e.g. via import paths)
+ * @sa        If the callback allocates memory, then you can free it in the callback idl_release_import_callback_t.
  */
 typedef idl_source_t*
 (*idl_import_callback_t)(idl_utf8_t name,
@@ -47,10 +51,11 @@ typedef idl_source_t*
                          idl_data_t data);
 
 /**
- * @brief     TODO.
- * @details   TODO.
- * @param[in] source TODO.
- * @param[in] data TODO.
+ * @brief     Callback to release sources.
+ * @details   If idl_import_callback_t allocated memory dynamically for the source, you can free it here.
+ * @param[in] source Source for release.
+ * @param[in] data User data specified when setting up a callback.
+ * @sa        idl_import_callback_t.
  */
 typedef void
 (*idl_release_import_callback_t)(idl_source_t* source,

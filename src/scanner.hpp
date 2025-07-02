@@ -85,7 +85,7 @@ public:
                 }
             };
 
-            import.stream = new std::istream(new MemoryBuffer(import.source->data, (size_t) import.source->size));
+            import.stream = new std::istream(new MemoryBuffer((idl_utf8_t) import.source->data, (size_t) import.source->size));
         } else {
             import.stream = new std::ifstream(path);
             if (import.stream->fail()) {

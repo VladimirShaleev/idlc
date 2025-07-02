@@ -82,7 +82,7 @@ template <idl_status_t Status, typename... Args>
         ss << "the license should only be listed once in the documentation";
     }
     if constexpr (Status == IDL_STATUS_E2011) {
-        ss << "multi-line documentation must start with 4 spaces";
+        ss << "unknown error";
     }
     if constexpr (Status == IDL_STATUS_E2012) {
         ss << "the .idl file must start with the 'api' element";
@@ -275,7 +275,9 @@ template <idl_status_t Status, typename... Args>
             "the structure '{}' specified in the handle type '{}' must be marked with the 'handle' attribute", args...);
     }
     if constexpr (Status == IDL_STATUS_E2072) {
-        ss << "function can only be added to a interface type";
+        ss << fmt::format("it is not possible to add the 'noerror' attribute to the '{}' constant because the '{}' "
+                          "enum does not have the 'errorcode' attribute.",
+                          args...);
     }
     if constexpr (Status == IDL_STATUS_E2073) {
         ss << fmt::format("function '{}' argument '{}' cannot be marked with the 'this' attribute", args...);
@@ -408,14 +410,6 @@ template <idl_status_t Status, typename... Args>
         ss << fmt::format("the '{}' declaration does not have a brief ('brief' attribute) or detailed description "
                           "('detail' attribute)",
                           args...);
-    }
-    if constexpr (Status == IDL_STATUS_E2112) {
-        ss << fmt::format("it is not possible to add the 'noerror' attribute to the '{}' constant because the '{}' "
-                          "enum does not have the 'errorcode' attribute.",
-                          args...);
-    }
-    if constexpr (Status == IDL_STATUS_E2113) {
-        ss << "unknown error";
     }
     throw Exception(Status, *loc.begin.filename, loc.begin.line, loc.begin.column, ss.str());
 }

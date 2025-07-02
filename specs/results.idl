@@ -1,7 +1,7 @@
-@ Code.
-@ Enumeration of codes for results, warnings and errors. [detail]
+@ Result codes.
+@ Enumeration of result codes. [detail]
 enum Result [errorcode]
-    const Success [noerror] @ Operation completed successfully.
+    const Success [noerror] @ Indicates success (this is not an error).
     const ErrorUnknown @ Unknown error.
     const ErrorOutOfMemory @ Out of memory.
     const ErrorInvalidArg @ Invalid argument.
@@ -9,125 +9,123 @@ enum Result [errorcode]
     const ErrorCompilation @ Compilation failed.
     const ErrorNotSupported @ Not supporeted.
 
-@ TODO.
-@ TODO. [detail]
+@ Compilation statuses.
+@ This enumeration contains warnings and errors that may occur during compilation. [detail]
 enum Status
-    const W1001 : 1001 [tokenizer(0)] @ Missing 'author' attribute
-    const W1002 [tokenizer(0)] @ Missing 'copyright' attribute
+    const W1001 : 1001 [tokenizer(0)] @ Missing 'author' attribute.
+    const W1002 [tokenizer(0)] @ Missing 'copyright' attribute.
 
-    const E2001 : 2001 [tokenizer(0)] @ Unexpected character
-    const E2002 [tokenizer(0)] @ TODO:
-    const E2003 [tokenizer(0)] @ TODO:
-    const E2004 [tokenizer(0)] @ TODO:
-    const E2005 [tokenizer(0)] @ TODO:
-    const E2006 [tokenizer(0)] @ TODO:
-    const E2007 [tokenizer(0)] @ TODO:
-    const E2008 [tokenizer(0)] @ TODO:
-    const E2009 [tokenizer(0)] @ TODO:
-    const E2010 [tokenizer(0)] @ TODO:
-    const E2011 [tokenizer(0)] @ TODO:
-    const E2012 [tokenizer(0)] @ TODO:
-    const E2013 [tokenizer(0)] @ TODO:
-    const E2014 [tokenizer(0)] @ TODO:
-    const E2015 [tokenizer(0)] @ TODO:
-    const E2016 [tokenizer(0)] @ TODO:
-    const E2017 [tokenizer(0)] @ TODO:
-    const E2018 [tokenizer(0)] @ TODO:
-    const E2019 [tokenizer(0)] @ TODO:
-    const E2020 [tokenizer(0)] @ TODO:
-    const E2021 [tokenizer(0)] @ TODO:
-    const E2022 [tokenizer(0)] @ TODO:
-    const E2023 [tokenizer(0)] @ TODO:
-    const E2024 [tokenizer(0)] @ TODO:
-    const E2025 [tokenizer(0)] @ TODO:
-    const E2026 [tokenizer(0)] @ TODO:
-    const E2027 [tokenizer(0)] @ TODO:
-    const E2028 [tokenizer(0)] @ TODO:
-    const E2029 [tokenizer(0)] @ TODO:
-    const E2030 [tokenizer(0)] @ TODO:
-    const E2031 [tokenizer(0)] @ TODO:
-    const E2032 [tokenizer(0)] @ TODO:
-    const E2033 [tokenizer(0)] @ TODO:
-    const E2034 [tokenizer(0)] @ TODO:
-    const E2035 [tokenizer(0)] @ TODO:
-    const E2036 [tokenizer(0)] @ TODO:
-    const E2037 [tokenizer(0)] @ TODO:
-    const E2038 [tokenizer(0)] @ TODO:
-    const E2039 [tokenizer(0)] @ TODO:
-    const E2040 [tokenizer(0)] @ TODO:
-    const E2041 [tokenizer(0)] @ TODO:
-    const E2042 [tokenizer(0)] @ TODO:
-    const E2043 [tokenizer(0)] @ TODO:
-    const E2044 [tokenizer(0)] @ TODO:
-    const E2045 [tokenizer(0)] @ TODO:
-    const E2046 [tokenizer(0)] @ TODO:
-    const E2047 [tokenizer(0)] @ TODO:
-    const E2048 [tokenizer(0)] @ TODO:
-    const E2049 [tokenizer(0)] @ TODO:
-    const E2050 [tokenizer(0)] @ TODO:
-    const E2051 [tokenizer(0)] @ TODO:
-    const E2052 [tokenizer(0)] @ TODO:
-    const E2053 [tokenizer(0)] @ TODO:
-    const E2054 [tokenizer(0)] @ TODO:
-    const E2055 [tokenizer(0)] @ TODO:
-    const E2056 [tokenizer(0)] @ TODO:
-    const E2057 [tokenizer(0)] @ TODO:
-    const E2058 [tokenizer(0)] @ TODO:
-    const E2059 [tokenizer(0)] @ TODO:
-    const E2060 [tokenizer(0)] @ TODO:
-    const E2061 [tokenizer(0)] @ TODO:
-    const E2062 [tokenizer(0)] @ TODO:
-    const E2063 [tokenizer(0)] @ TODO:
-    const E2064 [tokenizer(0)] @ TODO:
-    const E2065 [tokenizer(0)] @ TODO:
-    const E2066 [tokenizer(0)] @ TODO:
-    const E2067 [tokenizer(0)] @ TODO:
-    const E2068 [tokenizer(0)] @ TODO:
-    const E2069 [tokenizer(0)] @ TODO:
-    const E2070 [tokenizer(0)] @ TODO:
-    const E2071 [tokenizer(0)] @ TODO:
-    const E2072 [tokenizer(0)] @ TODO:
-    const E2073 [tokenizer(0)] @ TODO:
-    const E2074 [tokenizer(0)] @ TODO:
-    const E2075 [tokenizer(0)] @ TODO:
-    const E2076 [tokenizer(0)] @ TODO:
-    const E2077 [tokenizer(0)] @ TODO:
-    const E2078 [tokenizer(0)] @ TODO:
-    const E2079 [tokenizer(0)] @ TODO:
-    const E2080 [tokenizer(0)] @ TODO:
-    const E2081 [tokenizer(0)] @ TODO:
-    const E2082 [tokenizer(0)] @ TODO:
-    const E2083 [tokenizer(0)] @ TODO:
-    const E2084 [tokenizer(0)] @ TODO:
-    const E2085 [tokenizer(0)] @ TODO:
-    const E2086 [tokenizer(0)] @ TODO:
-    const E2087 [tokenizer(0)] @ TODO:
-    const E2088 [tokenizer(0)] @ TODO:
-    const E2089 [tokenizer(0)] @ TODO:
-    const E2090 [tokenizer(0)] @ TODO:
-    const E2091 [tokenizer(0)] @ TODO:
-    const E2092 [tokenizer(0)] @ TODO:
-    const E2093 [tokenizer(0)] @ TODO:
-    const E2094 [tokenizer(0)] @ TODO:
-    const E2095 [tokenizer(0)] @ TODO:
-    const E2096 [tokenizer(0)] @ TODO:
-    const E2097 [tokenizer(0)] @ TODO:
-    const E2098 [tokenizer(0)] @ TODO:
-    const E2099 [tokenizer(0)] @ TODO:
-    const E2100 [tokenizer(0)] @ TODO:
-    const E2101 [tokenizer(0)] @ TODO:
-    const E2102 [tokenizer(0)] @ TODO:
-    const E2103 [tokenizer(0)] @ TODO:
-    const E2104 [tokenizer(0)] @ TODO:
-    const E2105 [tokenizer(0)] @ TODO:
-    const E2106 [tokenizer(0)] @ TODO:
-    const E2107 [tokenizer(0)] @ TODO:
-    const E2108 [tokenizer(0)] @ TODO:
-    const E2109 [tokenizer(0)] @ TODO:
-    const E2110 [tokenizer(0)] @ TODO:
-    const E2111 [tokenizer(0)] @ TODO:
-    const E2112 [tokenizer(0)] @ TODO:
-    const E2113 [tokenizer(0)] @ TODO:
+    const E2001 : 2001 [tokenizer(0)] @ Unexpected character.
+    const E2002 [tokenizer(0)] @ Tabs are not allowed.
+    const E2003 [tokenizer(0)] @ The name or type must start with a capital letter.
+    const E2004 [tokenizer(0)] @ There can only be one api declaration.
+    const E2005 [tokenizer(0)] @ There is no documentation in the declaration.
+    const E2006 [tokenizer(0)] @ Documentation cannot be an empty string.
+    const E2007 [tokenizer(0)] @ The brief should only be listed once in the documentation.
+    const E2008 [tokenizer(0)] @ The detail should only be listed once in the documentation.
+    const E2009 [tokenizer(0)] @ The copyright should only be listed once in the documentation.
+    const E2010 [tokenizer(0)] @ The license should only be listed once in the documentation.
+    const E2011 [tokenizer(0)] @ Unknown error.
+    const E2012 [tokenizer(0)] @ The .idl file must start with the 'api' element.
+    const E2013 [tokenizer(0)] @ Attribute cannot be duplicated.
+    const E2014 [tokenizer(0)] @ The attribute is not valid in the context of use.
+    const E2015 [tokenizer(0)] @ Unknown attribute.
+    const E2016 [tokenizer(0)] @ Attribute must specify at least one argument.
+    const E2017 [tokenizer(0)] @ Argument in attribute 'platform' is not allowed.
+    const E2018 [tokenizer(0)] @ Argument in attribute 'platform' cannot be duplicated.
+    const E2019 [tokenizer(0)] @ Inline documentation only \[detail\] description is allowed.
+    const E2020 [tokenizer(0)] @ Invalid attribute in documentation.
+    const E2021 [tokenizer(0)] @ It is acceptable to use either documentation or inline documentation, but not both.
+    const E2022 [tokenizer(0)] @ Constants can only be added to an enumeration type.
+    const E2023 [tokenizer(0)] @ The 'value' attribute must specify the value in the argument.
+    const E2024 [tokenizer(0)] @ The 'value' attribute must contain only one value.
+    const E2025 [tokenizer(0)] @ The 'value' attribute must specify an integer.
+    const E2026 [tokenizer(0)] @ An enumeration must contain at least one constant.
+    const E2027 [tokenizer(0)] @ Fields can only be added to a structured type.
+    const E2028 [tokenizer(0)] @ The 'type' attribute must specify the type in the argument.
+    const E2029 [tokenizer(0)] @ The 'type' attribute must contain only one type.
+    const E2030 [tokenizer(0)] @ Symbol redefinition.
+    const E2031 [tokenizer(0)] @ Enumeration constants can only be specified as integers or enum consts.
+    const E2032 [tokenizer(0)] @ Symbol definition not found.
+    const E2033 [tokenizer(0)] @ A constant cannot refer to itself when evaluated.
+    const E2034 [tokenizer(0)] @ Constants can only refer to other constants when evaluated.
+    const E2035 [tokenizer(0)] @ Declaration is not a type.
+    const E2036 [tokenizer(0)] @ Enumeration constant can only be of type 'Int32'.
+    const E2037 [tokenizer(0)] @ Identifiers are case sensitive.
+    const E2038 [tokenizer(0)] @ Constant cannot go beyond the range of 'Int32' \[-2147483648, 2147483647\].
+    const E2039 [tokenizer(0)] @ Constant was duplicated.
+    const E2040 [tokenizer(0)] @ Cyclic dependence of constant.
+    const E2041 [tokenizer(0)] @ Could not find file for import.
+    const E2042 [tokenizer(0)] @ Failed to open file.
+    const E2043 [tokenizer(0)] @ Methods can only be added to a interface type.
+    const E2044 [tokenizer(0)] @ Arguments can only be added to a method, function or callback.
+    const E2045 [tokenizer(0)] @ Out of memory.
+    const E2046 [tokenizer(0)] @ Static method cannot include argument' with attribute 'this'.
+    const E2047 [tokenizer(0)] @ Constructor cannot include argument with attribute 'this'.
+    const E2048 [tokenizer(0)] @ Method must include one argument with the 'this' attribute.
+    const E2049 [tokenizer(0)] @ The 'get' attribute must specify a reference to the method in the argument.
+    const E2050 [tokenizer(0)] @ The 'set' attribute must specify a reference to the method in the argument.
+    const E2051 [tokenizer(0)] @ Argument of method cannot be of type 'Void'.
+    const E2052 [tokenizer(0)] @ The property must contain at least the 'get' attribute or the 'set' attribute or both.
+    const E2053 [tokenizer(0)] @ Getter must be a method.
+    const E2054 [tokenizer(0)] @ A property getter cannot reference a method from another interface.
+    const E2055 [tokenizer(0)] @ If the getter method is static, then the property must also be static, and vice versa.
+    const E2056 [tokenizer(0)] @ A static getter method must not have arguments.
+    const E2057 [tokenizer(0)] @ A getter method must have one argument.
+    const E2058 [tokenizer(0)] @ Getter method cannot return 'Void'.
+    const E2059 [tokenizer(0)] @ Setter must be a method.
+    const E2060 [tokenizer(0)] @ If the setter method is static, then the property must also be static, and vice versa.
+    const E2061 [tokenizer(0)] @ A property setter cannot reference a method from another interface.
+    const E2062 [tokenizer(0)] @ A static setter method must have one argument.
+    const E2063 [tokenizer(0)] @ A setter method must have two arguments.
+    const E2064 [tokenizer(0)] @ The return type of the getter method is different from the argument type of the setter method.
+    const E2065 [tokenizer(0)] @ The property type does not match the return type of the getter method.
+    const E2066 [tokenizer(0)] @ The property type does not match the setter method argument type.
+    const E2067 [tokenizer(0)] @ Failed to create file.
+    const E2068 [tokenizer(0)] @ Field 'of struct cannot be of type 'Void'.
+    const E2069 [tokenizer(0)] @ The handle type must be specified.
+    const E2070 [tokenizer(0)] @ The handle type must be struct.
+    const E2071 [tokenizer(0)] @ The structure specified in the handle type must be marked with the 'handle' attribute.
+    const E2072 [tokenizer(0)] @ It is not possible to add the 'noerror' attribute to the constant because the enum does not have the 'errorcode' attribute.
+    const E2073 [tokenizer(0)] @ Function argument cannot be marked with the 'this' attribute.
+    const E2074 [tokenizer(0)] @ Argument of function cannot be of type 'Void'.
+    const E2075 [tokenizer(0)] @ The 'cname' attribute must specify a string in the argument.
+    const E2076 [tokenizer(0)] @ The 'array' attribute must specify a size in the argument.
+    const E2077 [tokenizer(0)] @ Fixed size array of structure must be of size 1 or more.
+    const E2078 [tokenizer(0)] @ The 'array' attribute of the must point to a field of the structure or set fixed size value.
+    const E2079 [tokenizer(0)] @ The reference to the dynamic size array is located outside the visibility of the structure.
+    const E2080 [tokenizer(0)] @ The 'array' attribute for array must point to an integer field for a dynamic array.
+    const E2081 [tokenizer(0)] @ An struct must contain at least one field.
+    const E2082 [tokenizer(0)] @ There can be only one argument with the 'userdata' attribute.
+    const E2083 [tokenizer(0)] @ Callback argument cannot be marked with the 'this' attribute.
+    const E2084 [tokenizer(0)] @ There can be only one argument with the 'result' attribute.
+    const E2085 [tokenizer(0)] @ The function to convert an error code to a string must return a string and take one argument (the error code).
+    const E2086 [tokenizer(0)] @ The method for incrementing the reference counter ('refinc' attribute) of an object must be non-static and take one argument 'this'.
+    const E2087 [tokenizer(0)] @ The method for destroy of an object must be non-static and take one argument 'this'.
+    const E2088 [tokenizer(0)] @ There can only be one method to increment reference counter.
+    const E2089 [tokenizer(0)] @ There can only be one method to destroy object.
+    const E2090 [tokenizer(0)] @ Events can only be added to a interface type.
+    const E2091 [tokenizer(0)] @ The event must contain at least the 'get' attribute or the 'set' attribute or both.
+    const E2092 [tokenizer(0)] @ Event getter from refers to a method from another interface.
+    const E2093 [tokenizer(0)] @ If the getter method is static, then the event must also be static, and vice versa.
+    const E2094 [tokenizer(0)] @ Static getter for event must have no arguments or one argument 'userdata'.
+    const E2095 [tokenizer(0)] @ Getter for event must have one arguments or two arguments 'this' and 'userdata'.
+    const E2096 [tokenizer(0)] @ Event setter from refers to a method from another interface.
+    const E2097 [tokenizer(0)] @ If the setter method is static, then the event must also be static, and vice versa.
+    const E2098 [tokenizer(0)] @ Static setter for event must have one argument or setter and 'userdata' arguments.
+    const E2099 [tokenizer(0)] @ Setter for event must have two arguments 'this' and 'setter' or three arguments 'this', 'setter' and 'userdata'.
+    const E2100 [tokenizer(0)] @ The event type does not match the return type of the getter method.
+    const E2101 [tokenizer(0)] @ The event type does not match the setter method argument type.
+    const E2102 [tokenizer(0)] @ The argument of a method, function, or callback cannot be a fixed-size array.
+    const E2103 [tokenizer(0)] @ The reference to the dynamic size array is located outside the visibility of the method.
+    const E2104 [tokenizer(0)] @ The 'array' attribute of the must point to a argument of the method.
+    const E2105 [tokenizer(0)] @ The reference to the dynamic size array is located outside the visibility of the function.
+    const E2106 [tokenizer(0)] @ The 'array' attribute of the must point to a argument of the function.
+    const E2107 [tokenizer(0)] @ The reference to the dynamic size array is located outside the visibility of the callback.
+    const E2108 [tokenizer(0)] @ The 'array' attribute of the must point to a argument of the callback.
+    const E2109 [tokenizer(0)] @ The 'tokenizer' attribute must specify a indices string in the argument.
+    const E2110 [tokenizer(0)] @ The 'version' attribute must specify a semver in the argument.
+    const E2111 [tokenizer(0)] @ The declaration does not have a brief ('brief' attribute) or detailed description ('detail' attribute).
 
 @ TODO.
 @ TODO. [detail]

@@ -273,7 +273,7 @@ public:
                     needAddTypeAttrs.push_back(ec);
                 }
                 if (ec->findAttr<ASTAttrNoError>() && !en->findAttr<ASTAttrErrorCode>()) {
-                    err<IDL_STATUS_E2112>(ec->location, ec->name, en->fullname());
+                    err<IDL_STATUS_E2072>(ec->location, ec->name, en->fullname());
                 }
             }
             return true;

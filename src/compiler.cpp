@@ -37,7 +37,7 @@ public:
 
             if (code != 0) {
                 if (result) {
-                    Exception exc(IDL_STATUS_E2113, "<input>", 0, 0, "unknown error");
+                    Exception exc(IDL_STATUS_E2011, "<input>", 0, 0, "unknown error");
                     result->addMessage(exc);
                 } else {
                     return IDL_RESULT_ERROR_COMPILATION;
@@ -101,7 +101,7 @@ public:
             }
         } catch (...) {
             if (result) {
-                Exception exc(IDL_STATUS_E2113, "<input>", 0, 0, "unknown error");
+                Exception exc(IDL_STATUS_E2011, "<input>", 0, 0, "unknown error");
                 result->addMessage(exc);
             } else {
                 return IDL_RESULT_ERROR_UNKNOWN;

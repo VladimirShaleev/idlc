@@ -641,5 +641,5 @@ void addDoc(idl::ASTDoc* node, const std::vector<idl::ASTNode*>& doc, char type)
 
 void idl::Parser::error(const location_type& loc, const std::string& message)
 {
-    err<IDL_STATUS_E2113>(loc);
+    err<IDL_STATUS_E2011>(loc);
 }

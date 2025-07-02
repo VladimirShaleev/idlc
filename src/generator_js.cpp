@@ -458,9 +458,12 @@ static Stream createStream(idl::Context& ctx,
 }
 
 static void generateComment(idl::Context& ctx, std::ostream& stream) {
+    char datatime[100];
+    auto now = std::time(nullptr);
+    strftime(datatime, 100, "%Y-%m-%dT%H:%M:%SZ", std::gmtime(&now));
     fmt::println(stream,
                  R"(/**
- * Auto-generated on {now:%Y-%m-%dT%H:%M:%SZ}
+ * Auto-generated on {now}
  *
  * This file contains Embind bindings for JavaScript interoperability.
  * 
@@ -486,7 +489,7 @@ static void generateComment(idl::Context& ctx, std::ostream& stream) {
  */
 )",
                  fmt::arg("module", convert(ctx.api()->name, Case::LispCase)),
-                 fmt::arg("now", fmt::gmtime(std::time(nullptr))));
+                 fmt::arg("now", datatime));
 }
 
 static void generateIncludes(idl::Context& ctx, std::ostream& stream) {

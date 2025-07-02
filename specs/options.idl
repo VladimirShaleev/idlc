@@ -126,26 +126,36 @@ interface Options
 
     @ Configures directories to search for source files.
     @ These paths are used to search source code when an import is encountered during compilation. [detail]
-    @ These paths are used when resolving imports if the callback passed to {SetImporter} did not return a source (if {SetImporter} was configured) [note]
+    @ ```
+        These paths are used when resolving imports if the callback passed to {SetImporter} 
+        did not return a source (if {SetImporter} was configured)``` [note]
     @ {GetImportDirs} [see]
     method SetImportDirs
         arg Options {Options} [this] @ Target options.
         arg DirCount {Uint32} @ Number of directories.
         arg Dirs {Str} [const,array(DirCount)] @ Import directories.
 
-    @ TODO.
-    @ TODO. [detail]
-    @ TODO. [return]
+    @ Get the current import callback.
+    @ Returns a callback if one has been configured. [detail]
+    @ Returns a callback. [return]
     method GetImporter {ImportCallback} [const]
         arg Options {Options} [this] @ Target options.
-        arg Data {Data} [out,userdata] @ Callback user data pointer.
+        arg Data {Data} [out,optional,userdata] @ Returning a callback user data pointer (may be null).
 
-    @ TODO.
-    @ TODO. [detail]
+    @ Set import callback.
+    @ Used to resolve code sources, such as when the compiler encounters imports. [detail]
+    @ ```
+        If set, the importer will be used to resolve sources as the highest 
+        priority (then the directories passed to {SetImportDirs} will be used, 
+        and then the current working directory).``` [note]
+    @ ```
+        If {Compiler.Compile.File} was not passed to {Compiler.Compile} to compile from the file system, 
+        then the importer will also be used to obtain the main (primary) file named *<input>*.``` [note]
+    @ A typical use of an importer is to read source code from memory. [note]
     method SetImporter
         arg Options {Options} [this] @ Target options.
         arg Callback {ImportCallback} @ Callback function.
-        arg Data {Data} [userdata] @ Callback user data.
+        arg Data {Data} [optional,userdata] @ Callback user data.
 
     @ TODO.
     @ TODO. [detail]

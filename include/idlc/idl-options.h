@@ -185,7 +185,8 @@ idl_options_get_import_dirs(idl_options_t options,
  * @param[in] options Target options.
  * @param[in] dir_count Number of directories.
  * @param[in] dirs Import directories.
- * @note      These paths are used when resolving imports if the callback passed to ::idl_options_set_importer did not return a source (if ::idl_options_set_importer was configured)
+ * @note      These paths are used when resolving imports if the callback passed to ::idl_options_set_importer
+ *            did not return a source (if ::idl_options_set_importer was configured)
  * @sa        ::idl_options_get_import_dirs
  */
 idl_api void
@@ -194,22 +195,34 @@ idl_options_set_import_dirs(idl_options_t options,
                             const idl_utf8_t* dirs);
 
 /**
- * @brief      TODO.
- * @details    TODO.
+ * @brief      Get the current import callback.
+ * @details    Returns a callback if one has been configured.
  * @param[in]  options Target options.
- * @param[out] data Callback user data pointer.
- * @return     TODO.
+ * @param[out] data Returning a callback user data pointer (may be null).
+ * @return     Returns a callback.
  */
 idl_api idl_import_callback_t
 idl_options_get_importer(idl_options_t options,
                          idl_data_t* data);
 
 /**
- * @brief     TODO.
- * @details   TODO.
+ * @brief     Set import callback.
+ * @details   Used to resolve code sources, such as when the compiler encounters imports.
  * @param[in] options Target options.
  * @param[in] callback Callback function.
  * @param[in] data Callback user data.
+ * @parblock
+ * @note      If set, the importer will be used to resolve sources as the highest
+ *            priority (then the directories passed to ::idl_options_set_import_dirs will be used,
+ *            and then the current working directory).
+ * @endparblock
+ * @parblock
+ * @note      If *file* was not passed to ::idl_compiler_compile to compile from the file system,
+ *            then the importer will also be used to obtain the main (primary) file named *<input>*.
+ * @endparblock
+ * @parblock
+ * @note      A typical use of an importer is to read source code from memory.
+ * @endparblock
  */
 idl_api void
 idl_options_set_importer(idl_options_t options,

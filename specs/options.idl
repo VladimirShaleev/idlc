@@ -211,7 +211,7 @@ interface Options
     @ ```
         Supported Generators:
         - {Generator.C} - additional headers included in the API header file;
-        - {Generator.JS} - no specific parameters.
+        - {Generator.JavaScript} - no specific parameters.
         ``` [note]
     @ {GetAdditions} [see]
     method SetAdditions

@@ -46,9 +46,9 @@ enum Generator
     const C @ C generator
     // const Cpp @ C++ generator
     // const Python @ Python generator
-    const JS : 3 [tokenizer(0)] @ JavaScript generator
-    // const TS [tokenizer(0)] @ TypeScript generator
-    // const CS [tokenizer(0)] @ C# generator
+    const JavaScript : 3 @ JavaScript generator (generates Embind bindings)
+    // const TypeScript @ TypeScript generator
+    // const CSharp [tokenizer(0)] @ C# generator
     // const Java @ Java generator
 
 @ Current library version as packed 32-bit value.

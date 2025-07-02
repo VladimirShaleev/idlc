@@ -43,9 +43,9 @@
  */
 typedef enum
 {
-    IDL_GENERATOR_C        = 0, /**< C generator */
-    IDL_GENERATOR_JS       = 3, /**< JavaScript generator */
-    IDL_GENERATOR_MAX_ENUM = 0x7FFFFFFF /**< Max value of enum (not used) */
+    IDL_GENERATOR_C           = 0, /**< C generator */
+    IDL_GENERATOR_JAVA_SCRIPT = 3, /**< JavaScript generator (generates Embind bindings) */
+    IDL_GENERATOR_MAX_ENUM    = 0x7FFFFFFF /**< Max value of enum (not used) */
 } idl_generator_t;
 
 /**

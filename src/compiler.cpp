@@ -75,7 +75,7 @@ public:
                 case IDL_GENERATOR_C:
                     generateC(context, output, writer, writerData, std::span{ additions.data(), additions.size() });
                     break;
-                case IDL_GENERATOR_JS:
+                case IDL_GENERATOR_JAVA_SCRIPT:
 #ifdef IDLC_SUPPORTED_JS
                     generateJs(context, output, writer, writerData, std::span{ additions.data(), additions.size() });
                     break;

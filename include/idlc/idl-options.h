@@ -307,7 +307,7 @@ idl_options_get_additions(idl_options_t options,
  * @param[in] additions Additions.
  * @note      Supported Generators:
  *            - ::IDL_GENERATOR_C - additional headers included in the API header file;
- *            - ::IDL_GENERATOR_JS - no specific parameters.
+ *            - ::IDL_GENERATOR_JAVA_SCRIPT - no specific parameters.
  *            
  * @sa        ::idl_options_get_additions
  */

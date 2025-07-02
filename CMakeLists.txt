@@ -110,7 +110,6 @@ if(IDLC_BUILD_TOOL)
     add_executable(${PROJECT_NAME} src/main.cpp)
     add_executable(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
     target_link_libraries(${PROJECT_NAME} PRIVATE argparse::argparse)
-    target_link_libraries(${PROJECT_NAME} PRIVATE magic_enum::magic_enum)
     target_link_libraries(${PROJECT_NAME} PRIVATE idl)
     target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
     set_target_properties(${PROJECT_NAME} PROPERTIES

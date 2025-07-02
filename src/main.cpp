@@ -1,36 +1,32 @@
 #include <idlc/idl.h>
 
 #include <argparse/argparse.hpp>
-#include <magic_enum/magic_enum.hpp>
 #include <regex>
 
-void addGeneratorArg(argparse::ArgumentParser& program) {
+void addGeneratorArg(argparse::ArgumentParser& program, const std::map<std::string, idl_generator_t>& generators) {
     auto& arg = program.add_argument("-g", "--generator");
     std::ostringstream help;
     help << "generator programming language (";
     bool first = true;
-    for (auto& gen : magic_enum::enum_names<idl_generator_t>()) {
-        auto str = std::string(gen.data()).substr(14);
-        std::transform(str.begin(), str.end(), str.begin(), [](auto c) {
-            return std::tolower(c);
-        });
-        arg.add_choice(str);
+    for (auto& [gen, _] : generators) {
+        arg.add_choice(gen);
         if (!first) {
             help << ", ";
         }
         first = false;
-        help << str;
+        help << gen;
     }
     help << ')';
     arg.help(help.str());
 }
 
-idl_generator_t getGeneratorArg(argparse::ArgumentParser& program) {
+idl_generator_t getGeneratorArg(argparse::ArgumentParser& program,
+                                const std::map<std::string, idl_generator_t>& generators) {
     if (!program.is_used("--generator")) {
         return IDL_GENERATOR_C;
     }
-    auto str = "idl_generator_" + program.get("--generator");
-    return magic_enum::enum_cast<idl_generator_t>(str, magic_enum::case_insensitive).value();
+    std::string gen = program.get("--generator");
+    return generators.at(gen);
 }
 
 int main(int argc, char* argv[]) {
@@ -41,9 +37,14 @@ int main(int argc, char* argv[]) {
     auto additions = std::vector<std::string>();
     std::string apiver;
 
+    std::map<std::string, idl_generator_t> generators = {
+        { "c",  IDL_GENERATOR_C           },
+        { "js", IDL_GENERATOR_JAVA_SCRIPT }
+    };
+
     argparse::ArgumentParser program("idlc", IDL_VERSION_STRING);
     program.add_argument("input").store_into(input).help("input .idl file");
-    addGeneratorArg(program);
+    addGeneratorArg(program, generators);
     program.add_argument("-o", "--output").store_into(output).help("output directory");
     program.add_argument("-i", "--imports").append().store_into(imports).help("import directories");
     program.add_argument("-a", "--additions").append().store_into(additions).help("additional inclusions");
@@ -108,7 +109,8 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
     idl_compilation_result_t result{};
-    code = idl_compiler_compile(compiler, getGeneratorArg(program), inputFile.c_str(), 0, nullptr, options, &result);
+    code = idl_compiler_compile(
+        compiler, getGeneratorArg(program, generators), inputFile.c_str(), 0, nullptr, options, &result);
 
     if (result) {
         if (idl_compilation_result_has_errors(result) || idl_compilation_result_has_warnings(result)) {

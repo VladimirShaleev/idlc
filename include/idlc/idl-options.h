@@ -75,9 +75,9 @@ typedef void
 
 /**
  * @brief      Creates new options instance.
- * @details    TODO:
+ * @details    Creates an object for setting compiler options.
  * @param[out] options New options instance.
- * @return     TODO:
+ * @return     New options instance.
  */
 idl_api idl_result_t
 idl_options_create(idl_options_t* options);
@@ -113,7 +113,7 @@ idl_options_get_debug_mode(idl_options_t options);
 
 /**
  * @brief     Set debug mode.
- * @details   Enable debug mode.
+ * @details   Setting debug compilation output to console.
  * @param[in] options Target options.
  * @param[in] enable Enable debug.
  * @sa        ::idl_options_get_debug_mode
@@ -123,20 +123,20 @@ idl_options_set_debug_mode(idl_options_t options,
                            idl_bool_t enable);
 
 /**
- * @brief     TODO.
- * @details   TODO.
+ * @brief     Get warning handling setting.
+ * @details   Return *TRUE* if warnings are treated as errors.
  * @param[in] options Target options.
- * @return    TODO.
+ * @return    *TRUE* is enabled.
  * @sa        ::idl_options_set_warnings_as_errors
  */
 idl_api idl_bool_t
 idl_options_get_warnings_as_errors(idl_options_t options);
 
 /**
- * @brief     TODO.
- * @details   TODO.
+ * @brief     Set warning handling setting.
+ * @details   Setting treat warnings as errors.
  * @param[in] options Target options.
- * @param[in] enable TODO.
+ * @param[in] enable Enable treat warnings as errors.
  * @sa        ::idl_options_get_warnings_as_errors
  */
 idl_api void
@@ -144,20 +144,21 @@ idl_options_set_warnings_as_errors(idl_options_t options,
                                    idl_bool_t enable);
 
 /**
- * @brief     TODO.
- * @details   TODO.
+ * @brief     Get output directory.
+ * @details   Returns the path that the compiler will use to save compilation output.
  * @param[in] options Target options.
- * @return    TODO.
+ * @return    Directory path.
  * @sa        ::idl_options_set_output_dir
  */
 idl_api idl_utf8_t
 idl_options_get_output_dir(idl_options_t options);
 
 /**
- * @brief     TODO.
- * @details   TODO.
+ * @brief     Set output directory.
+ * @details   Configure the path that the compiler will use to save compilation output.
  * @param[in] options Target options.
- * @param[in] dir TODO.
+ * @param[in] dir Directory path.
+ * @note      Compiler output to the file system does not occur if output via a ::idl_options_set_writer is configured.
  * @sa        ::idl_options_get_output_dir
  */
 idl_api void
@@ -165,12 +166,12 @@ idl_options_set_output_dir(idl_options_t options,
                            idl_utf8_t dir);
 
 /**
- * @brief         TODO.
- * @details       TODO.
+ * @brief         Returns an array of directories to search for imports.
+ * @details       These paths are used to search source code when an import is encountered during compilation.
  * @param[in]     options Target options.
  * @param[in,out] dir_count Number of directories.
  * @param[out]    dirs Import directories.
- * @return        TODO.
+ * @return        Array of directories paths.
  * @sa            ::idl_options_set_import_dirs
  */
 idl_api void
@@ -179,11 +180,12 @@ idl_options_get_import_dirs(idl_options_t options,
                             idl_utf8_t* dirs);
 
 /**
- * @brief     TODO.
- * @details   TODO.
+ * @brief     Configures directories to search for source files.
+ * @details   These paths are used to search source code when an import is encountered during compilation.
  * @param[in] options Target options.
  * @param[in] dir_count Number of directories.
  * @param[in] dirs Import directories.
+ * @note      These paths are used when resolving imports if the callback passed to ::idl_options_set_importer did not return a source (if ::idl_options_set_importer was configured)
  * @sa        ::idl_options_get_import_dirs
  */
 idl_api void

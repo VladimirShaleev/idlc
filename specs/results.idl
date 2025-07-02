@@ -165,13 +165,13 @@ interface CompilationResult
 
     @ Checking if there were warnings.
     @ Check if there were any warnings during compilation. [detail]
-    @ {True}, if there are warnings. [return]
+    @ *{True}*, if there are warnings. [return]
     method HasWarnings {Bool} [const]
         arg CompilationResult {CompilationResult} [this] @ Target compilation result instance.
 
     @ Checking if there were errors.
     @ Check if there were any errors during compilation. [detail]
-    @ {True}, if there are errors. [return]
+    @ *{True}*, if there are errors. [return]
     method HasErrors {Bool} [const]
         arg CompilationResult {CompilationResult} [this] @ Target compilation result instance.
 

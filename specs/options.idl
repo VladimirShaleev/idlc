@@ -54,8 +54,8 @@ interface Options
     event Writer [get(GetWriter),set(SetWriter)] @ Event that occurs when the compiler outputs.
 
     @ Creates new options instance.
-    @ TODO: [detail]
-    @ TODO: [return]
+    @ Creates an object for setting compiler options. [detail]
+    @ New options instance. [return]
     method Create {Result} [ctor]
         arg Options {Options} [result] @ New options instance.
 
@@ -80,51 +80,53 @@ interface Options
         arg Options {Options} [this] @ Target options.
 
     @ Set debug mode.
-    @ Enable debug mode. [detail]
+    @ Setting debug compilation output to console. [detail]
     @ {GetDebugMode} [see]
     method SetDebugMode
         arg Options {Options} [this] @ Target options.
         arg Enable {Bool} @ Enable debug.
 
-    @ TODO.
-    @ TODO. [detail]
-    @ TODO. [return]
+    @ Get warning handling setting.
+    @ Return *{True}* if warnings are treated as errors. [detail]
+    @ *{True}* is enabled. [return]
     @ {SetWarningsAsErrors} [see]
     method GetWarningsAsErrors {Bool} [const]
         arg Options {Options} [this] @ Target options.
 
-    @ TODO.
-    @ TODO. [detail]
+    @ Set warning handling setting.
+    @ Setting treat warnings as errors. [detail]
     @ {GetWarningsAsErrors} [see]
     method SetWarningsAsErrors
         arg Options {Options} [this] @ Target options.
-        arg Enable {Bool} @ TODO.
+        arg Enable {Bool} @ Enable treat warnings as errors.
 
-    @ TODO.
-    @ TODO. [detail]
-    @ TODO. [return]
+    @ Get output directory.
+    @ Returns the path that the compiler will use to save compilation output. [detail]
+    @ Directory path. [return]
     @ {SetOutputDir} [see]
     method GetOutputDir {Str} [const]
         arg Options {Options} [this] @ Target options.
 
-    @ TODO.
-    @ TODO. [detail]
+    @ Set output directory.
+    @ Configure the path that the compiler will use to save compilation output. [detail]
+    @ Compiler output to the file system does not occur if output via a {SetWriter} is configured. [note]
     @ {GetOutputDir} [see]
     method SetOutputDir
         arg Options {Options} [this] @ Target options.
-        arg Dir {Str} @ TODO.
+        arg Dir {Str} @ Directory path.
 
-    @ TODO.
-    @ TODO. [detail]
-    @ TODO. [return]
+    @ Returns an array of directories to search for imports.
+    @ These paths are used to search source code when an import is encountered during compilation. [detail]
+    @ Array of directories paths. [return]
     @ {SetImportDirs} [see]
     method GetImportDirs [const]
         arg Options {Options} [this] @ Target options.
         arg DirCount {Uint32} [in,out] @ Number of directories.
         arg Dirs {Str} [result,array(DirCount)] @ Import directories.
 
-    @ TODO.
-    @ TODO. [detail]
+    @ Configures directories to search for source files.
+    @ These paths are used to search source code when an import is encountered during compilation. [detail]
+    @ These paths are used when resolving imports if the callback passed to {SetImporter} did not return a source (if {SetImporter} was configured) [note]
     @ {GetImportDirs} [see]
     method SetImportDirs
         arg Options {Options} [this] @ Target options.

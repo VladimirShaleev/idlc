@@ -196,7 +196,7 @@ idl_compilation_result_destroy(idl_compilation_result_t compilation_result);
  * @brief     Checking if there were warnings.
  * @details   Check if there were any warnings during compilation.
  * @param[in] compilation_result Target compilation result instance.
- * @return    TRUE, if there are warnings.
+ * @return    *TRUE*, if there are warnings.
  */
 idl_api idl_bool_t
 idl_compilation_result_has_warnings(idl_compilation_result_t compilation_result);
@@ -205,7 +205,7 @@ idl_compilation_result_has_warnings(idl_compilation_result_t compilation_result)
  * @brief     Checking if there were errors.
  * @details   Check if there were any errors during compilation.
  * @param[in] compilation_result Target compilation result instance.
- * @return    TRUE, if there are errors.
+ * @return    *TRUE*, if there are errors.
  */
 idl_api idl_bool_t
 idl_compilation_result_has_errors(idl_compilation_result_t compilation_result);

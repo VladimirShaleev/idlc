@@ -1051,7 +1051,7 @@ static void generateFunctionReturnType(idl::Context& ctx,
             typeName = "std::optional<" + typeName + '>';
         }
     }
-    fmt::print(stream, "    {}", typeName);
+    fmt::print(stream, "{}", typeName);
 }
 
 static void generateFunctionArgs(idl::Context& ctx,
@@ -1181,6 +1181,10 @@ static void generateFunction(idl::Context& ctx, std::ostream& stream, ASTDecl* f
         func->parent->accept(jsname);
         fmt::print(stream, "    {}", jsname.str);
     } else {
+        fmt::print(stream, "    ");
+        if (func->findAttr<ASTAttrStatic>() && func->is<ASTMethod>()) {
+            fmt::print(stream, "static ");
+        }
         JsName jsname;
         func->accept(jsname);
         generateFunctionReturnType(ctx, stream, func, args);
@@ -1194,7 +1198,8 @@ static void generateFunction(idl::Context& ctx, std::ostream& stream, ASTDecl* f
     }
     fmt::print(stream, "(");
     generateFunctionArgs(ctx, stream, func, args, sizeArgs);
-    fmt::println(stream, ") {}{{", func->findAttr<ASTAttrConst>() ? "const " : "");
+    auto isConst = func->findAttr<ASTAttrConst>() && !func->findAttr<ASTAttrStatic>();
+    fmt::println(stream, ") {}{{", isConst ? "const " : "");
 
     std::map<ASTArg*, Param> params;
     bool needFetchSizes{};
@@ -1703,19 +1708,21 @@ static void generateClasses(idl::Context& ctx, std::ostream& stream) {
             }
         }
         for (auto prop : node->props) {
+            if (prop->findAttr<ASTAttrStatic>()) {
+                // Embind unsupported static properties
+                continue;
+            }
             prop->accept(jsname);
             const auto propName = jsname.str;
             auto getter         = prop->findAttr<ASTAttrGet>();
             auto setter         = prop->findAttr<ASTAttrSet>();
-            auto isClassProp    = prop->findAttr<ASTAttrStatic>();
             if (getter && setter) {
                 getter->decl->decl->accept(jsname);
                 const auto getterName = jsname.str;
                 setter->decl->decl->accept(jsname);
                 const auto setterName = jsname.str;
                 fmt::println(stream,
-                             "        .{}property(\"{}\", &{}::{}, &{}::{})",
-                             isClassProp ? "class_" : "",
+                             "        .property(\"{}\", &{}::{}, &{}::{})",
                              propName,
                              typeName,
                              getterName,
@@ -1726,39 +1733,31 @@ static void generateClasses(idl::Context& ctx, std::ostream& stream) {
             } else if (getter) {
                 getter->decl->decl->accept(jsname);
                 const auto getterName = jsname.str;
-                fmt::println(stream,
-                             "        .{}property(\"{}\", &{}::{})",
-                             isClassProp ? "class_" : "",
-                             propName,
-                             typeName,
-                             getterName);
+                fmt::println(stream, "        .property(\"{}\", &{}::{})", propName, typeName, getterName);
                 excluded.insert(getter->decl->decl);
             } else if (setter) {
                 setter->decl->decl->accept(jsname);
                 const auto setterName = jsname.str;
-                fmt::println(stream,
-                             "        .{}property(\"{}\", &{}::{})",
-                             isClassProp ? "class_" : "",
-                             propName,
-                             typeName,
-                             setterName);
+                fmt::println(stream, "        .property(\"{}\", &{}::{})", propName, typeName, setterName);
                 excluded.insert(setter->decl->decl);
             }
         }
         for (auto ev : node->events) {
+            if (ev->findAttr<ASTAttrStatic>()) {
+                // Embind unsupported static properties
+                continue;
+            }
             ev->accept(jsname);
             const auto evName = jsname.str;
             auto getter       = ev->findAttr<ASTAttrGet>();
             auto setter       = ev->findAttr<ASTAttrSet>();
-            auto isClassEvent = ev->findAttr<ASTAttrStatic>();
             if (getter && setter) {
                 getter->decl->decl->accept(jsname);
                 const auto getterName = jsname.str;
                 setter->decl->decl->accept(jsname);
                 const auto setterName = jsname.str;
                 fmt::println(stream,
-                             "        .{}property(\"{}\", &{}::{}, &{}::{})",
-                             isClassEvent ? "class_" : "",
+                             "        .property(\"{}\", &{}::{}, &{}::{})",
                              evName,
                              typeName,
                              getterName,
@@ -1769,22 +1768,12 @@ static void generateClasses(idl::Context& ctx, std::ostream& stream) {
             } else if (getter) {
                 getter->decl->decl->accept(jsname);
                 const auto getterName = jsname.str;
-                fmt::println(stream,
-                             "        .{}property(\"{}\", &{}::{})",
-                             isClassEvent ? "class_" : "",
-                             evName,
-                             typeName,
-                             getterName);
+                fmt::println(stream, "        .property(\"{}\", &{}::{})", evName, typeName, getterName);
                 excluded.insert(getter->decl->decl);
             } else if (setter) {
                 setter->decl->decl->accept(jsname);
                 const auto setterName = jsname.str;
-                fmt::println(stream,
-                             "        .{}property(\"{}\", &{}::{})",
-                             isClassEvent ? "class_" : "",
-                             evName,
-                             typeName,
-                             setterName);
+                fmt::println(stream, "        .property(\"{}\", &{}::{})", evName, typeName, setterName);
                 excluded.insert(setter->decl->decl);
             }
         }

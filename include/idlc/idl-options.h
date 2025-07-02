@@ -328,10 +328,10 @@ idl_options_get_version(idl_options_t options);
  * @brief     Set api version.
  * @details   Sets the API version that will be saved in the compiler output.
  * @param[in] options Target options.
- * @param[in] version TODO.
- * @note      If not set, then the API version will be taken from the [version(major,minor,micro)]
- *            attribute (sample: api Sample [version(2,3,1)]). If the api does not have a version
- *            attribute specified, then the version will be taken as 0.0.0.
+ * @param[in] version Api version.
+ * @note      If not set, then the API version will be taken from the `[version(major,minor,micro)]`
+ *            attribute (sample: `api Sample [version(2,3,1)]`). If the api does not have a version
+ *            attribute specified, then the version will be taken as `0.0.0`.
  * @sa        ::idl_options_get_version
  */
 idl_api void

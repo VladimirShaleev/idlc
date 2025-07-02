@@ -70,6 +70,7 @@ DOCMCHAR ([^ \r\n\t\{\}[\]`]|^[`]{3}|\\\{|\\\}|\\\[|\\\])
 <DOCSTR>.                  { err<IDL_STATUS_E2001>(*yylloc, YYText()); }
 <DOCSTR>"```\n"            { yylloc->lines(); BEGIN(DOCMSTR); }
 
+<DOCMSTR>"`"            { yylloc->lines(); yylval->emplace<std::string>(YYText()); return token::STR; }
 <DOCMSTR>{DOCMCHAR}+    { yylval->emplace<std::string>(unescape(YYText())); return token::STR; }
 <DOCMSTR>^[ ]+          {
     if (lineIndent < 0) {

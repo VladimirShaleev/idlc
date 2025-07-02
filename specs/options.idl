@@ -227,10 +227,10 @@ interface Options
     @ Set api version.
     @ Sets the API version that will be saved in the compiler output. [detail]
     @ ```
-        If not set, then the API version will be taken from the \[version(major,minor,micro)\] 
-        attribute (sample: api Sample \[version(2,3,1)\]). If the api does not have a version 
-        attribute specified, then the version will be taken as 0.0.0.``` [note]
+        If not set, then the API version will be taken from the `\[version(major,minor,micro)\]` 
+        attribute (sample: `api Sample \[version(2,3,1)\]`). If the api does not have a version 
+        attribute specified, then the version will be taken as `0.0.0`.``` [note]
     @ {GetVersion} [see]
     method SetVersion
         arg Options {Options} [this] @ Target options.
-        arg Version {ApiVersion} [const,ref,optional] @ TODO.
+        arg Version {ApiVersion} [const,ref,optional] @ Api version.

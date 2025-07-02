@@ -2,7 +2,7 @@
 @ Used to provide source code in memory. [detail]
 struct Source
     field Name {Str} @ Source name (used to resolve imports)
-    field Data {ConstData} @ Source code.
+    field Data {Str} @ Source code.
     field Size {Uint32} @ Size of {Data} in bytes.
 
 @ Api version.

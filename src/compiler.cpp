@@ -39,6 +39,7 @@ public:
                 if (result) {
                     Exception exc(IDL_STATUS_E2011, "<input>", 0, 0, "unknown error");
                     result->addMessage(exc);
+                    return IDL_RESULT_SUCCESS;
                 } else {
                     return IDL_RESULT_ERROR_COMPILATION;
                 }

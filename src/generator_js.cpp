@@ -541,6 +541,18 @@ static void generateTypes(idl::Context& ctx, std::ostream& stream) {
 }
 
 static void generateExceptions(idl::Context& ctx, std::ostream& stream) {
+    bool hasErrorCodes = false;
+    ctx.filter<ASTEnum>([&hasErrorCodes](ASTEnum* en) {
+        if (en->findAttr<ASTAttrErrorCode>()) {
+            hasErrorCodes = true;
+            return false;
+        }
+        return true;
+    });
+    if (!hasErrorCodes) {
+        return;
+    }
+
     const auto prefix = convert(ctx.api()->name, Case::PascalCase);
 
     ASTStr* type{};

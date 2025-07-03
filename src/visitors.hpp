@@ -383,7 +383,7 @@ struct DocValidator : Visitor {
                 throw;
             }
             if (result) {
-                result->addMessage(exc);
+                result->addMessage(exc, false);
             }
         }
     }

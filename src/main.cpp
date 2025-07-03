@@ -77,6 +77,7 @@ int main(int argc, char* argv[]) {
             return EXIT_FAILURE;
         }
     }
+    idl_generator_t gen   = getGeneratorArg(program, generators);
     std::string inputFile = input.string();
     std::string outputDir = output.string();
     std::vector<idl_utf8_t> dirs;
@@ -109,8 +110,7 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
     idl_compilation_result_t result{};
-    code = idl_compiler_compile(
-        compiler, getGeneratorArg(program, generators), inputFile.c_str(), 0, nullptr, options, &result);
+    code = idl_compiler_compile(compiler, gen, inputFile.c_str(), 0, nullptr, options, &result);
 
     if (result) {
         if (idl_compilation_result_has_errors(result) || idl_compilation_result_has_warnings(result)) {
@@ -120,17 +120,13 @@ int main(int argc, char* argv[]) {
             messages.resize(count);
             idl_compilation_result_get_messages(result, &count, messages.data());
             for (const auto& message : messages) {
-                if (message.status >= IDL_STATUS_E2001) {
-                    std::cerr << "error [E";
-                } else {
-                    if (idl_options_get_warnings_as_errors(options)) {
-                        std::cerr << "error [W";
-                    } else {
-                        std::cerr << "warning [W";
-                    }
+                std::cerr << (message.is_error ? "error" : "warning");
+                std::cerr << " [" << (message.status >= IDL_STATUS_E2001 ? 'E' : 'W');
+                std::cerr << (int) message.status << "]: " << message.message;
+                if (message.line > 0) {
+                    std::cerr << " at " << message.filename << ':' << message.line << ':' << message.column << '.'
+                              << std::endl;
                 }
-                std::cerr << (int) message.status << "]: " << message.message << " at " << message.filename << ':'
-                          << message.line << ':' << message.column << '.' << std::endl;
             }
         }
         idl_compilation_result_destroy(result);

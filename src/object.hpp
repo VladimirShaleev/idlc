@@ -34,10 +34,7 @@ public:
         try {
             obj = new D(args...);
             return IDL_RESULT_SUCCESS;
-        } /* catch (const Exception& exc) {
-            return exc.result();
-        } */
-        catch (const std::bad_alloc&) {
+        } catch (const std::bad_alloc&) {
             return IDL_RESULT_ERROR_OUT_OF_MEMORY;
         } catch (...) {
             return IDL_RESULT_ERROR_UNKNOWN;

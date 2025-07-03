@@ -18,15 +18,16 @@ public:
         return _hasErrors;
     }
 
-    void addMessage(const Exception& exc) {
+    void addMessage(const Exception& exc, bool isError = true) {
         _messages.push_back({});
         auto& message    = _messages.back();
         message.status   = exc.status();
+        message.is_error = isError ? 1 : 0;
         message.message  = getStr(exc.what());
         message.filename = getStr(exc.filename());
         message.line     = exc.line();
         message.column   = exc.column();
-        if (exc.status() >= IDL_STATUS_E2001) {
+        if (isError) {
             _hasErrors = true;
         } else {
             _hasWarnings = true;

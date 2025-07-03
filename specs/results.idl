@@ -131,6 +131,7 @@ enum Status
 @ Detailed description of warning or compilation error. [detail]
 struct Message
     field Status {Status} @ Compilation status.
+    field IsError {Bool} @ The message indicates an error.
     field Message {Str} @ Detailed text description.
     field Filename {Str} @ File in which warning or error was detected.
     field Line {Uint32} @ The line number where the warning or error was detected.

@@ -158,6 +158,7 @@ typedef enum
 typedef struct
 {
     idl_status_t status; /**< Compilation status. */
+    idl_bool_t   is_error; /**< The message indicates an error. */
     idl_utf8_t   message; /**< Detailed text description. */
     idl_utf8_t   filename; /**< File in which warning or error was detected. */
     idl_uint32_t line; /**< The line number where the warning or error was detected. */

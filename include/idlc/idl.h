@@ -58,7 +58,7 @@ idl_version(void);
 
 /**
  * @brief   Current library version as human-readable string.
- * @details Format: "major.minor.micro", eg: "1.5.3".
+ * @details Format: "major.minor.micro", eg: "1.5.4".
  * @return  Return version string.
  */
 idl_api idl_utf8_t

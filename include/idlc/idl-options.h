@@ -18,7 +18,7 @@ IDL_BEGIN
  */
 typedef struct
 {
-    idl_utf8_t        name; /**< Source name (used to resolve imports) */
+    idl_utf8_t        name; /**< Source name (used to resolve imports). */
     const idl_char_t* data; /**< Source code. */
     idl_uint32_t      size; /**< Size of idl_source_t::data in bytes. */
 } idl_source_t;
@@ -42,7 +42,7 @@ typedef struct
  * @param[in] data User data specified when setting up a callback.
  * @return    Should return the source if the file can be resolved, or null to indicate
  *            to the compiler that it cannot resolve the source and should try to find
- *            the source elsewhere (e.g. via import paths)
+ *            the source elsewhere (e.g. via import paths).
  * @sa        If the callback allocates memory, then you can free it in the callback idl_release_import_callback_t.
  */
 typedef idl_source_t*

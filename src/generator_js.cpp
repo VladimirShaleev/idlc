@@ -802,6 +802,15 @@ struct JsConverter<String, std::span<const char>> {{
 // this is for representing a byte array, not a string.
 // the 'String' type is used to represent strings.
 template <>
+struct JsConverter<std::string, std::span<char>> {{
+    static std::string convert(std::span<char> obj) {{
+        return std::string((char*) obj.data(), obj.size());
+    }}
+}};
+
+// this is for representing a byte array, not a string.
+// the 'String' type is used to represent strings.
+template <>
 struct JsConverter<std::string, std::span<const char>> {{
     static std::string convert(std::span<const char> obj) {{
         return std::string((const char*) obj.data(), obj.size());
@@ -1310,10 +1319,11 @@ static void generateFunctionCall(idl::Context& ctx,
                     fmt::print(stream, "&{}", param.paramName);
                 }
             } else {
-                bool isStr   = !param.isVector && param.type->is<ASTStr>();
-                bool isIface = param.type->is<ASTInterface>();
-                bool isR     = isRef(arg) || isStr || isIface || param.isCallback || param.isUserdata;
-                auto name    = param.paramName;
+                bool isStr      = !param.isVector && param.type->is<ASTStr>();
+                bool isIface    = param.type->is<ASTInterface>();
+                bool isDataSize = arg->findAttr<ASTAttrDataSize>();
+                bool isR        = isRef(arg) || isStr || isIface || isDataSize || param.isCallback || param.isUserdata;
+                auto name       = param.paramName;
                 if (param.isUserdata) {
                     name = "data" + std::to_string(userData++);
                 }
@@ -1409,11 +1419,13 @@ static void generateFunction(idl::Context& ctx, std::ostream& stream, ASTDecl* f
             param.refArg = it->second;
         }
 
+        const auto isDataType = param.type->is<ASTData>() || param.type->is<ASTConstData>();
+
         CName cname;
         param.type->accept(cname);
         param.typeName = cname.str;
 
-        param.isVector = arg->findAttr<ASTAttrArray>() != nullptr;
+        param.isVector = isArray(arg);
 
         if (arg->findAttr<ASTAttrOut>() || arg->findAttr<ASTAttrResult>()) {
             param.isResult = arg->findAttr<ASTAttrResult>() != nullptr;
@@ -1421,7 +1433,12 @@ static void generateFunction(idl::Context& ctx, std::ostream& stream, ASTDecl* f
             param.outParam = true;
 
             if (param.isVector) {
-                param.refArg   = arg->findAttr<ASTAttrArray>()->decl->decl->as<ASTArg>();
+                if (isDataType) {
+                    param.typeName = "char";
+                    param.refArg   = arg->findAttr<ASTAttrDataSize>()->decl->decl->as<ASTArg>();
+                } else {
+                    param.refArg = arg->findAttr<ASTAttrArray>()->decl->decl->as<ASTArg>();
+                }
                 param.typeName = "std::vector<" + param.typeName + '>';
                 needFetchSizes = true;
             }

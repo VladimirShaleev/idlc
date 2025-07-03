@@ -168,7 +168,7 @@ static std::string getType(ASTDecl* field) {
     if (isConstDecl(field) && isRefDecl(field)) {
         type.insert(0, "const ");
     }
-    if (isRefDecl(field) || isOutDecl(field)) {
+    if ((isRefDecl(field) || isOutDecl(field)) && !field->findAttr<ASTAttrDataSize>()) {
         type += '*';
     }
     return type;

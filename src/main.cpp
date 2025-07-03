@@ -112,7 +112,11 @@ int main(int argc, char* argv[]) {
     idl_compilation_result_t result{};
     code = idl_compiler_compile(compiler, gen, inputFile.c_str(), 0, nullptr, options, &result);
 
+    bool failed = false;
     if (result) {
+        if (idl_compilation_result_has_errors(result)) {
+            failed = true;
+        }
         if (idl_compilation_result_has_errors(result) || idl_compilation_result_has_warnings(result)) {
             idl_uint32_t count{};
             idl_compilation_result_get_messages(result, &count, nullptr);
@@ -133,9 +137,10 @@ int main(int argc, char* argv[]) {
     }
     if (code != IDL_RESULT_SUCCESS) {
         std::cerr << "error: " << idl_result_to_string(code) << std::endl;
+        failed = true;
     }
 
     idl_compiler_destroy(compiler);
     idl_options_destroy(options);
-    return code == IDL_RESULT_SUCCESS ? EXIT_SUCCESS : EXIT_FAILURE;
+    return failed ? EXIT_FAILURE : EXIT_SUCCESS;
 }

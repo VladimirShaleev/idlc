@@ -326,6 +326,9 @@ public:
                         err<IDL_STATUS_E2077>(field->location, field->name, node->fullname());
                     }
                 }
+                if (field->findAttr<ASTAttrArray>() && field->findAttr<ASTAttrDataSize>()) {
+                    err<IDL_STATUS_E2124>(field->location, field->fullname());
+                }
                 if (auto value = field->findAttr<ASTAttrValue>()) {
                     if (auto literalConsts = value->value->as<ASTLiteralConsts>()) {
                         std::set<ASTDecl*> uniqueDecls;
@@ -393,6 +396,40 @@ public:
                         err<IDL_STATUS_E2078>(attr->location, field->fullname());
                     }
                 }
+                if (auto attr = field->findAttr<ASTAttrDataSize>()) {
+                    auto dataType = resolveType(field->findAttr<ASTAttrType>()->type);
+                    if (!dataType->is<ASTData>() && !dataType->is<ASTConstData>()) {
+                        err<IDL_STATUS_E2119>(attr->location, field->name, node->fullname());
+                    }
+                    auto symbol = findSymbol(node, attr->location, attr->decl);
+                    if (auto sizeField = symbol->as<ASTField>()) {
+                        auto parent1 = node;
+                        auto parent2 = symbol;
+                        while (true) {
+                            auto st = parent1->parent->as<ASTStruct>();
+                            if (st == nullptr) {
+                                break;
+                            }
+                            parent1 = st;
+                        }
+                        while (true) {
+                            auto st = parent2->parent->as<ASTStruct>();
+                            if (st == nullptr) {
+                                break;
+                            }
+                            parent2 = st;
+                        }
+                        if (parent1 != parent2) {
+                            err<IDL_STATUS_E2118>(field->location);
+                        }
+                        auto type = resolveType(sizeField->findAttr<ASTAttrType>()->type);
+                        if (!type->is<ASTIntegerType>()) {
+                            err<IDL_STATUS_E2114>(attr->location, field->fullname());
+                        }
+                    } else {
+                        err<IDL_STATUS_E2113>(attr->location, field->fullname());
+                    }
+                }
             }
         });
     }
@@ -441,6 +478,9 @@ public:
                     } else {
                         err<IDL_STATUS_E2102>(arg->location, arg->name, node->fullname());
                     }
+                }
+                if (arg->findAttr<ASTAttrArray>() && arg->findAttr<ASTAttrDataSize>()) {
+                    err<IDL_STATUS_E2124>(arg->location, arg->fullname());
                 }
             }
         });
@@ -498,6 +538,24 @@ public:
                         err<IDL_STATUS_E2108>(attr->location, arg->fullname());
                     }
                 }
+                if (auto attr = arg->findAttr<ASTAttrDataSize>(); attr) {
+                    auto symbol   = findSymbol(node, attr->location, attr->decl);
+                    auto dataType = resolveType(arg->findAttr<ASTAttrType>()->type);
+                    if (!dataType->is<ASTData>() && !dataType->is<ASTConstData>()) {
+                        err<IDL_STATUS_E2121>(attr->location, arg->name, node->fullname());
+                    }
+                    if (auto sizeField = symbol->as<ASTArg>()) {
+                        if (arg->parent != sizeField->parent) {
+                            err<IDL_STATUS_E2120>(arg->location);
+                        }
+                        auto type = resolveType(sizeField->findAttr<ASTAttrType>()->type);
+                        if (!type->is<ASTIntegerType>()) {
+                            err<IDL_STATUS_E2114>(attr->location, arg->fullname());
+                        }
+                    } else {
+                        err<IDL_STATUS_E2117>(attr->location, arg->fullname());
+                    }
+                }
             }
         });
     }
@@ -551,6 +609,9 @@ public:
                     if (!arg->findAttr<ASTAttrOptional>()) {
                         needAddOptional.push_back(arg);
                     }
+                }
+                if (arg->findAttr<ASTAttrArray>() && arg->findAttr<ASTAttrDataSize>()) {
+                    err<IDL_STATUS_E2124>(arg->location, arg->fullname());
                 }
             }
         });
@@ -609,6 +670,24 @@ public:
                         }
                     } else {
                         err<IDL_STATUS_E2106>(attr->location, arg->fullname());
+                    }
+                }
+                if (auto attr = arg->findAttr<ASTAttrDataSize>(); attr) {
+                    auto symbol   = findSymbol(node, attr->location, attr->decl);
+                    auto dataType = resolveType(arg->findAttr<ASTAttrType>()->type);
+                    if (!dataType->is<ASTData>() && !dataType->is<ASTConstData>()) {
+                        err<IDL_STATUS_E2121>(attr->location, arg->name, node->fullname());
+                    }
+                    if (auto sizeField = symbol->as<ASTArg>()) {
+                        if (arg->parent != sizeField->parent) {
+                            err<IDL_STATUS_E2122>(arg->location);
+                        }
+                        auto type = resolveType(sizeField->findAttr<ASTAttrType>()->type);
+                        if (!type->is<ASTIntegerType>()) {
+                            err<IDL_STATUS_E2114>(attr->location, arg->fullname());
+                        }
+                    } else {
+                        err<IDL_STATUS_E2116>(attr->location, arg->fullname());
                     }
                 }
                 if (resolveType(argAttr->type)->is<ASTCallback>() && !arg->findAttr<ASTAttrOptional>()) {
@@ -708,6 +787,9 @@ public:
                         needAddOptional.push_back(arg);
                     }
                 }
+                if (arg->findAttr<ASTAttrArray>() && arg->findAttr<ASTAttrDataSize>()) {
+                    err<IDL_STATUS_E2124>(arg->location, arg->fullname());
+                }
             }
             return true;
         });
@@ -771,6 +853,24 @@ public:
                         }
                     } else {
                         err<IDL_STATUS_E2104>(attr->location, arg->fullname());
+                    }
+                }
+                if (auto attr = arg->findAttr<ASTAttrDataSize>(); attr) {
+                    auto symbol   = findSymbol(node, attr->location, attr->decl);
+                    auto dataType = resolveType(arg->findAttr<ASTAttrType>()->type);
+                    if (!dataType->is<ASTData>() && !dataType->is<ASTConstData>()) {
+                        err<IDL_STATUS_E2121>(attr->location, arg->name, node->fullname());
+                    }
+                    if (auto sizeField = symbol->as<ASTArg>()) {
+                        if (arg->parent != sizeField->parent) {
+                            err<IDL_STATUS_E2123>(arg->location);
+                        }
+                        auto type = resolveType(sizeField->findAttr<ASTAttrType>()->type);
+                        if (!type->is<ASTIntegerType>()) {
+                            err<IDL_STATUS_E2114>(attr->location, arg->fullname());
+                        }
+                    } else {
+                        err<IDL_STATUS_E2115>(attr->location, arg->fullname());
                     }
                 }
                 if (resolveType(argAttr->type)->is<ASTCallback>() && !arg->findAttr<ASTAttrOptional>()) {
@@ -841,6 +941,17 @@ public:
                                     }
                                 }
                             }
+                            auto datasizeAttr =
+                                res != method->args.end() ? (*res)->findAttr<ASTAttrDataSize>() : nullptr;
+                            if (datasizeAttr) {
+                                auto datasizeDecl = findSymbol(node, datasizeAttr->location, datasizeAttr->decl);
+                                if (datasizeDecl->findAttr<ASTAttrOut>()) {
+                                    isValidProp = true;
+                                    if ((*res)->findAttr<ASTAttrType>()) {
+                                        getterType = resolveType((*res)->findAttr<ASTAttrType>()->type);
+                                    }
+                                }
+                            }
                         }
                         if (!isValidProp) {
                             err<IDL_STATUS_E2058>(getter->location, method->fullname());
@@ -879,6 +990,20 @@ public:
                         if (arrAttr) {
                             auto arrDecl  = findSymbol(node, arrAttr->location, arrAttr->decl);
                             auto sizeType = resolveType(arrDecl->findAttr<ASTAttrType>()->type);
+                            if (sizeType->is<ASTIntegerType>()) {
+                                isValid = true;
+                                if ((*res)->findAttr<ASTAttrType>()) {
+                                    setterType = resolveType((*res)->findAttr<ASTAttrType>()->type);
+                                }
+                            }
+                        }
+                        res               = std::find_if(method->args.begin(), method->args.end(), [](ASTArg* arg) {
+                            return arg->findAttr<ASTAttrDataSize>() != nullptr;
+                        });
+                        auto datasizeAttr = res != method->args.end() ? (*res)->findAttr<ASTAttrDataSize>() : nullptr;
+                        if (datasizeAttr) {
+                            auto datasizeDecl = findSymbol(node, datasizeAttr->location, datasizeAttr->decl);
+                            auto sizeType     = resolveType(datasizeDecl->findAttr<ASTAttrType>()->type);
                             if (sizeType->is<ASTIntegerType>()) {
                                 isValid = true;
                                 if ((*res)->findAttr<ASTAttrType>()) {

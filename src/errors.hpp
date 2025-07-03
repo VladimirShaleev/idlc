@@ -167,7 +167,7 @@ template <idl_status_t Status, typename... Args>
     } else if constexpr (Status == IDL_STATUS_E2057) {
         str = fmt::format("a getter method '{}' must have one argument", args...);
     } else if constexpr (Status == IDL_STATUS_E2058) {
-        str = fmt::format("getter method {} cannot return 'Void'", args...);
+        str = fmt::format("getter method '{}' cannot return 'Void'", args...);
     } else if constexpr (Status == IDL_STATUS_E2059) {
         str = fmt::format("setter '{}' must be a method", args...);
     } else if constexpr (Status == IDL_STATUS_E2060) {
@@ -297,6 +297,38 @@ template <idl_status_t Status, typename... Args>
     } else if constexpr (Status == IDL_STATUS_E2111) {
         str = fmt::format("the '{}' declaration does not have a brief ('brief' attribute) or detailed description "
                           "('detail' attribute)",
+                          args...);
+    } else if constexpr (Status == IDL_STATUS_E2112) {
+        str = "the 'datasize' attribute must specify a size in the argument";
+    } else if constexpr (Status == IDL_STATUS_E2113) {
+        str = fmt::format("the 'datasize' attribute of the '{}' must point to a field of the structure", args...);
+    } else if constexpr (Status == IDL_STATUS_E2114) {
+        str = fmt::format(
+            "the 'datasize' attribute '{}' of the must point to an integer field to specify the buffer size", args...);
+    } else if constexpr (Status == IDL_STATUS_E2115) {
+        str = fmt::format("the 'datasize' attribute of the '{}' must point to a argument of the method", args...);
+    } else if constexpr (Status == IDL_STATUS_E2116) {
+        str = fmt::format("the 'datasize' attribute of the '{}' must point to a argument of the function", args...);
+    } else if constexpr (Status == IDL_STATUS_E2117) {
+        str = fmt::format("the 'datasize' attribute of the '{}' must point to a argument of the callback", args...);
+    } else if constexpr (Status == IDL_STATUS_E2118) {
+        str = "the reference to the size buffer is located outside the visibility of the structure";
+    } else if constexpr (Status == IDL_STATUS_E2119) {
+        str = fmt::format("attribute 'datasize' cannot be attached to the '{}' field of the '{}' structure, the attribute "
+                          "is only applicable to 'Data' or 'ConstData' types",
+                          args...);
+    } else if constexpr (Status == IDL_STATUS_E2120) {
+        str = "the reference to the size buffer is located outside the visibility of the callback";
+    } else if constexpr (Status == IDL_STATUS_E2121) {
+        str = fmt::format("attribute 'datasize' cannot be attached to the '{}' arg of the '{}', the attribute "
+                          "is only applicable to 'Data' or 'ConstData' types",
+                          args...);
+    } else if constexpr (Status == IDL_STATUS_E2122) {
+        str = "the reference to the size buffer is located outside the visibility of the function";
+    } else if constexpr (Status == IDL_STATUS_E2123) {
+        str = "the reference to the size buffer is located outside the visibility of the method";
+    } else if constexpr (Status == IDL_STATUS_E2124) {
+        str = fmt::format("the declaration '{}' can only specify the 'array' or 'datasize' attribute, but not both.",
                           args...);
     } else {
         static_assert(false, "unknown status code");

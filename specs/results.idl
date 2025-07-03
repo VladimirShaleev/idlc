@@ -126,6 +126,19 @@ enum Status
     const E2109 [tokenizer(0)] @ The 'tokenizer' attribute must specify a indices string in the argument.
     const E2110 [tokenizer(0)] @ The 'version' attribute must specify a semver in the argument.
     const E2111 [tokenizer(0)] @ The declaration does not have a brief ('brief' attribute) or detailed description ('detail' attribute).
+    const E2112 [tokenizer(0)] @ The 'datasize' attribute must specify a size in the argument.
+    const E2113 [tokenizer(0)] @ The 'datasize' attribute of the must point to a field of the structure.
+    const E2114 [tokenizer(0)] @ The 'datasize' attribute of the must point to an integer field to specify the buffer size.
+    const E2115 [tokenizer(0)] @ The 'datasize' attribute of the must point to a argument of the method.
+    const E2116 [tokenizer(0)] @ The 'datasize' attribute of the must point to a argument of the function.
+    const E2117 [tokenizer(0)] @ The 'datasize' attribute of the must point to a argument of the callback.
+    const E2118 [tokenizer(0)] @ The reference to the size buffer is located outside the visibility of the structure.
+    const E2119 [tokenizer(0)] @ The 'datasize' attribute is only applicable to fields of type "Data" or "ConstData".
+    const E2120 [tokenizer(0)] @ The reference to the size buffer is located outside the visibility of the callback.
+    const E2121 [tokenizer(0)] @ The 'datasize' attribute is only applicable to arg of type "Data" or "ConstData".
+    const E2122 [tokenizer(0)] @ The reference to the size buffer is located outside the visibility of the function.
+    const E2123 [tokenizer(0)] @ The reference to the size buffer is located outside the visibility of the method.
+    const E2124 [tokenizer(0)] @ Can only specify either the 'datasize' or 'array' attribute, but not both.
 
 @ Compilation message.
 @ Detailed description of warning or compilation error. [detail]

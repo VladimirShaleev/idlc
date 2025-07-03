@@ -223,6 +223,10 @@ struct AttrName : Visitor {
         str = "array";
     }
 
+    void visit(ASTAttrDataSize* node) override {
+        str = "datasize";
+    }
+
     void visit(ASTAttrConst* node) override {
         str = "const";
     }
@@ -299,8 +303,8 @@ struct AllowedAttrs : Visitor {
     }
 
     void visit(ASTField* node) override {
-        allowed = { add<ASTAttrType>(),  add<ASTAttrValue>(), add<ASTAttrCName>(), add<ASTAttrTokenizer>(),
-                    add<ASTAttrArray>(), add<ASTAttrConst>(), add<ASTAttrRef>() };
+        allowed = { add<ASTAttrType>(),  add<ASTAttrValue>(),    add<ASTAttrCName>(), add<ASTAttrTokenizer>(),
+                    add<ASTAttrArray>(), add<ASTAttrDataSize>(), add<ASTAttrConst>(), add<ASTAttrRef>() };
     }
 
     void visit(ASTInterface* node) override {
@@ -328,10 +332,10 @@ struct AllowedAttrs : Visitor {
     }
 
     void visit(ASTArg* node) override {
-        allowed = { add<ASTAttrType>(),      add<ASTAttrValue>(), add<ASTAttrThis>(), add<ASTAttrCName>(),
-                    add<ASTAttrTokenizer>(), add<ASTAttrConst>(), add<ASTAttrRef>(),  add<ASTAttrUserData>(),
-                    add<ASTAttrResult>(),    add<ASTAttrIn>(),    add<ASTAttrOut>(),  add<ASTAttrArray>(),
-                    add<ASTAttrOptional>() };
+        allowed = { add<ASTAttrType>(),      add<ASTAttrValue>(),   add<ASTAttrThis>(), add<ASTAttrCName>(),
+                    add<ASTAttrTokenizer>(), add<ASTAttrConst>(),   add<ASTAttrRef>(),  add<ASTAttrUserData>(),
+                    add<ASTAttrResult>(),    add<ASTAttrIn>(),      add<ASTAttrOut>(),  add<ASTAttrArray>(),
+                    add<ASTAttrDataSize>(),  add<ASTAttrOptional>() };
     }
 
     void visit(ASTApi* node) override {

@@ -148,6 +148,12 @@ struct ASTAttrArray : ASTAttr {
     struct ASTDeclRef* decl{};
 };
 
+struct ASTAttrDataSize : ASTAttr {
+    void accept(Visitor& visitor) override;
+
+    struct ASTDeclRef* decl{};
+};
+
 struct ASTAttrConst : ASTAttr {
     void accept(Visitor& visitor) override;
 };
@@ -528,6 +534,10 @@ struct Visitor {
         discarded(node);
     }
 
+    virtual void visit(ASTAttrDataSize* node) {
+        discarded(node);
+    }
+
     virtual void visit(ASTAttrConst* node) {
         discarded(node);
     }
@@ -797,6 +807,10 @@ inline void ASTAttrCName::accept(Visitor& visitor) {
 }
 
 inline void ASTAttrArray::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+inline void ASTAttrDataSize::accept(Visitor& visitor) {
     visitor.visit(this);
 }
 

@@ -22,6 +22,7 @@ std::string unescape(const char*);
 %x ATTRARGPATFORM
 %x ATTRARGCNAME
 %x ATTRARGARRAY
+%x ATTRARGDATASIZE
 %x ATTRARGTOKENIZER
 %x ATTRARGVERSION
 %x TYPE
@@ -104,6 +105,7 @@ DOCMCHAR ([^ \r\n\t\{\}[\]`]|^[`]{3}|\\\{|\\\}|\\\[|\\\])
 <ATTRCTX>"handle"    { return token::ATTRHANDLE; }
 <ATTRCTX>"cname"     { BEGIN(ATTRARGCNAME); return token::ATTRCNAME; }
 <ATTRCTX>"array"     { BEGIN(ATTRARGARRAY); return token::ATTRARRAY; }
+<ATTRCTX>"datasize"  { BEGIN(ATTRARGDATASIZE); return token::ATTRDATASIZE; }
 <ATTRCTX>"const"     { return token::ATTRCONST; }
 <ATTRCTX>"ref"       { return token::ATTRREF; }
 <ATTRCTX>"refinc"    { return token::ATTRREFINC; }
@@ -169,6 +171,13 @@ DOCMCHAR ([^ \r\n\t\{\}[\]`]|^[`]{3}|\\\{|\\\}|\\\[|\\\])
 <ATTRARGARRAY>[0-9]+              { yylval->emplace<int64_t>(std::stoi(YYText())); return token::NUM; }
 <ATTRARGARRAY>[A-Z][a-zA-Z0-9\.]* { yylval->emplace<std::string>(YYText()); return token::REF; }
 <ATTRARGARRAY>.                   { err<IDL_STATUS_E2001>(*yylloc, YYText()); }
+
+<ATTRARGDATASIZE>"("                 { return YYText()[0]; }
+<ATTRARGDATASIZE>")"                 { BEGIN(ATTRCTX); return YYText()[0]; }
+<ATTRARGDATASIZE>" "                 ;
+<ATTRARGDATASIZE>\n                  { yylloc->lines(); }
+<ATTRARGDATASIZE>[A-Z][a-zA-Z0-9\.]* { yylval->emplace<std::string>(YYText()); return token::REF; }
+<ATTRARGDATASIZE>.                   { err<IDL_STATUS_E2001>(*yylloc, YYText()); }
 
 <ATTRARGTOKENIZER>"("                    { return YYText()[0]; }
 <ATTRARGTOKENIZER>")"                    { BEGIN(ATTRCTX); return YYText()[0]; }

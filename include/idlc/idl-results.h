@@ -148,6 +148,19 @@ typedef enum
     IDL_STATUS_E2109    = 2109, /**< The 'tokenizer' attribute must specify a indices string in the argument. */
     IDL_STATUS_E2110    = 2110, /**< The 'version' attribute must specify a semver in the argument. */
     IDL_STATUS_E2111    = 2111, /**< The declaration does not have a brief ('brief' attribute) or detailed description ('detail' attribute). */
+    IDL_STATUS_E2112    = 2112, /**< The 'datasize' attribute must specify a size in the argument. */
+    IDL_STATUS_E2113    = 2113, /**< The 'datasize' attribute of the must point to a field of the structure. */
+    IDL_STATUS_E2114    = 2114, /**< The 'datasize' attribute of the must point to an integer field to specify the buffer size. */
+    IDL_STATUS_E2115    = 2115, /**< The 'datasize' attribute of the must point to a argument of the method. */
+    IDL_STATUS_E2116    = 2116, /**< The 'datasize' attribute of the must point to a argument of the function. */
+    IDL_STATUS_E2117    = 2117, /**< The 'datasize' attribute of the must point to a argument of the callback. */
+    IDL_STATUS_E2118    = 2118, /**< The reference to the size buffer is located outside the visibility of the structure. */
+    IDL_STATUS_E2119    = 2119, /**< The 'datasize' attribute is only applicable to fields of type "Data" or "ConstData". */
+    IDL_STATUS_E2120    = 2120, /**< The reference to the size buffer is located outside the visibility of the callback. */
+    IDL_STATUS_E2121    = 2121, /**< The 'datasize' attribute is only applicable to arg of type "Data" or "ConstData". */
+    IDL_STATUS_E2122    = 2122, /**< The reference to the size buffer is located outside the visibility of the function. */
+    IDL_STATUS_E2123    = 2123, /**< The reference to the size buffer is located outside the visibility of the method. */
+    IDL_STATUS_E2124    = 2124, /**< Can only specify either the 'datasize' or 'array' attribute, but not both. */
     IDL_STATUS_MAX_ENUM = 0x7FFFFFFF /**< Max value of enum (not used) */
 } idl_status_t;
 

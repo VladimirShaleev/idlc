@@ -70,6 +70,7 @@
 %token ATTRHANDLE
 %token ATTRCNAME
 %token ATTRARRAY
+%token ATTRDATASIZE
 %token ATTRCONST
 %token ATTRREF
 %token ATTRREFINC
@@ -114,6 +115,7 @@
 %type <ASTAttr*> attr_type
 %type <ASTAttr*> attr_cname
 %type <ASTAttr*> attr_array
+%type <ASTAttr*> attr_datasize
 %type <ASTAttr*> attr_tokenizer
 %type <ASTAttr*> attr_version
 %type <ASTAttr*> attr_const
@@ -252,6 +254,7 @@ attr_item
     | attr_type { $$ = $1; }
     | attr_cname { $$ = $1; }
     | attr_array { $$ = $1; }
+    | attr_datasize { $$ = $1; }
     | attr_tokenizer { $$ = $1; }
     | attr_version { $$ = $1; }
     | attr_const { $$ = $1; }
@@ -352,6 +355,19 @@ attr_array
         ref->name = $3;
         auto node = alloc_node(ASTAttrArray, @1);
         node->ref = true;
+        node->decl = ref;
+        ref->parent = node;
+        $$ = node;
+    }
+    ;
+
+attr_datasize
+    : ATTRDATASIZE { err<IDL_STATUS_E2112>(@1); }
+    | ATTRDATASIZE '(' ')' { err<IDL_STATUS_E2112>(@1); }
+    | ATTRDATASIZE '(' REF ')' {
+        auto ref = alloc_node(ASTDeclRef, @3);
+        ref->name = $3;
+        auto node = alloc_node(ASTAttrDataSize, @1);
         node->decl = ref;
         ref->parent = node;
         $$ = node;

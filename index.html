@@ -242,36 +242,29 @@ interface Logger
             clearStatus();
             showStatus('Compiling...');
 
-            const results = {};
 
             const options = new module.Options;
-            // options.debugMode = false;
             // options.warningsAsErrors = true;
-            // options.setVersion({major: 1, minor: 2, micro: 0});
+            
+            const results = {};
             options.writer = function (source) {
                 results[source.name] = source.data;
             };
 
             const source1 = {
                 name: "<input>",
-                data: code,
-                size: code.length
+                data: code
             };
 
             const compiler = new module.Compiler;
             const result = compiler.compile(generator, undefined, [source1], options);
 
             clearStatus();
-            var failed = false;
             result.messages.forEach(message => {
-                const isWarning = message.status.value < 2000 && !options.warningsAsErrors;
-                if (!isWarning) {
-                    failed = true;
-                }
-                showStatus(`${isWarning ? "waring" : "error"} [${message.status.value < 2000 ? "W" : "E"}${message.status.value}]: ${message.message} at ${message.filename}:${message.line}:${message.column}`, isWarning ? 'warning' : 'error')
+                showStatus(`${message.isError ? "error" : "warning"} [${message.status.value < 2000 ? "W" : "E"}${message.status.value}]: ${message.message} at ${message.filename}:${message.line}:${message.column}`, message.isError ? 'error' : 'warning')
             });
 
-            if (failed) {
+            if (result.hasErrors) {
                 showStatus('Compilation failed', 'error');
             } else {
                 showStatus('Compilation successful!', 'success');

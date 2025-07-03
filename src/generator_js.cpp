@@ -2036,7 +2036,7 @@ void generateJs(idl::Context& ctx,
     generateEndBindings(ctx, stream.stream);
     if (stream.writer) {
         const std::string data = stream.sstream->str();
-        idl_source_t source{ stream.filename.c_str(), data.c_str(), (idl_uint32_t) data.length() + 1 };
+        idl_source_t source{ stream.filename.c_str(), data.c_str(), (idl_uint32_t) data.length() };
         stream.writer(&source, stream.writerData);
     }
 }

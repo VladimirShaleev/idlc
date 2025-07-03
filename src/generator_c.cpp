@@ -219,7 +219,7 @@ static void endHeader(idl::Context& ctx, Header& header) {
     fmt::println(header.stream, "#endif /* {} */", header.includeGuard);
     if (header.writer) {
         const std::string data = header.sstream->str();
-        idl_source_t source{ header.filename.c_str(), data.c_str(), (idl_uint32_t) data.length() + 1 };
+        idl_source_t source{ header.filename.c_str(), data.c_str(), (idl_uint32_t) data.length() };
         header.writer(&source, header.writerData);
     }
 }

@@ -18,9 +18,9 @@ IDL_BEGIN
  */
 typedef struct
 {
-    idl_utf8_t   name; /**< Source name (used to resolve imports) */
-    idl_utf8_t   data; /**< Source code. */
-    idl_uint32_t size; /**< Size of idl_source_t::data in bytes. */
+    idl_utf8_t        name; /**< Source name (used to resolve imports) */
+    const idl_char_t* data; /**< Source code. */
+    idl_uint32_t      size; /**< Size of idl_source_t::data in bytes. */
 } idl_source_t;
 
 /**

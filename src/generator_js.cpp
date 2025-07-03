@@ -25,6 +25,14 @@ struct IsTrivial : Visitor {
         trivial = false;
     }
 
+    void visit(ASTData*) override {
+        trivial = false;
+    }
+
+    void visit(ASTConstData*) override {
+        trivial = false;
+    }
+
     void visit(ASTBool*) override {
         trivial = false;
     }
@@ -33,7 +41,7 @@ struct IsTrivial : Visitor {
         if (trivial) {
             for (auto field : node->fields) {
                 auto type    = field->findAttr<ASTAttrType>()->type->decl;
-                auto isArray = field->findAttr<ASTAttrArray>() != nullptr;
+                auto isArray = field->findAttr<ASTAttrArray>() || field->findAttr<ASTAttrDataSize>();
                 IsTrivial isTrivial(isArray);
                 type->accept(isTrivial);
                 trivial = isTrivial.trivial;
@@ -112,11 +120,11 @@ struct JsName : Visitor {
     }
 
     void visit(ASTData* node) override {
-        str = calcName(node);
+        str = "std::string";
     }
 
     void visit(ASTConstData* node) override {
-        str = calcName(node);
+        str = "std::string";
     }
 
     void visit(ASTStruct* node) override {
@@ -272,11 +280,11 @@ struct DefaultValue : Visitor {
     }
 
     void visit(ASTData* node) override {
-        value = defualtValue(node, "nullptr");
+        value = "\"\"";
     }
 
     void visit(ASTConstData* node) override {
-        value = defualtValue(node, "nullptr");
+        value = "\"\"";
     }
 
     void visit(ASTEnum* node) override {
@@ -370,11 +378,11 @@ struct Param {
 };
 
 static bool isArray(ASTDecl* decl) noexcept {
-    return decl->findAttr<ASTAttrArray>() != nullptr;
+    return decl->findAttr<ASTAttrArray>() || decl->findAttr<ASTAttrDataSize>();
 }
 
 static bool isOptional(ASTDecl* decl) noexcept {
-    return decl->findAttr<ASTAttrOptional>() != nullptr && !isArray(decl) && !decl->findAttr<ASTAttrOut>() &&
+    return decl->findAttr<ASTAttrOptional>() && !isArray(decl) && !decl->findAttr<ASTAttrOut>() &&
            !decl->findAttr<ASTAttrResult>();
 }
 
@@ -387,6 +395,9 @@ static ASTDecl* getType(ASTDecl* decl) noexcept {
 }
 
 static std::pair<ASTDecl*, int> getSizeDecl(ASTDecl* decl) noexcept {
+    if (auto datasize = decl->findAttr<ASTAttrDataSize>()) {
+        return { datasize->decl->decl, 0 };
+    }
     if (auto attr = decl->findAttr<ASTAttrArray>(); attr->ref) {
         return { attr->decl->decl, 0 };
     } else {
@@ -522,7 +533,8 @@ static void generateTypes(idl::Context& ctx, std::ostream& stream) {
         fmt::println(stream, "EMSCRIPTEN_DECLARE_VAL_TYPE({});", jsname.str);
     });
     ctx.filter<ASTTrivialType>([&stream](ASTTrivialType* trivialType) {
-        if (!trivialType->is<ASTVoid>() && !trivialType->is<ASTChar>()) {
+        if (!trivialType->is<ASTVoid>() && !trivialType->is<ASTChar>() && !trivialType->is<ASTData>() &&
+            !trivialType->is<ASTConstData>()) {
             JsName jsname(true);
             trivialType->accept(jsname);
             fmt::println(stream, "EMSCRIPTEN_DECLARE_VAL_TYPE({});", jsname.str);
@@ -662,6 +674,8 @@ static void generateNonTrivialTypes(idl::Context& ctx, std::ostream& stream) {
                     if (attr->ref) {
                         skip.insert(attr->decl->decl);
                     }
+                } else if (auto attr = field->findAttr<ASTAttrDataSize>()) {
+                    skip.insert(attr->decl->decl);
                 }
             }
             for (auto field : node->fields) {
@@ -696,7 +710,7 @@ static void generateClassDeclarations(idl::Context& ctx, std::ostream& stream) {
 static void generateArrItems(idl::Context& ctx, std::ostream& stream) {
     fmt::println(stream, "template <typename> struct ArrItem;");
     auto addArrItem = [&stream](ASTDecl* decl) {
-        if (!decl->is<ASTVoid>() && !decl->is<ASTChar>()) {
+        if (!decl->is<ASTVoid>() && !decl->is<ASTChar>() && !decl->is<ASTData>() && !decl->is<ASTConstData>()) {
             JsName jsname(true);
             decl->accept(jsname);
             const auto arrname = jsname.str;
@@ -785,6 +799,15 @@ struct JsConverter<String, std::span<const char>> {{
     }}
 }};
 
+// this is for representing a byte array, not a string.
+// the 'String' type is used to represent strings.
+template <>
+struct JsConverter<std::string, std::span<const char>> {{
+    static std::string convert(std::span<const char> obj) {{
+        return std::string((const char*) obj.data(), obj.size());
+    }}
+}};
+
 template <typename T, typename S>
 struct JsConverter<std::optional<T>, S> {{
     static std::optional<T> convert(const S obj) {{
@@ -842,6 +865,8 @@ struct JsConverter<String, {str}> {{
                     if (attr->ref) {
                         skip.insert(attr->decl->decl);
                     }
+                } else if (auto attr = field->findAttr<ASTAttrDataSize>()) {
+                    skip.insert(attr->decl->decl);
                 }
             }
             for (auto field : node->fields) {
@@ -865,7 +890,10 @@ struct JsConverter<String, {str}> {{
                         value = std::to_string(size);
                     }
                     spanBegin = "std::span{";
-                    spanEnd   = ", " + value + "}";
+                    if (type->is<ASTData>() || type->is<ASTConstData>()) {
+                        spanBegin += "(const char*) ";
+                    }
+                    spanEnd = ", " + value + "}";
                 }
                 type->accept(jsname);
                 field->accept(cname);
@@ -901,6 +929,14 @@ static void generateCConverters(idl::Context& ctx, std::ostream& stream) {
     ref.decl      = nullptr;
     ctx.resolveType(&ref)->accept(cname);
     auto strType = cname.str;
+    ref.name     = "Data";
+    ref.decl     = nullptr;
+    ctx.resolveType(&ref)->accept(cname);
+    auto dataType = cname.str;
+    ref.name      = "ConstData";
+    ref.decl      = nullptr;
+    ctx.resolveType(&ref)->accept(cname);
+    auto cdataType = cname.str;
 
     fmt::println(stream,
                  R"(struct CContext {{
@@ -999,6 +1035,17 @@ struct CConverter<arr_size<T>, String> {{
     }}
 }};
 
+// this is for representing a byte array, not a string.
+// the 'String' type is used to represent strings.
+template <typename T>
+struct CConverter<arr_size<T>, std::string> {{
+    static T* convert(CContext& ctx, const std::string& obj) {{
+        auto result = ctx.allocate<T>();
+        *result = (T) obj.length();
+        return result;
+    }}
+}};
+
 template <typename T, typename S>
 inline auto cconvert(CContext& ctx, const S& obj) {{
     return CConverter<T, S>::convert(ctx, const_cast<S&>(obj));
@@ -1048,10 +1095,36 @@ struct CConverter<{char}, String> {{
         return result;
     }}
 }};
+
+// this is for representing a byte array, not a string.
+// the 'String' type is used to represent strings.
+template <>
+struct CConverter<{data}, std::string> {{
+    static {data} convert(CContext& ctx, std::string& obj) {{
+        auto result = ctx.allocateArray<char>(obj.length() + 1);
+        memcpy(result, obj.c_str(), obj.length());
+        result[obj.length()] = '\0';
+        return ({data}) result;
+    }}
+}};
+
+// this is for representing a byte array, not a string.
+// the 'String' type is used to represent strings.
+template <>
+struct CConverter<{cdata}, std::string> {{
+    static {cdata} convert(CContext& ctx, std::string& obj) {{
+        auto result = ctx.allocateArray<char>(obj.length() + 1);
+        memcpy(result, obj.c_str(), obj.length());
+        result[obj.length()] = '\0';
+        return ({cdata}) result;
+    }}
+}};
 )",
                  fmt::arg("char", charType),
                  fmt::arg("bool", boolType),
-                 fmt::arg("str", strType));
+                 fmt::arg("str", strType),
+                 fmt::arg("data", dataType),
+                 fmt::arg("cdata", cdataType));
     ctx.filter<ASTStruct>([&stream](ASTStruct* node) {
         IsTrivial trivial;
         node->accept(trivial);
@@ -1062,6 +1135,8 @@ struct CConverter<{char}, String> {{
                     if (attr->ref) {
                         skip.insert(attr->decl->decl);
                     }
+                } else if (auto attr = field->findAttr<ASTAttrDataSize>()) {
+                    skip.insert(attr->decl->decl);
                 }
             }
             JsName jsname;
@@ -1301,6 +1376,8 @@ static void generateFunction(idl::Context& ctx, std::ostream& stream, ASTDecl* f
     std::map<ASTArg*, ASTArg*> sizeArgs;
     for (auto arg : args) {
         if (auto attr = arg->findAttr<ASTAttrArray>()) {
+            sizeArgs[attr->decl->decl->as<ASTArg>()] = arg;
+        } else if (auto attr = arg->findAttr<ASTAttrDataSize>()) {
             sizeArgs[attr->decl->decl->as<ASTArg>()] = arg;
         }
     }
@@ -1791,7 +1868,7 @@ static void generateCppFunctions(idl::Context& ctx, std::ostream& stream) {
 static void generateRegisterTypes(idl::Context& ctx, std::ostream& stream) {
     auto isArr   = false;
     auto addType = [&stream, &isArr](ASTDecl* decl) {
-        if (!decl->is<ASTVoid>() && !decl->is<ASTChar>()) {
+        if (!decl->is<ASTVoid>() && !decl->is<ASTChar>() && !decl->is<ASTData>() && !decl->is<ASTConstData>()) {
             JsName jsname(isArr);
             decl->accept(jsname);
             fmt::println(stream, "    register_type<{}>(\"{}\");", jsname.str, getNameTS(decl, isArr));
@@ -1809,7 +1886,8 @@ static void generateRegisterTypes(idl::Context& ctx, std::ostream& stream) {
 
 static void generateRegisterOptionals(idl::Context& ctx, std::ostream& stream) {
     auto addOptional = [&stream](ASTDecl* decl) {
-        if (!decl->is<ASTVoid>() && !decl->is<ASTChar>() && !decl->findAttr<ASTAttrErrorCode>()) {
+        if (!decl->is<ASTVoid>() && !decl->is<ASTChar>() && !decl->is<ASTConstData>() &&
+            !decl->findAttr<ASTAttrErrorCode>()) {
             JsName jsname;
             decl->accept(jsname);
             fmt::println(stream, "    register_optional<{}>();", jsname.str);
@@ -1859,6 +1937,8 @@ static void generateValueObjects(idl::Context& ctx, std::ostream& stream) {
                 if (attr->ref) {
                     skip.insert(attr->decl->decl);
                 }
+            } else if (auto attr = field->findAttr<ASTAttrDataSize>()) {
+                skip.insert(attr->decl->decl);
             }
         }
         for (auto field : node->fields) {

@@ -21,6 +21,10 @@ struct IsTrivial : Visitor {
         trivial = false;
     }
 
+    void visit(ASTChar*) override {
+        trivial = false;
+    }
+
     void visit(ASTBool*) override {
         trivial = false;
     }
@@ -56,7 +60,7 @@ struct JsName : Visitor {
     }
 
     void visit(ASTChar* node) override {
-        str = isArray ? "ArrString" : "String";
+        str = "String";
     }
 
     void visit(ASTStr*) override {
@@ -216,7 +220,7 @@ struct DefaultValue : Visitor {
     }
 
     void visit(ASTChar* node) override {
-        value = defualtValue(node, "\\0");
+        value = "String(val(\"\"))";
     }
 
     void visit(ASTStr* node) override {
@@ -393,6 +397,8 @@ static std::pair<ASTDecl*, int> getSizeDecl(ASTDecl* decl) noexcept {
 static std::string getNameTS(ASTDecl* decl, bool isDeclArr = false) {
     if (decl->is<ASTStr>()) {
         return std::string("string") + (isDeclArr ? "[]" : "");
+    } else if (decl->is<ASTChar>()) {
+        return std::string("string");
     } else if (decl->is<ASTBool>()) {
         return std::string("boolean") + (isDeclArr ? "[]" : "");
     } else if (decl->is<ASTVoid>()) {
@@ -650,7 +656,18 @@ static void generateNonTrivialTypes(idl::Context& ctx, std::ostream& stream) {
             JsName jsname;
             node->accept(jsname);
             fmt::println(stream, "struct {} {{", jsname.str);
+            std::set<ASTDecl*> skip;
             for (auto field : node->fields) {
+                if (auto attr = field->findAttr<ASTAttrArray>()) {
+                    if (attr->ref) {
+                        skip.insert(attr->decl->decl);
+                    }
+                }
+            }
+            for (auto field : node->fields) {
+                if (skip.contains(field)) {
+                    continue;
+                }
                 const auto isArr = isArray(field);
                 jsname.isArray   = isArr;
                 getType(field)->accept(jsname);
@@ -752,6 +769,22 @@ struct JsConverter<T, std::span<S>> {{
     }}
 }};
 
+template <>
+struct JsConverter<String, std::span<char>> {{
+    static String convert(std::span<char> obj) {{
+        std::string str(obj.data(), obj.size());
+        return String(val::u8string(str.c_str()));
+    }}
+}};
+
+template <>
+struct JsConverter<String, std::span<const char>> {{
+    static String convert(std::span<const char> obj) {{
+        std::string str(obj.data(), obj.size());
+        return String(val::u8string(str.c_str()));
+    }}
+}};
+
 template <typename T, typename S>
 struct JsConverter<std::optional<T>, S> {{
     static std::optional<T> convert(const S obj) {{
@@ -803,7 +836,18 @@ struct JsConverter<String, {str}> {{
             fmt::println(stream, "struct JsConverter<{}, {}> {{", jsname.str, cname.str);
             fmt::println(stream, "    static {} convert(const {}& obj) {{", jsname.str, cname.str);
             fmt::println(stream, "        return {} {{", jsname.str);
+            std::set<ASTDecl*> skip;
             for (auto field : node->fields) {
+                if (auto attr = field->findAttr<ASTAttrArray>()) {
+                    if (attr->ref) {
+                        skip.insert(attr->decl->decl);
+                    }
+                }
+            }
+            for (auto field : node->fields) {
+                if (skip.contains(field)) {
+                    continue;
+                }
                 auto type      = getType(field);
                 auto isArr     = isArray(field);
                 auto isR       = !isArr && isRef(field);
@@ -914,7 +958,7 @@ struct CConverter {{
             auto result = ctx.allocateArray<T>(vec.size());
             memcpy(result, vec.data(), sizeof(T) * vec.size());
             return result;
-        }} else if (std::is_same_v<T, typename ArrItem<S>::type>) {{
+        }} else if constexpr (std::is_same_v<T, typename ArrItem<S>::type>) {{
             using ItemS = typename ArrItem<S>::type;
             auto vec = vecFromJSArray<ItemS>(obj);
             auto result = ctx.allocateArray<T>(vec.size());
@@ -940,6 +984,15 @@ struct CConverter {{
 template <typename T, typename S>
 struct CConverter<arr_size<T>, S> {{
     static T* convert(CContext& ctx, S& obj) {{
+        auto result = ctx.allocate<T>();
+        *result = obj["length"].template as<T>();
+        return result;
+    }}
+}};
+
+template <typename T>
+struct CConverter<arr_size<T>, String> {{
+    static T* convert(CContext& ctx, const String& obj) {{
         auto result = ctx.allocate<T>();
         *result = obj["length"].template as<T>();
         return result;
@@ -989,11 +1042,9 @@ template <>
 struct CConverter<{char}, String> {{
     static {char}* convert(CContext& ctx, String& obj) {{
         auto str = obj.as<std::string>();
-        auto result = ctx.allocate<{char}>();
-        *result = '\0';
-        if (str.length() > 0) {{
-            *result = str[0];
-        }}
+        auto result = ctx.allocateArray<char>(str.length() + 1);
+        memcpy(result, str.c_str(), str.length());
+        result[str.length()] = '\0';
         return result;
     }}
 }};
@@ -1005,6 +1056,14 @@ struct CConverter<{char}, String> {{
         IsTrivial trivial;
         node->accept(trivial);
         if (!trivial.trivial) {
+            std::set<ASTDecl*> skip;
+            for (auto field : node->fields) {
+                if (auto attr = field->findAttr<ASTAttrArray>()) {
+                    if (attr->ref) {
+                        skip.insert(attr->decl->decl);
+                    }
+                }
+            }
             JsName jsname;
             node->accept(jsname);
             CName cname;
@@ -1053,12 +1112,14 @@ struct CConverter<{char}, String> {{
                         continue;
                     }
                 }
-                fmt::println(stream,
-                             "        result->{} = {}cconvert<{}>(ctx, obj.{});",
-                             fieldCName,
-                             isR ? "" : "*",
-                             typeCName,
-                             jsname.str);
+                if (!skip.contains(field)) {
+                    fmt::println(stream,
+                                 "        result->{} = {}cconvert<{}>(ctx, obj.{});",
+                                 fieldCName,
+                                 isR ? "" : "*",
+                                 typeCName,
+                                 jsname.str);
+                }
             }
             fmt::println(stream, "        return result;");
             fmt::println(stream, "    }}");
@@ -1792,7 +1853,18 @@ static void generateValueObjects(idl::Context& ctx, std::ostream& stream) {
         node->accept(trivial);
         const auto typeName = jsname.str;
         fmt::println(stream, "    value_object<{}>(\"{}\")", typeName, getNameTS(node));
+        std::set<ASTDecl*> skip;
         for (auto field : node->fields) {
+            if (auto attr = field->findAttr<ASTAttrArray>()) {
+                if (attr->ref) {
+                    skip.insert(attr->decl->decl);
+                }
+            }
+        }
+        for (auto field : node->fields) {
+            if (skip.contains(field)) {
+                continue;
+            }
             field->accept(jsname);
             auto fieldNameJs = jsname.str;
             std::string fieldNameCpp;

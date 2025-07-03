@@ -1197,7 +1197,7 @@ static void generateFunctionArgs(idl::Context& ctx,
         IsTrivial trivial;
         argType->accept(trivial);
         auto isR     = (!trivial.trivial && !argType->is<ASTBool>()) || argType->is<ASTStruct>();
-        auto isConst = isR && (argType->is<ASTStr>() || argIsArr);
+        auto isConst = isR && (argType->is<ASTStr>() || argType->is<ASTChar>() || argIsArr);
 
         if (isOptional(arg)) {
             isR        = false;

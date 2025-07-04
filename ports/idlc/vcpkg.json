@@ -1,6 +1,6 @@
 {
   "name": "idlc",
-  "version": "1.5.4",
+  "version": "1.5.5",
   "description": "Interface Definition Language Compiler",
   "homepage": "https://github.com/VladimirShaleev/idlc",
   "license": "MIT",
@@ -21,5 +21,13 @@
       "host": true
     },
     "xxhash"
-  ]
+  ],
+  "default-features": [
+    "enable-js"
+  ],
+  "features": {
+    "enable-js": {
+      "description": "Build JavaScript generator."
+    }
+  }
 }

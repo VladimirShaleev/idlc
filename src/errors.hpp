@@ -314,9 +314,10 @@ template <idl_status_t Status, typename... Args>
     } else if constexpr (Status == IDL_STATUS_E2118) {
         str = "the reference to the size buffer is located outside the visibility of the structure";
     } else if constexpr (Status == IDL_STATUS_E2119) {
-        str = fmt::format("attribute 'datasize' cannot be attached to the '{}' field of the '{}' structure, the attribute "
-                          "is only applicable to 'Data' or 'ConstData' types",
-                          args...);
+        str = fmt::format(
+            "attribute 'datasize' cannot be attached to the '{}' field of the '{}' structure, the attribute "
+            "is only applicable to 'Data' or 'ConstData' types",
+            args...);
     } else if constexpr (Status == IDL_STATUS_E2120) {
         str = "the reference to the size buffer is located outside the visibility of the callback";
     } else if constexpr (Status == IDL_STATUS_E2121) {
@@ -328,8 +329,14 @@ template <idl_status_t Status, typename... Args>
     } else if constexpr (Status == IDL_STATUS_E2123) {
         str = "the reference to the size buffer is located outside the visibility of the method";
     } else if constexpr (Status == IDL_STATUS_E2124) {
-        str = fmt::format("the declaration '{}' can only specify the 'array' or 'datasize' attribute, but not both.",
+        str = fmt::format("the declaration '{}' can only specify the 'array' or 'datasize' attribute, but not both",
                           args...);
+    } else if constexpr (Status == IDL_STATUS_E2125) {
+        str = fmt::format("the declaration '{}' cannot contain attribute 'errorcode'", args...);
+    } else if constexpr (Status == IDL_STATUS_E2126) {
+        str = fmt::format("invalid attribute 'refinc' for {}, 'refinc' can only contain a method", args...);
+    } else if constexpr (Status == IDL_STATUS_E2127) {
+        str = fmt::format("invalid attribute 'destroy' for {}, 'destroy' can only contain a method'", args...);
     } else {
         static_assert(false, "unknown status code");
     }

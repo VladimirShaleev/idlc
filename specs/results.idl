@@ -139,6 +139,9 @@ enum Status
     const E2122 [tokenizer(0)] @ The reference to the size buffer is located outside the visibility of the function.
     const E2123 [tokenizer(0)] @ The reference to the size buffer is located outside the visibility of the method.
     const E2124 [tokenizer(0)] @ Can only specify either the 'datasize' or 'array' attribute, but not both.
+    const E2125 [tokenizer(0)] @ Cannot contain attribute 'errorcode'.
+    const E2126 [tokenizer(0)] @ The 'refinc' attribute can only contain a method.
+    const E2127 [tokenizer(0)] @ The 'destroy' attribute can only contain a method.
 
 @ Compilation message.
 @ Detailed description of warning or compilation error. [detail]

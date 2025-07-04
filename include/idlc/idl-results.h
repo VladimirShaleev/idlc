@@ -161,6 +161,9 @@ typedef enum
     IDL_STATUS_E2122    = 2122, /**< The reference to the size buffer is located outside the visibility of the function. */
     IDL_STATUS_E2123    = 2123, /**< The reference to the size buffer is located outside the visibility of the method. */
     IDL_STATUS_E2124    = 2124, /**< Can only specify either the 'datasize' or 'array' attribute, but not both. */
+    IDL_STATUS_E2125    = 2125, /**< Cannot contain attribute 'errorcode'. */
+    IDL_STATUS_E2126    = 2126, /**< The 'refinc' attribute can only contain a method. */
+    IDL_STATUS_E2127    = 2127, /**< The 'destroy' attribute can only contain a method. */
     IDL_STATUS_MAX_ENUM = 0x7FFFFFFF /**< Max value of enum (not used) */
 } idl_status_t;
 

@@ -434,299 +434,26 @@ public:
         });
     }
 
-    void prepareCallbacks() {
-        std::vector<ASTCallback*> needAddRetType{};
-        std::vector<ASTArg*> needAddArgType{};
-        std::vector<ASTArg*> needAddArgIn{};
-        std::vector<ASTArg*> needAddArgOut{};
-        std::vector<ASTArg*> needAddRef{};
-        filter<ASTCallback>(
-            [this, &needAddRetType, &needAddArgType, &needAddArgIn, &needAddArgOut, &needAddRef](ASTCallback* node) {
-            if (!node->findAttr<ASTAttrType>()) {
-                needAddRetType.push_back(node);
-            }
-            int countUserData = 0;
-            int countResult   = 0;
-            for (auto arg : node->args) {
-                if (!arg->findAttr<ASTAttrType>()) {
-                    needAddArgType.push_back(arg);
-                }
-                auto hasOut = arg->findAttr<ASTAttrOut>() != nullptr;
-                if (arg->findAttr<ASTAttrResult>() && !hasOut) {
-                    needAddArgOut.push_back(arg);
-                    hasOut = true;
-                }
-                if (!hasOut && !arg->findAttr<ASTAttrIn>()) {
-                    needAddArgIn.push_back(arg);
-                }
-                if (arg->findAttr<ASTAttrThis>()) {
-                    err<IDL_STATUS_E2083>(arg->location, node->fullname(), arg->name);
-                }
-                countUserData += arg->findAttr<ASTAttrUserData>() ? 1 : 0;
-                countResult += arg->findAttr<ASTAttrResult>() ? 1 : 0;
-                if (countUserData > 1) {
-                    err<IDL_STATUS_E2082>(arg->location);
-                }
-                if (countResult > 1) {
-                    err<IDL_STATUS_E2084>(arg->location);
-                }
-                if (auto attr = arg->findAttr<ASTAttrArray>()) {
-                    if (attr->ref) {
-                        if (arg->findAttr<ASTAttrRef>() == nullptr) {
-                            needAddRef.push_back(arg);
-                        }
-                    } else {
-                        err<IDL_STATUS_E2102>(arg->location, arg->name, node->fullname());
-                    }
-                }
-                if (arg->findAttr<ASTAttrArray>() && arg->findAttr<ASTAttrDataSize>()) {
-                    err<IDL_STATUS_E2124>(arg->location, arg->fullname());
-                }
-            }
-        });
-        for (auto node : needAddRetType) {
-            auto attr          = allocNode<ASTAttrType>(node->location);
-            attr->parent       = node;
-            attr->type         = allocNode<ASTDeclRef>(node->location);
-            attr->type->name   = "Void";
-            attr->type->parent = attr;
-            node->attrs.push_back(attr);
-        }
-        for (auto node : needAddArgType) {
-            auto attr          = allocNode<ASTAttrType>(node->location);
-            attr->parent       = node;
-            attr->type         = allocNode<ASTDeclRef>(node->location);
-            attr->type->name   = "Int32";
-            attr->type->parent = attr;
-            node->attrs.push_back(attr);
-        }
-        for (auto node : needAddArgIn) {
-            auto attr    = allocNode<ASTAttrIn>(node->location);
-            attr->parent = node;
-            node->attrs.push_back(attr);
-        }
-        for (auto node : needAddArgOut) {
-            auto attr    = allocNode<ASTAttrOut>(node->location);
-            attr->parent = node;
-            node->attrs.push_back(attr);
-        }
-        for (auto node : needAddRef) {
-            auto attr    = allocNode<ASTAttrRef>(node->location);
-            attr->parent = node;
-            node->attrs.push_back(attr);
-        }
-        filter<ASTCallback>([this](ASTCallback* node) {
-            auto attr = node->findAttr<ASTAttrType>();
-            resolveType(attr->type);
-            for (auto arg : node->args) {
-                auto argAttr = arg->findAttr<ASTAttrType>();
-                if (resolveType(argAttr->type)->is<ASTVoid>()) {
-                    err<IDL_STATUS_E2074>(arg->location, arg->name, node->fullname());
-                }
-                if (auto attr = arg->findAttr<ASTAttrArray>(); attr) {
-                    assert(attr->ref);
-                    auto symbol = findSymbol(node, attr->location, attr->decl);
-                    if (auto sizeField = symbol->as<ASTArg>()) {
-                        if (arg->parent != sizeField->parent) {
-                            err<IDL_STATUS_E2107>(arg->location);
-                        }
-                        auto type = resolveType(sizeField->findAttr<ASTAttrType>()->type);
-                        if (!type->is<ASTIntegerType>()) {
-                            err<IDL_STATUS_E2080>(attr->location, arg->fullname());
-                        }
-                    } else {
-                        err<IDL_STATUS_E2108>(attr->location, arg->fullname());
-                    }
-                }
-                if (auto attr = arg->findAttr<ASTAttrDataSize>(); attr) {
-                    auto symbol   = findSymbol(node, attr->location, attr->decl);
-                    auto dataType = resolveType(arg->findAttr<ASTAttrType>()->type);
-                    if (!dataType->is<ASTData>() && !dataType->is<ASTConstData>()) {
-                        err<IDL_STATUS_E2121>(attr->location, arg->name, node->fullname());
-                    }
-                    if (auto sizeField = symbol->as<ASTArg>()) {
-                        if (arg->parent != sizeField->parent) {
-                            err<IDL_STATUS_E2120>(arg->location);
-                        }
-                        auto type = resolveType(sizeField->findAttr<ASTAttrType>()->type);
-                        if (!type->is<ASTIntegerType>()) {
-                            err<IDL_STATUS_E2114>(attr->location, arg->fullname());
-                        }
-                    } else {
-                        err<IDL_STATUS_E2117>(attr->location, arg->fullname());
-                    }
-                }
-            }
-        });
-    }
-
-    void prepareFunctions() {
-        std::vector<ASTFunc*> needAddRetType{};
+    template <typename T>
+    void prepareInvokable() {
+        std::vector<T*> needAddRetType{};
+        std::vector<T*> needAddStatic{};
         std::vector<ASTArg*> needAddArgType{};
         std::vector<ASTArg*> needAddArgIn{};
         std::vector<ASTArg*> needAddArgOut{};
         std::vector<ASTArg*> needAddRef{};
         std::vector<ASTDecl*> needAddOptional{};
-        filter<ASTFunc>(
-            [this, &needAddRetType, &needAddArgType, &needAddArgIn, &needAddArgOut, &needAddRef, &needAddOptional](
-                ASTFunc* node) {
-            if (!node->findAttr<ASTAttrType>()) {
-                needAddRetType.push_back(node);
-            }
-            int countUserData = 0;
-            int countResult   = 0;
-            for (auto arg : node->args) {
-                if (!arg->findAttr<ASTAttrType>()) {
-                    needAddArgType.push_back(arg);
-                }
-                auto hasOut = arg->findAttr<ASTAttrOut>() != nullptr;
-                if (arg->findAttr<ASTAttrResult>() && !hasOut) {
-                    needAddArgOut.push_back(arg);
-                    hasOut = true;
-                }
-                if (!hasOut && !arg->findAttr<ASTAttrIn>()) {
-                    needAddArgIn.push_back(arg);
-                }
-                if (arg->findAttr<ASTAttrThis>()) {
-                    err<IDL_STATUS_E2073>(arg->location, node->fullname(), arg->name);
-                }
-                countUserData += arg->findAttr<ASTAttrUserData>() ? 1 : 0;
-                countResult += arg->findAttr<ASTAttrResult>() ? 1 : 0;
-                if (countUserData > 1) {
-                    err<IDL_STATUS_E2082>(arg->location);
-                }
-                if (countResult > 1) {
-                    err<IDL_STATUS_E2084>(arg->location);
-                }
-                if (auto attr = arg->findAttr<ASTAttrArray>()) {
-                    if (attr->ref) {
-                        if (arg->findAttr<ASTAttrRef>() == nullptr) {
-                            needAddRef.push_back(arg);
-                        }
-                    } else {
-                        err<IDL_STATUS_E2102>(arg->location, arg->name, node->fullname());
-                    }
-                    if (!arg->findAttr<ASTAttrOptional>()) {
-                        needAddOptional.push_back(arg);
-                    }
-                }
-                if (arg->findAttr<ASTAttrArray>() && arg->findAttr<ASTAttrDataSize>()) {
-                    err<IDL_STATUS_E2124>(arg->location, arg->fullname());
-                }
-            }
-        });
-        for (auto node : needAddRetType) {
-            auto attr          = allocNode<ASTAttrType>(node->location);
-            attr->parent       = node;
-            attr->type         = allocNode<ASTDeclRef>(node->location);
-            attr->type->name   = "Void";
-            attr->type->parent = attr;
-            node->attrs.push_back(attr);
-        }
-        for (auto node : needAddArgType) {
-            auto attr          = allocNode<ASTAttrType>(node->location);
-            attr->parent       = node;
-            attr->type         = allocNode<ASTDeclRef>(node->location);
-            attr->type->name   = "Int32";
-            attr->type->parent = attr;
-            node->attrs.push_back(attr);
-        }
-        for (auto node : needAddArgIn) {
-            auto attr    = allocNode<ASTAttrIn>(node->location);
-            attr->parent = node;
-            node->attrs.push_back(attr);
-        }
-        for (auto node : needAddArgOut) {
-            auto attr    = allocNode<ASTAttrOut>(node->location);
-            attr->parent = node;
-            node->attrs.push_back(attr);
-        }
-        for (auto node : needAddRef) {
-            auto attr    = allocNode<ASTAttrRef>(node->location);
-            attr->parent = node;
-            node->attrs.push_back(attr);
-        }
-        filter<ASTFunc>([this, &needAddOptional](ASTFunc* node) {
-            auto attr    = node->findAttr<ASTAttrType>();
-            auto retType = resolveType(attr->type);
-            if (retType->is<ASTCallback>() && !node->findAttr<ASTAttrOptional>()) {
-                needAddOptional.push_back(node);
-            }
-            for (auto arg : node->args) {
-                auto argAttr = arg->findAttr<ASTAttrType>();
-                if (resolveType(argAttr->type)->is<ASTVoid>()) {
-                    err<IDL_STATUS_E2074>(arg->location, arg->name, node->fullname());
-                }
-                if (auto attr = arg->findAttr<ASTAttrArray>(); attr) {
-                    assert(attr->ref);
-                    auto symbol = findSymbol(node, attr->location, attr->decl);
-                    if (auto sizeField = symbol->as<ASTArg>()) {
-                        if (arg->parent != sizeField->parent) {
-                            err<IDL_STATUS_E2105>(arg->location);
-                        }
-                        auto type = resolveType(sizeField->findAttr<ASTAttrType>()->type);
-                        if (!type->is<ASTIntegerType>()) {
-                            err<IDL_STATUS_E2080>(attr->location, arg->fullname());
-                        }
-                    } else {
-                        err<IDL_STATUS_E2106>(attr->location, arg->fullname());
-                    }
-                }
-                if (auto attr = arg->findAttr<ASTAttrDataSize>(); attr) {
-                    auto symbol   = findSymbol(node, attr->location, attr->decl);
-                    auto dataType = resolveType(arg->findAttr<ASTAttrType>()->type);
-                    if (!dataType->is<ASTData>() && !dataType->is<ASTConstData>()) {
-                        err<IDL_STATUS_E2121>(attr->location, arg->name, node->fullname());
-                    }
-                    if (auto sizeField = symbol->as<ASTArg>()) {
-                        if (arg->parent != sizeField->parent) {
-                            err<IDL_STATUS_E2122>(arg->location);
-                        }
-                        auto type = resolveType(sizeField->findAttr<ASTAttrType>()->type);
-                        if (!type->is<ASTIntegerType>()) {
-                            err<IDL_STATUS_E2114>(attr->location, arg->fullname());
-                        }
-                    } else {
-                        err<IDL_STATUS_E2116>(attr->location, arg->fullname());
-                    }
-                }
-                if (resolveType(argAttr->type)->is<ASTCallback>() && !arg->findAttr<ASTAttrOptional>()) {
-                    needAddOptional.push_back(arg);
-                }
-            }
-            if (node->findAttr<ASTAttrErrorCode>()) {
-                auto argType        = node->args[0]->findAttr<ASTAttrType>()->type->decl;
-                auto argIsErrorCode = argType->findAttr<ASTAttrErrorCode>() != nullptr;
-                if (!retType->is<ASTStr>() || node->args.size() != 1 || !argIsErrorCode) {
-                    err<IDL_STATUS_E2085>(node->location);
-                }
-            }
-        });
-        for (auto node : needAddOptional) {
-            auto attr    = allocNode<ASTAttrOptional>(node->location);
-            attr->parent = node;
-            node->attrs.push_back(attr);
-        }
-    }
-
-    void prepareMethods() {
-        std::vector<ASTMethod*> needAddRetType{};
-        std::vector<ASTMethod*> needAddStatic{};
-        std::vector<ASTArg*> needAddArgType{};
-        std::vector<ASTArg*> needAddArgIn{};
-        std::vector<ASTArg*> needAddArgOut{};
-        std::vector<ASTArg*> needAddRef{};
-        std::vector<ASTDecl*> needAddOptional{};
-        filter<ASTMethod>([this,
-                           &needAddRetType,
-                           &needAddStatic,
-                           &needAddArgType,
-                           &needAddArgIn,
-                           &needAddArgOut,
-                           &needAddRef,
-                           &needAddOptional](ASTMethod* node) {
-            const auto isStatic = node->findAttr<ASTAttrStatic>();
-            const auto isCtor   = node->findAttr<ASTAttrCtor>();
+        filter<T>([this,
+                   &needAddRetType,
+                   &needAddStatic,
+                   &needAddArgType,
+                   &needAddArgIn,
+                   &needAddArgOut,
+                   &needAddRef,
+                   &needAddOptional](T* node) {
+            const auto isMethod = std::is_same_v<T, ASTMethod>;
+            const auto isStatic = isMethod && node->findAttr<ASTAttrStatic>();
+            const auto isCtor   = isMethod && node->findAttr<ASTAttrCtor>();
             if (!node->findAttr<ASTAttrType>()) {
                 needAddRetType.push_back(node);
             }
@@ -744,7 +471,7 @@ public:
                     }
                 }
             }
-            if (!isCtor && !isStatic) {
+            if (isMethod && !isCtor && !isStatic) {
                 int countThis = 0;
                 for (auto arg : node->args) {
                     countThis += arg->findAttr<ASTAttrThis>() ? 1 : 0;
@@ -767,6 +494,13 @@ public:
                 if (!hasOut && !arg->findAttr<ASTAttrIn>()) {
                     needAddArgIn.push_back(arg);
                 }
+                if (!isMethod && arg->findAttr<ASTAttrThis>()) {
+                    if constexpr (std::is_same_v<T, ASTCallback>) {
+                        err<IDL_STATUS_E2083>(arg->location, node->fullname(), arg->name);
+                    } else if constexpr (std::is_same_v<T, ASTFunc>) {
+                        err<IDL_STATUS_E2073>(arg->location, node->fullname(), arg->name);
+                    }
+                }
                 countUserData += arg->findAttr<ASTAttrUserData>() ? 1 : 0;
                 countResult += arg->findAttr<ASTAttrResult>() ? 1 : 0;
                 if (countUserData > 1) {
@@ -783,15 +517,11 @@ public:
                     } else {
                         err<IDL_STATUS_E2102>(arg->location, arg->name, node->fullname());
                     }
-                    if (!arg->findAttr<ASTAttrOptional>()) {
-                        needAddOptional.push_back(arg);
-                    }
                 }
                 if (arg->findAttr<ASTAttrArray>() && arg->findAttr<ASTAttrDataSize>()) {
                     err<IDL_STATUS_E2124>(arg->location, arg->fullname());
                 }
             }
-            return true;
         });
         for (auto node : needAddRetType) {
             auto attr          = allocNode<ASTAttrType>(node->location);
@@ -829,7 +559,7 @@ public:
             attr->parent = node;
             node->attrs.push_back(attr);
         }
-        filter<ASTMethod>([this, &needAddOptional](ASTMethod* node) {
+        filter<T>([this, &needAddOptional](T* node) {
             auto attr    = node->findAttr<ASTAttrType>();
             auto retType = resolveType(attr->type);
             if (retType->is<ASTCallback>() && !node->findAttr<ASTAttrOptional>()) {
@@ -838,21 +568,41 @@ public:
             for (auto arg : node->args) {
                 auto argAttr = arg->findAttr<ASTAttrType>();
                 if (resolveType(argAttr->type)->is<ASTVoid>()) {
-                    err<IDL_STATUS_E2051>(arg->location, arg->name, node->fullname());
+                    if constexpr (std::is_same_v<T, ASTMethod>) {
+                        err<IDL_STATUS_E2051>(arg->location, arg->name, node->fullname());
+                    } else {
+                        err<IDL_STATUS_E2074>(arg->location, arg->name, node->fullname());
+                    }
                 }
                 if (auto attr = arg->findAttr<ASTAttrArray>(); attr) {
                     assert(attr->ref);
                     auto symbol = findSymbol(node, attr->location, attr->decl);
                     if (auto sizeField = symbol->as<ASTArg>()) {
                         if (arg->parent != sizeField->parent) {
-                            err<IDL_STATUS_E2103>(arg->location);
+                            if constexpr (std::is_same_v<T, ASTCallback>) {
+                                err<IDL_STATUS_E2107>(arg->location);
+                            } else if constexpr (std::is_same_v<T, ASTFunc>) {
+                                err<IDL_STATUS_E2105>(arg->location);
+                            } else if constexpr (std::is_same_v<T, ASTMethod>) {
+                                err<IDL_STATUS_E2103>(arg->location);
+                            } else {
+                                static_assert(false, "unknown invokable");
+                            }
                         }
                         auto type = resolveType(sizeField->findAttr<ASTAttrType>()->type);
                         if (!type->is<ASTIntegerType>()) {
                             err<IDL_STATUS_E2080>(attr->location, arg->fullname());
                         }
                     } else {
-                        err<IDL_STATUS_E2104>(attr->location, arg->fullname());
+                        if constexpr (std::is_same_v<T, ASTCallback>) {
+                            err<IDL_STATUS_E2108>(attr->location, arg->fullname());
+                        } else if constexpr (std::is_same_v<T, ASTFunc>) {
+                            err<IDL_STATUS_E2106>(attr->location, arg->fullname());
+                        } else if constexpr (std::is_same_v<T, ASTMethod>) {
+                            err<IDL_STATUS_E2104>(attr->location, arg->fullname());
+                        } else {
+                            static_assert(false, "unknown invokable");
+                        }
                     }
                 }
                 if (auto attr = arg->findAttr<ASTAttrDataSize>(); attr) {
@@ -863,31 +613,62 @@ public:
                     }
                     if (auto sizeField = symbol->as<ASTArg>()) {
                         if (arg->parent != sizeField->parent) {
-                            err<IDL_STATUS_E2123>(arg->location);
+                            if constexpr (std::is_same_v<T, ASTCallback>) {
+                                err<IDL_STATUS_E2120>(arg->location);
+                            } else if constexpr (std::is_same_v<T, ASTFunc>) {
+                                err<IDL_STATUS_E2122>(arg->location);
+                            } else if constexpr (std::is_same_v<T, ASTMethod>) {
+                                err<IDL_STATUS_E2123>(attr->location, arg->fullname());
+                            } else {
+                                static_assert(false, "unknown invokable");
+                            }
                         }
                         auto type = resolveType(sizeField->findAttr<ASTAttrType>()->type);
                         if (!type->is<ASTIntegerType>()) {
                             err<IDL_STATUS_E2114>(attr->location, arg->fullname());
                         }
                     } else {
-                        err<IDL_STATUS_E2115>(attr->location, arg->fullname());
+                        if constexpr (std::is_same_v<T, ASTCallback>) {
+                            err<IDL_STATUS_E2117>(attr->location, arg->fullname());
+                        } else if constexpr (std::is_same_v<T, ASTFunc>) {
+                            err<IDL_STATUS_E2116>(attr->location, arg->fullname());
+                        } else if constexpr (std::is_same_v<T, ASTMethod>) {
+                            err<IDL_STATUS_E2115>(attr->location, arg->fullname());
+                        } else {
+                            static_assert(false, "unknown invokable");
+                        }
                     }
                 }
                 if (resolveType(argAttr->type)->is<ASTCallback>() && !arg->findAttr<ASTAttrOptional>()) {
                     needAddOptional.push_back(arg);
                 }
             }
+            if (node->findAttr<ASTAttrErrorCode>()) {
+                if (!std::is_same_v<T, ASTFunc>) {
+                    err<IDL_STATUS_E2125>(node->location, node->fullname());
+                }
+                auto argType        = node->args[0]->findAttr<ASTAttrType>()->type->decl;
+                auto argIsErrorCode = argType->findAttr<ASTAttrErrorCode>() != nullptr;
+                if (!retType->is<ASTStr>() || node->args.size() != 1 || !argIsErrorCode) {
+                    err<IDL_STATUS_E2085>(node->location);
+                }
+            }
             if (node->findAttr<ASTAttrRefInc>()) {
+                if (!std::is_same_v<T, ASTMethod>) {
+                    err<IDL_STATUS_E2126>(node->location, node->fullname());
+                }
                 if (node->findAttr<ASTAttrStatic>() || node->args.size() != 1) {
                     err<IDL_STATUS_E2086>(node->location);
                 }
             }
             if (node->findAttr<ASTAttrDestroy>()) {
+                if (!std::is_same_v<T, ASTMethod>) {
+                    err<IDL_STATUS_E2127>(node->location, node->fullname());
+                }
                 if (node->findAttr<ASTAttrStatic>() || node->args.size() != 1) {
                     err<IDL_STATUS_E2087>(node->location);
                 }
             }
-            return true;
         });
         for (auto node : needAddOptional) {
             auto attr    = allocNode<ASTAttrOptional>(node->location);
@@ -896,13 +677,18 @@ public:
         }
     }
 
-    void prepareProperties() {
-        std::vector<std::pair<ASTProperty*, std::string>> needAddType{};
-        filter<ASTProperty>([this, &needAddType](ASTProperty* node) {
+    template <typename T>
+    void prepareGetterSetter() {
+        std::vector<std::pair<T*, std::string>> needAddType{};
+        filter<T>([this, &needAddType](T* node) {
             auto getter = node->findAttr<ASTAttrGet>();
             auto setter = node->findAttr<ASTAttrSet>();
             if (!getter && !setter) {
-                err<IDL_STATUS_E2052>(node->location, node->fullname());
+                if constexpr (std::is_same_v<T, ASTProperty>) {
+                    err<IDL_STATUS_E2052>(node->location, node->fullname());
+                } else {
+                    err<IDL_STATUS_E2091>(node->location, node->fullname());
+                }
             }
             auto isStaticProp       = node->findAttr<ASTAttrStatic>() != nullptr;
             ASTType* getterType     = nullptr;
@@ -914,53 +700,75 @@ public:
                 if (auto method = decl->as<ASTMethod>()) {
                     getterMethod = method;
                     if (method->parent != node->parent) {
-                        auto iface      = node->parent->as<ASTInterface>()->fullname();
-                        auto otherIface = method->parent->as<ASTInterface>()->fullname();
-                        err<IDL_STATUS_E2054>(getter->location, node->name, iface, method->name, otherIface);
+                        auto iface             = node->parent->as<ASTInterface>()->fullname();
+                        auto otherIface        = method->parent->as<ASTInterface>()->fullname();
+                        constexpr auto errCode = std::is_same_v<T, ASTProperty> ? IDL_STATUS_E2054 : IDL_STATUS_E2092;
+                        err<errCode>(getter->location, node->name, iface, method->name, otherIface);
                     }
                     auto isStaticGetter = method->findAttr<ASTAttrStatic>() != nullptr;
                     if (isStaticProp != isStaticGetter) {
-                        err<IDL_STATUS_E2055>(getter->location, method->fullname(), node->fullname());
+                        constexpr auto errCode = std::is_same_v<T, ASTProperty> ? IDL_STATUS_E2055 : IDL_STATUS_E2093;
+                        err<errCode>(getter->location, method->fullname(), node->fullname());
                     }
                     getterType          = resolveType(method->findAttr<ASTAttrType>()->type);
                     const auto argCount = method->args.size();
-                    if (getterType->is<ASTVoid>()) {
-                        bool isValidProp = false;
-                        auto count       = isStaticProp ? 2 : 3;
-                        if (argCount == count) {
-                            auto res     = std::find_if(method->args.begin(), method->args.end(), [](ASTArg* arg) {
-                                return arg->findAttr<ASTAttrResult>() != nullptr;
-                            });
-                            auto arrAttr = res != method->args.end() ? (*res)->findAttr<ASTAttrArray>() : nullptr;
-                            if (arrAttr) {
-                                auto arrDecl = findSymbol(node, arrAttr->location, arrAttr->decl);
-                                if (arrDecl->findAttr<ASTAttrOut>()) {
-                                    isValidProp = true;
-                                    if ((*res)->findAttr<ASTAttrType>()) {
-                                        getterType = resolveType((*res)->findAttr<ASTAttrType>()->type);
+
+                    if constexpr (std::is_same_v<T, ASTProperty>) {
+                        if (getterType->is<ASTVoid>()) {
+                            bool isValidProp = false;
+                            auto count       = isStaticProp ? 2 : 3;
+                            if (argCount == count) {
+                                auto res     = std::find_if(method->args.begin(), method->args.end(), [](ASTArg* arg) {
+                                    return arg->findAttr<ASTAttrResult>() != nullptr;
+                                });
+                                auto arrAttr = res != method->args.end() ? (*res)->findAttr<ASTAttrArray>() : nullptr;
+                                if (arrAttr) {
+                                    auto arrDecl = findSymbol(node, arrAttr->location, arrAttr->decl);
+                                    if (arrDecl->findAttr<ASTAttrOut>()) {
+                                        isValidProp = true;
+                                        if ((*res)->findAttr<ASTAttrType>()) {
+                                            getterType = resolveType((*res)->findAttr<ASTAttrType>()->type);
+                                        }
+                                    }
+                                }
+                                auto datasizeAttr =
+                                    res != method->args.end() ? (*res)->findAttr<ASTAttrDataSize>() : nullptr;
+                                if (datasizeAttr) {
+                                    auto datasizeDecl = findSymbol(node, datasizeAttr->location, datasizeAttr->decl);
+                                    if (datasizeDecl->findAttr<ASTAttrOut>()) {
+                                        isValidProp = true;
+                                        if ((*res)->findAttr<ASTAttrType>()) {
+                                            getterType = resolveType((*res)->findAttr<ASTAttrType>()->type);
+                                        }
                                     }
                                 }
                             }
-                            auto datasizeAttr =
-                                res != method->args.end() ? (*res)->findAttr<ASTAttrDataSize>() : nullptr;
-                            if (datasizeAttr) {
-                                auto datasizeDecl = findSymbol(node, datasizeAttr->location, datasizeAttr->decl);
-                                if (datasizeDecl->findAttr<ASTAttrOut>()) {
-                                    isValidProp = true;
-                                    if ((*res)->findAttr<ASTAttrType>()) {
-                                        getterType = resolveType((*res)->findAttr<ASTAttrType>()->type);
-                                    }
-                                }
+                            if (!isValidProp) {
+                                err<IDL_STATUS_E2058>(getter->location, method->fullname());
+                            }
+                        } else {
+                            if (isStaticProp && argCount != 0) {
+                                err<IDL_STATUS_E2056>(getter->location, method->fullname());
+                            } else if (!isStaticProp && argCount != 1) {
+                                err<IDL_STATUS_E2057>(getter->location, method->fullname());
                             }
                         }
-                        if (!isValidProp) {
+                    } else if (std::is_same_v<T, ASTEvent>) {
+                        if (isStaticProp) {
+                            if ((argCount == 1 && !method->args[0]->findAttr<ASTAttrUserData>()) || argCount > 1) {
+                                err<IDL_STATUS_E2094>(getter->location, method->fullname());
+                            }
+                        } else {
+                            if (argCount == 2 && (!method->args[0]->findAttr<ASTAttrUserData>() &&
+                                                  !method->args[1]->findAttr<ASTAttrUserData>())) {
+                                err<IDL_STATUS_E2095>(getter->location, method->fullname());
+                            } else if (argCount > 2) {
+                                err<IDL_STATUS_E2095>(getter->location, method->fullname());
+                            }
+                        }
+                        getterType = resolveType(method->findAttr<ASTAttrType>()->type);
+                        if (getterType->is<ASTVoid>()) {
                             err<IDL_STATUS_E2058>(getter->location, method->fullname());
-                        }
-                    } else {
-                        if (isStaticProp && argCount != 0) {
-                            err<IDL_STATUS_E2056>(getter->location, method->fullname());
-                        } else if (!isStaticProp && argCount != 1) {
-                            err<IDL_STATUS_E2057>(getter->location, method->fullname());
                         }
                     }
                 } else {
@@ -972,56 +780,85 @@ public:
                 if (auto method = decl->as<ASTMethod>()) {
                     setterMethod = method;
                     if (method->parent != node->parent) {
-                        auto iface      = node->parent->as<ASTInterface>()->fullname();
-                        auto otherIface = method->parent->as<ASTInterface>()->fullname();
-                        err<IDL_STATUS_E2061>(setter->location, node->name, iface, method->name, otherIface);
+                        auto iface             = node->parent->as<ASTInterface>()->fullname();
+                        auto otherIface        = method->parent->as<ASTInterface>()->fullname();
+                        constexpr auto errCode = std::is_same_v<T, ASTProperty> ? IDL_STATUS_E2061 : IDL_STATUS_E2096;
+                        err<errCode>(setter->location, node->name, iface, method->name, otherIface);
                     }
                     auto isStaticSetter = method->findAttr<ASTAttrStatic>() != nullptr;
                     if (isStaticProp != isStaticSetter) {
-                        err<IDL_STATUS_E2060>(setter->location, method->fullname(), node->fullname());
+                        constexpr auto errCode = std::is_same_v<T, ASTProperty> ? IDL_STATUS_E2060 : IDL_STATUS_E2097;
+                        err<errCode>(setter->location, method->fullname(), node->fullname());
                     }
                     auto isValid        = false;
                     const auto argCount = method->args.size();
-                    if (argCount == (isStaticProp ? 2 : 3)) {
-                        auto res     = std::find_if(method->args.begin(), method->args.end(), [](ASTArg* arg) {
-                            return arg->findAttr<ASTAttrArray>() != nullptr;
-                        });
-                        auto arrAttr = res != method->args.end() ? (*res)->findAttr<ASTAttrArray>() : nullptr;
-                        if (arrAttr) {
-                            auto arrDecl  = findSymbol(node, arrAttr->location, arrAttr->decl);
-                            auto sizeType = resolveType(arrDecl->findAttr<ASTAttrType>()->type);
-                            if (sizeType->is<ASTIntegerType>()) {
-                                isValid = true;
-                                if ((*res)->findAttr<ASTAttrType>()) {
-                                    setterType = resolveType((*res)->findAttr<ASTAttrType>()->type);
+
+                    if constexpr (std::is_same_v<T, ASTProperty>) {
+                        if (argCount == (isStaticProp ? 2 : 3)) {
+                            auto res     = std::find_if(method->args.begin(), method->args.end(), [](ASTArg* arg) {
+                                return arg->findAttr<ASTAttrArray>() != nullptr;
+                            });
+                            auto arrAttr = res != method->args.end() ? (*res)->findAttr<ASTAttrArray>() : nullptr;
+                            if (arrAttr) {
+                                auto arrDecl  = findSymbol(node, arrAttr->location, arrAttr->decl);
+                                auto sizeType = resolveType(arrDecl->findAttr<ASTAttrType>()->type);
+                                if (sizeType->is<ASTIntegerType>()) {
+                                    isValid = true;
+                                    if ((*res)->findAttr<ASTAttrType>()) {
+                                        setterType = resolveType((*res)->findAttr<ASTAttrType>()->type);
+                                    }
+                                }
+                            }
+                            res = std::find_if(method->args.begin(), method->args.end(), [](ASTArg* arg) {
+                                return arg->findAttr<ASTAttrDataSize>() != nullptr;
+                            });
+                            auto datasizeAttr =
+                                res != method->args.end() ? (*res)->findAttr<ASTAttrDataSize>() : nullptr;
+                            if (datasizeAttr) {
+                                auto datasizeDecl = findSymbol(node, datasizeAttr->location, datasizeAttr->decl);
+                                auto sizeType     = resolveType(datasizeDecl->findAttr<ASTAttrType>()->type);
+                                if (sizeType->is<ASTIntegerType>()) {
+                                    isValid = true;
+                                    if ((*res)->findAttr<ASTAttrType>()) {
+                                        setterType = resolveType((*res)->findAttr<ASTAttrType>()->type);
+                                    }
                                 }
                             }
                         }
-                        res               = std::find_if(method->args.begin(), method->args.end(), [](ASTArg* arg) {
-                            return arg->findAttr<ASTAttrDataSize>() != nullptr;
-                        });
-                        auto datasizeAttr = res != method->args.end() ? (*res)->findAttr<ASTAttrDataSize>() : nullptr;
-                        if (datasizeAttr) {
-                            auto datasizeDecl = findSymbol(node, datasizeAttr->location, datasizeAttr->decl);
-                            auto sizeType     = resolveType(datasizeDecl->findAttr<ASTAttrType>()->type);
-                            if (sizeType->is<ASTIntegerType>()) {
-                                isValid = true;
-                                if ((*res)->findAttr<ASTAttrType>()) {
-                                    setterType = resolveType((*res)->findAttr<ASTAttrType>()->type);
+                        if (!isValid) {
+                            if (isStaticProp && argCount != 1) {
+                                err<IDL_STATUS_E2062>(setter->location, method->fullname());
+                            } else if (!isStaticProp && argCount != 2) {
+                                err<IDL_STATUS_E2063>(setter->location, method->fullname());
+                            }
+                        }
+                        if (!setterType) {
+                            for (auto arg : method->args) {
+                                if (arg->findAttr<ASTAttrThis>() == nullptr) {
+                                    setterType = resolveType(arg->findAttr<ASTAttrType>()->type);
+                                    break;
                                 }
                             }
                         }
-                    }
-                    if (!isValid) {
+                    } else if constexpr (std::is_same_v<T, ASTEvent>) {
                         if (isStaticProp && argCount != 1) {
-                            err<IDL_STATUS_E2062>(setter->location, method->fullname());
-                        } else if (!isStaticProp && argCount != 2) {
-                            err<IDL_STATUS_E2063>(setter->location, method->fullname());
+                            if ((argCount == 2 && !method->args[0]->findAttr<ASTAttrUserData>() &&
+                                 !method->args[1]->findAttr<ASTAttrUserData>()) ||
+                                argCount > 2) {
+                                err<IDL_STATUS_E2098>(getter->location, method->fullname());
+                            }
+                        } else if (!isStaticProp) {
+                            if (argCount == 3 && (!method->args[0]->findAttr<ASTAttrUserData>() &&
+                                                  !method->args[1]->findAttr<ASTAttrUserData>() &&
+                                                  !method->args[2]->findAttr<ASTAttrUserData>())) {
+                                err<IDL_STATUS_E2099>(getter->location, method->fullname());
+                            } else if (argCount > 3) {
+                                err<IDL_STATUS_E2099>(getter->location, method->fullname());
+                            }
                         }
-                    }
-                    if (!setterType) {
                         for (auto arg : method->args) {
-                            if (arg->findAttr<ASTAttrThis>() == nullptr) {
+                            if (arg->findAttr<ASTAttrThis>() == nullptr &&
+                                arg->findAttr<ASTAttrUserData>() == nullptr) {
                                 setterType = resolveType(arg->findAttr<ASTAttrType>()->type);
                                 break;
                             }
@@ -1042,12 +879,12 @@ public:
             if (auto attr = node->findAttr<ASTAttrType>()) {
                 auto type = resolveType(attr->type);
                 if (getterType && getterType != type) {
-                    err<IDL_STATUS_E2065>(
-                        attr->location, type->fullname(), getterType->fullname(), getterMethod->fullname());
+                    constexpr auto errCode = std::is_same_v<T, ASTProperty> ? IDL_STATUS_E2065 : IDL_STATUS_E2100;
+                    err<errCode>(attr->location, type->fullname(), getterType->fullname(), getterMethod->fullname());
                 }
                 if (setterType && setterType != type) {
-                    err<IDL_STATUS_E2066>(
-                        attr->location, type->fullname(), setterMethod->fullname(), setterType->fullname());
+                    constexpr auto errCode = std::is_same_v<T, ASTProperty> ? IDL_STATUS_E2066 : IDL_STATUS_E2101;
+                    err<errCode>(attr->location, type->fullname(), setterMethod->fullname(), setterType->fullname());
                 }
             } else {
                 needAddType.emplace_back(node, getterType ? getterType->name : setterType->name);
@@ -1064,123 +901,24 @@ public:
         }
     }
 
+    void prepareCallbacks() {
+        prepareInvokable<ASTCallback>();
+    }
+
+    void prepareFunctions() {
+        prepareInvokable<ASTFunc>();
+    }
+
+    void prepareMethods() {
+        prepareInvokable<ASTMethod>();
+    }
+
+    void prepareProperties() {
+        prepareGetterSetter<ASTProperty>();
+    }
+
     void prepareEvents() {
-        std::vector<std::pair<ASTEvent*, std::string>> needAddType{};
-        filter<ASTEvent>([this, &needAddType](ASTEvent* node) {
-            auto getter = node->findAttr<ASTAttrGet>();
-            auto setter = node->findAttr<ASTAttrSet>();
-            if (!getter && !setter) {
-                err<IDL_STATUS_E2091>(node->location, node->fullname());
-            }
-            auto isStaticProp       = node->findAttr<ASTAttrStatic>() != nullptr;
-            ASTType* getterType     = nullptr;
-            ASTType* setterType     = nullptr;
-            ASTMethod* getterMethod = nullptr;
-            ASTMethod* setterMethod = nullptr;
-            if (getter) {
-                auto decl = findSymbol(node, getter->location, getter->decl);
-                if (auto method = decl->as<ASTMethod>()) {
-                    getterMethod = method;
-                    if (method->parent != node->parent) {
-                        auto iface      = node->parent->as<ASTInterface>()->fullname();
-                        auto otherIface = method->parent->as<ASTInterface>()->fullname();
-                        err<IDL_STATUS_E2092>(getter->location, node->name, iface, method->name, otherIface);
-                    }
-                    auto isStaticGetter = method->findAttr<ASTAttrStatic>() != nullptr;
-                    if (isStaticProp != isStaticGetter) {
-                        err<IDL_STATUS_E2093>(getter->location, method->fullname(), node->fullname());
-                    }
-                    const auto argCount = method->args.size();
-                    if (isStaticProp) {
-                        if ((argCount == 1 && !method->args[0]->findAttr<ASTAttrUserData>()) || argCount > 1) {
-                            err<IDL_STATUS_E2094>(getter->location, method->fullname());
-                        }
-                    } else if (!isStaticProp) {
-                        if (argCount == 2 && (!method->args[0]->findAttr<ASTAttrUserData>() &&
-                                              !method->args[1]->findAttr<ASTAttrUserData>())) {
-                            err<IDL_STATUS_E2095>(getter->location, method->fullname());
-                        } else if (argCount > 2) {
-                            err<IDL_STATUS_E2095>(getter->location, method->fullname());
-                        }
-                    }
-                    getterType = resolveType(method->findAttr<ASTAttrType>()->type);
-                    if (getterType->is<ASTVoid>()) {
-                        err<IDL_STATUS_E2058>(getter->location, method->fullname());
-                    }
-                } else {
-                    err<IDL_STATUS_E2053>(getter->location, decl->fullname());
-                }
-            }
-            if (setter) {
-                auto decl = findSymbol(node, setter->location, setter->decl);
-                if (auto method = decl->as<ASTMethod>()) {
-                    setterMethod = method;
-                    if (method->parent != node->parent) {
-                        auto iface      = node->parent->as<ASTInterface>()->fullname();
-                        auto otherIface = method->parent->as<ASTInterface>()->fullname();
-                        err<IDL_STATUS_E2096>(setter->location, node->name, iface, method->name, otherIface);
-                    }
-                    auto isStaticSetter = method->findAttr<ASTAttrStatic>() != nullptr;
-                    if (isStaticProp != isStaticSetter) {
-                        err<IDL_STATUS_E2097>(setter->location, method->fullname(), node->fullname());
-                    }
-                    const auto argCount = method->args.size();
-                    if (isStaticProp && argCount != 1) {
-                        if ((argCount == 2 && !method->args[0]->findAttr<ASTAttrUserData>() &&
-                             !method->args[1]->findAttr<ASTAttrUserData>()) ||
-                            argCount > 2) {
-                            err<IDL_STATUS_E2098>(getter->location, method->fullname());
-                        }
-                    } else if (!isStaticProp) {
-                        if (argCount == 3 && (!method->args[0]->findAttr<ASTAttrUserData>() &&
-                                              !method->args[1]->findAttr<ASTAttrUserData>() &&
-                                              !method->args[2]->findAttr<ASTAttrUserData>())) {
-                            err<IDL_STATUS_E2099>(getter->location, method->fullname());
-                        } else if (argCount > 3) {
-                            err<IDL_STATUS_E2099>(getter->location, method->fullname());
-                        }
-                    }
-                    for (auto arg : method->args) {
-                        if (arg->findAttr<ASTAttrThis>() == nullptr && arg->findAttr<ASTAttrUserData>() == nullptr) {
-                            setterType = resolveType(arg->findAttr<ASTAttrType>()->type);
-                            break;
-                        }
-                    }
-                    assert(setterType);
-                } else {
-                    err<IDL_STATUS_E2059>(setter->location, decl->fullname());
-                }
-            }
-            if (getterType && setterType && getterType != setterType) {
-                err<IDL_STATUS_E2064>(node->location,
-                                      getterType->fullname(),
-                                      getterMethod->fullname(),
-                                      setterType->fullname(),
-                                      setterMethod->fullname());
-            }
-            if (auto attr = node->findAttr<ASTAttrType>()) {
-                auto type = resolveType(attr->type);
-                if (getterType && getterType != type) {
-                    err<IDL_STATUS_E2100>(
-                        attr->location, type->fullname(), getterType->fullname(), getterMethod->fullname());
-                }
-                if (setterType && setterType != type) {
-                    err<IDL_STATUS_E2101>(
-                        attr->location, type->fullname(), setterMethod->fullname(), setterType->fullname());
-                }
-            } else {
-                needAddType.emplace_back(node, getterType ? getterType->name : setterType->name);
-            }
-            return true;
-        });
-        for (auto& [node, type] : needAddType) {
-            auto attr          = allocNode<ASTAttrType>(node->location);
-            attr->parent       = node;
-            attr->type         = allocNode<ASTDeclRef>(node->location);
-            attr->type->name   = type;
-            attr->type->parent = attr;
-            node->attrs.push_back(attr);
-        }
+        prepareGetterSetter<ASTEvent>();
     }
 
     void prepareInterfaces() {

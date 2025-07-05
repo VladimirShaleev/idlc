@@ -117,7 +117,6 @@ interface Options
 
     @ Returns an array of directories to search for imports.
     @ These paths are used to search source code when an import is encountered during compilation. [detail]
-    @ Array of directories paths. [return]
     @ {SetImportDirs} [see]
     method GetImportDirs [const]
         arg Options {Options} [this] @ Target options.
@@ -152,7 +151,7 @@ interface Options
         and then the current working directory).``` [note]
     @ ```
         If {Compiler.Compile.File} was not passed to {Compiler.Compile} to compile from the file system, 
-        then the importer will also be used to obtain the main (primary) file named *<input>*.``` [note]
+        then the importer will also be used to obtain the main (primary) file named *\<input\>*.``` [note]
     @ A typical use of an importer is to read source code from memory. [note]
     @ {GetImporter} [see]
     method SetImporter
@@ -199,7 +198,6 @@ interface Options
 
     @ Get additional parameters.
     @ Returns an array of additional parameters. [detail]
-    @ Parameter array. [return]
     @ {SetAdditions} [see]
     method GetAdditions [const]
         arg Options {Options} [this] @ Target options.
@@ -221,6 +219,7 @@ interface Options
 
     @ Get api version.
     @ Returns the API version or null. [detail]
+    @ API version or null. [return]
     @ {SetVersion} [see]
     method GetVersion {ApiVersion} [const,ref,optional]
         arg Options {Options} [this] @ Target options.

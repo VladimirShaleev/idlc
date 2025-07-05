@@ -3,8 +3,7 @@
  * @brief     Core type definitions for the Idl framework.
  * @details   This header defines the fundamental object types and handles used throughout
  *            the Idl framework. It provides forward declarations for all major system
- *            components using opaque pointer types (#IDL_TYPE) and index-based handles
- *            (#IDL_HANDLE) for better type safety and abstraction.
+ *            components using opaque pointer types (#IDL_TYPE).
  * @author    Vladimir Shaleev <vladimirshaleev@gmail.com>
  * @copyright MIT License
  */

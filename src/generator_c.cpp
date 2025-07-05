@@ -965,14 +965,34 @@ static void generateTypes(idl::Context& ctx,
 
     ASTDoc doc{};
     doc.brief = addDocField({ "Core type definitions for the " + ctx.api()->name + " framework." });
-    doc.detail =
-        addDocField({ "This header defines the fundamental object types and handles used throughout",
-                      "\n",
-                      "the " + ctx.api()->name + " framework. It provides forward declarations for all major system",
-                      "\n",
-                      "components using opaque pointer types (#" + API + "_TYPE) and index-based handles",
-                      "\n",
-                      "(#" + API + "_HANDLE) for better type safety and abstraction." });
+    if (hasInterfaces || hasHandles) {
+        std::vector<std::string> detail;
+        detail.push_back("This header defines the fundamental object types and handles used throughout");
+        detail.push_back("\n");
+        detail.push_back("the " + ctx.api()->name +
+                         " framework. It provides forward declarations for all major system");
+        detail.push_back("\n");
+        std::string components = "components using ";
+        if (hasInterfaces) {
+            components += "opaque pointer types (#" + API + "_TYPE)";
+            if (!hasHandles) {
+                components += '.';
+                detail.push_back(components);
+            }
+        }
+        if (hasHandles) {
+            if (hasInterfaces) {
+                components += " and index-based handles";
+                detail.push_back(components);
+                detail.push_back("\n");
+                components = "";
+                detail.push_back("(#" + API + "_HANDLE) for better type safety and abstraction.");
+            } else {
+                detail.push_back("index-based handles (#" + API + "_HANDLE) for better type safety and abstraction.");
+            }
+        }
+        doc.detail = addDocField(std::move(detail));
+    }
     ASTFile file{};
     file.name = "types";
     file.doc  = &doc;

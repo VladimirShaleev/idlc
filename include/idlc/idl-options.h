@@ -171,7 +171,6 @@ idl_options_set_output_dir(idl_options_t options,
  * @param[in]     options Target options.
  * @param[in,out] dir_count Number of directories.
  * @param[out]    dirs Import directories.
- * @return        Array of directories paths.
  * @sa            ::idl_options_set_import_dirs
  */
 idl_api void
@@ -220,7 +219,7 @@ idl_options_get_importer(idl_options_t options,
  * @endparblock
  * @parblock
  * @note      If *file* was not passed to ::idl_compiler_compile to compile from the file system,
- *            then the importer will also be used to obtain the main (primary) file named *<input>*.
+ *            then the importer will also be used to obtain the main (primary) file named *\<input\>*.
  * @endparblock
  * @parblock
  * @note      A typical use of an importer is to read source code from memory.
@@ -291,7 +290,6 @@ idl_options_set_writer(idl_options_t options,
  * @param[in]     options Target options.
  * @param[in,out] addition_count Number of additions.
  * @param[out]    additions Additions.
- * @return        Parameter array.
  * @sa            ::idl_options_set_additions
  */
 idl_api void
@@ -320,6 +318,7 @@ idl_options_set_additions(idl_options_t options,
  * @brief     Get api version.
  * @details   Returns the API version or null.
  * @param[in] options Target options.
+ * @return    API version or null.
  * @sa        ::idl_options_set_version
  */
 idl_api const idl_api_version_t*

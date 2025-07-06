@@ -1443,7 +1443,8 @@ HTML_EXTRA_FILES       = @IDLC_DOC_CSS@/doxygen-awesome-darkmode-toggle.js \
                          @IDLC_DOC_CSS@/doxygen-awesome-paragraph-link.js \
                          @IDLC_DOC_CSS@/doxygen-custom/toggle-alternative-theme.js \
                          @IDLC_DOC_CSS@/doxygen-awesome-interactive-toc.js \
-                         @IDLC_DOC_CSS@/doxygen-awesome-tabs.js
+                         @IDLC_DOC_CSS@/doxygen-awesome-tabs.js \
+                         ./doc/diagram.svg
 
 # The HTML_COLORSTYLE tag can be used to specify if the generated HTML output
 # should be rendered with a dark or light theme.

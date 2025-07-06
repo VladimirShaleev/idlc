@@ -50,6 +50,7 @@ if(IDLC_USE_IDLC)
         OUTPUT "${PROJECT_SOURCE_DIR}/include/idlc/idl.h"
         VERSION ${PROJECT_VERSION}
         GENERATOR C
+        ADDITIONS +docgroup
         DEPENDS
             "${PROJECT_SOURCE_DIR}/specs/api.idl"
             "${PROJECT_SOURCE_DIR}/specs/options.idl"

@@ -27,6 +27,8 @@ include(cmake/bison-install.cmake)
 option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 option(IDLC_SUPPORTED_JS "Support JavaScript generator" ON)
 option(IDLC_MSVC_DYNAMIC_RUNTIME "Link dynamic runtime library instead of static" OFF)
+cmake_dependent_option(IDLC_BUILD_DOC "Build doc" ON
+  "CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR" OFF)
 cmake_dependent_option(IDLC_ENABLE_INSTALL "Enable installation" ON
     "CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR" OFF)
 cmake_dependent_option(IDLC_BUILD_PACKAGES "Build packages" ON
@@ -136,6 +138,10 @@ if(IDLC_BUILD_TOOL)
     list(APPEND IDLC_TARGETS ${PROJECT_NAME})
 endif()
 add_library(idlc::idl ALIAS idl)
+
+if(IDLC_BUILD_DOC)
+  add_subdirectory(doc)
+endif()
 
 if(IDLC_ENABLE_INSTALL)
     configure_package_config_file(

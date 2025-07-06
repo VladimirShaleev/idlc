@@ -36,6 +36,12 @@ struct DocRef : Visitor {
         str = node->value ? "TRUE" : "FALSE";
     }
 
+    void visit(ASTEnum* node) override {
+        idl::CName name;
+        node->accept(name);
+        str = "::" + name.str;
+    }
+
     void visit(ASTEnumConst* node) override {
         idl::CName name;
         node->accept(name);
@@ -1224,8 +1230,17 @@ void generateC(idl::Context& ctx,
                const std::filesystem::path& out,
                idl_write_callback_t writer,
                idl_data_t writerData,
-               std::span<idl_utf8_t> includes,
-               bool docGrouping) {
+               std::span<idl_utf8_t> additions) {
+    std::vector<idl_utf8_t> includes;
+    includes.reserve(additions.size());
+    bool docGrouping = false;
+    for (auto arg : additions) {
+        if (strcmp(arg, "+docgroup") == 0) {
+            docGrouping = true;
+        } else {
+            includes.push_back(arg);
+        }
+    }
     auto finish = [](auto) {
         return false;
     };

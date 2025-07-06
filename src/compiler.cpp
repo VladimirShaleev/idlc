@@ -7,8 +7,7 @@ void generateC(idl::Context& ctx,
                const std::filesystem::path& out,
                idl_write_callback_t writer,
                idl_data_t writerData,
-               std::span<idl_utf8_t> includes,
-               bool docGrouping);
+               std::span<idl_utf8_t> additions);
 
 void generateJs(idl::Context& ctx,
                 const std::filesystem::path& out,
@@ -74,8 +73,7 @@ public:
 
             switch (generator) {
                 case IDL_GENERATOR_C:
-                    generateC(
-                        context, output, writer, writerData, std::span{ additions.data(), additions.size() }, true);
+                    generateC(context, output, writer, writerData, std::span{ additions.data(), additions.size() });
                     break;
                 case IDL_GENERATOR_JAVA_SCRIPT:
 #ifdef IDLC_SUPPORTED_JS

@@ -78,7 +78,7 @@ typedef void
  *            system, such as the network or console output, you can use this callback.
  * @param[in] source Source of compiler output.
  * @param[in] data User data specified when setting up a callback.
- * @note      The compiler can output multiple sources. The exact number depends on the selected generator idl_generator_t.
+ * @note      The compiler can output multiple sources. The exact number depends on the selected generator ::idl_generator_t.
  * @ingroup   types
  */
 typedef void
@@ -337,12 +337,13 @@ idl_options_get_additions(idl_options_t options,
 
 /**
  * @brief     Set additional parameters.
- * @details   Sets additional parameters specific to the generator (idl_generator_t).
+ * @details   Sets additional parameters specific to the generator (::idl_generator_t).
  * @param[in] options Target options.
  * @param[in] addition_count Number of additions.
  * @param[in] additions Additions.
  * @note      Supported Generators:
- *            - ::IDL_GENERATOR_C - additional headers included in the API header file;
+ *            - ::IDL_GENERATOR_C - additional headers included in the API header file
+ *              and the special value `+docgroup` to add Doxygen groups;
  *            - ::IDL_GENERATOR_JAVA_SCRIPT - no specific parameters.
  *            
  * @sa        ::idl_options_get_additions

@@ -252,6 +252,7 @@ static void generateDocField(Header& header,
 
 static void generateDoc(Header& header,
                         ASTDecl* node,
+                        std::string_view group,
                         bool printLicense                = false,
                         ASTFile* fileDecl                = nullptr,
                         const std::vector<ASTArg*>* args = nullptr) {
@@ -311,6 +312,14 @@ static void generateDoc(Header& header,
     std::string_view note       = "note";
     std::string_view warning    = "warning";
     std::string_view sa         = "sa";
+    std::string_view ingroup    = "ingroup";
+
+    std::vector<ASTNode*> groupNodes;
+    ASTLiteralStr ingroupStr;
+    if (!group.empty()) {
+        ingroupStr.value = group;
+        groupNodes.push_back(&ingroupStr);
+    }
 
     auto& briefNodes  = fileDecl && !fileDecl->doc->brief.empty() ? fileDecl->doc->brief : node->doc->brief;
     auto& detailNodes = fileDecl && !fileDecl->doc->detail.empty() ? fileDecl->doc->detail : node->doc->detail;
@@ -322,6 +331,9 @@ static void generateDoc(Header& header,
     calcLength(note, node->doc->note);
     calcLength(warning, node->doc->warn);
     calcLength(sa, node->doc->see);
+    if (!groupNodes.empty()) {
+        calcLength(ingroup, groupNodes);
+    }
     if (args) {
         for (auto arg : *args) {
             const auto isIn  = arg->findAttr<ASTAttrIn>() != nullptr;
@@ -365,6 +377,9 @@ static void generateDoc(Header& header,
     printDocFields(note, node->doc->note, true);
     printDocFields(warning, node->doc->warn, true);
     printDocFields(sa, node->doc->see);
+    if (!groupNodes.empty()) {
+        printDocField(ingroup, groupNodes);
+    }
     printDocField(copyright, node->doc->copyright);
     if (printLicense && !node->doc->copyright.empty()) {
         maxLength = 0;
@@ -398,10 +413,20 @@ static void generateInlineDoc(Header& header, ASTDecl* node, bool includeBrief =
 }
 
 struct DeclGenerator : Visitor {
-    DeclGenerator(Header& h, idl::Context& context) noexcept : header(h), ctx(context) {
+    DeclGenerator(Header& h, idl::Context& context, bool docGrouping) noexcept :
+        header(h),
+        ctx(context),
+        grouping(docGrouping) {
+    }
+
+    ~DeclGenerator() {
+        flushCallbacks();
+        flushMethods();
     }
 
     void visit(ASTEnum* node) override {
+        flushCallbacks();
+        flushMethods();
         const auto isHexOut = node->findAttr<ASTAttrHex>() != nullptr;
         std::vector<std::tuple<std::string, std::string, ASTDecl*>> consts;
         consts.reserve(node->consts.size());
@@ -420,7 +445,7 @@ struct DeclGenerator : Visitor {
         if (name.length() > maxLength) {
             maxLength = name.length();
         }
-        generateDoc(header, node);
+        generateDoc(header, node, grouping ? "enums" : "");
         fmt::println(header.stream, "typedef enum");
         fmt::println(header.stream, "{{");
         for (const auto& [key, value, decl] : consts) {
@@ -442,6 +467,8 @@ struct DeclGenerator : Visitor {
     }
 
     void visit(ASTStruct* node) override {
+        flushCallbacks();
+        flushMethods();
         if (!node->findAttr<ASTAttrHandle>()) {
             size_t maxLength = 0;
             std::vector<std::tuple<std::string, std::string, ASTDecl*>> typeNames;
@@ -452,7 +479,7 @@ struct DeclGenerator : Visitor {
                     maxLength = type.length();
                 }
             }
-            generateDoc(header, node);
+            generateDoc(header, node, grouping ? "structs" : "");
             fmt::println(header.stream, "typedef struct");
             fmt::println(header.stream, "{{");
             for (const auto& [key, value, decl] : typeNames) {
@@ -466,11 +493,18 @@ struct DeclGenerator : Visitor {
     }
 
     void visit(ASTFunc* node) override {
+        flushCallbacks();
+        flushMethods();
         printFunc(node, node->args);
     }
 
     void visit(ASTCallback* node) override {
-        generateDoc(header, node, false, nullptr, &node->args);
+        flushMethods();
+        if (!prevIsCallback) {
+            beginName("Function pointer types.", "Function pointers definitions.");
+            prevIsCallback = true;
+        }
+        generateDoc(header, node, grouping ? "types" : "", false, nullptr, &node->args);
         const auto decl = fmt::format("(*{})(", getDeclCName(node));
         fmt::println(header.stream, "typedef {}", getType(node));
         fmt::print(header.stream, "{}", decl);
@@ -494,11 +528,27 @@ struct DeclGenerator : Visitor {
     }
 
     void visit(ASTMethod* node) override {
+        CName name;
+        node->parent->accept(name);
+        flushCallbacks();
+        if (prevIsMethod != name.str) {
+            if (prevIsMethod.length() > 0) {
+                flushMethods(name.str);
+            }
+            auto parent            = node->parent->as<ASTDecl>();
+            std::vector<int>* nums = nullptr;
+            if (auto attr = parent->findAttr<ASTAttrTokenizer>()) {
+                nums = &attr->nums;
+            }
+            auto ifaceName = convert(parent->name, Case::SpaceCase, nums);
+            beginName("Functions of " + ifaceName + '.', "Functions for opaque type ::" + name.str + '.');
+            prevIsMethod = name.str;
+        }
         printFunc(node, node->args);
     }
 
     void printFunc(ASTDecl* decl, const std::vector<ASTArg*>& args) {
-        generateDoc(header, decl, false, nullptr, &args);
+        generateDoc(header, decl, grouping ? "functions" : "", false, nullptr, &args);
         auto api       = getApiPrefix(ctx, false);
         auto importApi = api + "_api";
         fmt::println(header.stream, "{} {}", importApi, getType(decl));
@@ -523,14 +573,46 @@ struct DeclGenerator : Visitor {
         fmt::println(header.stream, "");
     }
 
+    void beginName(const std::string& name, const std::string& brief) {
+        fmt::println(header.stream, "/**");
+        fmt::println(header.stream, " * @name {}", name);
+        fmt::println(header.stream, " * @brief {}", brief);
+        fmt::println(header.stream, " * @{{");
+        fmt::println(header.stream, " */");
+        fmt::println(header.stream, "");
+    }
+
+    void endName() {
+        fmt::println(header.stream, "/** @}} */");
+        fmt::println(header.stream, "");
+    }
+
+    void flushCallbacks() {
+        if (prevIsCallback) {
+            endName();
+            prevIsCallback = false;
+        }
+    }
+
+    void flushMethods(const std::string iface = "") {
+        if (prevIsMethod != iface) {
+            endName();
+            prevIsMethod = "";
+        }
+    }
+
     Header& header;
     idl::Context& ctx;
+    bool grouping;
+    bool prevIsCallback{};
+    std::string prevIsMethod{};
 };
 
 static void generateVersion(idl::Context& ctx,
                             const std::filesystem::path& out,
                             idl_write_callback_t writer,
-                            idl_data_t writerData) {
+                            idl_data_t writerData,
+                            bool grouping) {
     auto API    = getApiPrefix(ctx, true);
     auto header = createHeader(ctx, out, "version", false, writer, writerData);
     auto major  = 0;
@@ -547,91 +629,90 @@ static void generateVersion(idl::Context& ctx,
     }
 
     constexpr auto tmp = R"(/**
- * @name  Version Components
- * @brief Individual components of the library version
+ * @name  Version Components.
+ * @brief Individual components of the library version.
  * @{{
  */
 
 /**
- * @brief Major version number (API-breaking changes)
- * @sa    {API}_VERSION
- * @sa    {API}_VERSION_STRING
+ * @brief{s:<{c}}Major version number (API-breaking changes).
+ * @sa   {s:<{c}}{API}_VERSION
+ * @sa   {s:<{c}}{API}_VERSION_STRING{group1}
  */
 #define {API}_VERSION_MAJOR {major}
 
 /**
- * @brief Minor version number (backwards-compatible additions)
- * @sa    {API}_VERSION
- * @sa    {API}_VERSION_STRING
+ * @brief{s:<{c}}Minor version number (backwards-compatible additions).
+ * @sa   {s:<{c}}{API}_VERSION
+ * @sa   {s:<{c}}{API}_VERSION_STRING{group1}
  */
 #define {API}_VERSION_MINOR {minor}
 
 /**
- * @brief Micro version number (bug fixes and patches)
- * @sa    {API}_VERSION
- * @sa    {API}_VERSION_STRING
+ * @brief{s:<{c}}Micro version number (bug fixes and patches).
+ * @sa   {s:<{c}}{API}_VERSION
+ * @sa   {s:<{c}}{API}_VERSION_STRING{group1}
  */
 #define {API}_VERSION_MICRO {micro}
 
 /** @}} */
 
 /**
- * @name  Version Utilities
- * @brief Macros for working with version numbers
+ * @name  Version Utilities.
+ * @brief Macros for working with version numbers.
  * @{{
  */
 
 /**
- * @brief     Encodes version components into a single integer
+ * @brief     Encodes version components into a single integer.
  * @details   Combines major, minor, and micro versions into a 32-bit value:
  *            - Bits 24-31: Major version
  *            - Bits 16-23: Minor version
  *            - Bits 0-15: Micro version
- * @param[in] major Major version number
- * @param[in] minor Minor version number
- * @param[in] micro Micro version number
- * @return    Encoded version as unsigned long
- * @sa        {API}_VERSION
+ * @param[in] major Major version number.
+ * @param[in] minor Minor version number.
+ * @param[in] micro Micro version number.
+ * @return    Encoded version as unsigned long.
+ * @sa        {API}_VERSION{group2}
  */
 #define {API}_VERSION_ENCODE(major, minor, micro) (((unsigned long) major) << 16 | (minor) << 8 | (micro))
 
 /**
- * @brief     Internal macro for string version generation
- * @details   Helper macro that stringizes version components (e.g., {major}, {minor}, {micro} -> "{major}.{minor}.{micro}")
- * @param[in] major Major version number
- * @param[in] minor Minor version number
- * @param[in] micro Micro version number
- * @return    Stringified version
- * @note      For internal use only
+ * @brief     Internal macro for string version generation.
+ * @details   Helper macro that stringizes version components (e.g., {major}, {minor}, {micro} -> "{major}.{minor}.{micro}").
+ * @param[in] major Major version number.
+ * @param[in] minor Minor version number.
+ * @param[in] micro Micro version number.
+ * @return    Stringified version.
+ * @note      For internal use only.{group2}
  * @private
  */
 #define {API}_VERSION_STRINGIZE_(major, minor, micro) #major "." #minor "." #micro
 
 /**
- * @def       {API}_VERSION_STRINGIZE
- * @brief     Creates version string from components
- * @details   Generates a string literal from version components (e.g., {major}, {minor}, {micro} -> "{major}.{minor}.{micro}")
- * @param[in] major Major version number
- * @param[in] minor Minor version number
- * @param[in] micro Micro version number
- * @return    Stringified version
- * @sa        {API}_VERSION_STRING
+ * @brief     Creates version string from components.
+ * @details   Generates a string literal from version components (e.g., {major}, {minor}, {micro} -> "{major}.{minor}.{micro}").
+ * @param[in] major Major version number.
+ * @param[in] minor Minor version number.
+ * @param[in] micro Micro version number.
+ * @return    Stringified version.
+ * @sa        {API}_VERSION_STRING{group2}
  */
 #define {API}_VERSION_STRINGIZE(major, minor, micro)  {API}_VERSION_STRINGIZE_(major, minor, micro)
 
 /** @}} */
 
 /**
- * @name  Current Version
- * @brief Macros representing the current library version
+ * @name  Current Version.
+ * @brief Macros representing the current library version.
  * @{{
  */
 
 /**
- * @brief   Encoded library version as integer
+ * @brief   Encoded library version as integer.
  * @details Combined version value suitable for numeric comparisons.
  *          Use #{API}_VERSION_STRING for human-readable format.
- * @sa      {API}_VERSION_STRING
+ * @sa      {API}_VERSION_STRING{group1}
  */
 #define {API}_VERSION {API}_VERSION_ENCODE( \
     {API}_VERSION_MAJOR, \
@@ -639,11 +720,10 @@ static void generateVersion(idl::Context& ctx,
     {API}_VERSION_MICRO)
 
 /**
- * @def     {API}_VERSION_STRING
- * @brief   Library version as human-readable string
+ * @brief   Library version as human-readable string.
  * @details Version string in "MAJOR.MINOR.MICRO" format (e.g., "{major}.{minor}.{micro}").
  *          Use #{API}_VERSION for numeric comparisons.
- * @sa      {API}_VERSION
+ * @sa      {API}_VERSION{group1}
  */
 #define {API}_VERSION_STRING {API}_VERSION_STRINGIZE( \
     {API}_VERSION_MAJOR, \
@@ -681,21 +761,26 @@ static void generateVersion(idl::Context& ctx,
     ASTFile file{};
     file.name = "version";
     file.doc  = &doc;
-    generateDoc(header, ctx.api(), false, &file);
+    generateDoc(header, ctx.api(), grouping ? "files" : "", false, &file);
     beginHeader(ctx, header);
     fmt::println(header.stream,
                  tmp,
                  fmt::arg("API", API),
                  fmt::arg("major", major),
                  fmt::arg("minor", minor),
-                 fmt::arg("micro", micro));
+                 fmt::arg("micro", micro),
+                 fmt::arg("s", ' '),
+                 fmt::arg("c", grouping ? 3 : 1),
+                 fmt::arg("group1", "\n * @ingroup macros"),
+                 fmt::arg("group2", "\n * @ingroup   macros"));
     endHeader(ctx, header);
 }
 
 static void generatePlatform(idl::Context& ctx,
                              const std::filesystem::path& out,
                              idl_write_callback_t writer,
-                             idl_data_t writerData) {
+                             idl_data_t writerData,
+                             bool grouping) {
     auto API       = getApiPrefix(ctx, true);
     auto api       = getApiPrefix(ctx, false);
     auto importAPI = api + "_api";
@@ -734,6 +819,8 @@ static void generatePlatform(idl::Context& ctx,
         return nodes;
     };
 
+    const auto group = grouping ? "\n * @ingroup macros" : "";
+
     ASTDoc doc{};
     doc.brief  = addDocField({ "Platform-specific definitions and utilities." });
     doc.detail = addDocField({ "This header provides cross-platform macros, type definitions, and utility",
@@ -753,7 +840,7 @@ static void generatePlatform(idl::Context& ctx,
     ASTFile file{};
     file.name = "platform";
     file.doc  = &doc;
-    generateDoc(header, ctx.api(), false, &file);
+    generateDoc(header, ctx.api(), grouping ? "files" : "", false, &file);
     beginHeader(ctx, header);
     fmt::println(header.stream, "/**");
     fmt::println(header.stream, " * @def     {}_BEGIN", API);
@@ -761,7 +848,7 @@ static void generatePlatform(idl::Context& ctx,
     fmt::println(header.stream,
                  " * @details In C++, expands to `extern \"C\" {{` to ensure C-compatible symbol naming.");
     fmt::println(header.stream, " *          In pure C environments, expands to nothing.");
-    fmt::println(header.stream, " * @sa      {}_END", API);
+    fmt::println(header.stream, " * @sa      {}_END{}", API, group);
     fmt::println(header.stream, " *");
     fmt::println(header.stream, " */");
     fmt::println(header.stream, "");
@@ -769,7 +856,7 @@ static void generatePlatform(idl::Context& ctx,
     fmt::println(header.stream, " * @def     {}_END", API);
     fmt::println(header.stream, " * @brief   Ends a C-linkage declaration block.");
     fmt::println(header.stream, " * @details Closes the scope opened by #{}_BEGIN.", API);
-    fmt::println(header.stream, " * @sa      {}_BEGIN", API);
+    fmt::println(header.stream, " * @sa      {}_BEGIN{}", API, group);
     fmt::println(header.stream, " *");
     fmt::println(header.stream, " */");
     fmt::println(header.stream, "");
@@ -792,7 +879,7 @@ static void generatePlatform(idl::Context& ctx,
     fmt::println(header.stream,
                  " *          In all other cases (static builds or non-Windows platforms), it expands to nothing.");
     fmt::println(header.stream, " *          This allows proper importing of symbols from DLLs on Windows platforms.");
-    fmt::println(header.stream, " * @note    Define `{}_STATIC_BUILD` for static library configuration.", API);
+    fmt::println(header.stream, " * @note    Define `{}_STATIC_BUILD` for static library configuration.{}", API, group);
     fmt::println(header.stream, " */");
     fmt::println(header.stream, "");
     fmt::println(header.stream, "#ifndef {}", importAPI);
@@ -840,8 +927,13 @@ static void generatePlatform(idl::Context& ctx,
     fmt::println(header.stream, "#endif");
     fmt::println(header.stream, "");
     fmt::println(header.stream, "/**");
-    fmt::println(header.stream, " * @name  Platform-independent type definitions");
-    fmt::println(header.stream, " * @brief Fixed-size types guaranteed to work across all supported platforms");
+    fmt::println(header.stream, " * @addtogroup types Types");
+    fmt::println(header.stream, " * @{{");
+    fmt::println(header.stream, " */");
+    fmt::println(header.stream, "");
+    fmt::println(header.stream, "/**");
+    fmt::println(header.stream, " * @name  Platform-independent type definitions.");
+    fmt::println(header.stream, " * @brief Fixed-size types guaranteed to work across all supported platforms.");
     fmt::println(header.stream, " * @{{");
     fmt::println(header.stream, " */");
     fmt::println(header.stream, "#include <stdint.h>");
@@ -850,6 +942,8 @@ static void generatePlatform(idl::Context& ctx,
         generateInlineDoc(header, decl);
         fmt::println(header.stream, "");
     }
+    fmt::println(header.stream, "/** @}} */");
+    fmt::println(header.stream, "");
     fmt::println(header.stream, "/** @}} */");
     fmt::println(header.stream, "");
     constexpr auto tmpFlags = R"(/**
@@ -861,8 +955,8 @@ static void generatePlatform(idl::Context& ctx,
  *            - AND (&, &=)
  *            - XOR (^, ^=)
  * 
- * @param[in] {api}_enum_t Enumeration type to enhance with flag operations
- * @note      Only active in C++ mode. In C, expands to nothing.
+ * @param[in] {api}_enum_t Enumeration type to enhance with flag operations.
+ * @note      Only active in C++ mode. In C, expands to nothing.{group}
  */
 
 #ifdef __cplusplus
@@ -893,19 +987,27 @@ inline {API}_CONSTEXPR_14 {api}_enum_t& operator^=({api}_enum_t& lhr, {api}_enum
 #else
 # define {API}_FLAGS({api}_enum_t)
 #endif)";
-    fmt::println(header.stream, tmpFlags, fmt::arg("API", API), fmt::arg("api", api), fmt::arg("int", intType));
+    fmt::println(header.stream,
+                 tmpFlags,
+                 fmt::arg("API", API),
+                 fmt::arg("api", api),
+                 fmt::arg("int", intType),
+                 fmt::arg("group", grouping ? "\n * @ingroup   macros" : ""));
     fmt::println(header.stream, "");
     fmt::println(header.stream, "/**");
     fmt::println(header.stream, " * @def       {}_TYPE", API);
     fmt::println(header.stream, " * @brief     Declares an opaque handle type.");
     fmt::println(header.stream, " * @details   Creates a typedef for a pointer to an incomplete struct type,");
     fmt::println(header.stream, " *            providing type safety while hiding implementation details.");
-    fmt::println(header.stream, " * @param[in] {}_name Base name for the type (suffix `_t` will be added)", api);
+    fmt::println(header.stream,
+                 " * @param[in] {}_name Base name for the type (suffix `_t` will be added).{}",
+                 api,
+                 grouping ? "\n * @ingroup   macros" : "");
     fmt::println(header.stream, " */");
     fmt::println(header.stream, "#define {}_TYPE({}_name) \\", API, api);
     fmt::println(header.stream, "typedef struct _##{}_name* {}_name##_t;", api, api);
     fmt::println(header.stream, "");
-    ctx.filter<ASTStruct>([&header, &API, &api](ASTStruct* node) {
+    ctx.filter<ASTStruct>([&header, &API, &api, grouping](ASTStruct* node) {
         if (node->findAttr<ASTAttrHandle>()) {
             size_t maxLength = 0;
             std::vector<std::pair<std::string, std::string>> typeNames;
@@ -923,8 +1025,10 @@ inline {API}_CONSTEXPR_14 {api}_enum_t& operator^=({api}_enum_t& lhr, {api}_enum
             fmt::println(header.stream, " * @brief     Declares an index-based handle type.");
             fmt::println(header.stream, " * @details   Creates a struct containing an index value, typically used for");
             fmt::println(header.stream, " *            resource handles in API designs that avoid direct pointers.");
-            fmt::println(
-                header.stream, " * @param[in] {}_name Base name for the handle type (suffix `_h` will be added)", api);
+            fmt::println(header.stream,
+                         " * @param[in] {}_name Base name for the handle type (suffix `_h` will be added).{}",
+                         api,
+                         grouping ? "\n * @ingroup   macros" : "");
             fmt::println(header.stream, " */");
             fmt::println(header.stream, "#define {}({}_name) \\", upper(name), api);
             fmt::println(header.stream, "typedef struct _##{}_name {{ \\", api);
@@ -943,7 +1047,8 @@ static void generateTypes(idl::Context& ctx,
                           bool hasInterfaces,
                           bool hasHandles,
                           idl_write_callback_t writer,
-                          idl_data_t writerData) {
+                          idl_data_t writerData,
+                          bool grouping) {
     if (!hasInterfaces && !hasHandles) {
         std::filesystem::remove(out / headerStr(ctx, "types"));
         return;
@@ -996,8 +1101,15 @@ static void generateTypes(idl::Context& ctx,
     ASTFile file{};
     file.name = "types";
     file.doc  = &doc;
-    generateDoc(header, ctx.api(), false, &file);
+    generateDoc(header, ctx.api(), grouping ? "files" : "", false, &file);
     beginHeader(ctx, header, "platform");
+
+    fmt::println(header.stream, "/**");
+    fmt::println(header.stream, " * @addtogroup types Types");
+    fmt::println(header.stream, " * @{{");
+    fmt::println(header.stream, " */");
+    fmt::println(header.stream, "");
+
     if (hasInterfaces) {
         size_t maxLength = 0;
         std::vector<std::pair<std::string, ASTDecl*>> decls;
@@ -1055,6 +1167,8 @@ static void generateTypes(idl::Context& ctx,
         fmt::println(header.stream, "/** @}} */");
         fmt::println(header.stream, "");
     }
+    fmt::println(header.stream, "/** @}} */");
+    fmt::println(header.stream, "");
     endHeader(ctx, header);
 }
 
@@ -1063,17 +1177,20 @@ static void generateFile(idl::Context& ctx,
                          ASTFile* file,
                          ASTFile* prevFile,
                          idl_write_callback_t writer,
-                         idl_data_t writerData) {
+                         idl_data_t writerData,
+                         bool grouping) {
     auto header = createHeader(ctx, out, convert(file->name, Case::LispCase), true, writer, writerData);
-    generateDoc(header, ctx.api(), false, file);
+    generateDoc(header, ctx.api(), grouping ? "files" : "", false, file);
     if (prevFile) {
         beginHeader(ctx, header, convert(prevFile->name, Case::LispCase));
     } else {
         beginHeader(ctx, header, "version", "types");
     }
-    DeclGenerator generator(header, ctx);
-    for (auto decl : file->decls) {
-        decl->accept(generator);
+    {
+        DeclGenerator generator(header, ctx, grouping);
+        for (auto decl : file->decls) {
+            decl->accept(generator);
+        }
     }
     endHeader(ctx, header);
 }
@@ -1083,20 +1200,23 @@ static void generateMain(idl::Context& ctx,
                          ASTFile* prevFile,
                          idl_write_callback_t writer,
                          idl_data_t writerData,
-                         std::span<idl_utf8_t> includes) {
+                         std::span<idl_utf8_t> includes,
+                         bool grouping) {
     auto header = createHeader(ctx, out, "", false, writer, writerData);
-    generateDoc(header, ctx.api(), true);
+    generateDoc(header, ctx.api(), grouping ? "files" : "", true);
     if (prevFile) {
         beginHeader(ctx, header, convert(prevFile->name, Case::LispCase), includes);
     } else {
         beginHeader(ctx, header, "version", "types", includes);
     }
-    DeclGenerator generator(header, ctx);
-    ctx.filter<ASTDecl>([&generator](ASTDecl* decl) {
-        if (!decl->file) {
-            decl->accept(generator);
-        }
-    });
+    {
+        DeclGenerator generator(header, ctx, grouping);
+        ctx.filter<ASTDecl>([&generator](ASTDecl* decl) {
+            if (!decl->file) {
+                decl->accept(generator);
+            }
+        });
+    }
     endHeader(ctx, header);
 }
 
@@ -1104,7 +1224,8 @@ void generateC(idl::Context& ctx,
                const std::filesystem::path& out,
                idl_write_callback_t writer,
                idl_data_t writerData,
-               std::span<idl_utf8_t> includes) {
+               std::span<idl_utf8_t> includes,
+               bool docGrouping) {
     auto finish = [](auto) {
         return false;
     };
@@ -1122,13 +1243,13 @@ void generateC(idl::Context& ctx,
         return true;
     });
 
-    generateVersion(ctx, out, writer, writerData);
-    generatePlatform(ctx, out, writer, writerData);
-    generateTypes(ctx, out, hasInterfaces, hasHandles, writer, writerData);
+    generateVersion(ctx, out, writer, writerData, docGrouping);
+    generatePlatform(ctx, out, writer, writerData, docGrouping);
+    generateTypes(ctx, out, hasInterfaces, hasHandles, writer, writerData, docGrouping);
     ASTFile* prevFile = nullptr;
     for (auto file : ctx.api()->files) {
-        generateFile(ctx, out, file, prevFile, writer, writerData);
+        generateFile(ctx, out, file, prevFile, writer, writerData, docGrouping);
         prevFile = file;
     }
-    generateMain(ctx, out, prevFile, writer, writerData, includes);
+    generateMain(ctx, out, prevFile, writer, writerData, includes, docGrouping);
 }

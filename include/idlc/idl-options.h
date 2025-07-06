@@ -3,6 +3,7 @@
  * @brief     Compiler options.
  * @details   This is where the structures and various compilation options are located.
  * @author    Vladimir Shaleev <vladimirshaleev@gmail.com>
+ * @ingroup   files
  * @copyright MIT License
  */
 #ifndef IDL_OPTIONS_H
@@ -15,6 +16,7 @@ IDL_BEGIN
 /**
  * @brief   Source code.
  * @details Used to provide source code in memory.
+ * @ingroup structs
  */
 typedef struct
 {
@@ -26,6 +28,7 @@ typedef struct
 /**
  * @brief   Api version.
  * @details Used to set ::idl_options_set_version the API version.
+ * @ingroup structs
  */
 typedef struct
 {
@@ -33,6 +36,12 @@ typedef struct
     idl_uint32_t minor; /**< Minor component of the version. */
     idl_uint32_t micro; /**< Micro component of the version. */
 } idl_api_version_t;
+
+/**
+ * @name Function pointer types.
+ * @brief Function pointers definitions.
+ * @{
+ */
 
 /**
  * @brief     Callback to get sources.
@@ -44,6 +53,7 @@ typedef struct
  *            to the compiler that it cannot resolve the source and should try to find
  *            the source elsewhere (e.g. via import paths).
  * @sa        If the callback allocates memory, then you can free it in the callback idl_release_import_callback_t.
+ * @ingroup   types
  */
 typedef idl_source_t*
 (*idl_import_callback_t)(idl_utf8_t name,
@@ -56,6 +66,7 @@ typedef idl_source_t*
  * @param[in] source Source for release.
  * @param[in] data User data specified when setting up a callback.
  * @sa        idl_import_callback_t.
+ * @ingroup   types
  */
 typedef void
 (*idl_release_import_callback_t)(idl_source_t* source,
@@ -68,16 +79,26 @@ typedef void
  * @param[in] source Source of compiler output.
  * @param[in] data User data specified when setting up a callback.
  * @note      The compiler can output multiple sources. The exact number depends on the selected generator idl_generator_t.
+ * @ingroup   types
  */
 typedef void
 (*idl_write_callback_t)(const idl_source_t* source,
                         idl_data_t data);
+
+/** @} */
+
+/**
+ * @name Functions of Options.
+ * @brief Functions for opaque type ::idl_options_t.
+ * @{
+ */
 
 /**
  * @brief      Creates new options instance.
  * @details    Creates an object for setting compiler options.
  * @param[out] options New options instance.
  * @return     New options instance.
+ * @ingroup    functions
  */
 idl_api idl_result_t
 idl_options_create(idl_options_t* options);
@@ -88,6 +109,7 @@ idl_options_create(idl_options_t* options);
  * @param[in] options Target options instance.
  * @return    Reference to same options.
  * @sa        ::idl_options_destroy
+ * @ingroup   functions
  */
 idl_api idl_options_t
 idl_options_reference(idl_options_t options);
@@ -97,6 +119,7 @@ idl_options_reference(idl_options_t options);
  * @details   Destroys when reference count reaches zero.
  * @param[in] options Options to destroy.
  * @sa        ::idl_options_reference
+ * @ingroup   functions
  */
 idl_api void
 idl_options_destroy(idl_options_t options);
@@ -107,6 +130,7 @@ idl_options_destroy(idl_options_t options);
  * @param[in] options Target options.
  * @return    *TRUE* is enabled.
  * @sa        ::idl_options_set_debug_mode
+ * @ingroup   functions
  */
 idl_api idl_bool_t
 idl_options_get_debug_mode(idl_options_t options);
@@ -117,6 +141,7 @@ idl_options_get_debug_mode(idl_options_t options);
  * @param[in] options Target options.
  * @param[in] enable Enable debug.
  * @sa        ::idl_options_get_debug_mode
+ * @ingroup   functions
  */
 idl_api void
 idl_options_set_debug_mode(idl_options_t options,
@@ -128,6 +153,7 @@ idl_options_set_debug_mode(idl_options_t options,
  * @param[in] options Target options.
  * @return    *TRUE* is enabled.
  * @sa        ::idl_options_set_warnings_as_errors
+ * @ingroup   functions
  */
 idl_api idl_bool_t
 idl_options_get_warnings_as_errors(idl_options_t options);
@@ -138,6 +164,7 @@ idl_options_get_warnings_as_errors(idl_options_t options);
  * @param[in] options Target options.
  * @param[in] enable Enable treat warnings as errors.
  * @sa        ::idl_options_get_warnings_as_errors
+ * @ingroup   functions
  */
 idl_api void
 idl_options_set_warnings_as_errors(idl_options_t options,
@@ -149,6 +176,7 @@ idl_options_set_warnings_as_errors(idl_options_t options,
  * @param[in] options Target options.
  * @return    Directory path.
  * @sa        ::idl_options_set_output_dir
+ * @ingroup   functions
  */
 idl_api idl_utf8_t
 idl_options_get_output_dir(idl_options_t options);
@@ -160,6 +188,7 @@ idl_options_get_output_dir(idl_options_t options);
  * @param[in] dir Directory path.
  * @note      Compiler output to the file system does not occur if output via a ::idl_options_set_writer is configured.
  * @sa        ::idl_options_get_output_dir
+ * @ingroup   functions
  */
 idl_api void
 idl_options_set_output_dir(idl_options_t options,
@@ -172,6 +201,7 @@ idl_options_set_output_dir(idl_options_t options,
  * @param[in,out] dir_count Number of directories.
  * @param[out]    dirs Import directories.
  * @sa            ::idl_options_set_import_dirs
+ * @ingroup       functions
  */
 idl_api void
 idl_options_get_import_dirs(idl_options_t options,
@@ -187,6 +217,7 @@ idl_options_get_import_dirs(idl_options_t options,
  * @note      These paths are used when resolving imports if the callback passed to ::idl_options_set_importer
  *            did not return a source (if ::idl_options_set_importer was configured)
  * @sa        ::idl_options_get_import_dirs
+ * @ingroup   functions
  */
 idl_api void
 idl_options_set_import_dirs(idl_options_t options,
@@ -200,6 +231,7 @@ idl_options_set_import_dirs(idl_options_t options,
  * @param[out] data Returning a callback user data pointer (may be null).
  * @return     Returns a callback.
  * @sa         ::idl_options_set_importer
+ * @ingroup    functions
  */
 idl_api idl_import_callback_t
 idl_options_get_importer(idl_options_t options,
@@ -225,6 +257,7 @@ idl_options_get_importer(idl_options_t options,
  * @note      A typical use of an importer is to read source code from memory.
  * @endparblock
  * @sa        ::idl_options_get_importer
+ * @ingroup   functions
  */
 idl_api void
 idl_options_set_importer(idl_options_t options,
@@ -238,6 +271,7 @@ idl_options_set_importer(idl_options_t options,
  * @param[out] data Returning a callback user data pointer (may be null).
  * @return     Returns a callback.
  * @sa         ::idl_options_set_release_import
+ * @ingroup    functions
  */
 idl_api idl_release_import_callback_t
 idl_options_get_release_import(idl_options_t options,
@@ -251,6 +285,7 @@ idl_options_get_release_import(idl_options_t options,
  * @param[in] callback Callback function.
  * @param[in] data Callback user data.
  * @sa        ::idl_options_get_release_import
+ * @ingroup   functions
  */
 idl_api void
 idl_options_set_release_import(idl_options_t options,
@@ -264,6 +299,7 @@ idl_options_set_release_import(idl_options_t options,
  * @param[out] data Returning a callback user data pointer (may be null).
  * @return     Returns a callback.
  * @sa         ::idl_options_set_writer
+ * @ingroup    functions
  */
 idl_api idl_write_callback_t
 idl_options_get_writer(idl_options_t options,
@@ -278,6 +314,7 @@ idl_options_get_writer(idl_options_t options,
  * @param[in] data Callback user data.
  * @note      Typical uses of a writer are writing to memory or outputting to the console and the like.
  * @sa        ::idl_options_get_writer
+ * @ingroup   functions
  */
 idl_api void
 idl_options_set_writer(idl_options_t options,
@@ -291,6 +328,7 @@ idl_options_set_writer(idl_options_t options,
  * @param[in,out] addition_count Number of additions.
  * @param[out]    additions Additions.
  * @sa            ::idl_options_set_additions
+ * @ingroup       functions
  */
 idl_api void
 idl_options_get_additions(idl_options_t options,
@@ -308,6 +346,7 @@ idl_options_get_additions(idl_options_t options,
  *            - ::IDL_GENERATOR_JAVA_SCRIPT - no specific parameters.
  *            
  * @sa        ::idl_options_get_additions
+ * @ingroup   functions
  */
 idl_api void
 idl_options_set_additions(idl_options_t options,
@@ -320,6 +359,7 @@ idl_options_set_additions(idl_options_t options,
  * @param[in] options Target options.
  * @return    API version or null.
  * @sa        ::idl_options_set_version
+ * @ingroup   functions
  */
 idl_api const idl_api_version_t*
 idl_options_get_version(idl_options_t options);
@@ -333,10 +373,13 @@ idl_options_get_version(idl_options_t options);
  *            attribute (sample: `api Sample [version(2,3,1)]`). If the api does not have a version
  *            attribute specified, then the version will be taken as `0.0.0`.
  * @sa        ::idl_options_get_version
+ * @ingroup   functions
  */
 idl_api void
 idl_options_set_version(idl_options_t options,
                         const idl_api_version_t* version);
+
+/** @} */
 
 IDL_END
 

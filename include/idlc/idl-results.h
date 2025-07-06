@@ -3,6 +3,7 @@
  * @brief     Warning/Error codes.
  * @details   Here are the warning and error codes that may occur during compilation.
  * @author    Vladimir Shaleev <vladimirshaleev@gmail.com>
+ * @ingroup   files
  * @copyright MIT License
  */
 #ifndef IDL_RESULTS_H
@@ -16,6 +17,7 @@ IDL_BEGIN
 /**
  * @brief   Result codes.
  * @details Enumeration of result codes.
+ * @ingroup enums
  */
 typedef enum
 {
@@ -32,6 +34,7 @@ typedef enum
 /**
  * @brief   Compilation statuses.
  * @details This enumeration contains warnings and errors that may occur during compilation.
+ * @ingroup enums
  */
 typedef enum
 {
@@ -170,6 +173,7 @@ typedef enum
 /**
  * @brief   Compilation message.
  * @details Detailed description of warning or compilation error.
+ * @ingroup structs
  */
 typedef struct
 {
@@ -186,9 +190,16 @@ typedef struct
  * @details   Provides a text description for the result code.
  * @param[in] result Result code.
  * @return    Corresponding text description of the result code.
+ * @ingroup   functions
  */
 idl_api idl_utf8_t
 idl_result_to_string(idl_result_t result);
+
+/**
+ * @name Functions of Compilation Result.
+ * @brief Functions for opaque type ::idl_compilation_result_t.
+ * @{
+ */
 
 /**
  * @brief     Increments reference count.
@@ -196,6 +207,7 @@ idl_result_to_string(idl_result_t result);
  * @param[in] compilation_result Target compilation result instance.
  * @return    Reference to same compilation result.
  * @sa        ::idl_compilation_result_destroy
+ * @ingroup   functions
  */
 idl_api idl_compilation_result_t
 idl_compilation_result_reference(idl_compilation_result_t compilation_result);
@@ -205,6 +217,7 @@ idl_compilation_result_reference(idl_compilation_result_t compilation_result);
  * @details   Destroys when reference count reaches zero.
  * @param[in] compilation_result Compilation result to destroy.
  * @sa        ::idl_compilation_result_reference
+ * @ingroup   functions
  */
 idl_api void
 idl_compilation_result_destroy(idl_compilation_result_t compilation_result);
@@ -214,6 +227,7 @@ idl_compilation_result_destroy(idl_compilation_result_t compilation_result);
  * @details   Check if there were any warnings during compilation.
  * @param[in] compilation_result Target compilation result instance.
  * @return    *TRUE*, if there are warnings.
+ * @ingroup   functions
  */
 idl_api idl_bool_t
 idl_compilation_result_has_warnings(idl_compilation_result_t compilation_result);
@@ -223,6 +237,7 @@ idl_compilation_result_has_warnings(idl_compilation_result_t compilation_result)
  * @details   Check if there were any errors during compilation.
  * @param[in] compilation_result Target compilation result instance.
  * @return    *TRUE*, if there are errors.
+ * @ingroup   functions
  */
 idl_api idl_bool_t
 idl_compilation_result_has_errors(idl_compilation_result_t compilation_result);
@@ -233,11 +248,14 @@ idl_compilation_result_has_errors(idl_compilation_result_t compilation_result);
  * @param[in]     compilation_result Target compilation result instance.
  * @param[in,out] message_count Number of messages.
  * @param[out]    messages Message array.
+ * @ingroup       functions
  */
 idl_api void
 idl_compilation_result_get_messages(idl_compilation_result_t compilation_result,
                                     idl_uint32_t* message_count,
                                     idl_message_t* messages);
+
+/** @} */
 
 IDL_END
 

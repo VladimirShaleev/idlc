@@ -7,13 +7,13 @@ void generateC(idl::Context& ctx,
                const std::filesystem::path& out,
                idl_write_callback_t writer,
                idl_data_t writerData,
-               std::span<idl_utf8_t> includes);
+               std::span<idl_utf8_t> includes,
+               bool docGrouping);
 
 void generateJs(idl::Context& ctx,
                 const std::filesystem::path& out,
                 idl_write_callback_t writer,
-                idl_data_t writerData,
-                std::span<idl_utf8_t> includes);
+                idl_data_t writerData);
 
 struct _idl_compiler : public idl::Object {};
 
@@ -74,11 +74,12 @@ public:
 
             switch (generator) {
                 case IDL_GENERATOR_C:
-                    generateC(context, output, writer, writerData, std::span{ additions.data(), additions.size() });
+                    generateC(
+                        context, output, writer, writerData, std::span{ additions.data(), additions.size() }, true);
                     break;
                 case IDL_GENERATOR_JAVA_SCRIPT:
 #ifdef IDLC_SUPPORTED_JS
-                    generateJs(context, output, writer, writerData, std::span{ additions.data(), additions.size() });
+                    generateJs(context, output, writer, writerData);
                     break;
 #else
                     return IDL_RESULT_ERROR_NOT_SUPPORTED;

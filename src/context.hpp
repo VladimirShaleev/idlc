@@ -179,22 +179,22 @@ public:
             addSymbol(node);
         };
 
-        addBuiltin("Void", "void", "void type", ASTVoid{});
-        addBuiltin("Char", "char", "symbol type", ASTChar{});
-        addBuiltin("Bool", "bool", "boolean type", ASTBool{});
-        addBuiltin("Int8", "sint8", "8 bit signed integer", ASTInt8{});
-        addBuiltin("Uint8", "uint8", "8 bit unsigned integer", ASTUint8{});
-        addBuiltin("Int16", "sint16", "16 bit signed integer", ASTInt16{});
-        addBuiltin("Uint16", "uint16", "16 bit unsigned integer", ASTUint16{});
-        addBuiltin("Int32", "sint32", "32 bit signed integer", ASTInt32{});
-        addBuiltin("Uint32", "uint32", "32 bit unsigned integer", ASTUint32{});
-        addBuiltin("Int64", "sint64", "64 bit signed integer", ASTInt64{});
-        addBuiltin("Uint64", "uint64", "64 bit unsigned integer", ASTUint64{});
-        addBuiltin("Float32", "float32", "32 bit float point", ASTFloat32{});
-        addBuiltin("Float64", "float64", "64 bit float point", ASTFloat64{});
-        addBuiltin("Str", "utf8", "utf8 string", ASTStr{});
-        addBuiltin("Data", "data", "pointer to data", ASTData{});
-        addBuiltin("ConstData", "cdata", "pointer to immutable data", ASTConstData{});
+        addBuiltin("Void", "void", "void type.", ASTVoid{});
+        addBuiltin("Char", "char", "symbol type.", ASTChar{});
+        addBuiltin("Bool", "bool", "boolean type.", ASTBool{});
+        addBuiltin("Int8", "sint8", "8 bit signed integer.", ASTInt8{});
+        addBuiltin("Uint8", "uint8", "8 bit unsigned integer.", ASTUint8{});
+        addBuiltin("Int16", "sint16", "16 bit signed integer.", ASTInt16{});
+        addBuiltin("Uint16", "uint16", "16 bit unsigned integer.", ASTUint16{});
+        addBuiltin("Int32", "sint32", "32 bit signed integer.", ASTInt32{});
+        addBuiltin("Uint32", "uint32", "32 bit unsigned integer.", ASTUint32{});
+        addBuiltin("Int64", "sint64", "64 bit signed integer.", ASTInt64{});
+        addBuiltin("Uint64", "uint64", "64 bit unsigned integer.", ASTUint64{});
+        addBuiltin("Float32", "float32", "32 bit float point.", ASTFloat32{});
+        addBuiltin("Float64", "float64", "64 bit float point.", ASTFloat64{});
+        addBuiltin("Str", "utf8", "utf8 string.", ASTStr{});
+        addBuiltin("Data", "data", "pointer to data.", ASTData{});
+        addBuiltin("ConstData", "cdata", "pointer to immutable data.", ASTConstData{});
 
         const std::chrono::time_point now{ std::chrono::system_clock::now() };
         const std::chrono::year_month_day ymd{ std::chrono::floor<std::chrono::days>(now) };

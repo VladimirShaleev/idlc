@@ -2108,8 +2108,7 @@ static void generateEndBindings(idl::Context& ctx, std::ostream& stream) {
 void generateJs(idl::Context& ctx,
                 const std::filesystem::path& out,
                 idl_write_callback_t writer,
-                idl_data_t writerData,
-                std::span<idl_utf8_t> includes) {
+                idl_data_t writerData) {
     auto stream = createStream(ctx, out, writer, writerData);
     generateComment(ctx, stream.stream);
     generateIncludes(ctx, stream.stream);

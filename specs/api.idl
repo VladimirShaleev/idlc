@@ -83,7 +83,7 @@ interface Compiler
     method Destroy [destroy]
         arg Compiler {Compiler} [this] @ Compiler to destroy.
 
-    @ Comile IDL.
+    @ Compile IDL.
     @ Compilation result. [return]
     @ ```
         To read source code from memory instead of the file system, use {Sources} and/or configure 

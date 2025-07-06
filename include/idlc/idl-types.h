@@ -5,6 +5,7 @@
  *            the Idl framework. It provides forward declarations for all major system
  *            components using opaque pointer types (#IDL_TYPE).
  * @author    Vladimir Shaleev <vladimirshaleev@gmail.com>
+ * @ingroup   files
  * @copyright MIT License
  */
 #ifndef IDL_TYPES_H
@@ -13,6 +14,11 @@
 #include "idl-platform.h"
 
 IDL_BEGIN
+
+/**
+ * @addtogroup types Types
+ * @{
+ */
 
 /**
  * @name    Opaque Object Types
@@ -26,6 +32,8 @@ IDL_BEGIN
 IDL_TYPE(idl_compilation_result) /**< Compilation result. */
 IDL_TYPE(idl_options)            /**< Compilation options. */
 IDL_TYPE(idl_compiler)           /**< Compiler interface. */
+/** @} */
+
 /** @} */
 
 IDL_END

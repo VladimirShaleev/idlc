@@ -5,6 +5,7 @@
  *            description language for platform- and language-independent interaction
  *            with the implemented interface.
  * @author    Vladimir Shaleev <vladimirshaleev@gmail.com>
+ * @ingroup   files
  * @copyright MIT License
  *
  *     MIT License
@@ -38,8 +39,9 @@
 #include "idl-options.h"
 
 /**
- * @brief Generation language
- * @note  Enumeration possible languages for generating interfaces and wrapping C libraries for other languages.
+ * @brief   Generation language
+ * @note    Enumeration possible languages for generating interfaces and wrapping C libraries for other languages.
+ * @ingroup enums
  */
 typedef enum
 {
@@ -52,23 +54,32 @@ typedef enum
  * @brief   Current library version as packed 32-bit value.
  * @details Format: (major << 16) | (minor << 8) | micro.
  * @return  Return packed version number
+ * @ingroup functions
  */
 idl_api idl_uint32_t
 idl_version(void);
 
 /**
  * @brief   Current library version as human-readable string.
- * @details Format: "major.minor.micro", eg: "1.5.5".
+ * @details Format: "major.minor.micro", eg: "1.3.0".
  * @return  Return version string.
+ * @ingroup functions
  */
 idl_api idl_utf8_t
 idl_version_string(void);
+
+/**
+ * @name Functions of Compiler.
+ * @brief Functions for opaque type ::idl_compiler_t.
+ * @{
+ */
 
 /**
  * @brief      Creates new compiler instance.
  * @details    Creates an object for IDL compilation.
  * @param[out] compiler New compiler instance.
  * @return     New compiler instance
+ * @ingroup    functions
  */
 idl_api idl_result_t
 idl_compiler_create(idl_compiler_t* compiler);
@@ -79,6 +90,7 @@ idl_compiler_create(idl_compiler_t* compiler);
  * @param[in] compiler Target compiler instance.
  * @return    Reference to same compiler.
  * @sa        ::idl_compiler_destroy
+ * @ingroup   functions
  */
 idl_api idl_compiler_t
 idl_compiler_reference(idl_compiler_t compiler);
@@ -88,12 +100,13 @@ idl_compiler_reference(idl_compiler_t compiler);
  * @details   Destroys when reference count reaches zero.
  * @param[in] compiler Compiler to destroy.
  * @sa        ::idl_compiler_reference
+ * @ingroup   functions
  */
 idl_api void
 idl_compiler_destroy(idl_compiler_t compiler);
 
 /**
- * @brief      Comile IDL.
+ * @brief      Compile IDL.
  * @param[in]  compiler Target compiler.
  * @param[in]  generator Target of generator.
  * @param[in]  file Path to .idl file for compile.
@@ -114,6 +127,7 @@ idl_compiler_destroy(idl_compiler_t compiler);
  *             - then the current working directory.
  *             
  * @endparblock
+ * @ingroup    functions
  */
 idl_api idl_result_t
 idl_compiler_compile(idl_compiler_t compiler,
@@ -123,5 +137,7 @@ idl_compiler_compile(idl_compiler_t compiler,
                      const idl_source_t* sources,
                      idl_options_t options,
                      idl_compilation_result_t* result);
+
+/** @} */
 
 #endif /* IDL_H */

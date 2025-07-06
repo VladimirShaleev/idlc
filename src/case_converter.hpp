@@ -11,7 +11,8 @@ enum struct Case {
     CamelCase,
     PascalCase,
     SnakeCase,
-    ScreamingSnakeCase
+    ScreamingSnakeCase,
+    SpaceCase
 };
 
 inline std::string& lower(std::string& str) {
@@ -126,6 +127,15 @@ inline std::string convert(const std::string& str, Case caseConvention, const st
                 ss << upper(tokens[i]);
                 if (i + 1 < tokens.size()) {
                     ss << '_';
+                }
+            }
+            break;
+
+        case Case::SpaceCase:
+            for (size_t i = 0; i < tokens.size(); ++i) {
+                ss << tokens[i];
+                if (i + 1 < tokens.size()) {
+                    ss << ' ';
                 }
             }
             break;

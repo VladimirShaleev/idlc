@@ -9,12 +9,182 @@ Below is an online demo of the compiler:
     <textarea id="editor" class="custom-editor" placeholder="Enter your IDL code here..."></textarea>
     <button id="compileC" class="custom-button">Compile C</button>
     <button id="compileJs" class="custom-button">Compile JS</button>
+    <div class="tabs-overview-container">
+        <div class="tabs-overview" id="tabs">
+        </div>
+    </div>
 </div>
 
 <script type="module">
     import idlc from './idlc.js'
 
     const module = await idlc();
+    
+    const editor    = document.getElementById('editor');
+    const compileC  = document.getElementById('compileC');
+    const compileJs = document.getElementById('compileJs');
+    const tabs      = document.getElementById('tabs');
+
+    compileC.addEventListener('click', () => {
+        compileCode(module.Generator.C);
+    });
+
+    compileJs.addEventListener('click', () => {
+        compileCode(module.Generator.JAVA_SCRIPT);
+    });
+
+    function compileCode(generator) {
+        const code = editor.value.trim();
+        if (!code) {
+            // clearStatus();
+            // showStatus('Please enter some code to compile', 'error');
+            return;
+        }
+        // clearStatus();
+        // showStatus('Compiling...');
+
+        const source = {
+            name: "<input>",
+            data: code
+        };
+
+        const results = {};
+        const options = new module.Options;
+        options.writer = function (source) {
+            results[source.name] = source.data;
+        };
+
+        const compiler = new module.Compiler;
+        const result = compiler.compile(generator, undefined, [source], options);
+
+        // clearStatus();
+        // result.messages.forEach(message => {
+        //     showStatus(`${message.isError ? "error" : "warning"} [${message.status.value < 2000 ? "W" : "E"}${message.status.value}]: ${message.message} at ${message.filename}:${message.line}:${message.column}`, message.isError ? 'error' : 'warning')
+        // });
+
+        // if (result.hasErrors) {
+        //     showStatus('Compilation failed', 'error');
+        // } else {
+        //     showStatus('Compilation successful!', 'success');
+        // }
+
+        result.delete();
+        compiler.delete();
+        options.delete();
+        
+        if (Object.keys(results).length !== 0) {
+            showResults(results);
+        }
+    }
+
+    function showResults(files) {
+        tabs.innerHTML = '';
+        let first = true;
+        for (const [filename, content] of Object.entries(files)) {
+            const b = document.createElement('b');
+            b.className = `tab-title`;
+            b.title = filename;
+            b.textContent = filename;
+
+            const tab = document.createElement('button');
+            tab.className = `tab-button ${first ? 'active' : ''}`;
+            tab.appendChild(b);
+            tab.addEventListener('click', () => switchTab(filename));
+            tabs.appendChild(tab);
+
+            first = false;
+        }
+    }
+
+    function switchTab(filename) {
+        document.querySelectorAll('.tab-button').forEach(tab => {
+            tab.classList.remove('active');
+        });
+
+        const tabs = document.querySelectorAll('.tab-button');
+        const targetTab = Array.from(tabs).find(tab =>
+            tab.textContent.trim() === filename
+        );
+
+        if (targetTab) {
+            targetTab.classList.add('active');
+        }
+    }
+
+    editor.value = `@ API Sample
+@ Demonstration of the .idl file for describing the library interface [detail]
+@ Author <author@mail.org> [author]
+@ MIT License [copyright]
+api Sample [version(1,1,0)]
+
+@ Logging severity levels.
+@ Hierarchical message importance classification. [detail]
+enum LoggerLevel
+    const Verbose @ Detailed diagnostic messages.
+    const Debug   @ Debugging information.
+    const Info    @ Informational messages.
+    const Warning @ Potentially problematic situations.
+    const Error   @ Recoverable error conditions.
+    const Fatal   @ Critical unrecoverable errors.
+    const Off     @ No logging output.
+
+@ Graphics features.
+@ Bitmask of supported hardware capabilities. [detail]
+@ Sample ref {LoggerLevel}. [see]
+enum Feature [flags]
+    const None : 0 @ No special features
+    const Bindless : 1 @ Bindless resource access
+    const GeometryShader : 2 @ Geometry shader support
+    const MeshShader : 4 @ Mesh shader support
+    const SamplerFilterMinmax : 8 @ Min/max sampler filtering
+    const DrawIndirect : 16 @ Indirect drawing
+
+@ Color clear values.
+@ Specifies RGBA values for color attachment clearing. [detail]
+struct Color
+    field Red {Float32} @ Red channel clear value.
+    field Green {Float32} @ Green channel clear value.
+    field Blue {Float32} @ Blue channel clear value.
+    field Alpha {Float32} @ Alpha channel clear value.
+
+@ Ger version lib
+@ Format: (major << 16) | (minor << 8) | micro. [detail]
+@ Return packed version number of "{Major}.{Minor}.{Micro}"[return]
+func Version {Uint32}
+
+@ Logging system interface.
+@ Provides logging facilities with multiple severity levels. [detail]
+interface Logger
+    prop Level [get(GetLevel),set(SetLevel)] @ Current log severity threshold.
+
+    @ Creates new logger instance
+    @ Initializes logging subsystem with specific tag. [detail]
+    @ Operation result [return]
+    @ The tag string is specified in the format: "mygame:logic:health". [note]
+    method Create {Bool} [ctor]
+        arg Tag {Str} @ Tag string.
+        arg Logger {Logger} [result] @ New logger instance.
+
+    @ Releases logger instance.
+    @ Destroys when reference count reaches zero. [detail]
+    method Destroy [destroy]
+        arg Logger {Logger} [this] @ Logger to destroy.
+
+    @ Gets current severity level.
+    @ Returns minimum level for logged messages. [detail]
+    @ Current severity threshold. [return]
+    @ {SetLevel} [see]
+    method GetLevel {LoggerLevel} [const]
+        arg Logger {Logger} [this] @ Target logger.
+
+    @ Sets logging severity level.
+    @ Filters messages below specified level. [detail]
+    @ {GetLevel} [see]
+    method SetLevel
+        arg Logger {Logger} [this] @ Target logger.
+        arg Level {LoggerLevel} @ New severity threshold.
+`;
+
 </script>
 @endhtmlonly
 

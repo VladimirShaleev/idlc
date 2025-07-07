@@ -1,155 +1,293 @@
-<!DOCTYPE html>
-<html lang="en">
-
+<!-- HTML header for doxygen 1.12.0-->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-US">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IDL Compiler</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        #editor {
-            width: 100%;
-            height: 300px;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-family: monospace;
-            resize: vertical;
-            margin-bottom: 10px;
-        }
-
-        button {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 16px;
-            margin: 10px 0;
-            cursor: pointer;
-            border-radius: 4px;
-        }
-
-        button:hover {
-            background-color: #45a049;
-        }
-
-        .tabs {
-            display: flex;
-            border-bottom: 1px solid #ddd;
-            margin-top: 20px;
-        }
-
-        .tab {
-            padding: 10px 20px;
-            cursor: pointer;
-            background-color: #f1f1f1;
-            border: 1px solid #ddd;
-            border-bottom: none;
-            border-radius: 4px 4px 0 0;
-            margin-right: 5px;
-        }
-
-        .tab.active {
-            background-color: white;
-            border-bottom: 1px solid white;
-            margin-bottom: -1px;
-        }
-
-        .tab-content {
-            display: none;
-            padding: 20px;
-            border: 1px solid #ddd;
-            border-top: none;
-            background: white;
-            height: 300px;
-            overflow-y: auto;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        .filename {
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-
-        pre {
-            background: #f8f8f8;
-            padding: 10px;
-            border-radius: 4px;
-            white-space: pre-wrap;
-            margin: 0;
-        }
-
-        .status {
-            margin-top: 10px;
-            padding: 10px;
-            border-radius: 4px;
-        }
-
-        .success {
-            background-color: #dff0d8;
-            color: #3c763d;
-        }
-
-        .warning {
-            background-color: #fcf8f2;
-            color: #f0ad4e;
-        }
-
-        .error {
-            background-color: #f2dede;
-            color: #a94442;
-        }
-    </style>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.12.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>idlc: Introduction</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml" />
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<script type="text/javascript" src="doxygen-awesome-darkmode-toggle.js"></script>
+<script type="text/javascript" src="doxygen-awesome-fragment-copy-button.js"></script>
+<script type="text/javascript" src="doxygen-awesome-paragraph-link.js"></script>
+<script type="text/javascript" src="doxygen-awesome-interactive-toc.js"></script>
+<script type="text/javascript" src="doxygen-awesome-tabs.js"></script>
+<script type="text/javascript" src="toggle-alternative-theme.js"></script>
+<script type="text/javascript">
+    DoxygenAwesomeFragmentCopyButton.init()
+    DoxygenAwesomeDarkModeToggle.init()
+    DoxygenAwesomeParagraphLink.init()
+    DoxygenAwesomeInteractiveToc.init()
+    DoxygenAwesomeTabs.init()
+</script>
+<link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="cookie.js"></script>
+<link href="search/search.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="search/searchdata.js"></script>
+<script type="text/javascript" src="search/search.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+<link href="doxygen-awesome.css" rel="stylesheet" type="text/css"/>
+<link href="custom.css" rel="stylesheet" type="text/css"/>
+<link href="doxygen-awesome-sidebar-only.css" rel="stylesheet" type="text/css"/>
+<link href="doxygen-awesome-sidebar-only-darkmode-toggle.css" rel="stylesheet" type="text/css"/>
+<link href="custom-alternative.css" rel="stylesheet" type="text/css"/>
+<link href="custom.css" rel="stylesheet" type="text/css"/>
 </head>
-
 <body>
-    <div class="container">
-        <h1>IDL Compiler</h1>
-        <textarea id="editor" placeholder="Enter your IDL code here..."></textarea>
-        <button id="compileC">Compile C</button>
-        <button id="compileJs">Compile JS</button>
-        <div id="status" class="status" style="display: none;"></div>
-
-        <div class="tabs" id="tabs-container"></div>
-        <div id="tab-contents"></div>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectlogo"><img alt="Logo" src="logo.svg"/></td>
+  <td id="projectalign">
+   <div id="projectname">idlc<span id="projectnumber">&#160;1.5.7</span>
+   </div>
+   <div id="projectbrief">Interface Definition Language Compiler</div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- Generated by Doxygen 1.12.0 -->
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+var searchBox = new SearchBox("searchBox", "search/",'.html');
+/* @license-end */
+</script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() { codefold.init(0); });
+/* @license-end */
+</script>
+<script type="text/javascript" src="menudata.js"></script>
+<script type="text/javascript" src="menu.js"></script>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function() {
+  initMenu('',true,false,'search.php','Search',true);
+  $(function() { init_search(); });
+});
+/* @license-end */
+</script>
+<div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
     </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
+$(function(){initNavTree('index.html',''); initResizable(true); });
+/* @license-end */
+</script>
+<div id="doc-content">
+<!-- window showing the filter options -->
+<div id="MSearchSelectWindow"
+     onmouseover="return searchBox.OnSearchSelectShow()"
+     onmouseout="return searchBox.OnSearchSelectHide()"
+     onkeydown="return searchBox.OnSearchSelectKey(event)">
+</div>
 
-    <script type="module">
-        import idlc from './idlc.js'
+<!-- iframe showing the search results (closed by default) -->
+<div id="MSearchResultsWindow">
+<div id="MSearchResults">
+<div class="SRPage">
+<div id="SRIndex">
+<div id="SRResults"></div>
+<div class="SRStatus" id="Loading">Loading...</div>
+<div class="SRStatus" id="Searching">Searching...</div>
+<div class="SRStatus" id="NoMatches">No Matches</div>
+</div>
+</div>
+</div>
+</div>
 
-        const module = await idlc();
+<div><div class="header">
+  <div class="headertitle"><div class="title">Introduction </div></div>
+</div><!--header-->
+<div class="contents">
+<div class="textblock"><p><a class="anchor" id="md_introduction"></a></p>
+<p>This project is not intended for production use. The tool is primarily being developed for my personal needs — to generate <b>C</b> APIs for <b>C</b> libraries from <b>IDL</b> specifications, as well as to automatically wrap the resulting <b>C</b> libraries for other languages, enabling them to be used as native libraries.</p>
+<p>Below is an online demo of the compiler:</p>
+<p> 
+<div class="custom-container">
+    <textarea id="editor" class="custom-editor" placeholder="Enter your IDL code here..."></textarea>
+    <button id="compileC" class="custom-button">Compile C</button>
+    <button id="compileJs" class="custom-button">Compile JS</button>
+    <div id="status" style="display: none;"></div>
+    <div class="tabs-overview-container" id="tab-container">
+    </div>
+</div>
 
-        document.querySelector("h1").textContent = "IDL Compiler (" + module.versionString() + ")";
+<script type="module">
+    import idlc from './idlc.js'
 
-        const editor = document.getElementById('editor');
-        const compileCBtn = document.getElementById('compileC');
-        const compileJsBtn = document.getElementById('compileJs');
-        const tabsContainer = document.getElementById('tabs-container');
-        const tabContents = document.getElementById('tab-contents');
-        const statusDiv = document.getElementById('status');
+    const module = await idlc();
+    
+    const editor       = document.getElementById('editor');
+    const compileC     = document.getElementById('compileC');
+    const compileJs    = document.getElementById('compileJs');
+    const tabContainer = document.getElementById('tab-container');
+    const status       = document.getElementById('status');
 
-        editor.value = `@ API Sample
+    compileC.addEventListener('click', () => {
+        compileCode(module.Generator.C);
+    });
+
+    compileJs.addEventListener('click', () => {
+        compileCode(module.Generator.JAVA_SCRIPT);
+    });
+
+    function compileCode(generator) {
+        const code = editor.value.trim();
+        if (!code) {
+            clearStatus();
+            showStatus('Please enter some code to compile', 'error');
+            return;
+        }
+        clearStatus();
+        showStatus('Compiling...');
+
+        const source = {
+            name: "<input>",
+            data: code
+        };
+
+        const results = {};
+        const options = new module.Options;
+        options.writer = function (source) {
+            results[source.name] = source.data;
+        };
+
+        const compiler = new module.Compiler;
+        const result = compiler.compile(generator, undefined, [source], options);
+
+        clearStatus();
+        result.messages.forEach(message => {
+            showStatus(`${message.isError ? "error" : "warning"} [${message.status.value < 2000 ? "W" : "E"}${message.status.value}]: ${message.message} at ${message.filename}:${message.line}:${message.column}`, message.isError ? 'error' : 'warning')
+        });
+
+        if (result.hasErrors) {
+            showStatus('Compilation failed', 'error');
+        } else {
+            showStatus('Compilation successful!', 'success');
+        }
+
+        result.delete();
+        compiler.delete();
+        options.delete();
+        
+        if (Object.keys(results).length !== 0) {
+            showResults(results);
+        }
+    }
+
+    function showStatus(message, type = '') {
+        const dd = document.createElement('dd');
+        dd.textContent = message;
+
+        const dl = document.createElement('dl');
+        dl.appendChild(dd);
+        if (type === '' || type === 'success') {
+            dl.className = 'note'
+        } else if (type == 'warning') {
+            dl.className = 'warning'
+        } else if (type == 'error') {
+            dl.className = 'bug'
+        }
+
+        status.style.display = 'block';
+        status.appendChild(dl);
+        status.scrollTop = status.scrollHeight;
+    }
+
+    function clearStatus() {
+        status.innerHTML = '';
+        status.style.display = 'none';
+    }
+
+    function showResults(files) {
+        tabContainer.innerHTML = '';
+
+        const tabs = document.createElement('div');
+        tabs.className = `tabs-overview`;
+
+        const tabContents = document.createElement('ul');
+
+        const tabContentsDiv = document.createElement('div');
+        tabContentsDiv.className = `tabbed`;
+        tabContentsDiv.appendChild(tabContents);
+
+        let first = true;
+        const names = Object.keys(files);
+        for (const [filename, content] of Object.entries(files)) {
+            const b = document.createElement('b');
+            b.className = `tab-title`;
+            b.title = filename;
+            b.textContent = filename;
+
+            const tab = document.createElement('button');
+            tab.className = `tab-button ${first ? 'active' : ''}`;
+            tab.id = `tab-${filename}`;
+            tab.appendChild(b);
+            tab.addEventListener('click', () => switchTab(filename, names));
+            tabs.appendChild(tab);
+
+            const div = document.createElement('div');
+            div.className = 'fragment';
+            div.innerHTML = `<pre>${escapeHtml(content)}<\/pre>`;
+            div.style.maxHeight = '300px';
+            div.style.overflow = 'auto';
+
+            const li = document.createElement('li');
+            if (first) {
+                li.className = 'selected';
+            }
+            li.id = `tab-content-${filename}`;
+            li.appendChild(div);
+            tabContents.appendChild(li);
+
+            first = false;
+        }
+
+        tabContainer.appendChild(tabs);
+        tabContainer.appendChild(tabContentsDiv);
+    }
+
+    function switchTab(filename, files) {
+        files.forEach(file => {
+            document.getElementById(`tab-${file}`).classList.remove('active');
+            document.getElementById(`tab-content-${file}`).classList.remove('selected');
+        });
+        document.getElementById(`tab-${filename}`).classList.add('active');
+        document.getElementById(`tab-content-${filename}`).classList.add('selected');
+    }
+
+    function escapeHtml(unsafe) {
+        return unsafe
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    editor.value = `@ API Sample
 @ Demonstration of the .idl file for describing the library interface [detail]
 @ Author <author@mail.org> [author]
 @ MIT License [copyright]
@@ -223,135 +361,40 @@ interface Logger
         arg Level {LoggerLevel} @ New severity threshold.
 `;
 
-        compileCBtn.addEventListener('click', () => {
-            compileCode(module.Generator.C);
-        });
-
-        compileJsBtn.addEventListener('click', () => {
-            compileCode(module.Generator.JAVA_SCRIPT);
-        });
-
-        function compileCode(generator) {
-            const code = editor.value.trim();
-            if (!code) {
-                clearStatus();
-                showStatus('Please enter some code to compile', 'error');
-                return;
-            }
-
-            clearStatus();
-            showStatus('Compiling...');
-
-
-            const options = new module.Options;
-            // options.warningsAsErrors = true;
-            
-            const results = {};
-            options.writer = function (source) {
-                results[source.name] = source.data;
-            };
-
-            const source1 = {
-                name: "<input>",
-                data: code
-            };
-
-            const compiler = new module.Compiler;
-            const result = compiler.compile(generator, undefined, [source1], options);
-
-            clearStatus();
-            result.messages.forEach(message => {
-                showStatus(`${message.isError ? "error" : "warning"} [${message.status.value < 2000 ? "W" : "E"}${message.status.value}]: ${message.message} at ${message.filename}:${message.line}:${message.column}`, message.isError ? 'error' : 'warning')
-            });
-
-            if (result.hasErrors) {
-                showStatus('Compilation failed', 'error');
-            } else {
-                showStatus('Compilation successful!', 'success');
-            }
-
-            result.delete();
-            compiler.delete();
-            options.delete();
-
-            if (Object.keys(results).length !== 0) {
-                showResults(results);
-            }
-        }
-
-        function showResults(files) {
-            tabsContainer.innerHTML = '';
-            tabContents.innerHTML = '';
-
-            let first = true;
-            for (const [filename, content] of Object.entries(files)) {
-                const tab = document.createElement('div');
-                tab.className = `tab ${first ? 'active' : ''}`;
-                tab.textContent = filename;
-                tab.addEventListener('click', () => switchTab(filename));
-                tabsContainer.appendChild(tab);
-
-                const contentDiv = document.createElement('div');
-                contentDiv.className = `tab-content ${first ? 'active' : ''}`;
-                contentDiv.id = `tab-${filename}`;
-                contentDiv.innerHTML = `
-                    <pre>${escapeHtml(content)}</pre>
-                `;
-                tabContents.appendChild(contentDiv);
-
-                first = false;
-            }
-        }
-
-        function switchTab(filename) {
-            document.querySelectorAll('.tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.remove('active');
-            });
-
-            const tabs = document.querySelectorAll('.tab');
-            const targetTab = Array.from(tabs).find(tab =>
-                tab.textContent.trim() === filename
-            );
-
-            if (targetTab) {
-                targetTab.classList.add('active');
-                document.getElementById(`tab-${filename}`)?.classList.add('active');
-            }
-        }
-
-        function showStatus(message, type = '') {
-            const messageElement = document.createElement('div');
-            messageElement.className = `status ${type}`;
-            messageElement.textContent = message;
-
-            statusDiv.style.display = 'block';
-            statusDiv.appendChild(messageElement);
-            statusDiv.scrollTop = statusDiv.scrollHeight;
-        }
-
-        function clearStatus() {
-            statusDiv.innerHTML = '';
-            statusDiv.style.display = 'none';
-        }
-
-        function escapeHtml(unsafe) {
-            return unsafe
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
-        }
-
-        document.querySelectorAll('.tab').forEach(tab => {
-            tab.matches = tab.matches ||
-                tab.msMatchesSelector ||
-                tab.webkitMatchesSelector;
-        });
-    </script>
+</script>
+</p>
+<p>For example, the <b>IDLC</b> tool itself uses its own functionality to generate its API:</p><ul>
+<li>here are the <b>IDL</b> specifications for the library;</li>
+<li>here’s the CMake target setup for generating <b>C</b> headers;</li>
+<li>and here are the resulting headers produced during the build.</li>
+</ul>
+<p><code>idlc_compile</code> function monitors changes in the specs (<b>.idl</b> files) and, if necessary, rebuilds the headers in the <code>./include/idlc</code> directory. These headers provide declarations for the <b>C</b> API, which is implemented by the <b>C++</b> library. Of course, these headers are committed and distributed alongside the library.</p>
+<p>Even for this online demo, the tool uses itself to generate the <b>JavaScript</b> library, packaging the WASM module for native use in <b>JavaScript</b> code. <b>IDL</b> interfaces are exposed as classes with methods, properties, and other familiar constructs.</p>
+<p>The compiler is distributed as a library with a <b>C</b> API for embedding, as well as a command-line tool for standalone compilation. In other words, it can be used both as an embedded compiler and as a separate tool.</p>
+<p>As for the <b>IDL</b> language itself — it is an abstract language not tied to any specific programming language but designed to accommodate a wide range of languages. For example, it supports properties and case-sensitive symbols, but it does not allow two different symbols that differ only in case (due to case-insensitive languages), and so on.</p>
+<p>The workflow of this tool can be roughly represented by the following diagram:</p>
+<p><img src="diagram.svg" alt="Diagram" style="pointer-events: none;" title="Diagram" class="inline"/></p>
+<p>While this project is not intended as an industrial-grade solution, it serves as a practical example of:</p><ul>
+<li>building host tools as dependencies;</li>
+<li>integrating them into a build system.</li>
+</ul>
+<p>For a step-by-step guide on embedding the compiler into your project (to enable API support and generate native wrappers for other languages), check out the Quick Start.</p>
+<div class="section_buttons"></div><div class="section_buttons"><table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadRight">Next    </th></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyRight"><a href="quick-start.html">Quick Start</a>   </td></tr>
+</table>
+</div><div class="section_buttons"></div> </div></div><!-- PageDoc -->
+<a href="doxygen_crawl.html"></a>
+</div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.12.0-->
+<!-- start footer part -->
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.12.0 </li>
+  </ul>
+</div>
 </body>
-
 </html>

@@ -1,0 +1,27 @@
+var idl_options_8h =
+[
+    [ "idl_import_callback_t", "group__types.html#ga93cbc3198e0da67722ff1cb548b54d1d", null ],
+    [ "idl_release_import_callback_t", "group__types.html#ga198a1b73fac994a1dab6622b53358b1b", null ],
+    [ "idl_write_callback_t", "group__types.html#ga6b3b673070083f447e436ac3b669c0e4", null ],
+    [ "idl_options_create", "group__functions.html#gaf7ee43f5abeaffad8c3a139fddfc8c62", null ],
+    [ "idl_options_destroy", "group__functions.html#ga15060aaf5bc9e7ad2f40c86590d9f740", null ],
+    [ "idl_options_get_additions", "group__functions.html#gaac4a3f7b8106a0cd05d1c5cb056c2ac6", null ],
+    [ "idl_options_get_debug_mode", "group__functions.html#ga5d60e49ed7bc3b3268f50a2f6f626a85", null ],
+    [ "idl_options_get_import_dirs", "group__functions.html#gaa4d2ae86323368cb4ccbdbad18a304b3", null ],
+    [ "idl_options_get_importer", "group__functions.html#ga99ed98aa7d6b53867f149dc20d369625", null ],
+    [ "idl_options_get_output_dir", "group__functions.html#ga1964e79b0952419c71d8ca79f7ef886d", null ],
+    [ "idl_options_get_release_import", "group__functions.html#ga23c8cc85d8fd53776bcb9cad6616e24a", null ],
+    [ "idl_options_get_version", "group__functions.html#ga8b3b3fc7e047b8afdc209ecdd05c301f", null ],
+    [ "idl_options_get_warnings_as_errors", "group__functions.html#ga3046ec88e46a3c78f231d394aabe8f7d", null ],
+    [ "idl_options_get_writer", "group__functions.html#ga3ceaeeef6b599b94b101c2d579428e41", null ],
+    [ "idl_options_reference", "group__functions.html#gadfc58cf9d81b747a623d8d6b75cee7bb", null ],
+    [ "idl_options_set_additions", "group__functions.html#ga811c376b1b2320c05557e3b27fefc492", null ],
+    [ "idl_options_set_debug_mode", "group__functions.html#ga162c820712db973a863a52e946cba6ba", null ],
+    [ "idl_options_set_import_dirs", "group__functions.html#ga07a38772e16742b6976c06aa6bd1d824", null ],
+    [ "idl_options_set_importer", "group__functions.html#ga99af645a90a61845065e34fed41162d2", null ],
+    [ "idl_options_set_output_dir", "group__functions.html#gaf0cea2b7ddea027b2fedf4c7dfafb69a", null ],
+    [ "idl_options_set_release_import", "group__functions.html#ga11f8f077bb6415e385052a0fbb1f13df", null ],
+    [ "idl_options_set_version", "group__functions.html#gac9c65cda8f5da319350a91df33059a9e", null ],
+    [ "idl_options_set_warnings_as_errors", "group__functions.html#ga3ffe8d0fdb472662c85c6bdf7e7dc041", null ],
+    [ "idl_options_set_writer", "group__functions.html#ga2cd59528c3a374b9e46029b22a6a46f9", null ]
+];

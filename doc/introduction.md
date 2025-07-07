@@ -4,6 +4,19 @@ This project is not intended for production use. The tool is primarily being dev
 
 Below is an online demo of the compiler:
 
+@htmlonly
+<div class="custom-container">
+    <textarea id="editor" class="custom-editor" placeholder="Enter your IDL code here..."></textarea>
+    <button id="compileC" class="custom-button">Compile C</button>
+    <button id="compileJs" class="custom-button">Compile JS</button>
+</div>
+
+<script type="module">
+    import idlc from './idlc.js'
+
+    const module = await idlc();
+</script>
+@endhtmlonly
 
 For example, the **IDLC** tool itself uses its own functionality to generate its API:
 - here are the **IDL** specifications for the library;
@@ -27,8 +40,6 @@ While this project is not intended as an industrial-grade solution, it serves as
 - integrating them into a build system.
 
 For a step-by-step guide on embedding the compiler into your project (to enable API support and generate native wrappers for other languages), check out the Quick Start.
-
-
 
 <div class="section_buttons">
  

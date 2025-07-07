@@ -9,9 +9,7 @@ Below is an online demo of the compiler:
     <textarea id="editor" class="custom-editor" placeholder="Enter your IDL code here..."></textarea>
     <button id="compileC" class="custom-button">Compile C</button>
     <button id="compileJs" class="custom-button">Compile JS</button>
-    <div class="tabs-overview-container">
-        <div class="tabs-overview" id="tabs">
-        </div>
+    <div class="tabs-overview-container" id="tab-container">
     </div>
 </div>
 
@@ -20,10 +18,10 @@ Below is an online demo of the compiler:
 
     const module = await idlc();
     
-    const editor    = document.getElementById('editor');
-    const compileC  = document.getElementById('compileC');
-    const compileJs = document.getElementById('compileJs');
-    const tabs      = document.getElementById('tabs');
+    const editor       = document.getElementById('editor');
+    const compileC     = document.getElementById('compileC');
+    const compileJs    = document.getElementById('compileJs');
+    const tabContainer = document.getElementById('tab-container');
 
     compileC.addEventListener('click', () => {
         compileCode(module.Generator.C);
@@ -78,8 +76,19 @@ Below is an online demo of the compiler:
     }
 
     function showResults(files) {
-        tabs.innerHTML = '';
+        tabContainer.innerHTML = '';
+
+        const tabs = document.createElement('div');
+        tabs.className = `tabs-overview`;
+
+        const tabContents = document.createElement('ul');
+
+        const tabContentsDiv = document.createElement('div');
+        tabContentsDiv.className = `tabbed`;
+        tabContentsDiv.appendChild(tabContents);
+
         let first = true;
+        const names = Object.keys(files);
         for (const [filename, content] of Object.entries(files)) {
             const b = document.createElement('b');
             b.className = `tab-title`;
@@ -88,27 +97,48 @@ Below is an online demo of the compiler:
 
             const tab = document.createElement('button');
             tab.className = `tab-button ${first ? 'active' : ''}`;
+            tab.id = `tab-${filename}`;
             tab.appendChild(b);
-            tab.addEventListener('click', () => switchTab(filename));
+            tab.addEventListener('click', () => switchTab(filename, names));
             tabs.appendChild(tab);
+
+            const div = document.createElement('div');
+            div.className = 'fragment';
+            div.innerHTML = `<pre>${escapeHtml(content)}<\/pre>`;
+            div.style.maxHeight = '300px';
+            div.style.overflow = 'auto';
+
+            const li = document.createElement('li');
+            if (first) {
+                li.className = 'selected';
+            }
+            li.id = `tab-content-${filename}`;
+            li.appendChild(div);
+            tabContents.appendChild(li);
 
             first = false;
         }
+
+        tabContainer.appendChild(tabs);
+        tabContainer.appendChild(tabContentsDiv);
     }
 
-    function switchTab(filename) {
-        document.querySelectorAll('.tab-button').forEach(tab => {
-            tab.classList.remove('active');
+    function switchTab(filename, files) {
+        files.forEach(file => {
+            document.getElementById(`tab-${file}`).classList.remove('active');
+            document.getElementById(`tab-content-${file}`).classList.remove('selected');
         });
+        document.getElementById(`tab-${filename}`).classList.add('active');
+        document.getElementById(`tab-content-${filename}`).classList.add('selected');
+    }
 
-        const tabs = document.querySelectorAll('.tab-button');
-        const targetTab = Array.from(tabs).find(tab =>
-            tab.textContent.trim() === filename
-        );
-
-        if (targetTab) {
-            targetTab.classList.add('active');
-        }
+    function escapeHtml(unsafe) {
+        return unsafe
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
     }
 
     editor.value = `@ API Sample

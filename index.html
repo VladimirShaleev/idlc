@@ -121,8 +121,8 @@ $(function(){initNavTree('index.html',''); initResizable(true); });
   <div class="headertitle"><div class="title">Introduction </div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p><a class="anchor" id="md_introduction"></a></p>
-<p>This project is not intended for production use. The tool is primarily being developed for my personal needs — to generate <b>C</b> APIs for <b>C</b> libraries from <b>IDL</b> specifications, as well as to automatically wrap the resulting <b>C</b> libraries for other languages, enabling them to be used as native libraries.</p>
+<div class="textblock"><p><a class="anchor" id="md__2home_2runner_2work_2idlc_2idlc_2doc_2introduction"></a></p>
+<p>This project is not intended for production use. The tool is primarily being developed for my personal needs — to generate C APIs for C libraries from <b>IDL</b> specifications, as well as to automatically wrap the resulting C libraries for other languages, enabling them to be used as native libraries.</p>
 <p>Below is an online demo of the compiler:</p>
 <p> 
 <div class="custom-container">
@@ -226,6 +226,7 @@ $(function(){initNavTree('index.html',''); initResizable(true); });
 
         const tabs = document.createElement('div');
         tabs.className = `tabs-overview`;
+        tabs.style = "flex-wrap: wrap";
 
         const tabContents = document.createElement('ul');
 
@@ -364,13 +365,13 @@ interface Logger
 </script>
 </p>
 <p>For example, the <b>IDLC</b> tool itself uses its own functionality to generate its API:</p><ul>
-<li>here are the <b>IDL</b> specifications for the library;</li>
-<li>here’s the CMake target setup for generating <b>C</b> headers;</li>
-<li>and here are the resulting headers produced during the build.</li>
+<li><a href="https://github.com/VladimirShaleev/idlc/tree/main/specs">here</a> are the <b>IDL</b> specifications for the library;</li>
+<li><a href="https://github.com/VladimirShaleev/idlc/blob/main/CMakeLists.txt#L49-L59">here’s</a> the CMake target setup for generating C headers (<code>idlc_compile</code> function);</li>
+<li>and <a href="https://github.com/VladimirShaleev/idlc/tree/main/include/idlc">here</a> are the resulting headers produced during the build.</li>
 </ul>
-<p><code>idlc_compile</code> function monitors changes in the specs (<b>.idl</b> files) and, if necessary, rebuilds the headers in the <code>./include/idlc</code> directory. These headers provide declarations for the <b>C</b> API, which is implemented by the <b>C++</b> library. Of course, these headers are committed and distributed alongside the library.</p>
-<p>Even for this online demo, the tool uses itself to generate the <b>JavaScript</b> library, packaging the WASM module for native use in <b>JavaScript</b> code. <b>IDL</b> interfaces are exposed as classes with methods, properties, and other familiar constructs.</p>
-<p>The compiler is distributed as a library with a <b>C</b> API for embedding, as well as a command-line tool for standalone compilation. In other words, it can be used both as an embedded compiler and as a separate tool.</p>
+<p><code>idlc_compile</code> function monitors changes in the specs (<b>.idl</b> files) and, if necessary, rebuilds the headers in the <code>./include/idlc</code> directory. These headers provide declarations for the C API, which is implemented by the C++ library. Of course, these headers are committed and distributed alongside the library.</p>
+<p>Even for this online demo, the tool uses itself to generate the <b>JavaScript</b> library, packaging the WASM module for native use in <b>JavaScript</b> code. Exposing an API that has classes with methods, properties, and other familiar constructs.</p>
+<p>The compiler is distributed as a library with a C API for embedding, as well as a command-line tool for standalone compilation. In other words, it can be used both as an embedded compiler and as a separate tool.</p>
 <p>As for the <b>IDL</b> language itself — it is an abstract language not tied to any specific programming language but designed to accommodate a wide range of languages. For example, it supports properties and case-sensitive symbols, but it does not allow two different symbols that differ only in case (due to case-insensitive languages), and so on.</p>
 <p>The workflow of this tool can be roughly represented by the following diagram:</p>
 <p><img src="diagram.svg" alt="Diagram" style="pointer-events: none;" title="Diagram" class="inline"/></p>

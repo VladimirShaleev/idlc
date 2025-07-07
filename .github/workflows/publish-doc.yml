@@ -27,7 +27,7 @@ jobs:
   
     - name: Configure CMake
       run: >
-        cmake -B ${{ steps.strings.outputs.build-output-dir }} -S ${{ github.workspace }
+        cmake -B ${{ steps.strings.outputs.build-output-dir }} -S ${{ github.workspace }}
         -DIDLC_BUILD_DOC=ON
         -DCMAKE_C_COMPILER=clang
         -DCMAKE_CXX_COMPILER=clang++

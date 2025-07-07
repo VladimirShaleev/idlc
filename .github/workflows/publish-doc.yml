@@ -24,6 +24,9 @@ jobs:
         version: 4.0.10
         actions-cache-folder: 'emsdk-cache'
 
+    - name: Install Ninja
+      run: sudo apt-get install -y ninja-build
+
     # - name: Install Doxygen
     #   run: |
     #     sudo apt-get install -y graphviz

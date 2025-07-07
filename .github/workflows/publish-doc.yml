@@ -16,6 +16,13 @@ jobs:
     - name: Bootstrap vcpkg
       run: ./vcpkg/bootstrap-vcpkg.sh -disableMetrics
 
+    - name: Set environment variables
+      id: envs
+      shell: bash
+      run: |
+        echo "VCPKG_ROOT=${{ github.workspace }}/vcpkg" >> $GITHUB_ENV
+        echo "PATH=${{ github.workspace }}/vcpkg:${PATH}" >> $GITHUB_ENV
+
     - uses: actions/checkout@v4
       
     - name: Install Emsdk
@@ -24,13 +31,11 @@ jobs:
         version: 4.0.10
         actions-cache-folder: 'emsdk-cache'
 
-    - name: Set build output dir and environment variables
+    - name: Set build output dir
       id: strings
       shell: bash
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
-        echo "VCPKG_ROOT=${{ github.workspace }}/vcpkg" >> $GITHUB_ENV
-        echo "PATH=${{ github.workspace }}/vcpkg:${PATH}" >> $GITHUB_ENV
 
     - name: Install Ninja
       run: sudo apt-get install -y ninja-build

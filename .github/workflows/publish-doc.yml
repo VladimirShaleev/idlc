@@ -24,6 +24,14 @@ jobs:
         version: 4.0.10
         actions-cache-folder: 'emsdk-cache'
 
+    - name: Set build output dir and environment variables
+      id: strings
+      shell: bash
+      run: |
+        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+        echo "VCPKG_ROOT=${{ github.workspace }}/vcpkg" >> $GITHUB_ENV
+        echo "PATH=${{ github.workspace }}/vcpkg:${PATH}" >> $GITHUB_ENV
+
     - name: Install Ninja
       run: sudo apt-get install -y ninja-build
 
@@ -36,14 +44,6 @@ jobs:
     #     sudo make
     #     sudo make install
     #     doxygen --version
-
-    - name: Set build output dir and environment variables
-      id: strings
-      shell: bash
-      run: |
-        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
-        echo "VCPKG_ROOT=${{ github.workspace }}/vcpkg" >> $GITHUB_ENV
-        echo "PATH=${{ github.workspace }}/vcpkg:${PATH}" >> $GITHUB_ENV
 
     - name: Configure CMake (JS module)
       run: >

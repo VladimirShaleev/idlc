@@ -8,30 +8,70 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Checkout vcpkg
+      uses: actions/checkout@v4
+      with:
+        repository: 'microsoft/vcpkg'
+        path: 'vcpkg'
+    - name: Bootstrap vcpkg
+      run: ./vcpkg/bootstrap-vcpkg.sh -disableMetrics
+
     - uses: actions/checkout@v4
+      
+    - name: Install Emsdk
+      uses: mymindstorm/setup-emsdk@v14
+      with:
+        version: 4.0.10
+        actions-cache-folder: 'emsdk-cache'
 
-    - name: Install Doxygen
-      run: |
-        sudo apt-get install -y graphviz
-        wget https://github.com/doxygen/doxygen/releases/download/Release_1_12_0/doxygen-1.12.0.linux.bin.tar.gz
-        tar -xf doxygen-1.12.0.linux.bin.tar.gz
-        cd doxygen-1.12.0
-        sudo make
-        sudo make install
-        doxygen --version
+    # - name: Install Doxygen
+    #   run: |
+    #     sudo apt-get install -y graphviz
+    #     wget https://github.com/doxygen/doxygen/releases/download/Release_1_12_0/doxygen-1.12.0.linux.bin.tar.gz
+    #     tar -xf doxygen-1.12.0.linux.bin.tar.gz
+    #     cd doxygen-1.12.0
+    #     sudo make
+    #     sudo make install
+    #     doxygen --version
 
-    - name: Set build output dir
+    - name: Set build output dir and environment variables
       id: strings
       shell: bash
-      run: echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
-  
-    - name: Configure CMake
+      run: |
+        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+        echo "VCPKG_ROOT=${{ github.workspace }}/vcpkg" >> $GITHUB_ENV
+        echo "PATH=${{ github.workspace }}/vcpkg:${PATH}" >> $GITHUB_ENV
+
+    - name: Configure CMake (JS module)
       run: >
         cmake -B ${{ steps.strings.outputs.build-output-dir }} -S ${{ github.workspace }}
+        -DVCPKG_TARGET_TRIPLET=wasm32-emscripten
+        -DCMAKE_TOOLCHAIN_FILE=${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake
+        -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=${EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake
+        -DCMAKE_CROSSCOMPILING_EMULATOR=${EMSDK_NODE}
         -DIDLC_BUILD_DOC=ON
+        -DIDLC_BUILD_TOOL=OFF
+        -DIDLC_USE_IDLC=OFF
+        -DIDLC_BUILD_PACKAGES=OFF
         -DCMAKE_C_COMPILER=clang
         -DCMAKE_CXX_COMPILER=clang++
         -DCMAKE_BUILD_TYPE=Release
+        -DCMAKE_C_FLAGS="-fexceptions -Oz"
+        -DCMAKE_CXX_FLAGS="-fexceptions -Oz"
+        -DCMAKE_EXE_LINKER_FLAGS="-fexceptions -Oz"
+        -DCMAKE_INSTALL_PREFIX=${{ steps.strings.outputs.build-output-dir }}/install
+        -G Ninja
+  
+    # - name: Configure CMake
+    #   run: >
+    #     cmake -B ${{ steps.strings.outputs.build-output-dir }} -S ${{ github.workspace }}
+    #     -DIDLC_BUILD_DOC=ON
+    #     -DIDLC_BUILD_TOOL=OFF
+    #     -DIDLC_USE_IDLC=OFF
+    #     -DIDLC_BUILD_PACKAGES=OFF
+    #     -DCMAKE_C_COMPILER=clang
+    #     -DCMAKE_CXX_COMPILER=clang++
+    #     -DCMAKE_BUILD_TYPE=Release
 
-    - name: Build
-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config Release --target doc
+    # - name: Build
+    #   run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config Release --target doc

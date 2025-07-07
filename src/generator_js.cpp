@@ -481,7 +481,7 @@ static void generateComment(idl::Context& ctx, std::ostream& stream) {
 #ifdef IDL_PLATFORM_WINDOWS
     gmtime_s(&buf, &now);
 #else
-    gmtime_s(&now, &buf);
+    buf = *std::gmtime(&now);
 #endif
     strftime(datatime, 100, "%Y-%m-%dT%H:%M:%SZ", &buf);
     fmt::println(stream,

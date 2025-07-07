@@ -1,4 +1,7 @@
 find_package(FLEX 2.6.4)
+if(NOT FLEX_INCLUDE_DIR)
+    unset(FLEX_FOUND)
+endif()
 if(NOT FLEX_FOUND)
     include(ExternalProject)
     if(CMAKE_HOST_WIN32 OR WIN32 OR DEFINED ENV{SystemRoot})

@@ -477,7 +477,13 @@ static Stream createStream(idl::Context& ctx,
 static void generateComment(idl::Context& ctx, std::ostream& stream) {
     char datatime[100];
     auto now = std::time(nullptr);
-    strftime(datatime, 100, "%Y-%m-%dT%H:%M:%SZ", std::gmtime(&now));
+    std::tm buf;
+#ifdef IDL_PLATFORM_WINDOWS
+    gmtime_s(&buf, &now);
+#else
+    gmtime_s(&now, &buf);
+#endif
+    strftime(datatime, 100, "%Y-%m-%dT%H:%M:%SZ", &buf);
     fmt::println(stream,
                  R"(/**
  * Auto-generated on {now}

@@ -32,15 +32,15 @@ jobs:
     - name: Install Ninja
       run: sudo apt-get install -y ninja-build
 
-    # - name: Install Doxygen
-    #   run: |
-    #     sudo apt-get install -y graphviz
-    #     wget https://github.com/doxygen/doxygen/releases/download/Release_1_12_0/doxygen-1.12.0.linux.bin.tar.gz
-    #     tar -xf doxygen-1.12.0.linux.bin.tar.gz
-    #     cd doxygen-1.12.0
-    #     sudo make
-    #     sudo make install
-    #     doxygen --version
+    - name: Install Doxygen
+      run: |
+        sudo apt-get install -y graphviz
+        wget https://github.com/doxygen/doxygen/releases/download/Release_1_12_0/doxygen-1.12.0.linux.bin.tar.gz
+        tar -xf doxygen-1.12.0.linux.bin.tar.gz
+        cd doxygen-1.12.0
+        sudo make
+        sudo make install
+        doxygen --version
 
     - name: Configure CMake (JS module)
       run: >
@@ -63,22 +63,29 @@ jobs:
         -DCMAKE_INSTALL_PREFIX=${{ steps.strings.outputs.build-output-wasm-dir }}/install
         -G Ninja
   
-    - name: Build (JS module)
+    - name: Build JS module
       run: |
         cmake --build ${{ steps.strings.outputs.build-output-wasm-dir }} --target install
-        ${{ steps.strings.outputs.build-output-wasm-dir }}/vcpkg_installed/x64-linux/tools/idlc/idlc -g js -o ${{ steps.strings.outputs.build-output-wasm-dir }}/idlc.js.cpp -w specs/api.idl
-        emcc -std=c++20 -I${{ steps.strings.outputs.build-output-wasm-dir }}/install/include/idlc -Wl,--whole-archive ${{ steps.strings.outputs.build-output-wasm-dir }}/install/lib/libidl.a ${{ steps.strings.outputs.build-output-wasm-dir }}/vcpkg_installed/wasm32-emscripten/lib/libfmt.a ${{ steps.strings.outputs.build-output-wasm-dir }}/vcpkg_installed/wasm32-emscripten/lib/libxxhash.a -Wl,--no-whole-archive ${{ steps.strings.outputs.build-output-wasm-dir }}/idlc.js.cpp -o ./doc/idlc.js -lembind -s WASM=1 -s MODULARIZE=1 -s ALLOW_MEMORY_GROWTH=1 -s EXPORT_NAME=idlc -s DISABLE_EXCEPTION_CATCHING=0 --emit-tsd idlc.d.ts -s EXPORT_ES6=1 -Oz -s SINGLE_FILE=1 -fexceptions
+        ${{ steps.strings.outputs.build-output-wasm-dir }}/vcpkg_installed/x64-linux/tools/idlc/idlc -g js -o ${{ steps.strings.outputs.build-output-wasm-dir }}/ -w ${{ github.workspace }}/specs/api.idl
+        emcc -std=c++20 -I${{ steps.strings.outputs.build-output-wasm-dir }}/install/include/idlc -Wl,--whole-archive ${{ steps.strings.outputs.build-output-wasm-dir }}/install/lib/libidl.a ${{ steps.strings.outputs.build-output-wasm-dir }}/vcpkg_installed/wasm32-emscripten/lib/libfmt.a ${{ steps.strings.outputs.build-output-wasm-dir }}/vcpkg_installed/wasm32-emscripten/lib/libxxhash.a -Wl,--no-whole-archive ${{ steps.strings.outputs.build-output-wasm-dir }}/idlc.js.cpp -o ${{ github.workspace }}/doc/idlc.js -lembind -s WASM=1 -s MODULARIZE=1 -s ALLOW_MEMORY_GROWTH=1 -s EXPORT_NAME=idlc -s DISABLE_EXCEPTION_CATCHING=0 --emit-tsd idlc.d.ts -s EXPORT_ES6=1 -Oz -s SINGLE_FILE=1 -fexceptions
 
-    # - name: Configure CMake
-    #   run: >
-    #     cmake -B ${{ steps.strings.outputs.build-output-dir }} -S ${{ github.workspace }}
-    #     -DIDLC_BUILD_DOC=ON
-    #     -DIDLC_BUILD_TOOL=OFF
-    #     -DIDLC_USE_IDLC=OFF
-    #     -DIDLC_BUILD_PACKAGES=OFF
-    #     -DCMAKE_C_COMPILER=clang
-    #     -DCMAKE_CXX_COMPILER=clang++
-    #     -DCMAKE_BUILD_TYPE=Release
+    - name: Configure CMake
+      run: >
+        cmake -B ${{ steps.strings.outputs.build-output-dir }} -S ${{ github.workspace }}
+        -DIDLC_BUILD_DOC=ON
+        -DIDLC_BUILD_TOOL=OFF
+        -DIDLC_USE_IDLC=OFF
+        -DIDLC_BUILD_PACKAGES=OFF
+        -DCMAKE_C_COMPILER=clang
+        -DCMAKE_CXX_COMPILER=clang++
+        -DCMAKE_BUILD_TYPE=Release
+        -G Ninja
 
-    # - name: Build
-    #   run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config Release --target doc
+    - name: Build Documentation
+      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --target doc
+
+    - name: Deploy
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ${{ steps.strings.outputs.build-output-dir }}/doc/html

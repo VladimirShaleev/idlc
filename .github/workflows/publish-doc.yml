@@ -49,7 +49,7 @@ jobs:
         -DCMAKE_TOOLCHAIN_FILE=${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake
         -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=${EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake
         -DCMAKE_CROSSCOMPILING_EMULATOR=${EMSDK_NODE}
-        -DIDLC_BUILD_DOC=ON
+        -DIDLC_BUILD_DOC=OFF
         -DIDLC_BUILD_TOOL=OFF
         -DIDLC_USE_IDLC=ON
         -DIDLC_BUILD_PACKAGES=OFF
@@ -67,7 +67,7 @@ jobs:
       run: |
         cmake --build ${{ steps.strings.outputs.build-output-wasm-dir }} --target install
         ${{ steps.strings.outputs.build-output-wasm-dir }}/vcpkg_installed/x64-linux/tools/idlc/idlc -g js -o ${{ steps.strings.outputs.build-output-wasm-dir }}/ -w ${{ github.workspace }}/specs/api.idl
-        emcc -std=c++20 -I${{ steps.strings.outputs.build-output-wasm-dir }}/install/include/idlc -Wl,--whole-archive ${{ steps.strings.outputs.build-output-wasm-dir }}/install/lib/libidl.a ${{ steps.strings.outputs.build-output-wasm-dir }}/vcpkg_installed/wasm32-emscripten/lib/libfmt.a ${{ steps.strings.outputs.build-output-wasm-dir }}/vcpkg_installed/wasm32-emscripten/lib/libxxhash.a -Wl,--no-whole-archive ${{ steps.strings.outputs.build-output-wasm-dir }}/idlc.js.cpp -o ${{ github.workspace }}/doc/idlc.js -lembind -s WASM=1 -s MODULARIZE=1 -s ALLOW_MEMORY_GROWTH=1 -s EXPORT_NAME=idlc -s DISABLE_EXCEPTION_CATCHING=0 --emit-tsd idlc.d.ts -s EXPORT_ES6=1 -Oz -s SINGLE_FILE=1 -fexceptions
+        emcc -std=c++20 -I${{ steps.strings.outputs.build-output-wasm-dir }}/install/include/idlc -Wl,--whole-archive ${{ steps.strings.outputs.build-output-wasm-dir }}/install/lib/libidl.a ${{ steps.strings.outputs.build-output-wasm-dir }}/vcpkg_installed/wasm32-emscripten/lib/libfmt.a ${{ steps.strings.outputs.build-output-wasm-dir }}/vcpkg_installed/wasm32-emscripten/lib/libxxhash.a -Wl,--no-whole-archive ${{ steps.strings.outputs.build-output-wasm-dir }}/idl.js.cpp -o ${{ github.workspace }}/doc/idlc.js -lembind -s WASM=1 -s MODULARIZE=1 -s ALLOW_MEMORY_GROWTH=1 -s EXPORT_NAME=idlc -s DISABLE_EXCEPTION_CATCHING=0 --emit-tsd idlc.d.ts -s EXPORT_ES6=1 -Oz -s SINGLE_FILE=1 -fexceptions
 
     - name: Configure CMake
       run: >

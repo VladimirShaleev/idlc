@@ -10,8 +10,11 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Find FlexLexer.h
-      run: sudo find /usr -name FlexLexer.h
+    - name: Install Flex and Bison
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y flex
+        sudo apt-get install -y bison
 
     - name: Install Doxygen
       run: |
@@ -22,12 +25,6 @@ jobs:
         sudo make
         sudo make install
         doxygen --version
-
-    - name: Install Flex and Bison
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y flex
-        sudo apt-get install -y bison
 
     - name: Set build output dir
       id: strings

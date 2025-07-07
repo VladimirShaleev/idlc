@@ -20,6 +20,12 @@ jobs:
         sudo make install
         doxygen --version
 
+    - name: Install Flex and Bison
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y flex
+        sudo apt-get install -y bison
+
     - name: Set build output dir
       id: strings
       shell: bash

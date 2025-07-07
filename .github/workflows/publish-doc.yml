@@ -8,23 +8,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout vcpkg
-      uses: actions/checkout@v4
-      with:
-        repository: 'microsoft/vcpkg'
-        path: 'vcpkg'
-    - name: Bootstrap vcpkg
-      run: ./vcpkg/bootstrap-vcpkg.sh -disableMetrics
-
-    - name: Set environment variables
-      id: envs
-      shell: bash
-      run: |
-        echo "VCPKG_ROOT=${{ github.workspace }}/vcpkg" >> $GITHUB_ENV
-        echo "PATH=${{ github.workspace }}/vcpkg:${PATH}" >> $GITHUB_ENV
-
     - uses: actions/checkout@v4
-      
+
+    - name: Install vcpkg
+      uses: lukka/run-vcpkg@v11
+      with:
+        vcpkgDirectory: ${{ github.workspace }}/vcpkg
+        runVcpkgInstall: false
+
     - name: Install Emsdk
       uses: mymindstorm/setup-emsdk@v14
       with:
@@ -34,8 +25,7 @@ jobs:
     - name: Set build output dir
       id: strings
       shell: bash
-      run: |
-        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+      run: echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
     - name: Install Ninja
       run: sudo apt-get install -y ninja-build

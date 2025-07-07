@@ -62,6 +62,7 @@ jobs:
         -DCMAKE_C_FLAGS="-fexceptions -Oz"
         -DCMAKE_CXX_FLAGS="-fexceptions -Oz"
         -DCMAKE_EXE_LINKER_FLAGS="-fexceptions -Oz"
+        -DCMAKE_MAKE_PROGRAM=/usr/bin/ninja
         -DCMAKE_INSTALL_PREFIX=${{ steps.strings.outputs.build-output-dir }}/install
         -G Ninja
   

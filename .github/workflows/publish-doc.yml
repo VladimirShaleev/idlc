@@ -10,6 +10,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Find FlexLexer.h
+      run: sudo find /usr -name FlexLexer.h
+
     - name: Install Doxygen
       run: |
         sudo apt-get install -y graphviz

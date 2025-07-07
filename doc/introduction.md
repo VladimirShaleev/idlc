@@ -9,6 +9,7 @@ Below is an online demo of the compiler:
     <textarea id="editor" class="custom-editor" placeholder="Enter your IDL code here..."></textarea>
     <button id="compileC" class="custom-button">Compile C</button>
     <button id="compileJs" class="custom-button">Compile JS</button>
+    <div id="status" style="display: none;"></div>
     <div class="tabs-overview-container" id="tab-container">
     </div>
 </div>
@@ -22,6 +23,7 @@ Below is an online demo of the compiler:
     const compileC     = document.getElementById('compileC');
     const compileJs    = document.getElementById('compileJs');
     const tabContainer = document.getElementById('tab-container');
+    const status       = document.getElementById('status');
 
     compileC.addEventListener('click', () => {
         compileCode(module.Generator.C);
@@ -34,12 +36,12 @@ Below is an online demo of the compiler:
     function compileCode(generator) {
         const code = editor.value.trim();
         if (!code) {
-            // clearStatus();
-            // showStatus('Please enter some code to compile', 'error');
+            clearStatus();
+            showStatus('Please enter some code to compile', 'error');
             return;
         }
-        // clearStatus();
-        // showStatus('Compiling...');
+        clearStatus();
+        showStatus('Compiling...');
 
         const source = {
             name: "<input>",
@@ -55,16 +57,16 @@ Below is an online demo of the compiler:
         const compiler = new module.Compiler;
         const result = compiler.compile(generator, undefined, [source], options);
 
-        // clearStatus();
-        // result.messages.forEach(message => {
-        //     showStatus(`${message.isError ? "error" : "warning"} [${message.status.value < 2000 ? "W" : "E"}${message.status.value}]: ${message.message} at ${message.filename}:${message.line}:${message.column}`, message.isError ? 'error' : 'warning')
-        // });
+        clearStatus();
+        result.messages.forEach(message => {
+            showStatus(`${message.isError ? "error" : "warning"} [${message.status.value < 2000 ? "W" : "E"}${message.status.value}]: ${message.message} at ${message.filename}:${message.line}:${message.column}`, message.isError ? 'error' : 'warning')
+        });
 
-        // if (result.hasErrors) {
-        //     showStatus('Compilation failed', 'error');
-        // } else {
-        //     showStatus('Compilation successful!', 'success');
-        // }
+        if (result.hasErrors) {
+            showStatus('Compilation failed', 'error');
+        } else {
+            showStatus('Compilation successful!', 'success');
+        }
 
         result.delete();
         compiler.delete();
@@ -73,6 +75,30 @@ Below is an online demo of the compiler:
         if (Object.keys(results).length !== 0) {
             showResults(results);
         }
+    }
+
+    function showStatus(message, type = '') {
+        const dd = document.createElement('dd');
+        dd.textContent = message;
+
+        const dl = document.createElement('dl');
+        dl.appendChild(dd);
+        if (type === '' || type === 'success') {
+            dl.className = 'note'
+        } else if (type == 'warning') {
+            dl.className = 'warning'
+        } else if (type == 'error') {
+            dl.className = 'bug'
+        }
+
+        status.style.display = 'block';
+        status.appendChild(dl);
+        status.scrollTop = status.scrollHeight;
+    }
+
+    function clearStatus() {
+        status.innerHTML = '';
+        status.style.display = 'none';
     }
 
     function showResults(files) {

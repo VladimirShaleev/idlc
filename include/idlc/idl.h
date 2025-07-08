@@ -38,6 +38,8 @@
 
 #include "idl-options.h"
 
+IDL_BEGIN
+
 /**
  * @brief   Generation language
  * @note    Enumeration possible languages for generating interfaces and wrapping C libraries for other languages.
@@ -61,7 +63,7 @@ idl_version(void);
 
 /**
  * @brief   Current library version as human-readable string.
- * @details Format: "major.minor.micro", eg: "1.5.8".
+ * @details Format: "major.minor.micro", eg: "1.5.9".
  * @return  Return version string.
  * @ingroup functions
  */
@@ -139,5 +141,7 @@ idl_compiler_compile(idl_compiler_t compiler,
                      idl_compilation_result_t* result);
 
 /** @} */
+
+IDL_END
 
 #endif /* IDL_H */

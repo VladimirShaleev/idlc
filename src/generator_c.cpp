@@ -1208,7 +1208,7 @@ static void generateMain(idl::Context& ctx,
                          idl_data_t writerData,
                          std::span<idl_utf8_t> includes,
                          bool grouping) {
-    auto header = createHeader(ctx, out, "", false, writer, writerData);
+    auto header = createHeader(ctx, out, "", true, writer, writerData);
     generateDoc(header, ctx.api(), grouping ? "files" : "", true);
     if (prevFile) {
         beginHeader(ctx, header, convert(prevFile->name, Case::LispCase), includes);

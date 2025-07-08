@@ -9,7 +9,8 @@
 }
 
 .custom-editor {
-    border-radius: var(--border-radius-medium);
+    border-top-left-radius: var(--border-radius-medium);
+    border-bottom-left-radius: var(--border-radius-medium);
     border: 1px solid var(--separator-color);
     padding: var(--spacing-medium) var(--spacing-large);
     width: calc(100% - var(--spacing-large) * 2);
@@ -20,6 +21,12 @@
     background: var(--code-background);
     resize: vertical;
     margin-bottom: var(--spacing-large);
+}
+
+@media screen and (max-width: 1193px) {
+    .custom-editor {
+        border-radius: var(--border-radius-medium);
+    }
 }
 
 .custom-editor:focus {

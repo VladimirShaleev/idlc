@@ -263,23 +263,24 @@ We'll add **gtest** to test the library:
 ```cpp
 #include <lib/lib.h>
 
-#include <gtest/gtest.h>
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include <doctest/doctest.h>
 
-TEST(FunctionTest, Mul)
+TEST_CASE("mul test")
 {
-    const auto expected = 7.68f;
+    const auto expected = doctest::Approx(7.68f).epsilon(0.01f);
 
     const auto actual = lib_mul(3.2f, 2.4f);
 
-    EXPECT_FLOAT_EQ(expected, actual);
+    CHECK(expected == actual);
 }
 
-TEST(ObjectTest, Dot)
+TEST_CASE("object test")
 {
-    const auto expected = 10.0f;
+    const auto expected = doctest::Approx(10.0f).epsilon(0.01f);
 
     lib_vehicle_t vehicle = lib_vehicle_create("test");
-    ASSERT_NE(vehicle, nullptr);
+    CHECK(vehicle != nullptr);
 
     lib_vector_t first{1.0f, 2.0f, 3.0f};
     lib_vehicle_set_velocity(vehicle, &first);
@@ -289,7 +290,7 @@ TEST(ObjectTest, Dot)
 
     lib_vehicle_destroy(vehicle);
 
-    ASSERT_FLOAT_EQ(expected, actual);
+    CHECK(expected == actual);
 }
 ```
 
@@ -373,6 +374,7 @@ if(MSVC)
 endif()
 
 if(LIB_BUILD_TESTS)
+    include(CTest)
     add_subdirectory(tests)
 endif()
 
@@ -420,15 +422,23 @@ find_package(GTest CONFIG REQUIRED)
 
 add_executable(lib-tests tests.cpp)
 target_link_libraries(lib-tests PRIVATE lib::lib)
-target_link_libraries(lib-tests PRIVATE GTest::gtest GTest::gtest_main)
+target_link_libraries(lib-tests PRIVATE doctest::doctest)
 target_compile_features(lib-tests PRIVATE cxx_std_20)
 set_target_properties(lib-tests PROPERTIES
     CXX_STANDARD_REQUIRED ON
     CXX_EXTENSIONS OFF
     POSITION_INDEPENDENT_CODE ON
     WINDOWS_EXPORT_ALL_SYMBOLS OFF)
+if(MSVC)
+    if(LIB_MSVC_DYNAMIC_RUNTIME)
+        set_target_properties(lib-tests PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+    else()
+        set_target_properties(lib-tests PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    endif()
+endif()
 
-add_test(AllTestsInMain lib-tests)
+include(doctest)
+doctest_discover_tests(lib-tests)
 ```
 
 Contents of `./vcpkg.json`:
@@ -444,7 +454,7 @@ Contents of `./vcpkg.json`:
     "tests": {
       "description": "Build tests",
       "dependencies": [
-        "gtest"
+        "doctest"
       ]
     }
   }
@@ -454,8 +464,8 @@ Contents of `./vcpkg.json`:
 
 <div class="section_buttons">
  
-| Previous                          |                      Next |
-|:----------------------------------|--------------------------:|
-| [Introduction](introduction.html) | [Tutorial](tutorial.html) |
+| Previous                   |                      Next |
+|:---------------------------|--------------------------:|
+| [Introduction](index.html) | [Tutorial](tutorial.html) |
  
 </div>

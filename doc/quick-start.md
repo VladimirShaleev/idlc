@@ -97,7 +97,7 @@ IDLC находится в пользовательском реестре vcpkg
   "registries": [
     {
       "kind": "git",
-      "baseline": "416cfac087517892b3bf17dd6e340bc0dc1db88d",
+      "baseline": "4928d7f5d89d48ed446e15b1ab97d6dff9364cd2",
       "reference": "vcpkg-registry",
       "repository": "https://github.com/VladimirShaleev/idlc",
       "packages": [

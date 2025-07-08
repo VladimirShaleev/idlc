@@ -1,4 +1,4 @@
-# Introduction
+# Introduction {#introduction}
 
 This project is not intended for production use. The tool is primarily being developed for my personal needs — to generate C APIs for C libraries from **IDL** specifications, as well as to automatically wrap the resulting C libraries for other languages, enabling them to be used as native libraries.
 

@@ -2,9 +2,9 @@
 
 @tableofcontents
 
-## Adding Specifications for a C Library
+# Adding Specifications for a C Library {#add-c-lib}
 
-### IDL Specifications
+## IDL Specifications {#idl-spec}
 
 Add **IDL** specifications anywhere in your library. For example, create a `specs` folder in your project's root directory and add an `api.idl` file (or use any other filename).
 
@@ -79,7 +79,7 @@ While the complete IDL syntax isn't crucial at this stage, here are the key poin
 - **Documentation placement**: documentation on the same line after a declaration defaults to `[detail]` documentation for that declaration.
 - **Formatting rules**: indentation and line breaks are insignificant in **IDL**, except within documentation contexts.
 
-### Adding IDLC Dependency
+## Adding IDLC Dependency {#add-idlc-dep}
 
 **IDLC** is registered in the **vcpkg** user registry. You need to add this registry to your `vcpkg-configuration.json` file:
 
@@ -134,7 +134,7 @@ lib/
 `-- vcpkg.json
 ```
 
-### Adding CMake Configuration
+## Adding CMake Configuration {#add-cmake-config}
 
 ```cmake
 find_package(idlc CONFIG REQUIRED)
@@ -197,7 +197,7 @@ endif()
 
 The `api` `NAME` specified in `idlc_compile` will be used to form the `IDLC_<NAME>_OUTPUTS` variable containing the generated output files.
 
-### Implementing C Declarations
+## Implementing C Declarations {#impl-c-decls}
 
 The public headers are now automatically updated when `.idl` specifications change. You can now implement the generated function definitions.
 
@@ -256,7 +256,7 @@ lib_float32_t lib_vehicle_dot_velocity(lib_vehicle_t vehicle, const lib_vector_t
 ```
 </details>
 
-### Testing the Library
+## Testing the Library {#gtest-lib}
 
 We'll add **gtest** to test the library:
 
@@ -454,8 +454,8 @@ Contents of `./vcpkg.json`:
 
 <div class="section_buttons">
  
-| Previous                        |                      Next |
-|:--------------------------------|--------------------------:|
-| [Introduction](introduction.md) | [Tutorial](tutorial.html) |
+| Previous                          |                      Next |
+|:----------------------------------|--------------------------:|
+| [Introduction](introduction.html) | [Tutorial](tutorial.html) |
  
 </div>

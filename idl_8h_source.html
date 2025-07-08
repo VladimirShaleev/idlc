@@ -48,7 +48,7 @@
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="logo.svg"/></td>
   <td id="projectalign">
-   <div id="projectname">idlc<span id="projectnumber">&#160;1.5.8</span>
+   <div id="projectname">idlc<span id="projectnumber">&#160;1.5.10</span>
    </div>
    <div id="projectbrief">Interface Definition Language Compiler</div>
   </td>
@@ -161,121 +161,127 @@ $(function(){initNavTree('idl_8h_source.html',''); initResizable(true); });
 <div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span> </div>
 <div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span><span class="preprocessor">#</span><span class="preprocessor">include</span> <a class="code" href="idl-options_8h.html" title="Compiler options.">&quot;idl-options.h&quot;</a></div>
 <div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span> </div>
-<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span><span class="comment">/**</span></div>
-<div class="line"><span class="lineno">   42</span><span class="comment"> * @brief   Generation language</span></div>
-<div class="line"><span class="lineno">   43</span><span class="comment"> * @note    Enumeration possible languages for generating interfaces and wrapping C libraries for other languages.</span></div>
-<div class="line"><span class="lineno">   44</span><span class="comment"> * @ingroup enums</span></div>
-<div class="line"><span class="lineno">   45</span><span class="comment"> */</span></div>
-<div class="foldopen" id="foldopen00046" data-start="{" data-end="};">
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno"><a class="line" href="group__enums.html#ga6aafad650316a600c79c655f92f70f3d">   46</a></span><span class="keyword">typedef</span> <span class="keyword">enum</span></div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>{</div>
-<div class="line"><a id="l00048" name="l00048"></a><span class="lineno"><a class="line" href="group__enums.html#gga6aafad650316a600c79c655f92f70f3da2b61bd4e073e1b1e86b12865c12e886b">   48</a></span>    <a class="code hl_enumvalue" href="group__enums.html#gga6aafad650316a600c79c655f92f70f3da2b61bd4e073e1b1e86b12865c12e886b">IDL_GENERATOR_C</a>           = 0, <span class="comment">/**&lt; C generator */</span></div>
-<div class="line"><a id="l00049" name="l00049"></a><span class="lineno"><a class="line" href="group__enums.html#gga6aafad650316a600c79c655f92f70f3da9f4748e86c26411e63f97580b5957c06">   49</a></span>    <a class="code hl_enumvalue" href="group__enums.html#gga6aafad650316a600c79c655f92f70f3da9f4748e86c26411e63f97580b5957c06">IDL_GENERATOR_JAVA_SCRIPT</a> = 3, <span class="comment">/**&lt; JavaScript generator (generates Embind bindings) */</span></div>
-<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>    <a class="code hl_enumvalue" href="group__enums.html#gga6aafad650316a600c79c655f92f70f3da5b30fe441604f062c4454d678d639e11">IDL_GENERATOR_MAX_ENUM</a>    = 0x7FFFFFFF <span class="comment">/**&lt; Max value of enum (not used) */</span></div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno"><a class="line" href="group__enums.html#gga6aafad650316a600c79c655f92f70f3da5b30fe441604f062c4454d678d639e11">   51</a></span>} idl_generator_t;</div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span><a class="code hl_define" href="group__macros.html#gadac81cfc6ac7b2ebaa328e81ef9adecb">IDL_BEGIN</a></div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span> </div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span><span class="comment">/**</span></div>
+<div class="line"><span class="lineno">   44</span><span class="comment"> * @brief   Generation language</span></div>
+<div class="line"><span class="lineno">   45</span><span class="comment"> * @note    Enumeration possible languages for generating interfaces and wrapping C libraries for other languages.</span></div>
+<div class="line"><span class="lineno">   46</span><span class="comment"> * @ingroup enums</span></div>
+<div class="line"><span class="lineno">   47</span><span class="comment"> */</span></div>
+<div class="foldopen" id="foldopen00048" data-start="{" data-end="};">
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno"><a class="line" href="group__enums.html#ga6aafad650316a600c79c655f92f70f3d">   48</a></span><span class="keyword">typedef</span> <span class="keyword">enum</span></div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>{</div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno"><a class="line" href="group__enums.html#gga6aafad650316a600c79c655f92f70f3da2b61bd4e073e1b1e86b12865c12e886b">   50</a></span>    <a class="code hl_enumvalue" href="group__enums.html#gga6aafad650316a600c79c655f92f70f3da2b61bd4e073e1b1e86b12865c12e886b">IDL_GENERATOR_C</a>           = 0, <span class="comment">/**&lt; C generator */</span></div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno"><a class="line" href="group__enums.html#gga6aafad650316a600c79c655f92f70f3da9f4748e86c26411e63f97580b5957c06">   51</a></span>    <a class="code hl_enumvalue" href="group__enums.html#gga6aafad650316a600c79c655f92f70f3da9f4748e86c26411e63f97580b5957c06">IDL_GENERATOR_JAVA_SCRIPT</a> = 3, <span class="comment">/**&lt; JavaScript generator (generates Embind bindings) */</span></div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>    <a class="code hl_enumvalue" href="group__enums.html#gga6aafad650316a600c79c655f92f70f3da5b30fe441604f062c4454d678d639e11">IDL_GENERATOR_MAX_ENUM</a>    = 0x7FFFFFFF <span class="comment">/**&lt; Max value of enum (not used) */</span></div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno"><a class="line" href="group__enums.html#gga6aafad650316a600c79c655f92f70f3da5b30fe441604f062c4454d678d639e11">   53</a></span>} idl_generator_t;</div>
 </div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span> </div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span><span class="comment">/**</span></div>
-<div class="line"><span class="lineno">   54</span><span class="comment"> * @brief   Current library version as packed 32-bit value.</span></div>
-<div class="line"><span class="lineno">   55</span><span class="comment"> * @details Format: (major &lt;&lt; 16) | (minor &lt;&lt; 8) | micro.</span></div>
-<div class="line"><span class="lineno">   56</span><span class="comment"> * @return  Return packed version number</span></div>
-<div class="line"><span class="lineno">   57</span><span class="comment"> * @ingroup functions</span></div>
-<div class="line"><span class="lineno">   58</span><span class="comment"> */</span></div>
-<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span><a class="code hl_define" href="group__macros.html#gaceac4fbeac72c6386eb3b41be02a19fe">idl_api</a> <a class="code hl_typedef" href="group__types.html#gaf5b43004febcb29388035843751c7409">idl_uint32_t</a></div>
-<div class="line"><a id="l00060" name="l00060"></a><span class="lineno"><a class="line" href="group__functions.html#ga92944be4a244fe49a1f6f589c8221bc2">   60</a></span><a class="code hl_function" href="group__functions.html#ga92944be4a244fe49a1f6f589c8221bc2">idl_version</a>(<span class="keywordtype">void</span>);</div>
-<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span> </div>
-<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span><span class="comment">/**</span></div>
-<div class="line"><span class="lineno">   63</span><span class="comment"> * @brief   Current library version as human-readable string.</span></div>
-<div class="line"><span class="lineno">   64</span><span class="comment"> * @details Format: &quot;major.minor.micro&quot;, eg: &quot;1.5.8&quot;.</span></div>
-<div class="line"><span class="lineno">   65</span><span class="comment"> * @return  Return version string.</span></div>
-<div class="line"><span class="lineno">   66</span><span class="comment"> * @ingroup functions</span></div>
-<div class="line"><span class="lineno">   67</span><span class="comment"> */</span></div>
-<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span><a class="code hl_define" href="group__macros.html#gaceac4fbeac72c6386eb3b41be02a19fe">idl_api</a> <a class="code hl_typedef" href="group__types.html#gaaaae890ceb8079e2322a52831b4e6cac">idl_utf8_t</a></div>
-<div class="line"><a id="l00069" name="l00069"></a><span class="lineno"><a class="line" href="group__functions.html#ga4c71d795ec85a526b775d1ec0ece32af">   69</a></span><a class="code hl_function" href="group__functions.html#ga4c71d795ec85a526b775d1ec0ece32af">idl_version_string</a>(<span class="keywordtype">void</span>);</div>
-<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span> </div>
-<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span><span class="comment">/**</span></div>
-<div class="line"><span class="lineno">   72</span><span class="comment"> * @name Functions of Compiler.</span></div>
-<div class="line"><span class="lineno">   73</span><span class="comment"> * @brief Functions for opaque type ::idl_compiler_t.</span></div>
-<div class="line"><span class="lineno">   74</span><span class="comment"> * @{</span></div>
-<div class="line"><span class="lineno">   75</span><span class="comment"> */</span></div>
-<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span> </div>
-<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span><span class="comment">/**</span></div>
-<div class="line"><span class="lineno">   78</span><span class="comment"> * @brief      Creates new compiler instance.</span></div>
-<div class="line"><span class="lineno">   79</span><span class="comment"> * @details    Creates an object for IDL compilation.</span></div>
-<div class="line"><span class="lineno">   80</span><span class="comment"> * @param[out] compiler New compiler instance.</span></div>
-<div class="line"><span class="lineno">   81</span><span class="comment"> * @return     New compiler instance</span></div>
-<div class="line"><span class="lineno">   82</span><span class="comment"> * @ingroup    functions</span></div>
-<div class="line"><span class="lineno">   83</span><span class="comment"> */</span></div>
-<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span><a class="code hl_define" href="group__macros.html#gaceac4fbeac72c6386eb3b41be02a19fe">idl_api</a> idl_result_t</div>
-<div class="line"><a id="l00085" name="l00085"></a><span class="lineno"><a class="line" href="group__functions.html#gabf970b9fa31c7acc7eaa31e75ce26515">   85</a></span><a class="code hl_function" href="group__functions.html#gabf970b9fa31c7acc7eaa31e75ce26515">idl_compiler_create</a>(idl_compiler_t* compiler);</div>
-<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span> </div>
-<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span><span class="comment">/**</span></div>
-<div class="line"><span class="lineno">   88</span><span class="comment"> * @brief     Increments reference count.</span></div>
-<div class="line"><span class="lineno">   89</span><span class="comment"> * @details   Manages compiler instance lifetime.</span></div>
-<div class="line"><span class="lineno">   90</span><span class="comment"> * @param[in] compiler Target compiler instance.</span></div>
-<div class="line"><span class="lineno">   91</span><span class="comment"> * @return    Reference to same compiler.</span></div>
-<div class="line"><span class="lineno">   92</span><span class="comment"> * @sa        ::idl_compiler_destroy</span></div>
-<div class="line"><span class="lineno">   93</span><span class="comment"> * @ingroup   functions</span></div>
-<div class="line"><span class="lineno">   94</span><span class="comment"> */</span></div>
-<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span><a class="code hl_define" href="group__macros.html#gaceac4fbeac72c6386eb3b41be02a19fe">idl_api</a> idl_compiler_t</div>
-<div class="line"><a id="l00096" name="l00096"></a><span class="lineno"><a class="line" href="group__functions.html#ga92ae00ba62d420c02f882c0785c780cf">   96</a></span><a class="code hl_function" href="group__functions.html#ga92ae00ba62d420c02f882c0785c780cf">idl_compiler_reference</a>(idl_compiler_t compiler);</div>
-<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span> </div>
-<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span><span class="comment">/**</span></div>
-<div class="line"><span class="lineno">   99</span><span class="comment"> * @brief     Releases compiler instance.</span></div>
-<div class="line"><span class="lineno">  100</span><span class="comment"> * @details   Destroys when reference count reaches zero.</span></div>
-<div class="line"><span class="lineno">  101</span><span class="comment"> * @param[in] compiler Compiler to destroy.</span></div>
-<div class="line"><span class="lineno">  102</span><span class="comment"> * @sa        ::idl_compiler_reference</span></div>
-<div class="line"><span class="lineno">  103</span><span class="comment"> * @ingroup   functions</span></div>
-<div class="line"><span class="lineno">  104</span><span class="comment"> */</span></div>
-<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span><a class="code hl_define" href="group__macros.html#gaceac4fbeac72c6386eb3b41be02a19fe">idl_api</a> <span class="keywordtype">void</span></div>
-<div class="line"><a id="l00106" name="l00106"></a><span class="lineno"><a class="line" href="group__functions.html#ga13cf826ea7f0d49830f92f620a09b0c1">  106</a></span><a class="code hl_function" href="group__functions.html#ga13cf826ea7f0d49830f92f620a09b0c1">idl_compiler_destroy</a>(idl_compiler_t compiler);</div>
-<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span> </div>
-<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span><span class="comment">/**</span></div>
-<div class="line"><span class="lineno">  109</span><span class="comment"> * @brief      Compile IDL.</span></div>
-<div class="line"><span class="lineno">  110</span><span class="comment"> * @param[in]  compiler Target compiler.</span></div>
-<div class="line"><span class="lineno">  111</span><span class="comment"> * @param[in]  generator Target of generator.</span></div>
-<div class="line"><span class="lineno">  112</span><span class="comment"> * @param[in]  file Path to .idl file for compile.</span></div>
-<div class="line"><span class="lineno">  113</span><span class="comment"> * @param[in]  source_count Number of sources.</span></div>
-<div class="line"><span class="lineno">  114</span><span class="comment"> * @param[in]  sources Sources.</span></div>
-<div class="line"><span class="lineno">  115</span><span class="comment"> * @param[in]  options Compile options, may be null.</span></div>
-<div class="line"><span class="lineno">  116</span><span class="comment"> * @param[out] result Compilation result.</span></div>
-<div class="line"><span class="lineno">  117</span><span class="comment"> * @return     Compilation result.</span></div>
-<div class="line"><span class="lineno">  118</span><span class="comment"> * @parblock</span></div>
-<div class="line"><span class="lineno">  119</span><span class="comment"> * @note       To read source code from memory instead of the file system, use *sources* and/or configure</span></div>
-<div class="line"><span class="lineno">  120</span><span class="comment"> *             the importer with ::idl_options_set_importer and pass the *file* argument as empty.</span></div>
-<div class="line"><span class="lineno">  121</span><span class="comment"> * @endparblock</span></div>
-<div class="line"><span class="lineno">  122</span><span class="comment"> * @parblock</span></div>
-<div class="line"><span class="lineno">  123</span><span class="comment"> * @note       Priorities for resolving source code imports:</span></div>
-<div class="line"><span class="lineno">  124</span><span class="comment"> *             - ::idl_options_set_importer - import callback if specified;</span></div>
-<div class="line"><span class="lineno">  125</span><span class="comment"> *             - *sources* - then the source code array, if specified;</span></div>
-<div class="line"><span class="lineno">  126</span><span class="comment"> *             - ::idl_options_set_import_dirs - then in the paths to the import directories, if specified;</span></div>
-<div class="line"><span class="lineno">  127</span><span class="comment"> *             - then the current working directory.</span></div>
-<div class="line"><span class="lineno">  128</span><span class="comment"> *             </span></div>
-<div class="line"><span class="lineno">  129</span><span class="comment"> * @endparblock</span></div>
-<div class="line"><span class="lineno">  130</span><span class="comment"> * @ingroup    functions</span></div>
-<div class="line"><span class="lineno">  131</span><span class="comment"> */</span></div>
-<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span><a class="code hl_define" href="group__macros.html#gaceac4fbeac72c6386eb3b41be02a19fe">idl_api</a> idl_result_t</div>
-<div class="line"><a id="l00133" name="l00133"></a><span class="lineno"><a class="line" href="group__functions.html#gacdcb2f1faedbdfbebe2324025f19bf33">  133</a></span><a class="code hl_function" href="group__functions.html#gacdcb2f1faedbdfbebe2324025f19bf33">idl_compiler_compile</a>(idl_compiler_t compiler,</div>
-<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>                     idl_generator_t generator,</div>
-<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>                     <a class="code hl_typedef" href="group__types.html#gaaaae890ceb8079e2322a52831b4e6cac">idl_utf8_t</a> file,</div>
-<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>                     <a class="code hl_typedef" href="group__types.html#gaf5b43004febcb29388035843751c7409">idl_uint32_t</a> source_count,</div>
-<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span>                     <span class="keyword">const</span> idl_source_t* sources,</div>
-<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span>                     idl_options_t options,</div>
-<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span>                     idl_compilation_result_t* result);</div>
-<div class="line"><a id="l00140" name="l00140"></a><span class="lineno">  140</span> </div>
-<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span><span class="comment">/** @} */</span></div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span> </div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span><span class="comment">/**</span></div>
+<div class="line"><span class="lineno">   56</span><span class="comment"> * @brief   Current library version as packed 32-bit value.</span></div>
+<div class="line"><span class="lineno">   57</span><span class="comment"> * @details Format: (major &lt;&lt; 16) | (minor &lt;&lt; 8) | micro.</span></div>
+<div class="line"><span class="lineno">   58</span><span class="comment"> * @return  Return packed version number</span></div>
+<div class="line"><span class="lineno">   59</span><span class="comment"> * @ingroup functions</span></div>
+<div class="line"><span class="lineno">   60</span><span class="comment"> */</span></div>
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span><a class="code hl_define" href="group__macros.html#gaceac4fbeac72c6386eb3b41be02a19fe">idl_api</a> <a class="code hl_typedef" href="group__types.html#gaf5b43004febcb29388035843751c7409">idl_uint32_t</a></div>
+<div class="line"><a id="l00062" name="l00062"></a><span class="lineno"><a class="line" href="group__functions.html#ga92944be4a244fe49a1f6f589c8221bc2">   62</a></span><a class="code hl_function" href="group__functions.html#ga92944be4a244fe49a1f6f589c8221bc2">idl_version</a>(<span class="keywordtype">void</span>);</div>
+<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span> </div>
+<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span><span class="comment">/**</span></div>
+<div class="line"><span class="lineno">   65</span><span class="comment"> * @brief   Current library version as human-readable string.</span></div>
+<div class="line"><span class="lineno">   66</span><span class="comment"> * @details Format: &quot;major.minor.micro&quot;, eg: &quot;1.5.10&quot;.</span></div>
+<div class="line"><span class="lineno">   67</span><span class="comment"> * @return  Return version string.</span></div>
+<div class="line"><span class="lineno">   68</span><span class="comment"> * @ingroup functions</span></div>
+<div class="line"><span class="lineno">   69</span><span class="comment"> */</span></div>
+<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span><a class="code hl_define" href="group__macros.html#gaceac4fbeac72c6386eb3b41be02a19fe">idl_api</a> <a class="code hl_typedef" href="group__types.html#gaaaae890ceb8079e2322a52831b4e6cac">idl_utf8_t</a></div>
+<div class="line"><a id="l00071" name="l00071"></a><span class="lineno"><a class="line" href="group__functions.html#ga4c71d795ec85a526b775d1ec0ece32af">   71</a></span><a class="code hl_function" href="group__functions.html#ga4c71d795ec85a526b775d1ec0ece32af">idl_version_string</a>(<span class="keywordtype">void</span>);</div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span> </div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span><span class="comment">/**</span></div>
+<div class="line"><span class="lineno">   74</span><span class="comment"> * @name Functions of Compiler.</span></div>
+<div class="line"><span class="lineno">   75</span><span class="comment"> * @brief Functions for opaque type ::idl_compiler_t.</span></div>
+<div class="line"><span class="lineno">   76</span><span class="comment"> * @{</span></div>
+<div class="line"><span class="lineno">   77</span><span class="comment"> */</span></div>
+<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span> </div>
+<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span><span class="comment">/**</span></div>
+<div class="line"><span class="lineno">   80</span><span class="comment"> * @brief      Creates new compiler instance.</span></div>
+<div class="line"><span class="lineno">   81</span><span class="comment"> * @details    Creates an object for IDL compilation.</span></div>
+<div class="line"><span class="lineno">   82</span><span class="comment"> * @param[out] compiler New compiler instance.</span></div>
+<div class="line"><span class="lineno">   83</span><span class="comment"> * @return     New compiler instance</span></div>
+<div class="line"><span class="lineno">   84</span><span class="comment"> * @ingroup    functions</span></div>
+<div class="line"><span class="lineno">   85</span><span class="comment"> */</span></div>
+<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span><a class="code hl_define" href="group__macros.html#gaceac4fbeac72c6386eb3b41be02a19fe">idl_api</a> idl_result_t</div>
+<div class="line"><a id="l00087" name="l00087"></a><span class="lineno"><a class="line" href="group__functions.html#gabf970b9fa31c7acc7eaa31e75ce26515">   87</a></span><a class="code hl_function" href="group__functions.html#gabf970b9fa31c7acc7eaa31e75ce26515">idl_compiler_create</a>(idl_compiler_t* compiler);</div>
+<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span> </div>
+<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span><span class="comment">/**</span></div>
+<div class="line"><span class="lineno">   90</span><span class="comment"> * @brief     Increments reference count.</span></div>
+<div class="line"><span class="lineno">   91</span><span class="comment"> * @details   Manages compiler instance lifetime.</span></div>
+<div class="line"><span class="lineno">   92</span><span class="comment"> * @param[in] compiler Target compiler instance.</span></div>
+<div class="line"><span class="lineno">   93</span><span class="comment"> * @return    Reference to same compiler.</span></div>
+<div class="line"><span class="lineno">   94</span><span class="comment"> * @sa        ::idl_compiler_destroy</span></div>
+<div class="line"><span class="lineno">   95</span><span class="comment"> * @ingroup   functions</span></div>
+<div class="line"><span class="lineno">   96</span><span class="comment"> */</span></div>
+<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span><a class="code hl_define" href="group__macros.html#gaceac4fbeac72c6386eb3b41be02a19fe">idl_api</a> idl_compiler_t</div>
+<div class="line"><a id="l00098" name="l00098"></a><span class="lineno"><a class="line" href="group__functions.html#ga92ae00ba62d420c02f882c0785c780cf">   98</a></span><a class="code hl_function" href="group__functions.html#ga92ae00ba62d420c02f882c0785c780cf">idl_compiler_reference</a>(idl_compiler_t compiler);</div>
+<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span> </div>
+<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span><span class="comment">/**</span></div>
+<div class="line"><span class="lineno">  101</span><span class="comment"> * @brief     Releases compiler instance.</span></div>
+<div class="line"><span class="lineno">  102</span><span class="comment"> * @details   Destroys when reference count reaches zero.</span></div>
+<div class="line"><span class="lineno">  103</span><span class="comment"> * @param[in] compiler Compiler to destroy.</span></div>
+<div class="line"><span class="lineno">  104</span><span class="comment"> * @sa        ::idl_compiler_reference</span></div>
+<div class="line"><span class="lineno">  105</span><span class="comment"> * @ingroup   functions</span></div>
+<div class="line"><span class="lineno">  106</span><span class="comment"> */</span></div>
+<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span><a class="code hl_define" href="group__macros.html#gaceac4fbeac72c6386eb3b41be02a19fe">idl_api</a> <span class="keywordtype">void</span></div>
+<div class="line"><a id="l00108" name="l00108"></a><span class="lineno"><a class="line" href="group__functions.html#ga13cf826ea7f0d49830f92f620a09b0c1">  108</a></span><a class="code hl_function" href="group__functions.html#ga13cf826ea7f0d49830f92f620a09b0c1">idl_compiler_destroy</a>(idl_compiler_t compiler);</div>
+<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span> </div>
+<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span><span class="comment">/**</span></div>
+<div class="line"><span class="lineno">  111</span><span class="comment"> * @brief      Compile IDL.</span></div>
+<div class="line"><span class="lineno">  112</span><span class="comment"> * @param[in]  compiler Target compiler.</span></div>
+<div class="line"><span class="lineno">  113</span><span class="comment"> * @param[in]  generator Target of generator.</span></div>
+<div class="line"><span class="lineno">  114</span><span class="comment"> * @param[in]  file Path to .idl file for compile.</span></div>
+<div class="line"><span class="lineno">  115</span><span class="comment"> * @param[in]  source_count Number of sources.</span></div>
+<div class="line"><span class="lineno">  116</span><span class="comment"> * @param[in]  sources Sources.</span></div>
+<div class="line"><span class="lineno">  117</span><span class="comment"> * @param[in]  options Compile options, may be null.</span></div>
+<div class="line"><span class="lineno">  118</span><span class="comment"> * @param[out] result Compilation result.</span></div>
+<div class="line"><span class="lineno">  119</span><span class="comment"> * @return     Compilation result.</span></div>
+<div class="line"><span class="lineno">  120</span><span class="comment"> * @parblock</span></div>
+<div class="line"><span class="lineno">  121</span><span class="comment"> * @note       To read source code from memory instead of the file system, use *sources* and/or configure</span></div>
+<div class="line"><span class="lineno">  122</span><span class="comment"> *             the importer with ::idl_options_set_importer and pass the *file* argument as empty.</span></div>
+<div class="line"><span class="lineno">  123</span><span class="comment"> * @endparblock</span></div>
+<div class="line"><span class="lineno">  124</span><span class="comment"> * @parblock</span></div>
+<div class="line"><span class="lineno">  125</span><span class="comment"> * @note       Priorities for resolving source code imports:</span></div>
+<div class="line"><span class="lineno">  126</span><span class="comment"> *             - ::idl_options_set_importer - import callback if specified;</span></div>
+<div class="line"><span class="lineno">  127</span><span class="comment"> *             - *sources* - then the source code array, if specified;</span></div>
+<div class="line"><span class="lineno">  128</span><span class="comment"> *             - ::idl_options_set_import_dirs - then in the paths to the import directories, if specified;</span></div>
+<div class="line"><span class="lineno">  129</span><span class="comment"> *             - then the current working directory.</span></div>
+<div class="line"><span class="lineno">  130</span><span class="comment"> *             </span></div>
+<div class="line"><span class="lineno">  131</span><span class="comment"> * @endparblock</span></div>
+<div class="line"><span class="lineno">  132</span><span class="comment"> * @ingroup    functions</span></div>
+<div class="line"><span class="lineno">  133</span><span class="comment"> */</span></div>
+<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span><a class="code hl_define" href="group__macros.html#gaceac4fbeac72c6386eb3b41be02a19fe">idl_api</a> idl_result_t</div>
+<div class="line"><a id="l00135" name="l00135"></a><span class="lineno"><a class="line" href="group__functions.html#gacdcb2f1faedbdfbebe2324025f19bf33">  135</a></span><a class="code hl_function" href="group__functions.html#gacdcb2f1faedbdfbebe2324025f19bf33">idl_compiler_compile</a>(idl_compiler_t compiler,</div>
+<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>                     idl_generator_t generator,</div>
+<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span>                     <a class="code hl_typedef" href="group__types.html#gaaaae890ceb8079e2322a52831b4e6cac">idl_utf8_t</a> file,</div>
+<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span>                     <a class="code hl_typedef" href="group__types.html#gaf5b43004febcb29388035843751c7409">idl_uint32_t</a> source_count,</div>
+<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span>                     <span class="keyword">const</span> idl_source_t* sources,</div>
+<div class="line"><a id="l00140" name="l00140"></a><span class="lineno">  140</span>                     idl_options_t options,</div>
+<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span>                     idl_compilation_result_t* result);</div>
 <div class="line"><a id="l00142" name="l00142"></a><span class="lineno">  142</span> </div>
-<div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span><span class="preprocessor">#</span><span class="preprocessor">endif</span> <span class="comment">/* IDL_H */</span></div>
-<div class="ttc" id="agroup__enums_html_gga6aafad650316a600c79c655f92f70f3da2b61bd4e073e1b1e86b12865c12e886b"><div class="ttname"><a href="group__enums.html#gga6aafad650316a600c79c655f92f70f3da2b61bd4e073e1b1e86b12865c12e886b">IDL_GENERATOR_C</a></div><div class="ttdeci">@ IDL_GENERATOR_C</div><div class="ttdoc">C generator.</div><div class="ttdef"><b>Definition</b> idl.h:48</div></div>
-<div class="ttc" id="agroup__enums_html_gga6aafad650316a600c79c655f92f70f3da5b30fe441604f062c4454d678d639e11"><div class="ttname"><a href="group__enums.html#gga6aafad650316a600c79c655f92f70f3da5b30fe441604f062c4454d678d639e11">IDL_GENERATOR_MAX_ENUM</a></div><div class="ttdeci">@ IDL_GENERATOR_MAX_ENUM</div><div class="ttdoc">Max value of enum (not used)</div><div class="ttdef"><b>Definition</b> idl.h:50</div></div>
-<div class="ttc" id="agroup__enums_html_gga6aafad650316a600c79c655f92f70f3da9f4748e86c26411e63f97580b5957c06"><div class="ttname"><a href="group__enums.html#gga6aafad650316a600c79c655f92f70f3da9f4748e86c26411e63f97580b5957c06">IDL_GENERATOR_JAVA_SCRIPT</a></div><div class="ttdeci">@ IDL_GENERATOR_JAVA_SCRIPT</div><div class="ttdoc">JavaScript generator (generates Embind bindings)</div><div class="ttdef"><b>Definition</b> idl.h:49</div></div>
+<div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span><span class="comment">/** @} */</span></div>
+<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span> </div>
+<div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span><a class="code hl_define" href="group__macros.html#ga53c65bde2815b732dcf2be5629eb6872">IDL_END</a></div>
+<div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span> </div>
+<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span><span class="preprocessor">#</span><span class="preprocessor">endif</span> <span class="comment">/* IDL_H */</span></div>
+<div class="ttc" id="agroup__enums_html_gga6aafad650316a600c79c655f92f70f3da2b61bd4e073e1b1e86b12865c12e886b"><div class="ttname"><a href="group__enums.html#gga6aafad650316a600c79c655f92f70f3da2b61bd4e073e1b1e86b12865c12e886b">IDL_GENERATOR_C</a></div><div class="ttdeci">@ IDL_GENERATOR_C</div><div class="ttdoc">C generator.</div><div class="ttdef"><b>Definition</b> idl.h:50</div></div>
+<div class="ttc" id="agroup__enums_html_gga6aafad650316a600c79c655f92f70f3da5b30fe441604f062c4454d678d639e11"><div class="ttname"><a href="group__enums.html#gga6aafad650316a600c79c655f92f70f3da5b30fe441604f062c4454d678d639e11">IDL_GENERATOR_MAX_ENUM</a></div><div class="ttdeci">@ IDL_GENERATOR_MAX_ENUM</div><div class="ttdoc">Max value of enum (not used)</div><div class="ttdef"><b>Definition</b> idl.h:52</div></div>
+<div class="ttc" id="agroup__enums_html_gga6aafad650316a600c79c655f92f70f3da9f4748e86c26411e63f97580b5957c06"><div class="ttname"><a href="group__enums.html#gga6aafad650316a600c79c655f92f70f3da9f4748e86c26411e63f97580b5957c06">IDL_GENERATOR_JAVA_SCRIPT</a></div><div class="ttdeci">@ IDL_GENERATOR_JAVA_SCRIPT</div><div class="ttdoc">JavaScript generator (generates Embind bindings)</div><div class="ttdef"><b>Definition</b> idl.h:51</div></div>
 <div class="ttc" id="agroup__functions_html_ga13cf826ea7f0d49830f92f620a09b0c1"><div class="ttname"><a href="group__functions.html#ga13cf826ea7f0d49830f92f620a09b0c1">idl_compiler_destroy</a></div><div class="ttdeci">void idl_compiler_destroy(idl_compiler_t compiler)</div><div class="ttdoc">Releases compiler instance.</div></div>
 <div class="ttc" id="agroup__functions_html_ga4c71d795ec85a526b775d1ec0ece32af"><div class="ttname"><a href="group__functions.html#ga4c71d795ec85a526b775d1ec0ece32af">idl_version_string</a></div><div class="ttdeci">idl_utf8_t idl_version_string(void)</div><div class="ttdoc">Current library version as human-readable string.</div></div>
 <div class="ttc" id="agroup__functions_html_ga92944be4a244fe49a1f6f589c8221bc2"><div class="ttname"><a href="group__functions.html#ga92944be4a244fe49a1f6f589c8221bc2">idl_version</a></div><div class="ttdeci">idl_uint32_t idl_version(void)</div><div class="ttdoc">Current library version as packed 32-bit value.</div></div>
 <div class="ttc" id="agroup__functions_html_ga92ae00ba62d420c02f882c0785c780cf"><div class="ttname"><a href="group__functions.html#ga92ae00ba62d420c02f882c0785c780cf">idl_compiler_reference</a></div><div class="ttdeci">idl_compiler_t idl_compiler_reference(idl_compiler_t compiler)</div><div class="ttdoc">Increments reference count.</div></div>
 <div class="ttc" id="agroup__functions_html_gabf970b9fa31c7acc7eaa31e75ce26515"><div class="ttname"><a href="group__functions.html#gabf970b9fa31c7acc7eaa31e75ce26515">idl_compiler_create</a></div><div class="ttdeci">idl_result_t idl_compiler_create(idl_compiler_t *compiler)</div><div class="ttdoc">Creates new compiler instance.</div></div>
 <div class="ttc" id="agroup__functions_html_gacdcb2f1faedbdfbebe2324025f19bf33"><div class="ttname"><a href="group__functions.html#gacdcb2f1faedbdfbebe2324025f19bf33">idl_compiler_compile</a></div><div class="ttdeci">idl_result_t idl_compiler_compile(idl_compiler_t compiler, idl_generator_t generator, idl_utf8_t file, idl_uint32_t source_count, const idl_source_t *sources, idl_options_t options, idl_compilation_result_t *result)</div><div class="ttdoc">Compile IDL.</div></div>
+<div class="ttc" id="agroup__macros_html_ga53c65bde2815b732dcf2be5629eb6872"><div class="ttname"><a href="group__macros.html#ga53c65bde2815b732dcf2be5629eb6872">IDL_END</a></div><div class="ttdeci">#define IDL_END</div><div class="ttdoc">Ends a C-linkage declaration block.</div><div class="ttdef"><b>Definition</b> idl-platform.h:43</div></div>
 <div class="ttc" id="agroup__macros_html_gaceac4fbeac72c6386eb3b41be02a19fe"><div class="ttname"><a href="group__macros.html#gaceac4fbeac72c6386eb3b41be02a19fe">idl_api</a></div><div class="ttdeci">#define idl_api</div><div class="ttdoc">Controls symbol visibility for shared library builds.</div><div class="ttdef"><b>Definition</b> idl-platform.h:61</div></div>
+<div class="ttc" id="agroup__macros_html_gadac81cfc6ac7b2ebaa328e81ef9adecb"><div class="ttname"><a href="group__macros.html#gadac81cfc6ac7b2ebaa328e81ef9adecb">IDL_BEGIN</a></div><div class="ttdeci">#define IDL_BEGIN</div><div class="ttdoc">Begins a C-linkage declaration block.</div><div class="ttdef"><b>Definition</b> idl-platform.h:42</div></div>
 <div class="ttc" id="agroup__types_html_gaaaae890ceb8079e2322a52831b4e6cac"><div class="ttname"><a href="group__types.html#gaaaae890ceb8079e2322a52831b4e6cac">idl_utf8_t</a></div><div class="ttdeci">const char * idl_utf8_t</div><div class="ttdoc">utf8 string.</div><div class="ttdef"><b>Definition</b> idl-platform.h:124</div></div>
 <div class="ttc" id="agroup__types_html_gaf5b43004febcb29388035843751c7409"><div class="ttname"><a href="group__types.html#gaf5b43004febcb29388035843751c7409">idl_uint32_t</a></div><div class="ttdeci">uint32_t idl_uint32_t</div><div class="ttdoc">32 bit unsigned integer.</div><div class="ttdef"><b>Definition</b> idl-platform.h:119</div></div>
 </div><!-- fragment --></div><!-- contents -->

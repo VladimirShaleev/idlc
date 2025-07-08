@@ -1,5 +1,11 @@
 var NAVTREEINDEX1 =
 {
+"quick-start.html#impl-c-decls":[1,0,3],
+"structidl__api__version__t.html":[3,0,3,1],
+"structidl__api__version__t.html#a8a21f4dc6944f98e73769173ace74350":[3,0,3,1,0],
+"structidl__api__version__t.html#a8beebe1b3a7ee7c62ff6fadec25ea2f0":[3,0,3,1,1],
+"structidl__api__version__t.html#a99bcc9020ac55e7fe3dc4f85c86813d4":[3,0,3,1,2],
+"structidl__message__t.html":[3,0,3,2],
 "structidl__message__t.html#a9568e4c84675b3801bd27389673f9d4f":[3,0,3,2,3],
 "structidl__message__t.html#ac5c33d759f594b29ed84c934518914a8":[3,0,3,2,0],
 "structidl__message__t.html#ac6954744822af07c3db28c94b4144436":[3,0,3,2,2],

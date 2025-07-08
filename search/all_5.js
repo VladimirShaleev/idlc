@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['idl_20specifications_0',['IDL Specifications',['../quick-start.html#autotoc_md2',1,'']]],
+  ['idl_20specifications_0',['IDL Specifications',['../quick-start.html#idl-spec',1,'']]],
   ['idl_2doptions_2eh_1',['idl-options.h',['../idl-options_8h.html',1,'']]],
   ['idl_2dplatform_2eh_2',['idl-platform.h',['../idl-platform_8h.html',1,'']]],
   ['idl_2dresults_2eh_3',['idl-results.h',['../idl-results_8h.html',1,'']]],
@@ -221,6 +221,8 @@ var searchData=
   ['idl_5fversion_5fstringize_218',['IDL_VERSION_STRINGIZE',['../group__macros.html#gabffb48ffd96aa277b2acac089ed9e051',1,'idl-version.h']]],
   ['idl_5fversion_5fstringize_5f_219',['IDL_VERSION_STRINGIZE_',['../group__macros.html#gaee6aab7bddddc60e73ef8d4285242f37',1,'idl-version.h']]],
   ['idl_5fwrite_5fcallback_5ft_220',['idl_write_callback_t',['../group__types.html#ga6b3b673070083f447e436ac3b669c0e4',1,'idl-options.h']]],
-  ['introduction_221',['Introduction',['../index.html',1,'']]],
-  ['is_5ferror_222',['is_error',['../structidl__message__t.html#ac6954744822af07c3db28c94b4144436',1,'idl_message_t']]]
+  ['idlc_20dependency_221',['Adding IDLC Dependency',['../quick-start.html#add-idlc-dep',1,'']]],
+  ['implementing_20c_20declarations_222',['Implementing C Declarations',['../quick-start.html#impl-c-decls',1,'']]],
+  ['introduction_223',['Introduction',['../index.html',1,'']]],
+  ['is_5ferror_224',['is_error',['../structidl__message__t.html#ac6954744822af07c3db28c94b4144436',1,'idl_message_t']]]
 ];

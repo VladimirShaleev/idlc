@@ -26,7 +26,15 @@ var NAVTREE =
 [
   [ "idlc", "index.html", [
     [ "Introduction", "index.html", null ],
-    [ "Quick Start", "quick-start.html", null ],
+    [ "Quick Start", "quick-start.html", [
+      [ "Adding Specifications for a C Library", "quick-start.html#add-c-lib", [
+        [ "IDL Specifications", "quick-start.html#idl-spec", null ],
+        [ "Adding IDLC Dependency", "quick-start.html#add-idlc-dep", null ],
+        [ "Adding CMake Configuration", "quick-start.html#add-cmake-config", null ],
+        [ "Implementing C Declarations", "quick-start.html#impl-c-decls", null ],
+        [ "Testing the Library", "quick-start.html#gtest-lib", null ]
+      ] ]
+    ] ],
     [ "Tutorial", "tutorial.html", null ],
     [ "Documentation", "topics.html", "topics" ]
   ] ]
@@ -35,7 +43,7 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "annotated.html",
-"structidl__message__t.html#a9568e4c84675b3801bd27389673f9d4f"
+"quick-start.html#impl-c-decls"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

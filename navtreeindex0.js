@@ -245,9 +245,9 @@ var NAVTREEINDEX0 =
 "index.html":[0],
 "pages.html":[],
 "quick-start.html":[1],
-"structidl__api__version__t.html":[3,0,3,1],
-"structidl__api__version__t.html#a8a21f4dc6944f98e73769173ace74350":[3,0,3,1,0],
-"structidl__api__version__t.html#a8beebe1b3a7ee7c62ff6fadec25ea2f0":[3,0,3,1,1],
-"structidl__api__version__t.html#a99bcc9020ac55e7fe3dc4f85c86813d4":[3,0,3,1,2],
-"structidl__message__t.html":[3,0,3,2]
+"quick-start.html#add-c-lib":[1,0],
+"quick-start.html#add-cmake-config":[1,0,2],
+"quick-start.html#add-idlc-dep":[1,0,1],
+"quick-start.html#gtest-lib":[1,0,4],
+"quick-start.html#idl-spec":[1,0,0]
 };

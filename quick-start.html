@@ -121,7 +121,91 @@ $(function(){initNavTree('quick-start.html',''); initResizable(true); });
   <div class="headertitle"><div class="title">Quick Start</div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p>TODO:</p>
+<div class="toc"><h3>Table of Contents</h3>
+<ul>
+  <li class="level1 empty">
+    <ul>
+      <li class="level2">
+        <a href="#autotoc_md1">Adding Specifications for a C Library</a>
+        <ul>
+          <li class="level3">
+            <a href="#autotoc_md2">IDL Specifications</a>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+</div>
+<div class="textblock"><h2><a class="anchor" id="autotoc_md1"></a>
+Adding Specifications for a C Library</h2>
+<h3><a class="anchor" id="autotoc_md2"></a>
+IDL Specifications</h3>
+<p>Add <b>IDL</b> specifications anywhere in your library. For example, create a <code>specs</code> folder in your project's root directory and add an <code>api.idl</code> file (or use any other filename).</p>
+<p>A typical project structure might look like this:</p>
+<div class="fragment"><div class="line">lib/</div>
+<div class="line">|-- include/</div>
+<div class="line">|   `-- lib/</div>
+<div class="line">|-- src/</div>
+<div class="line">|   `-- lib.c</div>
+<div class="line">|-- specs/</div>
+<div class="line">|   `-- api.idl</div>
+<div class="line">`-- CMakeLists.txt</div>
+</div><!-- fragment --><p>Add the following content to your <code>api.idl</code> file:</p>
+<div class="fragment"><div class="line">@ API Sample</div>
+<div class="line">@ Author &lt;author@email.org&gt; [author]</div>
+<div class="line">@ MIT License [copyright]</div>
+<div class="line">api Lib</div>
+<div class="line"> </div>
+<div class="line">@ Function sample.</div>
+<div class="line">@ The result of multiplying {First} by {Second}. [return]</div>
+<div class="line">func Mul {Float32}</div>
+<div class="line">    arg First {Float32} @ First value</div>
+<div class="line">    arg Second {Float32} @ Second value</div>
+<div class="line"> </div>
+<div class="line">@ Vector 3.</div>
+<div class="line">struct Vector</div>
+<div class="line">    field X {Float32} @ X component</div>
+<div class="line">    field Y {Float32} @ Y component</div>
+<div class="line">    field Z {Float32} @ Z component</div>
+<div class="line"> </div>
+<div class="line">@ Sample object.</div>
+<div class="line">interface Vehicle</div>
+<div class="line">    @ Create new Vehicle instance.</div>
+<div class="line">    @ Vehicle instance. [return]</div>
+<div class="line">    method Create {Vehicle} [ctor]</div>
+<div class="line">        arg Name {Str} @ Name of vehicle.</div>
+<div class="line"> </div>
+<div class="line">    @ Set velocity of vehicle.</div>
+<div class="line">    method SetVelocity</div>
+<div class="line">        arg Vehicle {Vehicle} [this] @ The &#39;this/self&#39; object in OOP languages.</div>
+<div class="line">        arg Value {Vector} [const,ref] @ Value of velocity.</div>
+<div class="line"> </div>
+<div class="line">    @ Example calculation</div>
+<div class="line">    @ Dot product. [return]</div>
+<div class="line">    method DotVelocity {Float32} [const]</div>
+<div class="line">        arg Vehicle {Vehicle} [this] @ The &#39;this/self&#39; object in OOP languages.</div>
+</div><!-- fragment --><p>While the complete IDL syntax isn't crucial at this stage, here are the key points to understand:</p><ul>
+<li><b>Declarations</b> always begin with keywords like: <code>api</code>, <code>struct</code>, <code>interface</code>, etc.</li>
+<li><b>Naming conventions</b>:<ul>
+<li>Names must start with a capital letter.</li>
+<li>Automatic tokenization occurs at capital letters.</li>
+<li>See the <b>SECTION</b> for customizing tokenization rules.</li>
+</ul>
+</li>
+<li><b>Documentation requirements</b>:<ul>
+<li>Every declaration must include at least <code>[brief]</code> or <code>[detail]</code> documentation.</li>
+<li>Documentation starts with the <code>@</code> symbol - everything until the newline counts as documentation.</li>
+</ul>
+</li>
+<li><b>Attributes</b>:<ul>
+<li>Optional attributes may follow declarations or documentation, enclosed in square brackets <code>[]</code> and comma-separated (e.g., <code>[author]</code> or <code>[const,ref]</code>).</li>
+<li>Note: <code>arg Value {Vector} [const,ref]</code> is syntactic sugar for <code>arg Value [type(Vector),const,ref]</code> (here <code>type</code> explicitly specifies the argument type).</li>
+</ul>
+</li>
+<li><b>Documentation placement</b>: documentation on the same line after a declaration defaults to [detail] documentation for that declaration.</li>
+<li><b>Formatting rules</b>: indentation and line breaks are insignificant in IDL, except within documentation contexts.</li>
+</ul>
 <div class="section_buttons"></div><div class="section_buttons"><table class="markdownTable">
 <tr class="markdownTableHead">
 <th class="markdownTableHeadLeft">Previous   </th><th class="markdownTableHeadRight">Next    </th></tr>

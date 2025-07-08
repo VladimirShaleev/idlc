@@ -23,7 +23,7 @@ lib/
 
 Add the following content to your `api.idl` file:
 
-```idl
+```
 @ API Sample
 @ Author <author@email.org> [author]
 @ MIT License [copyright]

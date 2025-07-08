@@ -54,3 +54,21 @@
     color: var(--page-foreground-color) !important;
     background-color: var(--odd-color);
 }
+
+details > summary {
+    list-style-type: '▶';
+}
+details[open] > summary {
+    list-style-type: '▼';
+}
+details > summary::before {
+  content: none;
+}
+details[open] > summary::before {
+  content: none;
+}
+details {
+    border: 1px solid var(--separator-color);
+    border-radius: var(--border-radius-small);
+    padding: var(--spacing-medium);
+}

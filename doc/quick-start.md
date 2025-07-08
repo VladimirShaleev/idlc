@@ -81,6 +81,8 @@ While the complete IDL syntax isn't crucial at this stage, here are the key poin
 
 ## Adding IDLC Dependency {#add-idlc-dep}
 
+@note This example will use **vcpkg** for dependency management. Install **vcpkg** by following the [official installation guide](https://learn.microsoft.com/vcpkg/get_started/get-started).
+
 **IDLC** is registered in the **vcpkg** user registry. You need to add this registry to your `vcpkg-configuration.json` file:
 
 ```json
@@ -461,6 +463,21 @@ Contents of `./vcpkg.json`:
 }
 ```
 </details>
+
+You can now build the project and run the tests:
+
+```bash
+# Configure the project
+cmake -B build -S .
+# or (if the environment variable VCPKG_ROOT is not set)
+cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=[vcpkg_root]/scripts/buildsystems/vcpkg.cmake
+
+# Build the project
+cmake --build build
+
+# Run tests
+ctest --test-dir build --output-on-failure
+```
 
 <div class="section_buttons">
  

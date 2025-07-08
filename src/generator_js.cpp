@@ -1256,7 +1256,8 @@ static void generateFunctionArgs(idl::Context& ctx,
                                  std::ostream& stream,
                                  ASTDecl* func,
                                  const std::vector<ASTArg*>& args,
-                                 const std::map<ASTArg*, ASTArg*>& sizeArgs) {
+                                 const std::map<ASTArg*, ASTArg*>& sizeArgs,
+                                 bool skipArgNames = false) {
     bool first = true;
     for (auto arg : args) {
         if (sizeArgs.contains(arg)) {
@@ -1275,10 +1276,6 @@ static void generateFunctionArgs(idl::Context& ctx,
         argType->accept(jsname);
         auto jsTypeName = jsname.str;
 
-        jsname.isArray = false;
-        arg->accept(jsname);
-        const auto jsArgName = jsname.str;
-
         if (!first) {
             fmt::print(stream, ", ");
         }
@@ -1295,7 +1292,13 @@ static void generateFunctionArgs(idl::Context& ctx,
             jsTypeName = "std::optional<" + jsTypeName + '>';
         }
 
-        fmt::print(stream, "{}{}{} {}", isConst ? "const " : "", jsTypeName, isR ? "&" : "", jsArgName);
+        fmt::print(stream, "{}{}{}", isConst ? "const " : "", jsTypeName, isR ? "&" : "");
+        if (!skipArgNames) {
+            jsname.isArray = false;
+            arg->accept(jsname);
+            const auto jsArgName = jsname.str;
+            fmt::print(stream, " {}", jsArgName);
+        }
     }
 }
 
@@ -1998,8 +2001,16 @@ static void generateClasses(idl::Context& ctx, std::ostream& stream) {
                     (method->args.size() == 1 && method->args[0]->findAttr<ASTAttrResult>())) {
                     fmt::println(stream, "        .constructor()");
                 } else {
+                    std::map<ASTArg*, ASTArg*> sizeArgs;
+                    for (auto arg : method->args) {
+                        if (auto attr = arg->findAttr<ASTAttrArray>()) {
+                            sizeArgs[attr->decl->decl->as<ASTArg>()] = arg;
+                        } else if (auto attr = arg->findAttr<ASTAttrDataSize>()) {
+                            sizeArgs[attr->decl->decl->as<ASTArg>()] = arg;
+                        }
+                    }
                     std::ostringstream ss;
-                    generateFunctionArgs(ctx, ss, method, method->args, {});
+                    generateFunctionArgs(ctx, ss, method, method->args, sizeArgs, true);
                     fmt::println(stream, "        .constructor<{}>()", ss.str());
                 }
             }

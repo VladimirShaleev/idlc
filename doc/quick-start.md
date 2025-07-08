@@ -61,6 +61,7 @@ interface Vehicle
     @ Dot product. [return]
     method DotVelocity {Float32} [const]
         arg Vehicle {Vehicle} [this] @ The 'this/self' object in OOP languages.
+        arg Value {Vector} [const,ref] @ Value of velocity.
 ```
 
 While the complete IDL syntax isn't crucial at this stage, here are the key points to understand:
@@ -77,10 +78,6 @@ While the complete IDL syntax isn't crucial at this stage, here are the key poin
   * Note: `arg Value {Vector} [const,ref]` is syntactic sugar for `arg Value [type(Vector),const,ref]` (here `type` explicitly specifies the argument type).
 - **Documentation placement**: documentation on the same line after a declaration defaults to `[detail]` documentation for that declaration.
 - **Formatting rules**: indentation and line breaks are insignificant in **IDL**, except within documentation contexts.
-
-### Добавить зависимость от IDLC
-
-IDLC находится в пользовательском реестре vcpkg. Поэтому необходимо добавить репозиторий в vcpkg-configuration.json:
 
 ### Adding IDLC Dependency
 
@@ -250,11 +247,207 @@ void lib_vehicle_set_velocity(lib_vehicle_t vehicle, const lib_vector_t *value)
     vehicle->velocity = *value;
 }
 
-lib_float32_t lib_vehicle_dot_velocity(lib_vehicle_t vehicle)
+lib_float32_t lib_vehicle_dot_velocity(lib_vehicle_t vehicle, const lib_vector_t *value)
 {
     assert(vehicle);
-    const lib_vector_t* vec = &vehicle->velocity;
-    return vec->x * vec->x + vec->y * vec->y + vec->z * vec->z;
+    const lib_vector_t *vec = &vehicle->velocity;
+    return vec->x * value->x + vec->y * value->y + vec->z * value->z;
+}
+```
+</details>
+
+### Testing the Library
+
+We'll add **gtest** to test the library:
+
+```cpp
+#include <lib/lib.h>
+
+#include <gtest/gtest.h>
+
+TEST(FunctionTest, Mul)
+{
+    const auto expected = 7.68f;
+
+    const auto actual = lib_mul(3.2f, 2.4f);
+
+    EXPECT_FLOAT_EQ(expected, actual);
+}
+
+TEST(ObjectTest, Dot)
+{
+    const auto expected = 10.0f;
+
+    lib_vehicle_t vehicle = lib_vehicle_create("test");
+    ASSERT_NE(vehicle, nullptr);
+
+    lib_vector_t first{1.0f, 2.0f, 3.0f};
+    lib_vehicle_set_velocity(vehicle, &first);
+
+    lib_vector_t second{3.0f, 2.0f, 1.0f};
+    const auto actual = lib_vehicle_dot_velocity(vehicle, &second);
+
+    lib_vehicle_destroy(vehicle);
+
+    ASSERT_FLOAT_EQ(expected, actual);
+}
+```
+
+<details>
+<summary>View all changes</summary>
+
+Current project structure:
+
+```
+lib/
+|-- cmake/
+|   `-- lib-config.cmake.in
+|-- include/
+|   `-- lib/
+|       |-- lib-version.h
+|       |-- lib-platform.h
+|       |-- lib-types.h
+|       `-- lib.h
+|-- src/
+|   `-- lib.c
+|-- tests/
+|   |-- CMakeLists.txt
+|   `-- tests.cpp
+|-- specs/
+|   `-- api.idl
+|-- CMakeLists.txt
+|-- vcpkg-configuration.json
+`-- vcpkg.json
+```
+
+Contents of `./CMakeLists.txt` (including **install** target):
+
+```cmake
+cmake_minimum_required(VERSION 3.16)
+
+# Pass CMAKE_TOOLCHAIN_FILE as a parameter -DCMAKE_TOOLCHAIN_FILE
+# when configuring or add CMAKE_TOOLCHAIN_FILE to CMakePresets.json
+if(NOT DEFINED CMAKE_TOOLCHAIN_FILE AND DEFINED ENV{VCPKG_ROOT})
+    set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain file")
+endif()
+
+option(LIB_BUILD_TESTS "Build tests" ON)
+if(LIB_BUILD_TESTS)
+    list(APPEND VCPKG_MANIFEST_FEATURES "tests")
+endif()
+
+project(lib VERSION 1.0.0 LANGUAGES C CXX)
+
+option(LIB_MSVC_DYNAMIC_RUNTIME "Link dynamic runtime library instead of static" OFF)
+option(LIB_ENABLE_INSTALL "Enable installation" ON)
+
+find_package(idlc CONFIG REQUIRED)
+idlc_compile(NAME api WARN_AS_ERRORS
+    SOURCE "${PROJECT_SOURCE_DIR}/specs/api.idl"
+    OUTPUT "${PROJECT_SOURCE_DIR}/include/lib/lib.h"
+    VERSION ${PROJECT_VERSION}
+    GENERATOR C)
+
+add_library(lib src/lib.c ${IDLC_api_OUTPUTS})
+add_library(lib::lib ALIAS lib)
+target_include_directories(lib PUBLIC
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>)
+set_target_properties(lib PROPERTIES
+    CXX_STANDARD_REQUIRED ON
+    CXX_EXTENSIONS OFF
+    POSITION_INDEPENDENT_CODE ON
+    WINDOWS_EXPORT_ALL_SYMBOLS OFF)
+if(BUILD_SHARED_LIBS)
+    set_target_properties(lib PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION_MAJOR})
+    set_target_properties(lib PROPERTIES CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)
+else()
+    target_compile_definitions(lib PUBLIC LIB_STATIC_BUILD)
+endif()
+if(MSVC)
+    if(LIB_MSVC_DYNAMIC_RUNTIME)
+        set_target_properties(lib PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+    else()
+        set_target_properties(lib PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    endif()
+endif()
+
+if(LIB_BUILD_TESTS)
+    add_subdirectory(tests)
+endif()
+
+if(LIB_ENABLE_INSTALL)
+    include(CMakePackageConfigHelpers)
+    include(GNUInstallDirs)
+    configure_package_config_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/cmake/${PROJECT_NAME}-config.cmake.in" 
+        "${PROJECT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
+        INSTALL_DESTINATION "${CMAKE_INSTALL_DATADIR}/cmake/${PROJECT_NAME}"
+        NO_SET_AND_CHECK_MACRO
+        NO_CHECK_REQUIRED_COMPONENTS_MACRO)
+
+    write_basic_package_version_file(${PROJECT_NAME}-config-version.cmake
+        VERSION ${PROJECT_VERSION}
+        COMPATIBILITY SameMajorVersion)
+
+    install(TARGETS ${PROJECT_NAME} EXPORT ${PROJECT_NAME}-targets)
+    install(EXPORT ${PROJECT_NAME}-targets 
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/cmake/${PROJECT_NAME}"
+        NAMESPACE ${PROJECT_NAME}::)
+    install(
+        FILES
+            "${PROJECT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake"
+            "${PROJECT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/${PROJECT_NAME})
+    install(DIRECTORY include/ DESTINATION include)
+endif()
+```
+
+Contents of `./cmake/lib-config.cmake.in`:
+
+
+```cmake
+@PACKAGE_INIT@
+include("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@-targets.cmake")
+```
+
+Contents of `./tests/CMakeLists.txt`:
+
+```cmake
+enable_testing()
+
+find_package(GTest CONFIG REQUIRED)
+
+add_executable(lib-tests tests.cpp)
+target_link_libraries(lib-tests PRIVATE lib::lib)
+target_link_libraries(lib-tests PRIVATE GTest::gtest GTest::gtest_main)
+target_compile_features(lib-tests PRIVATE cxx_std_20)
+set_target_properties(lib-tests PROPERTIES
+    CXX_STANDARD_REQUIRED ON
+    CXX_EXTENSIONS OFF
+    POSITION_INDEPENDENT_CODE ON
+    WINDOWS_EXPORT_ALL_SYMBOLS OFF)
+
+add_test(AllTestsInMain lib-tests)
+```
+
+Contents of `./vcpkg.json`:
+
+```json
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+  "name": "lib",
+  "dependencies": [
+    "idlc"
+  ],
+  "features": {
+    "tests": {
+      "description": "Build tests",
+      "dependencies": [
+        "gtest"
+      ]
+    }
+  }
 }
 ```
 </details>

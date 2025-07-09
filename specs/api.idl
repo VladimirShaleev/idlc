@@ -1,0 +1,46 @@
+@ API Sample
+@ Author <author@email.org> [author]
+@ MIT License [copyright]
+api Sample
+
+@ Function sample.
+@ The result of multiplying {First} by {Second}. [return]
+func Mul {Float32}
+    arg First {Float32} @ First value
+    arg Second {Float32} @ Second value
+
+@ Vector 3.
+struct Vector
+    field X {Float32} @ X component
+    field Y {Float32} @ Y component
+    field Z {Float32} @ Z component
+
+@ Sample object.
+interface Vehicle
+    prop Name [get(GetName)] @ Name of vehicle
+
+    @ Create new vehicle instance.
+    @ Vehicle instance. [return]
+    method Create {Vehicle} [ctor]
+        arg Name {Str} @ Name of vehicle.
+
+    @ Destroy vehicle instance.
+    method Destroy [destroy]
+        arg Vehicle {Vehicle} [this] @ The 'this/self' object in OOP languages.
+
+    @ Get name
+    @ Get name of vehicle [detail]
+    @ Return name of vehicle [return]
+    method GetName {Str} [const]
+        arg Vehicle {Vehicle} [this] @ The 'this/self' object in OOP languages.
+
+    @ Set velocity of vehicle.
+    method SetVelocity
+        arg Vehicle {Vehicle} [this] @ The 'this/self' object in OOP languages.
+        arg Value {Vector} [const,ref] @ Value of velocity.
+
+    @ Example calculation
+    @ Dot product. [return]
+    method DotVelocity {Float32} [const]
+        arg Vehicle {Vehicle} [this] @ The 'this/self' object in OOP languages.
+        arg Value {Vector} [const,ref] @ Value of velocity.

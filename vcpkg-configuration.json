@@ -1,0 +1,19 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg-configuration.schema.json",
+  "default-registry": {
+    "kind": "git",
+    "baseline": "0cf34c184ce990471435b5b9c92edcf7424930b1",
+    "repository": "https://github.com/microsoft/vcpkg"
+  },
+  "registries": [
+    {
+      "kind": "git",
+      "baseline": "4928d7f5d89d48ed446e15b1ab97d6dff9364cd2",
+      "reference": "vcpkg-registry",
+      "repository": "https://github.com/VladimirShaleev/idlc",
+      "packages": [
+        "idlc"
+      ]
+    }
+  ]
+}

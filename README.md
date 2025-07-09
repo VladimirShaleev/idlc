@@ -36,6 +36,9 @@ ctest --output-on-failure
 ```bash
 # Build js modules
 npm run build
+
+# Run tests
+npm run tests
 ```
 
 ## How does this work

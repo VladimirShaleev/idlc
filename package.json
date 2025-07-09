@@ -18,9 +18,9 @@
   },
   "scripts": {
     "build": "cmake -Bwasmbuild -S. -DVCPKG_TARGET_TRIPLET=wasm32-emscripten -DCMAKE_TOOLCHAIN_FILE=${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=${EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake -DCMAKE_CROSSCOMPILING_EMULATOR=${EMSDK_NODE} -DSAMPLE_BUILD_TESTS=OFF -DSAMPLE_ENABLE_INSTALL=OFF -G Ninja -DCMAKE_BUILD_TYPE=MinSizeRel && cmake --build wasmbuild",
-    "test:node-umd": "node tests/node-test-umd.js",
-    "test:node-esm": "node tests/node-test-esm.js",
-    "test": "npm run test:node-umd && npm run test:node-esm"
+    "tests:node-umd": "node tests/node-test-umd.js",
+    "tests:node-esm": "node tests/node-test-esm.js",
+    "tests": "npm run tests:node-umd && npm run tests:node-esm"
   },
   "repository": {
     "type": "git",

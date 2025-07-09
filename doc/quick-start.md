@@ -2,9 +2,24 @@
 
 @tableofcontents
 
-# Adding Specifications for a C Library {#add-c-lib}
+# Creating a Simple C Library
 
-## IDL Specifications {#idl-spec}
+Here we'll create a simple C library using **IDLC**:
+- ready for distribution via packages like **.deb** or package managers like **vcpkg** or **Conan**;
+- then we'll package this library as an **npm** package for native use in JavaScript applications.
+
+You can clone and build the ready-made example from [this branch](TODO).
+
+To build the library, you'll need:
+- Build tools installed on your system;
+- CMake;
+- Preferably, the [vcpkg](https://learn.microsoft.com/vcpkg/get_started/get-started) package manager installed.
+
+Alternatively, you can use the **Dev Container** provided with the library, which comes preconfigured with all the necessary tools for building the C library and creating the npm package.
+
+## Adding Specifications for a C Library {#add-c-lib}
+
+### IDL Specifications {#idl-spec}
 
 Add **IDL** specifications anywhere in your library. For example, create a `specs` folder in your project's root directory and add an `api.idl` file (or use any other filename).
 
@@ -79,7 +94,7 @@ While the complete IDL syntax isn't crucial at this stage, here are the key poin
 - **Documentation placement**: documentation on the same line after a declaration defaults to `[detail]` documentation for that declaration.
 - **Formatting rules**: indentation and line breaks are insignificant in **IDL**, except within documentation contexts.
 
-## Adding IDLC Dependency {#add-idlc-dep}
+### Adding IDLC Dependency {#add-idlc-dep}
 
 @note This example will use **vcpkg** for dependency management. Install **vcpkg** by following the [official installation guide](https://learn.microsoft.com/vcpkg/get_started/get-started).
 
@@ -136,7 +151,7 @@ lib/
 `-- vcpkg.json
 ```
 
-## Adding CMake Configuration {#add-cmake-config}
+### Adding CMake Configuration {#add-cmake-config}
 
 ```cmake
 find_package(idlc CONFIG REQUIRED)
@@ -181,6 +196,7 @@ set_target_properties(lib PROPERTIES
     CXX_EXTENSIONS OFF
     POSITION_INDEPENDENT_CODE ON
     WINDOWS_EXPORT_ALL_SYMBOLS OFF)
+target_compile_definitions(lib PRIVATE _CRT_SECURE_NO_WARNINGS)
 if(BUILD_SHARED_LIBS)
     set_target_properties(lib PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION_MAJOR})
     set_target_properties(lib PROPERTIES CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)
@@ -199,7 +215,7 @@ endif()
 
 The `api` `NAME` specified in `idlc_compile` will be used to form the `IDLC_<NAME>_OUTPUTS` variable containing the generated output files.
 
-## Implementing C Declarations {#impl-c-decls}
+### Implementing C Declarations {#impl-c-decls}
 
 The public headers are now automatically updated when `.idl` specifications change. You can now implement the generated function definitions.
 
@@ -230,7 +246,7 @@ lib_vehicle_t lib_vehicle_create(lib_utf8_t name)
 {
     lib_vehicle_t instance = (lib_vehicle_t)malloc(sizeof(struct _lib_vehicle));
     memset(instance, 0, sizeof(struct _lib_vehicle));
-    strncpy_s(instance->name, NAME_LENGHT, name, strlen(name));
+    strncpy(instance->name, name, NAME_LENGTH);
     return instance;
 }
 
@@ -258,7 +274,7 @@ lib_float32_t lib_vehicle_dot_velocity(lib_vehicle_t vehicle, const lib_vector_t
 ```
 </details>
 
-## Testing the Library {#gtest-lib}
+### Testing the Library {#gtest-lib}
 
 We'll add **gtest** to test the library:
 
@@ -361,6 +377,7 @@ set_target_properties(lib PROPERTIES
     CXX_EXTENSIONS OFF
     POSITION_INDEPENDENT_CODE ON
     WINDOWS_EXPORT_ALL_SYMBOLS OFF)
+target_compile_definitions(lib PRIVATE _CRT_SECURE_NO_WARNINGS)
 if(BUILD_SHARED_LIBS)
     set_target_properties(lib PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION_MAJOR})
     set_target_properties(lib PROPERTIES CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)

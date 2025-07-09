@@ -17,6 +17,19 @@ Alternatively, you can use the **Dev Container** provided with the library, whic
 
 ## Building 
 
-TODO:
+### Building and testing the C library
+
+```bash
+# Configure the project
+cmake -B build -S .
+
+# Build the project
+cmake --build build
+
+# Run tests
+ctest --test-dir build --output-on-failure
+```
 
 ## How does this work
+
+TODO:

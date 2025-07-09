@@ -20,6 +20,18 @@ Alternatively, you can use the [Dev Container](https://code.visualstudio.com/doc
 
 ## Building 
 
+Clone repository:
+
+```bash
+git clone -b sample https://github.com/VladimirShaleev/idlc.git idlc-sample
+```
+
+then, if you use vscode, you can open the project in **Dev Container**
+
+![Dev Container](.devcontainer/devcontainer.png "DevContainer")
+
+by selecting the `idlc-sample` directory.
+
 ### Building and testing the C library
 
 ```bash

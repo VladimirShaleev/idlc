@@ -14,6 +14,7 @@ project(sample
 
 option(SAMPLE_MSVC_DYNAMIC_RUNTIME "Link dynamic runtime library instead of static" OFF)
 option(SAMPLE_ENABLE_INSTALL "Enable installation" ON)
+option(SAMPLE_BUILD_PACKAGES "Build packages" OFF)
 
 find_package(idlc CONFIG REQUIRED)
 idlc_compile(NAME api WARN_AS_ERRORS
@@ -105,4 +106,8 @@ if(SAMPLE_ENABLE_INSTALL)
             "${PROJECT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
         DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/${PROJECT_NAME})
     install(DIRECTORY include/ DESTINATION include)
+endif()
+
+if(SAMPLE_BUILD_PACKAGES)
+    include(cmake/package.cmake)
 endif()

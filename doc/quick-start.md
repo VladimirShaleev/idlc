@@ -25,11 +25,11 @@ Add **IDL** specifications anywhere in your library. For example, create a `spec
 A typical project structure might look like this:
 
 ```
-lib/
+sample/
 |-- include/
-|   `-- lib/
+|   `-- sample/
 |-- src/
-|   `-- lib.c
+|   `-- sample.c
 |-- specs/
 |   `-- api.idl
 `-- CMakeLists.txt
@@ -41,7 +41,7 @@ Add the following content to your `api.idl` file:
 @ API Sample
 @ Author <author@email.org> [author]
 @ MIT License [copyright]
-api Lib
+api Sample
 
 @ Function sample.
 @ The result of multiplying {First} by {Second}. [return]
@@ -57,6 +57,8 @@ struct Vector
 
 @ Sample object.
 interface Vehicle
+    prop Name [get(GetName)] @ Name of vehicle
+
     @ Create new vehicle instance.
     @ Vehicle instance. [return]
     method Create {Vehicle} [ctor]
@@ -64,6 +66,12 @@ interface Vehicle
 
     @ Destroy vehicle instance.
     method Destroy [destroy]
+        arg Vehicle {Vehicle} [this] @ The 'this/self' object in OOP languages.
+
+    @ Get name
+    @ Get name of vehicle [detail]
+    @ Return name of vehicle [return]
+    method GetName {Str} [const]
         arg Vehicle {Vehicle} [this] @ The 'this/self' object in OOP languages.
 
     @ Set velocity of vehicle.
@@ -110,7 +118,7 @@ While the complete IDL syntax isn't crucial at this stage, here are the key poin
   "registries": [
     {
       "kind": "git",
-      "baseline": "4928d7f5d89d48ed446e15b1ab97d6dff9364cd2",
+      "baseline": "466d36bf27d03a502568a473b1f37b855dd5ae07",
       "reference": "vcpkg-registry",
       "repository": "https://github.com/VladimirShaleev/idlc",
       "packages": [
@@ -126,7 +134,7 @@ Then add the dependency in your `vcpkg.json` file:
 ```json
 {
   "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
-  "name": "lib",
+  "name": "sample",
   "dependencies": [
     "idlc"
   ]
@@ -138,14 +146,14 @@ The **idlc** dependency will add the **idlc** build host tool. This means that w
 The project structure now looks like this:
 
 ```
-lib/
+sample/
 |-- include/
-|   `-- lib/
+|   `-- sample/
 |-- src/
-|   `-- lib.c
+|   `-- sample.c
 |-- specs/
 |   `-- api.idl
-|-- CMakeLists.txt
+`-- CMakeLists.txt
 |-- vcpkg-configuration.json
 `-- vcpkg.json
 ```
@@ -156,11 +164,11 @@ lib/
 find_package(idlc CONFIG REQUIRED)
 idlc_compile(NAME api WARN_AS_ERRORS
     SOURCE "${PROJECT_SOURCE_DIR}/specs/api.idl"
-    OUTPUT "${PROJECT_SOURCE_DIR}/include/lib/lib.h"
+    OUTPUT "${PROJECT_SOURCE_DIR}/include/sample/sample.h"
     VERSION ${PROJECT_VERSION}
     GENERATOR C)
 
-add_library(lib src/lib.c ${IDLC_api_OUTPUTS})
+add_library(sample src/sample.c ${IDLC_api_OUTPUTS})
 ```
 
 <details>
@@ -169,44 +177,47 @@ add_library(lib src/lib.c ${IDLC_api_OUTPUTS})
 ```cmake
 cmake_minimum_required(VERSION 3.16)
 
-# Pass CMAKE_TOOLCHAIN_FILE as a parameter -DCMAKE_TOOLCHAIN_FILE
-# when configuring or add CMAKE_TOOLCHAIN_FILE to CMakePresets.json
-if(NOT DEFINED CMAKE_TOOLCHAIN_FILE AND DEFINED ENV{VCPKG_ROOT})
-    set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain file")
+option(SAMPLE_BUILD_TESTS "Build tests" ON)
+if(SAMPLE_BUILD_TESTS)
+    list(APPEND VCPKG_MANIFEST_FEATURES "tests")
 endif()
 
-project(lib VERSION 1.0.0 LANGUAGES C)
+project(sample
+    DESCRIPTION "Example of creating a library"
+    VERSION 1.0.0
+    LANGUAGES C CXX)
 
-option(LIB_MSVC_DYNAMIC_RUNTIME "Link dynamic runtime library instead of static" OFF)
+option(SAMPLE_MSVC_DYNAMIC_RUNTIME "Link dynamic runtime library instead of static" OFF)
 
 find_package(idlc CONFIG REQUIRED)
 idlc_compile(NAME api WARN_AS_ERRORS
     SOURCE "${PROJECT_SOURCE_DIR}/specs/api.idl"
-    OUTPUT "${PROJECT_SOURCE_DIR}/include/lib/lib.h"
+    OUTPUT "${PROJECT_SOURCE_DIR}/include/sample/sample.h"
     VERSION ${PROJECT_VERSION}
     GENERATOR C)
 
-add_library(lib src/lib.c ${IDLC_api_OUTPUTS})
-target_include_directories(lib PUBLIC
+add_library(sample src/sample.c ${IDLC_api_OUTPUTS})
+add_library(sample::sample ALIAS sample)
+target_include_directories(sample PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>)
-set_target_properties(lib PROPERTIES
+set_target_properties(sample PROPERTIES
     CXX_STANDARD_REQUIRED ON
     CXX_EXTENSIONS OFF
     POSITION_INDEPENDENT_CODE ON
     WINDOWS_EXPORT_ALL_SYMBOLS OFF)
-target_compile_definitions(lib PRIVATE _CRT_SECURE_NO_WARNINGS)
+target_compile_definitions(sample PRIVATE _CRT_SECURE_NO_WARNINGS)
 if(BUILD_SHARED_LIBS)
-    set_target_properties(lib PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION_MAJOR})
-    set_target_properties(lib PROPERTIES CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)
+    set_target_properties(sample PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION_MAJOR})
+    set_target_properties(sample PROPERTIES CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)
 else()
-    target_compile_definitions(lib PUBLIC LIB_STATIC_BUILD)
+    target_compile_definitions(sample PUBLIC SAMPLE_STATIC_BUILD)
 endif()
 if(MSVC)
-    if(LIB_MSVC_DYNAMIC_RUNTIME)
-        set_target_properties(lib PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+    if(SAMPLE_MSVC_DYNAMIC_RUNTIME)
+        set_target_properties(sample PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
     else()
-        set_target_properties(lib PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+        set_target_properties(sample PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
     endif()
 endif()
 ```
@@ -219,37 +230,37 @@ The `api` `NAME` specified in `idlc_compile` will be used to form the `IDLC_<NAM
 The public headers are now automatically updated when `.idl` specifications change. You can now implement the generated function definitions.
 
 <details>
-<summary>Here's an example implementation (`lib.c`)</summary>
+<summary>Here's an example implementation (`sample.c`)</summary>
 
 ```c
-#include "lib/lib.h"
+#include "sample/sample.h"
 
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 
-#define NAME_LENGHT 256
+#define NAME_LENGTH 256
 
-struct _lib_vehicle
+struct _sample_vehicle
 {
-    char name[NAME_LENGHT];
-    lib_vector_t velocity;
+    char name[NAME_LENGTH];
+    sample_vector_t velocity;
 };
 
-lib_float32_t lib_mul(lib_float32_t first, lib_float32_t second)
+sample_float32_t sample_mul(sample_float32_t first, sample_float32_t second)
 {
     return first * second;
 }
 
-lib_vehicle_t lib_vehicle_create(lib_utf8_t name)
+sample_vehicle_t sample_vehicle_create(sample_utf8_t name)
 {
-    lib_vehicle_t instance = (lib_vehicle_t)malloc(sizeof(struct _lib_vehicle));
-    memset(instance, 0, sizeof(struct _lib_vehicle));
+    sample_vehicle_t instance = (sample_vehicle_t)malloc(sizeof(struct _sample_vehicle));
+    memset(instance, 0, sizeof(struct _sample_vehicle));
     strncpy(instance->name, name, NAME_LENGTH);
     return instance;
 }
 
-void lib_vehicle_destroy(lib_vehicle_t vehicle)
+void sample_vehicle_destroy(sample_vehicle_t vehicle)
 {
     if (vehicle)
     {
@@ -257,28 +268,34 @@ void lib_vehicle_destroy(lib_vehicle_t vehicle)
     }
 }
 
-void lib_vehicle_set_velocity(lib_vehicle_t vehicle, const lib_vector_t *value)
+sample_utf8_t sample_vehicle_get_name(sample_vehicle_t vehicle)
+{
+    assert(vehicle);
+    return vehicle->name;
+}
+
+void sample_vehicle_set_velocity(sample_vehicle_t vehicle, const sample_vector_t *value)
 {
     assert(vehicle);
     assert(value);
     vehicle->velocity = *value;
 }
 
-lib_float32_t lib_vehicle_dot_velocity(lib_vehicle_t vehicle, const lib_vector_t *value)
+sample_float32_t sample_vehicle_dot_velocity(sample_vehicle_t vehicle, const sample_vector_t *value)
 {
     assert(vehicle);
-    const lib_vector_t *vec = &vehicle->velocity;
+    const sample_vector_t *vec = &vehicle->velocity;
     return vec->x * value->x + vec->y * value->y + vec->z * value->z;
 }
 ```
 </details>
 
-### Testing the Library {#gtest-lib}
+### Testing the Library {#doctest-lib}
 
-We'll add **gtest** to test the library:
+We'll add **doctest** to test the library:
 
 ```cpp
-#include <lib/lib.h>
+#include <sample/sample.h>
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
@@ -287,7 +304,7 @@ TEST_CASE("mul test")
 {
     const auto expected = doctest::Approx(7.68f).epsilon(0.01f);
 
-    const auto actual = lib_mul(3.2f, 2.4f);
+    const auto actual = sample_mul(3.2f, 2.4f);
 
     CHECK(expected == actual);
 }
@@ -296,16 +313,16 @@ TEST_CASE("object test")
 {
     const auto expected = doctest::Approx(10.0f).epsilon(0.01f);
 
-    lib_vehicle_t vehicle = lib_vehicle_create("test");
+    sample_vehicle_t vehicle = sample_vehicle_create("test");
     CHECK(vehicle != nullptr);
 
-    lib_vector_t first{1.0f, 2.0f, 3.0f};
-    lib_vehicle_set_velocity(vehicle, &first);
+    sample_vector_t first{1.0f, 2.0f, 3.0f};
+    sample_vehicle_set_velocity(vehicle, &first);
 
-    lib_vector_t second{3.0f, 2.0f, 1.0f};
-    const auto actual = lib_vehicle_dot_velocity(vehicle, &second);
+    sample_vector_t second{3.0f, 2.0f, 1.0f};
+    const auto actual = sample_vehicle_dot_velocity(vehicle, &second);
 
-    lib_vehicle_destroy(vehicle);
+    sample_vehicle_destroy(vehicle);
 
     CHECK(expected == actual);
 }
@@ -317,17 +334,18 @@ TEST_CASE("object test")
 Current project structure:
 
 ```
-lib/
+sample/
 |-- cmake/
-|   `-- lib-config.cmake.in
+|   |-- vcpkg.cmake
+|   `-- sample-config.cmake.in
 |-- include/
-|   `-- lib/
-|       |-- lib-version.h
-|       |-- lib-platform.h
-|       |-- lib-types.h
-|       `-- lib.h
+|   `-- sample/
+|       |-- sample-version.h
+|       |-- sample-platform.h
+|       |-- sample-types.h
+|       `-- sample.h
 |-- src/
-|   `-- lib.c
+|   `-- sample.c
 |-- tests/
 |   |-- CMakeLists.txt
 |   `-- tests.cpp
@@ -343,60 +361,59 @@ Contents of `./CMakeLists.txt` (including **install** target):
 ```cmake
 cmake_minimum_required(VERSION 3.16)
 
-# Pass CMAKE_TOOLCHAIN_FILE as a parameter -DCMAKE_TOOLCHAIN_FILE
-# when configuring or add CMAKE_TOOLCHAIN_FILE to CMakePresets.json
-if(NOT DEFINED CMAKE_TOOLCHAIN_FILE AND DEFINED ENV{VCPKG_ROOT})
-    set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain file")
-endif()
+include(cmake/vcpkg.cmake)
 
-option(LIB_BUILD_TESTS "Build tests" ON)
-if(LIB_BUILD_TESTS)
+option(SAMPLE_BUILD_TESTS "Build tests" ON)
+if(SAMPLE_BUILD_TESTS)
     list(APPEND VCPKG_MANIFEST_FEATURES "tests")
 endif()
 
-project(lib VERSION 1.0.0 LANGUAGES C CXX)
+project(sample
+    DESCRIPTION "Example of creating a library"
+    VERSION 1.0.0
+    LANGUAGES C CXX)
 
-option(LIB_MSVC_DYNAMIC_RUNTIME "Link dynamic runtime library instead of static" OFF)
-option(LIB_ENABLE_INSTALL "Enable installation" ON)
+option(SAMPLE_MSVC_DYNAMIC_RUNTIME "Link dynamic runtime library instead of static" OFF)
+option(SAMPLE_ENABLE_INSTALL "Enable installation" ON)
 
 find_package(idlc CONFIG REQUIRED)
 idlc_compile(NAME api WARN_AS_ERRORS
     SOURCE "${PROJECT_SOURCE_DIR}/specs/api.idl"
-    OUTPUT "${PROJECT_SOURCE_DIR}/include/lib/lib.h"
+    OUTPUT "${PROJECT_SOURCE_DIR}/include/sample/sample.h"
     VERSION ${PROJECT_VERSION}
     GENERATOR C)
 
-add_library(lib src/lib.c ${IDLC_api_OUTPUTS})
-add_library(lib::lib ALIAS lib)
-target_include_directories(lib PUBLIC
+add_library(sample src/sample.c ${IDLC_api_OUTPUTS})
+add_library(sample::sample ALIAS sample)
+target_include_directories(sample PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>)
-set_target_properties(lib PROPERTIES
+set_target_properties(sample PROPERTIES
     CXX_STANDARD_REQUIRED ON
     CXX_EXTENSIONS OFF
     POSITION_INDEPENDENT_CODE ON
     WINDOWS_EXPORT_ALL_SYMBOLS OFF)
-target_compile_definitions(lib PRIVATE _CRT_SECURE_NO_WARNINGS)
+target_compile_definitions(sample PRIVATE _CRT_SECURE_NO_WARNINGS)
 if(BUILD_SHARED_LIBS)
-    set_target_properties(lib PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION_MAJOR})
-    set_target_properties(lib PROPERTIES CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)
+    set_target_properties(sample PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION_MAJOR})
+    set_target_properties(sample PROPERTIES CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)
 else()
-    target_compile_definitions(lib PUBLIC LIB_STATIC_BUILD)
+    target_compile_definitions(sample PUBLIC SAMPLE_STATIC_BUILD)
 endif()
 if(MSVC)
-    if(LIB_MSVC_DYNAMIC_RUNTIME)
-        set_target_properties(lib PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+    if(SAMPLE_MSVC_DYNAMIC_RUNTIME)
+        set_target_properties(sample PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
     else()
-        set_target_properties(lib PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+        set_target_properties(sample PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
     endif()
 endif()
 
-if(LIB_BUILD_TESTS)
+if(SAMPLE_BUILD_TESTS)
     include(CTest)
     add_subdirectory(tests)
 endif()
 
-if(LIB_ENABLE_INSTALL)
+if(SAMPLE_ENABLE_INSTALL)
     include(CMakePackageConfigHelpers)
     include(GNUInstallDirs)
     configure_package_config_file(
@@ -423,7 +440,34 @@ if(LIB_ENABLE_INSTALL)
 endif()
 ```
 
-Contents of `./cmake/lib-config.cmake.in`:
+Contents of `./cmake/.vcpkg.cmake`:
+
+```cmake
+if(DEFINED Z_VCPKG_ROOT_DIR)
+    return()
+endif()
+
+if(DEFINED CMAKE_TOOLCHAIN_FILE)
+    return()
+endif()
+
+if(DEFINED ENV{VCPKG_ROOT})
+    set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain file")
+else()
+    message(WARNING "vcpkg not found, so will be installed in the project build directory; "
+        "it is recommended to install vcpkg according to the instructions, which will "
+        "allow correct caching of build dependencies (https://learn.microsoft.com/vcpkg/get_started/get-started)")
+    include(FetchContent)
+    FetchContent_Declare(
+        vcpkg
+        GIT_REPOSITORY https://github.com/microsoft/vcpkg/
+        GIT_TAG 2025.06.13)
+    FetchContent_MakeAvailable(vcpkg)
+    set(CMAKE_TOOLCHAIN_FILE "${vcpkg_SOURCE_DIR}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain file")
+endif()
+```
+
+Contents of `./cmake/sample-config.cmake.in`:
 
 
 ```cmake
@@ -436,27 +480,27 @@ Contents of `./tests/CMakeLists.txt`:
 ```cmake
 enable_testing()
 
-find_package(GTest CONFIG REQUIRED)
+find_package(doctest CONFIG REQUIRED)
 
-add_executable(lib-tests tests.cpp)
-target_link_libraries(lib-tests PRIVATE lib::lib)
-target_link_libraries(lib-tests PRIVATE doctest::doctest)
-target_compile_features(lib-tests PRIVATE cxx_std_20)
-set_target_properties(lib-tests PROPERTIES
+add_executable(sample-tests tests.cpp)
+target_link_libraries(sample-tests PRIVATE sample::sample)
+target_link_libraries(sample-tests PRIVATE doctest::doctest)
+target_compile_features(sample-tests PRIVATE cxx_std_20)
+set_target_properties(sample-tests PROPERTIES
     CXX_STANDARD_REQUIRED ON
     CXX_EXTENSIONS OFF
     POSITION_INDEPENDENT_CODE ON
     WINDOWS_EXPORT_ALL_SYMBOLS OFF)
 if(MSVC)
-    if(LIB_MSVC_DYNAMIC_RUNTIME)
-        set_target_properties(lib-tests PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+    if(SAMPLE_MSVC_DYNAMIC_RUNTIME)
+        set_target_properties(sample-tests PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
     else()
-        set_target_properties(lib-tests PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+        set_target_properties(sample-tests PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
     endif()
 endif()
 
 include(doctest)
-doctest_discover_tests(lib-tests)
+doctest_discover_tests(sample-tests)
 ```
 
 Contents of `./vcpkg.json`:
@@ -464,7 +508,7 @@ Contents of `./vcpkg.json`:
 ```json
 {
   "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
-  "name": "lib",
+  "name": "sample",
   "dependencies": [
     "idlc"
   ],
@@ -485,13 +529,14 @@ You can now build the project and run the tests:
 ```bash
 # Configure the project
 cmake -B build -S .
-# or (if the environment variable VCPKG_ROOT is not set)
-cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=[vcpkg_root]/scripts/buildsystems/vcpkg.cmake
 
 # Build the project
 cmake --build build
 
 # Run tests
+cd build
+ctest --output-on-failure
+# or (if cmake >= 3.20)
 ctest --test-dir build --output-on-failure
 ```
 

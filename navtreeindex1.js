@@ -1,5 +1,23 @@
 var NAVTREEINDEX1 =
 {
+"language-guide.html#error-handling":[2,0,14],
+"language-guide.html#events":[2,0,11],
+"language-guide.html#functions":[2,0,6],
+"language-guide.html#idl":[2,0],
+"language-guide.html#import":[2,0,12],
+"language-guide.html#interfaces":[2,0,7],
+"language-guide.html#methods":[2,0,8],
+"language-guide.html#properties":[2,0,10],
+"language-guide.html#start":[2,0,2],
+"language-guide.html#structures":[2,0,5],
+"language-guide.html#using-idlc":[2,1],
+"pages.html":[],
+"quick-start.html":[1],
+"quick-start.html#add-c-lib":[1,0,0],
+"quick-start.html#add-cmake-config":[1,0,0,2],
+"quick-start.html#add-idlc-dep":[1,0,0,1],
+"quick-start.html#add-wasm":[1,0,1,0],
+"quick-start.html#conclusion":[1,0,2],
 "quick-start.html#create-lib":[1,0],
 "quick-start.html#doctest-lib":[1,0,0,4],
 "quick-start.html#idl-spec":[1,0,0,0],
@@ -23,6 +41,5 @@ var NAVTREEINDEX1 =
 "structidl__source__t.html#a77b2c12e575b7ad1346fbe12ca1f64cc":[3,0,3,0,2],
 "structidl__source__t.html#ae3ee563841cfba337c855c1e111035ab":[3,0,3,0,1],
 "structidl__source__t.html#afd03a7592ece79a3a0c0cae6c2950630":[3,0,3,0,0],
-"topics.html":[3],
-"tutorial.html":[2]
+"topics.html":[3]
 };

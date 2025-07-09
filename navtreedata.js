@@ -44,7 +44,26 @@ var NAVTREE =
         [ "Next Steps", "quick-start.html#next-steps", null ]
       ] ]
     ] ],
-    [ "Tutorial", "tutorial.html", null ],
+    [ "Language Guide", "language-guide.html", [
+      [ "Interface Definition Language", "language-guide.html#idl", [
+        [ "Declarations", "language-guide.html#declarations", null ],
+        [ "Documentation", "language-guide.html#documentation", null ],
+        [ "Specification Start", "language-guide.html#start", null ],
+        [ "Enumerations", "language-guide.html#enumerations", null ],
+        [ "Built-in Types", "language-guide.html#builtin-types", null ],
+        [ "Structures", "language-guide.html#structures", null ],
+        [ "Functions", "language-guide.html#functions", null ],
+        [ "Interfaces", "language-guide.html#interfaces", null ],
+        [ "Methods", "language-guide.html#methods", null ],
+        [ "Callbacks", "language-guide.html#callbacks", null ],
+        [ "Properties", "language-guide.html#properties", null ],
+        [ "Events", "language-guide.html#events", null ],
+        [ "Import", "language-guide.html#import", null ],
+        [ "Attributes", "language-guide.html#attributes", null ],
+        [ "Error Handling", "language-guide.html#error-handling", null ]
+      ] ],
+      [ "Using the idlc Command Line Tool", "language-guide.html#using-idlc", null ]
+    ] ],
     [ "Documentation", "topics.html", "topics" ]
   ] ]
 ];
@@ -52,7 +71,7 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "annotated.html",
-"quick-start.html#create-lib"
+"language-guide.html#error-handling"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

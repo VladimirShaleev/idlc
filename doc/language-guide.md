@@ -244,13 +244,141 @@ Note the use of the fully qualified name Feature.Bindless to indicate that Bindl
 
 ## Functions {#functions}
 
+The simplest function can be declared as:
+
+```
+@ Sample
+func Func
+```
+
+Let's add some arguments:
+
+```
+@ Sample
+func Func
+    arg Value @ First arg
+    arg OtherValue @ Second arg
+```
+
+By default, argument types are `Int32`. Let's specify return type and argument types:
+
+
+```
+@ Sample
+func Func {Float32}
+    arg Value {Uint32} @ First arg
+    arg OtherValue {Float32} @ Second arg
+```
+
+Arguments can also have default values similar to structure fields.
+
+Arguments can have direction specified. This is useful in special cases to make function usage more native for target languages. More on this in TODO section.
+
 ## Interfaces {#interfaces}
 
-## Methods {#methods}
+In OOP languages, interfaces become classes, while in C they become opaque types.
 
-## Callbacks {#callbacks}
+Let's add an interface with two creation methods:
+
+```
+@ Brief.
+interface ObjType
+    @ Creates new object instance
+    method CreateByValue {ObjType} [ctor]
+        arg Name {Str} @ Name of object.
+
+    @ Creates new object instance
+    method Create {ObjType} [ctor]
+```
+
+Note both methods have `[ctor]` attributes, telling the compiler to make these methods constructors in OOP-capable languages. In JS, instantiation would look like ``const inst1 = new sample.ObjType('test');``. Constructor methods are implicitly static. Constructors must return the type either as return value or argument (here it's returned).
+
+Let's add three more methods:
+
+```
+@ Brief.
+interface ObjType
+    @ Creates new object instance
+    method CreateByValue {ObjType} [ctor]
+        arg Name {Str} @ Name of object.
+
+    @ Creates new object instance
+    method Create {ObjType} [ctor]
+
+    @ Destroy instance.
+    method Destroy [destroy]
+        arg Obj {ObjType} [this] @ object to destroy.
+
+    @ Method of interface.
+    method Method
+        arg Obj {ObjType} [this] @ this object
+        arg Val @ Value arg
+
+    @ Method of interface.
+    method ClassMethod [static]
+        arg Val @ Value arg
+```
+
+The `Destroy` method will be used for object deallocation. The `[destroy]` attribute tells RAII or garbage-collected languages which method releases unmanaged handles.
+
+`Method` is an instance method. It explicitly takes Obj argument with `[this]` attribute. In OOP languages this becomes implicit `this`/`self`. In non-OOP languages it remains as Obj argument. For example in C:
+
+```c
+/**
+ * @brief     Method of interface.
+ * @param[in] obj this object
+ * @param[in] val Value arg
+ */
+sample_api void
+sample_obj_type_method(sample_obj_type_t obj,
+                       sample_sint32_t val);
+```
+
+`ClassMethod` is static and cannot have `[this]` argument.
+
+Let's add two more methods:
+
+```
+@ Brief.
+interface ObjType
+    // ...
+
+    @ Get method
+    method GetValue {Float32} [const]
+        arg Obj {ObjType} [this] @ this object
+
+    @ Set method
+    method SetValue
+        arg Obj {ObjType} [this] @ this object
+        arg Value {Float32} @ New value
+```
+
+Note `GetValue` is marked `[const]` to indicate it doesn't modify the instance.
 
 ## Properties {#properties}
+
+Let's add a property to the interface from [Interfaces](#interfaces) section:
+
+```
+@ Brief.
+interface ObjType
+    // ...
+
+    @ Get method
+    method GetValue {Float32} [const]
+        arg Obj {ObjType} [this] @ this object
+
+    @ Set method
+    method SetValue
+        arg Obj {ObjType} [this] @ this object
+        arg Value {Float32} @ New value
+    
+    prop Value [get(GetValue),set(SetValue)] @ Value property
+```
+
+In languages supporting properties (JS, C# etc.), this creates a `Value` property instead of separate `GetValue`/`SetValue` methods. Class properties can also be created by adding `[static]` to methods.
+
+## Callbacks {#callbacks}
 
 ## Events {#events}
 

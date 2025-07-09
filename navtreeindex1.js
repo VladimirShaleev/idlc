@@ -1,6 +1,7 @@
 var NAVTREEINDEX1 =
 {
-"quick-start.html#impl-c-decls":[1,0,3],
+"quick-start.html#idl-spec":[1,0,0,0],
+"quick-start.html#impl-c-decls":[1,0,0,3],
 "structidl__api__version__t.html":[3,0,3,1],
 "structidl__api__version__t.html#a8a21f4dc6944f98e73769173ace74350":[3,0,3,1,0],
 "structidl__api__version__t.html#a8beebe1b3a7ee7c62ff6fadec25ea2f0":[3,0,3,1,1],

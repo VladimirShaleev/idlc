@@ -48,7 +48,7 @@
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="logo.svg"/></td>
   <td id="projectalign">
-   <div id="projectname">idlc<span id="projectnumber">&#160;1.5.10</span>
+   <div id="projectname">idlc<span id="projectnumber">&#160;1.5.11</span>
    </div>
    <div id="projectbrief">Interface Definition Language Compiler</div>
   </td>
@@ -124,38 +124,52 @@ $(function(){initNavTree('quick-start.html',''); initResizable(true); });
 <div class="toc"><h3>Table of Contents</h3>
 <ul>
   <li class="level1">
-    <a href="#add-c-lib">Adding Specifications for a C Library</a>
+    <a href="#create-lib">Creating a Simple Library</a>
     <ul>
       <li class="level2">
-        <a href="#idl-spec">IDL Specifications</a>
-      </li>
-      <li class="level2">
-        <a href="#add-idlc-dep">Adding IDLC Dependency</a>
-      </li>
-      <li class="level2">
-        <a href="#add-cmake-config">Adding CMake Configuration</a>
-      </li>
-      <li class="level2">
-        <a href="#impl-c-decls">Implementing C Declarations</a>
-      </li>
-      <li class="level2">
-        <a href="#gtest-lib">Testing the Library</a>
+        <a href="#add-c-lib">Adding Specifications for a C Library</a>
+        <ul>
+          <li class="level3">
+            <a href="#idl-spec">IDL Specifications</a>
+          </li>
+          <li class="level3">
+            <a href="#add-idlc-dep">Adding IDLC Dependency</a>
+          </li>
+          <li class="level3">
+            <a href="#add-cmake-config">Adding CMake Configuration</a>
+          </li>
+          <li class="level3">
+            <a href="#impl-c-decls">Implementing C Declarations</a>
+          </li>
+          <li class="level3">
+            <a href="#doctest-lib">Testing the Library</a>
+          </li>
+        </ul>
       </li>
     </ul>
   </li>
 </ul>
 </div>
-<div class="textblock"><h1><a class="anchor" id="add-c-lib"></a>
-Adding Specifications for a C Library</h1>
-<h2><a class="anchor" id="idl-spec"></a>
-IDL Specifications</h2>
+<div class="textblock"><h1><a class="anchor" id="create-lib"></a>
+Creating a Simple Library</h1>
+<p>Here we'll create a simple C library using <b>IDLC</b>:</p><ul>
+<li>ready for distribution via packages like <b>.deb</b> or package managers like <b>vcpkg</b> or <b>Conan</b>;</li>
+<li>then we'll package this library as an <b>npm</b> package for native use in JavaScript applications.</li>
+</ul>
+<p>You can clone and build the ready-made example from <a href="https://github.com/VladimirShaleev/idlc/tree/sample">this branch</a>.</p>
+<div class="fragment"><div class="line">git clone -b sample https://github.com/VladimirShaleev/idlc.git idlc-sample</div>
+</div><!-- fragment --><p>and also follow its <code>README</code> on building and testing the library. Here we will also take a detailed step-by-step look at how to create this library.</p>
+<h2><a class="anchor" id="add-c-lib"></a>
+Adding Specifications for a C Library</h2>
+<h3><a class="anchor" id="idl-spec"></a>
+IDL Specifications</h3>
 <p>Add <b>IDL</b> specifications anywhere in your library. For example, create a <code>specs</code> folder in your project's root directory and add an <code>api.idl</code> file (or use any other filename).</p>
 <p>A typical project structure might look like this:</p>
-<div class="fragment"><div class="line">lib/</div>
+<div class="fragment"><div class="line">sample/</div>
 <div class="line">|-- include/</div>
-<div class="line">|   `-- lib/</div>
+<div class="line">|   `-- sample/</div>
 <div class="line">|-- src/</div>
-<div class="line">|   `-- lib.c</div>
+<div class="line">|   `-- sample.c</div>
 <div class="line">|-- specs/</div>
 <div class="line">|   `-- api.idl</div>
 <div class="line">`-- CMakeLists.txt</div>
@@ -163,7 +177,7 @@ IDL Specifications</h2>
 <div class="fragment"><div class="line">@ API Sample</div>
 <div class="line">@ Author &lt;author@email.org&gt; [author]</div>
 <div class="line">@ MIT License [copyright]</div>
-<div class="line">api Lib</div>
+<div class="line">api Sample</div>
 <div class="line"> </div>
 <div class="line">@ Function sample.</div>
 <div class="line">@ The result of multiplying {First} by {Second}. [return]</div>
@@ -179,6 +193,8 @@ IDL Specifications</h2>
 <div class="line"> </div>
 <div class="line">@ Sample object.</div>
 <div class="line">interface Vehicle</div>
+<div class="line">    prop Name [get(GetName)] @ Name of vehicle</div>
+<div class="line"> </div>
 <div class="line">    @ Create new vehicle instance.</div>
 <div class="line">    @ Vehicle instance. [return]</div>
 <div class="line">    method Create {Vehicle} [ctor]</div>
@@ -186,6 +202,12 @@ IDL Specifications</h2>
 <div class="line"> </div>
 <div class="line">    @ Destroy vehicle instance.</div>
 <div class="line">    method Destroy [destroy]</div>
+<div class="line">        arg Vehicle {Vehicle} [this] @ The &#39;this/self&#39; object in OOP languages.</div>
+<div class="line"> </div>
+<div class="line">    @ Get name</div>
+<div class="line">    @ Get name of vehicle [detail]</div>
+<div class="line">    @ Return name of vehicle [return]</div>
+<div class="line">    method GetName {Str} [const]</div>
 <div class="line">        arg Vehicle {Vehicle} [this] @ The &#39;this/self&#39; object in OOP languages.</div>
 <div class="line"> </div>
 <div class="line">    @ Set velocity of vehicle.</div>
@@ -219,8 +241,9 @@ IDL Specifications</h2>
 <li><b>Documentation placement</b>: documentation on the same line after a declaration defaults to <code>[detail]</code> documentation for that declaration.</li>
 <li><b>Formatting rules</b>: indentation and line breaks are insignificant in <b>IDL</b>, except within documentation contexts.</li>
 </ul>
-<h2><a class="anchor" id="add-idlc-dep"></a>
-Adding IDLC Dependency</h2>
+<h3><a class="anchor" id="add-idlc-dep"></a>
+Adding IDLC Dependency</h3>
+<dl class="section note"><dt>Note</dt><dd>This example will use <b>vcpkg</b> for dependency management. Install <b>vcpkg</b> by following the <a href="https://learn.microsoft.com/vcpkg/get_started/get-started">official installation guide</a>.</dd></dl>
 <p><b>IDLC</b> is registered in the <b>vcpkg</b> user registry. You need to add this registry to your <code>vcpkg-configuration.json</code> file:</p>
 <div class="fragment"><div class="line">{</div>
 <div class="line">  &quot;$schema&quot;: &quot;https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg-configuration.schema.json&quot;,</div>
@@ -232,7 +255,7 @@ Adding IDLC Dependency</h2>
 <div class="line">  &quot;registries&quot;: [</div>
 <div class="line">    {</div>
 <div class="line">      &quot;kind&quot;: &quot;git&quot;,</div>
-<div class="line">      &quot;baseline&quot;: &quot;4928d7f5d89d48ed446e15b1ab97d6dff9364cd2&quot;,</div>
+<div class="line">      &quot;baseline&quot;: &quot;466d36bf27d03a502568a473b1f37b855dd5ae07&quot;,</div>
 <div class="line">      &quot;reference&quot;: &quot;vcpkg-registry&quot;,</div>
 <div class="line">      &quot;repository&quot;: &quot;https://github.com/VladimirShaleev/idlc&quot;,</div>
 <div class="line">      &quot;packages&quot;: [</div>
@@ -244,115 +267,119 @@ Adding IDLC Dependency</h2>
 </div><!-- fragment --><p>Then add the dependency in your <code>vcpkg.json</code> file:</p>
 <div class="fragment"><div class="line">{</div>
 <div class="line">  &quot;$schema&quot;: &quot;https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json&quot;,</div>
-<div class="line">  &quot;name&quot;: &quot;lib&quot;,</div>
+<div class="line">  &quot;name&quot;: &quot;sample&quot;,</div>
 <div class="line">  &quot;dependencies&quot;: [</div>
 <div class="line">    &quot;idlc&quot;</div>
 <div class="line">  ]</div>
 <div class="line">}</div>
 </div><!-- fragment --><p>The <b>idlc</b> dependency will add the <b>idlc</b> build host tool. This means that when building for a different target platform, such as Android NDK (arm64-android, arm-neon-android, etc.), this dependency will use the host tool for the build platform, which could be x64-windows or x64-linux, etc. This dependency also adds CMake configuration with the <code>idlc_compile</code> function.</p>
 <p>The project structure now looks like this:</p>
-<div class="fragment"><div class="line">lib/</div>
+<div class="fragment"><div class="line">sample/</div>
 <div class="line">|-- include/</div>
-<div class="line">|   `-- lib/</div>
+<div class="line">|   `-- sample/</div>
 <div class="line">|-- src/</div>
-<div class="line">|   `-- lib.c</div>
+<div class="line">|   `-- sample.c</div>
 <div class="line">|-- specs/</div>
 <div class="line">|   `-- api.idl</div>
-<div class="line">|-- CMakeLists.txt</div>
+<div class="line">`-- CMakeLists.txt</div>
 <div class="line">|-- vcpkg-configuration.json</div>
 <div class="line">`-- vcpkg.json</div>
-</div><!-- fragment --><h2><a class="anchor" id="add-cmake-config"></a>
-Adding CMake Configuration</h2>
+</div><!-- fragment --><h3><a class="anchor" id="add-cmake-config"></a>
+Adding CMake Configuration</h3>
 <div class="fragment"><div class="line">find_package(idlc CONFIG REQUIRED)</div>
 <div class="line">idlc_compile(NAME api WARN_AS_ERRORS</div>
 <div class="line">    SOURCE &quot;${PROJECT_SOURCE_DIR}/specs/api.idl&quot;</div>
-<div class="line">    OUTPUT &quot;${PROJECT_SOURCE_DIR}/include/lib/lib.h&quot;</div>
+<div class="line">    OUTPUT &quot;${PROJECT_SOURCE_DIR}/include/sample/sample.h&quot;</div>
 <div class="line">    VERSION ${PROJECT_VERSION}</div>
 <div class="line">    GENERATOR C)</div>
 <div class="line"> </div>
-<div class="line">add_library(lib src/lib.c ${IDLC_api_OUTPUTS})</div>
+<div class="line">add_library(sample src/sample.c ${IDLC_api_OUTPUTS})</div>
 </div><!-- fragment --><details >
 <summary >
 A complete <code>CMakeLists.txt</code> file might look like this</summary>
 <p></p>
 <div class="fragment"><div class="line">cmake_minimum_required(VERSION 3.16)</div>
 <div class="line"> </div>
-<div class="line"># Pass CMAKE_TOOLCHAIN_FILE as a parameter -DCMAKE_TOOLCHAIN_FILE</div>
-<div class="line"># when configuring or add CMAKE_TOOLCHAIN_FILE to CMakePresets.json</div>
-<div class="line">if(NOT DEFINED CMAKE_TOOLCHAIN_FILE AND DEFINED ENV{VCPKG_ROOT})</div>
-<div class="line">    set(CMAKE_TOOLCHAIN_FILE &quot;$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake&quot; CACHE STRING &quot;Vcpkg toolchain file&quot;)</div>
+<div class="line">option(SAMPLE_BUILD_TESTS &quot;Build tests&quot; ON)</div>
+<div class="line">if(SAMPLE_BUILD_TESTS)</div>
+<div class="line">    list(APPEND VCPKG_MANIFEST_FEATURES &quot;tests&quot;)</div>
 <div class="line">endif()</div>
 <div class="line"> </div>
-<div class="line">project(lib VERSION 1.0.0 LANGUAGES C)</div>
+<div class="line">project(sample</div>
+<div class="line">    DESCRIPTION &quot;Example of creating a library&quot;</div>
+<div class="line">    VERSION 1.0.0</div>
+<div class="line">    LANGUAGES C CXX)</div>
 <div class="line"> </div>
-<div class="line">option(LIB_MSVC_DYNAMIC_RUNTIME &quot;Link dynamic runtime library instead of static&quot; OFF)</div>
+<div class="line">option(SAMPLE_MSVC_DYNAMIC_RUNTIME &quot;Link dynamic runtime library instead of static&quot; OFF)</div>
 <div class="line"> </div>
 <div class="line">find_package(idlc CONFIG REQUIRED)</div>
 <div class="line">idlc_compile(NAME api WARN_AS_ERRORS</div>
 <div class="line">    SOURCE &quot;${PROJECT_SOURCE_DIR}/specs/api.idl&quot;</div>
-<div class="line">    OUTPUT &quot;${PROJECT_SOURCE_DIR}/include/lib/lib.h&quot;</div>
+<div class="line">    OUTPUT &quot;${PROJECT_SOURCE_DIR}/include/sample/sample.h&quot;</div>
 <div class="line">    VERSION ${PROJECT_VERSION}</div>
 <div class="line">    GENERATOR C)</div>
 <div class="line"> </div>
-<div class="line">add_library(lib src/lib.c ${IDLC_api_OUTPUTS})</div>
-<div class="line">target_include_directories(lib PUBLIC</div>
+<div class="line">add_library(sample src/sample.c ${IDLC_api_OUTPUTS})</div>
+<div class="line">add_library(sample::sample ALIAS sample)</div>
+<div class="line">target_include_directories(sample PUBLIC</div>
 <div class="line">    $&lt;BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include&gt;</div>
 <div class="line">    $&lt;INSTALL_INTERFACE:include&gt;)</div>
-<div class="line">set_target_properties(lib PROPERTIES</div>
+<div class="line">set_target_properties(sample PROPERTIES</div>
 <div class="line">    CXX_STANDARD_REQUIRED ON</div>
 <div class="line">    CXX_EXTENSIONS OFF</div>
 <div class="line">    POSITION_INDEPENDENT_CODE ON</div>
 <div class="line">    WINDOWS_EXPORT_ALL_SYMBOLS OFF)</div>
+<div class="line">target_compile_definitions(sample PRIVATE _CRT_SECURE_NO_WARNINGS)</div>
 <div class="line">if(BUILD_SHARED_LIBS)</div>
-<div class="line">    set_target_properties(lib PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION_MAJOR})</div>
-<div class="line">    set_target_properties(lib PROPERTIES CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)</div>
+<div class="line">    set_target_properties(sample PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION_MAJOR})</div>
+<div class="line">    set_target_properties(sample PROPERTIES CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)</div>
 <div class="line">else()</div>
-<div class="line">    target_compile_definitions(lib PUBLIC LIB_STATIC_BUILD)</div>
+<div class="line">    target_compile_definitions(sample PUBLIC SAMPLE_STATIC_BUILD)</div>
 <div class="line">endif()</div>
 <div class="line">if(MSVC)</div>
-<div class="line">    if(LIB_MSVC_DYNAMIC_RUNTIME)</div>
-<div class="line">        set_target_properties(lib PROPERTIES MSVC_RUNTIME_LIBRARY &quot;MultiThreaded$&lt;$&lt;CONFIG:Debug&gt;:Debug&gt;DLL&quot;)</div>
+<div class="line">    if(SAMPLE_MSVC_DYNAMIC_RUNTIME)</div>
+<div class="line">        set_target_properties(sample PROPERTIES MSVC_RUNTIME_LIBRARY &quot;MultiThreaded$&lt;$&lt;CONFIG:Debug&gt;:Debug&gt;DLL&quot;)</div>
 <div class="line">    else()</div>
-<div class="line">        set_target_properties(lib PROPERTIES MSVC_RUNTIME_LIBRARY &quot;MultiThreaded$&lt;$&lt;CONFIG:Debug&gt;:Debug&gt;&quot;)</div>
+<div class="line">        set_target_properties(sample PROPERTIES MSVC_RUNTIME_LIBRARY &quot;MultiThreaded$&lt;$&lt;CONFIG:Debug&gt;:Debug&gt;&quot;)</div>
 <div class="line">    endif()</div>
 <div class="line">endif()</div>
 </div><!-- fragment --> </details>
 <p>The <code>api</code> <code>NAME</code> specified in <code>idlc_compile</code> will be used to form the <code>IDLC_&lt;NAME&gt;_OUTPUTS</code> variable containing the generated output files.</p>
-<h2><a class="anchor" id="impl-c-decls"></a>
-Implementing C Declarations</h2>
+<h3><a class="anchor" id="impl-c-decls"></a>
+Implementing C Declarations</h3>
 <p>The public headers are now automatically updated when <code>.idl</code> specifications change. You can now implement the generated function definitions.</p>
 <details >
 <summary >
-Here's an example implementation (<code>lib.c</code>)</summary>
+Here's an example implementation (<code>sample.c</code>)</summary>
 <p></p>
-<div class="fragment"><div class="line"><span class="preprocessor">#include &quot;lib/lib.h&quot;</span></div>
+<div class="fragment"><div class="line"><span class="preprocessor">#include &quot;sample/sample.h&quot;</span></div>
 <div class="line"> </div>
 <div class="line"><span class="preprocessor">#include &lt;stdlib.h&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;string.h&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;assert.h&gt;</span></div>
 <div class="line"> </div>
-<div class="line"><span class="preprocessor">#define NAME_LENGHT 256</span></div>
+<div class="line"><span class="preprocessor">#define NAME_LENGTH 256</span></div>
 <div class="line"> </div>
-<div class="line"><span class="keyword">struct </span>_lib_vehicle</div>
+<div class="line"><span class="keyword">struct </span>_sample_vehicle</div>
 <div class="line">{</div>
-<div class="line">    <span class="keywordtype">char</span> name[NAME_LENGHT];</div>
-<div class="line">    lib_vector_t velocity;</div>
+<div class="line">    <span class="keywordtype">char</span> name[NAME_LENGTH];</div>
+<div class="line">    sample_vector_t velocity;</div>
 <div class="line">};</div>
 <div class="line"> </div>
-<div class="line">lib_float32_t lib_mul(lib_float32_t first, lib_float32_t second)</div>
+<div class="line">sample_float32_t sample_mul(sample_float32_t first, sample_float32_t second)</div>
 <div class="line">{</div>
 <div class="line">    <span class="keywordflow">return</span> first * second;</div>
 <div class="line">}</div>
 <div class="line"> </div>
-<div class="line">lib_vehicle_t lib_vehicle_create(lib_utf8_t name)</div>
+<div class="line">sample_vehicle_t sample_vehicle_create(sample_utf8_t name)</div>
 <div class="line">{</div>
-<div class="line">    lib_vehicle_t instance = (lib_vehicle_t)malloc(<span class="keyword">sizeof</span>(<span class="keyword">struct</span> _lib_vehicle));</div>
-<div class="line">    memset(instance, 0, <span class="keyword">sizeof</span>(<span class="keyword">struct</span> _lib_vehicle));</div>
-<div class="line">    strncpy_s(instance-&gt;name, NAME_LENGHT, name, strlen(name));</div>
+<div class="line">    sample_vehicle_t instance = (sample_vehicle_t)malloc(<span class="keyword">sizeof</span>(<span class="keyword">struct</span> _sample_vehicle));</div>
+<div class="line">    memset(instance, 0, <span class="keyword">sizeof</span>(<span class="keyword">struct</span> _sample_vehicle));</div>
+<div class="line">    strncpy(instance-&gt;name, name, NAME_LENGTH);</div>
 <div class="line">    <span class="keywordflow">return</span> instance;</div>
 <div class="line">}</div>
 <div class="line"> </div>
-<div class="line"><span class="keywordtype">void</span> lib_vehicle_destroy(lib_vehicle_t vehicle)</div>
+<div class="line"><span class="keywordtype">void</span> sample_vehicle_destroy(sample_vehicle_t vehicle)</div>
 <div class="line">{</div>
 <div class="line">    <span class="keywordflow">if</span> (vehicle)</div>
 <div class="line">    {</div>
@@ -360,69 +387,77 @@ Here's an example implementation (<code>lib.c</code>)</summary>
 <div class="line">    }</div>
 <div class="line">}</div>
 <div class="line"> </div>
-<div class="line"><span class="keywordtype">void</span> lib_vehicle_set_velocity(lib_vehicle_t vehicle, <span class="keyword">const</span> lib_vector_t *value)</div>
+<div class="line">sample_utf8_t sample_vehicle_get_name(sample_vehicle_t vehicle)</div>
+<div class="line">{</div>
+<div class="line">    assert(vehicle);</div>
+<div class="line">    <span class="keywordflow">return</span> vehicle-&gt;name;</div>
+<div class="line">}</div>
+<div class="line"> </div>
+<div class="line"><span class="keywordtype">void</span> sample_vehicle_set_velocity(sample_vehicle_t vehicle, <span class="keyword">const</span> sample_vector_t *value)</div>
 <div class="line">{</div>
 <div class="line">    assert(vehicle);</div>
 <div class="line">    assert(value);</div>
 <div class="line">    vehicle-&gt;velocity = *value;</div>
 <div class="line">}</div>
 <div class="line"> </div>
-<div class="line">lib_float32_t lib_vehicle_dot_velocity(lib_vehicle_t vehicle, <span class="keyword">const</span> lib_vector_t *value)</div>
+<div class="line">sample_float32_t sample_vehicle_dot_velocity(sample_vehicle_t vehicle, <span class="keyword">const</span> sample_vector_t *value)</div>
 <div class="line">{</div>
 <div class="line">    assert(vehicle);</div>
-<div class="line">    <span class="keyword">const</span> lib_vector_t *vec = &amp;vehicle-&gt;velocity;</div>
+<div class="line">    <span class="keyword">const</span> sample_vector_t *vec = &amp;vehicle-&gt;velocity;</div>
 <div class="line">    <span class="keywordflow">return</span> vec-&gt;x * value-&gt;x + vec-&gt;y * value-&gt;y + vec-&gt;z * value-&gt;z;</div>
 <div class="line">}</div>
 </div><!-- fragment --> </details>
-<h2><a class="anchor" id="gtest-lib"></a>
-Testing the Library</h2>
-<p>We'll add <b>gtest</b> to test the library:</p>
-<div class="fragment"><div class="line"><span class="preprocessor">#include &lt;lib/lib.h&gt;</span></div>
+<h3><a class="anchor" id="doctest-lib"></a>
+Testing the Library</h3>
+<p>We'll add <b>doctest</b> to test the library:</p>
+<div class="fragment"><div class="line"><span class="preprocessor">#include &lt;sample/sample.h&gt;</span></div>
 <div class="line"> </div>
-<div class="line"><span class="preprocessor">#include &lt;gtest/gtest.h&gt;</span></div>
+<div class="line"><span class="preprocessor">#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN</span></div>
+<div class="line"><span class="preprocessor">#include &lt;doctest/doctest.h&gt;</span></div>
 <div class="line"> </div>
-<div class="line">TEST(FunctionTest, Mul)</div>
+<div class="line">TEST_CASE(<span class="stringliteral">&quot;mul test&quot;</span>)</div>
 <div class="line">{</div>
-<div class="line">    <span class="keyword">const</span> <span class="keyword">auto</span> expected = 7.68f;</div>
+<div class="line">    <span class="keyword">const</span> <span class="keyword">auto</span> expected = doctest::Approx(7.68f).epsilon(0.01f);</div>
 <div class="line"> </div>
-<div class="line">    <span class="keyword">const</span> <span class="keyword">auto</span> actual = lib_mul(3.2f, 2.4f);</div>
+<div class="line">    <span class="keyword">const</span> <span class="keyword">auto</span> actual = sample_mul(3.2f, 2.4f);</div>
 <div class="line"> </div>
-<div class="line">    EXPECT_FLOAT_EQ(expected, actual);</div>
+<div class="line">    CHECK(expected == actual);</div>
 <div class="line">}</div>
 <div class="line"> </div>
-<div class="line">TEST(ObjectTest, Dot)</div>
+<div class="line">TEST_CASE(<span class="stringliteral">&quot;object test&quot;</span>)</div>
 <div class="line">{</div>
-<div class="line">    <span class="keyword">const</span> <span class="keyword">auto</span> expected = 10.0f;</div>
+<div class="line">    <span class="keyword">const</span> <span class="keyword">auto</span> expected = doctest::Approx(10.0f).epsilon(0.01f);</div>
 <div class="line"> </div>
-<div class="line">    lib_vehicle_t vehicle = lib_vehicle_create(<span class="stringliteral">&quot;test&quot;</span>);</div>
-<div class="line">    ASSERT_NE(vehicle, <span class="keyword">nullptr</span>);</div>
+<div class="line">    sample_vehicle_t vehicle = sample_vehicle_create(<span class="stringliteral">&quot;test&quot;</span>);</div>
+<div class="line">    CHECK(vehicle != <span class="keyword">nullptr</span>);</div>
 <div class="line"> </div>
-<div class="line">    lib_vector_t first{1.0f, 2.0f, 3.0f};</div>
-<div class="line">    lib_vehicle_set_velocity(vehicle, &amp;first);</div>
+<div class="line">    sample_vector_t first{1.0f, 2.0f, 3.0f};</div>
+<div class="line">    sample_vehicle_set_velocity(vehicle, &amp;first);</div>
 <div class="line"> </div>
-<div class="line">    lib_vector_t second{3.0f, 2.0f, 1.0f};</div>
-<div class="line">    <span class="keyword">const</span> <span class="keyword">auto</span> actual = lib_vehicle_dot_velocity(vehicle, &amp;second);</div>
+<div class="line">    sample_vector_t second{3.0f, 2.0f, 1.0f};</div>
+<div class="line">    <span class="keyword">const</span> <span class="keyword">auto</span> actual = sample_vehicle_dot_velocity(vehicle, &amp;second);</div>
 <div class="line"> </div>
-<div class="line">    lib_vehicle_destroy(vehicle);</div>
+<div class="line">    sample_vehicle_destroy(vehicle);</div>
 <div class="line"> </div>
-<div class="line">    ASSERT_FLOAT_EQ(expected, actual);</div>
+<div class="line">    CHECK(expected == actual);</div>
 <div class="line">}</div>
 </div><!-- fragment --><details >
 <summary >
 View all changes</summary>
 <p></p>
 <p>Current project structure:</p>
-<div class="fragment"><div class="line">lib/</div>
+<div class="fragment"><div class="line">sample/</div>
 <div class="line">|-- cmake/</div>
-<div class="line">|   `-- lib-config.cmake.in</div>
+<div class="line">|   |-- vcpkg.cmake</div>
+<div class="line">|   `-- sample-config.cmake.in</div>
 <div class="line">|-- include/</div>
-<div class="line">|   `-- lib/</div>
-<div class="line">|       |-- lib-version.h</div>
-<div class="line">|       |-- lib-platform.h</div>
-<div class="line">|       |-- lib-types.h</div>
-<div class="line">|       `-- lib.h</div>
+<div class="line">|   `-- sample/</div>
+<div class="line">|       |-- sample-version.h</div>
+<div class="line">|       |-- sample-platform.h</div>
+<div class="line">|       |-- sample-types.h</div>
+<div class="line">|       `-- sample.h</div>
 <div class="line">|-- src/</div>
-<div class="line">|   `-- lib.c</div>
+<div class="line">|   `-- sample.c</div>
 <div class="line">|-- tests/</div>
 <div class="line">|   |-- CMakeLists.txt</div>
 <div class="line">|   `-- tests.cpp</div>
@@ -434,58 +469,59 @@ View all changes</summary>
 </div><!-- fragment --><p>Contents of <code>./CMakeLists.txt</code> (including <b>install</b> target):</p>
 <div class="fragment"><div class="line">cmake_minimum_required(VERSION 3.16)</div>
 <div class="line"> </div>
-<div class="line"># Pass CMAKE_TOOLCHAIN_FILE as a parameter -DCMAKE_TOOLCHAIN_FILE</div>
-<div class="line"># when configuring or add CMAKE_TOOLCHAIN_FILE to CMakePresets.json</div>
-<div class="line">if(NOT DEFINED CMAKE_TOOLCHAIN_FILE AND DEFINED ENV{VCPKG_ROOT})</div>
-<div class="line">    set(CMAKE_TOOLCHAIN_FILE &quot;$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake&quot; CACHE STRING &quot;Vcpkg toolchain file&quot;)</div>
-<div class="line">endif()</div>
+<div class="line">include(cmake/vcpkg.cmake)</div>
 <div class="line"> </div>
-<div class="line">option(LIB_BUILD_TESTS &quot;Build tests&quot; ON)</div>
-<div class="line">if(LIB_BUILD_TESTS)</div>
+<div class="line">option(SAMPLE_BUILD_TESTS &quot;Build tests&quot; ON)</div>
+<div class="line">if(SAMPLE_BUILD_TESTS)</div>
 <div class="line">    list(APPEND VCPKG_MANIFEST_FEATURES &quot;tests&quot;)</div>
 <div class="line">endif()</div>
 <div class="line"> </div>
-<div class="line">project(lib VERSION 1.0.0 LANGUAGES C CXX)</div>
+<div class="line">project(sample</div>
+<div class="line">    DESCRIPTION &quot;Example of creating a library&quot;</div>
+<div class="line">    VERSION 1.0.0</div>
+<div class="line">    LANGUAGES C CXX)</div>
 <div class="line"> </div>
-<div class="line">option(LIB_MSVC_DYNAMIC_RUNTIME &quot;Link dynamic runtime library instead of static&quot; OFF)</div>
-<div class="line">option(LIB_ENABLE_INSTALL &quot;Enable installation&quot; ON)</div>
+<div class="line">option(SAMPLE_MSVC_DYNAMIC_RUNTIME &quot;Link dynamic runtime library instead of static&quot; OFF)</div>
+<div class="line">option(SAMPLE_ENABLE_INSTALL &quot;Enable installation&quot; ON)</div>
 <div class="line"> </div>
 <div class="line">find_package(idlc CONFIG REQUIRED)</div>
 <div class="line">idlc_compile(NAME api WARN_AS_ERRORS</div>
 <div class="line">    SOURCE &quot;${PROJECT_SOURCE_DIR}/specs/api.idl&quot;</div>
-<div class="line">    OUTPUT &quot;${PROJECT_SOURCE_DIR}/include/lib/lib.h&quot;</div>
+<div class="line">    OUTPUT &quot;${PROJECT_SOURCE_DIR}/include/sample/sample.h&quot;</div>
 <div class="line">    VERSION ${PROJECT_VERSION}</div>
 <div class="line">    GENERATOR C)</div>
 <div class="line"> </div>
-<div class="line">add_library(lib src/lib.c ${IDLC_api_OUTPUTS})</div>
-<div class="line">add_library(lib::lib ALIAS lib)</div>
-<div class="line">target_include_directories(lib PUBLIC</div>
+<div class="line">add_library(sample src/sample.c ${IDLC_api_OUTPUTS})</div>
+<div class="line">add_library(sample::sample ALIAS sample)</div>
+<div class="line">target_include_directories(sample PUBLIC</div>
 <div class="line">    $&lt;BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include&gt;</div>
 <div class="line">    $&lt;INSTALL_INTERFACE:include&gt;)</div>
-<div class="line">set_target_properties(lib PROPERTIES</div>
+<div class="line">set_target_properties(sample PROPERTIES</div>
 <div class="line">    CXX_STANDARD_REQUIRED ON</div>
 <div class="line">    CXX_EXTENSIONS OFF</div>
 <div class="line">    POSITION_INDEPENDENT_CODE ON</div>
 <div class="line">    WINDOWS_EXPORT_ALL_SYMBOLS OFF)</div>
+<div class="line">target_compile_definitions(sample PRIVATE _CRT_SECURE_NO_WARNINGS)</div>
 <div class="line">if(BUILD_SHARED_LIBS)</div>
-<div class="line">    set_target_properties(lib PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION_MAJOR})</div>
-<div class="line">    set_target_properties(lib PROPERTIES CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)</div>
+<div class="line">    set_target_properties(sample PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION_MAJOR})</div>
+<div class="line">    set_target_properties(sample PROPERTIES CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)</div>
 <div class="line">else()</div>
-<div class="line">    target_compile_definitions(lib PUBLIC LIB_STATIC_BUILD)</div>
+<div class="line">    target_compile_definitions(sample PUBLIC SAMPLE_STATIC_BUILD)</div>
 <div class="line">endif()</div>
 <div class="line">if(MSVC)</div>
-<div class="line">    if(LIB_MSVC_DYNAMIC_RUNTIME)</div>
-<div class="line">        set_target_properties(lib PROPERTIES MSVC_RUNTIME_LIBRARY &quot;MultiThreaded$&lt;$&lt;CONFIG:Debug&gt;:Debug&gt;DLL&quot;)</div>
+<div class="line">    if(SAMPLE_MSVC_DYNAMIC_RUNTIME)</div>
+<div class="line">        set_target_properties(sample PROPERTIES MSVC_RUNTIME_LIBRARY &quot;MultiThreaded$&lt;$&lt;CONFIG:Debug&gt;:Debug&gt;DLL&quot;)</div>
 <div class="line">    else()</div>
-<div class="line">        set_target_properties(lib PROPERTIES MSVC_RUNTIME_LIBRARY &quot;MultiThreaded$&lt;$&lt;CONFIG:Debug&gt;:Debug&gt;&quot;)</div>
+<div class="line">        set_target_properties(sample PROPERTIES MSVC_RUNTIME_LIBRARY &quot;MultiThreaded$&lt;$&lt;CONFIG:Debug&gt;:Debug&gt;&quot;)</div>
 <div class="line">    endif()</div>
 <div class="line">endif()</div>
 <div class="line"> </div>
-<div class="line">if(LIB_BUILD_TESTS)</div>
+<div class="line">if(SAMPLE_BUILD_TESTS)</div>
+<div class="line">    include(CTest)</div>
 <div class="line">    add_subdirectory(tests)</div>
 <div class="line">endif()</div>
 <div class="line"> </div>
-<div class="line">if(LIB_ENABLE_INSTALL)</div>
+<div class="line">if(SAMPLE_ENABLE_INSTALL)</div>
 <div class="line">    include(CMakePackageConfigHelpers)</div>
 <div class="line">    include(GNUInstallDirs)</div>
 <div class="line">    configure_package_config_file(</div>
@@ -510,29 +546,60 @@ View all changes</summary>
 <div class="line">        DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/${PROJECT_NAME})</div>
 <div class="line">    install(DIRECTORY include/ DESTINATION include)</div>
 <div class="line">endif()</div>
-</div><!-- fragment --><p>Contents of <code>./cmake/lib-config.cmake.in</code>:</p>
+</div><!-- fragment --><p>Contents of <code>./cmake/.vcpkg.cmake</code>:</p>
+<div class="fragment"><div class="line">if(DEFINED Z_VCPKG_ROOT_DIR)</div>
+<div class="line">    return()</div>
+<div class="line">endif()</div>
+<div class="line"> </div>
+<div class="line">if(DEFINED CMAKE_TOOLCHAIN_FILE)</div>
+<div class="line">    return()</div>
+<div class="line">endif()</div>
+<div class="line"> </div>
+<div class="line">if(DEFINED ENV{VCPKG_ROOT})</div>
+<div class="line">    set(CMAKE_TOOLCHAIN_FILE &quot;$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake&quot; CACHE STRING &quot;Vcpkg toolchain file&quot;)</div>
+<div class="line">else()</div>
+<div class="line">    message(WARNING &quot;vcpkg not found, so will be installed in the project build directory; &quot;</div>
+<div class="line">        &quot;it is recommended to install vcpkg according to the instructions, which will &quot;</div>
+<div class="line">        &quot;allow correct caching of build dependencies (https://learn.microsoft.com/vcpkg/get_started/get-started)&quot;)</div>
+<div class="line">    include(FetchContent)</div>
+<div class="line">    FetchContent_Declare(</div>
+<div class="line">        vcpkg</div>
+<div class="line">        GIT_REPOSITORY https://github.com/microsoft/vcpkg/</div>
+<div class="line">        GIT_TAG 2025.06.13)</div>
+<div class="line">    FetchContent_MakeAvailable(vcpkg)</div>
+<div class="line">    set(CMAKE_TOOLCHAIN_FILE &quot;${vcpkg_SOURCE_DIR}/scripts/buildsystems/vcpkg.cmake&quot; CACHE STRING &quot;Vcpkg toolchain file&quot;)</div>
+<div class="line">endif()</div>
+</div><!-- fragment --><p>Contents of <code>./cmake/sample-config.cmake.in</code>:</p>
 <div class="fragment"><div class="line">@PACKAGE_INIT@</div>
 <div class="line">include(&quot;${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@-targets.cmake&quot;)</div>
 </div><!-- fragment --><p>Contents of <code>./tests/CMakeLists.txt</code>:</p>
 <div class="fragment"><div class="line">enable_testing()</div>
 <div class="line"> </div>
-<div class="line">find_package(GTest CONFIG REQUIRED)</div>
+<div class="line">find_package(doctest CONFIG REQUIRED)</div>
 <div class="line"> </div>
-<div class="line">add_executable(lib-tests tests.cpp)</div>
-<div class="line">target_link_libraries(lib-tests PRIVATE lib::lib)</div>
-<div class="line">target_link_libraries(lib-tests PRIVATE GTest::gtest GTest::gtest_main)</div>
-<div class="line">target_compile_features(lib-tests PRIVATE cxx_std_20)</div>
-<div class="line">set_target_properties(lib-tests PROPERTIES</div>
+<div class="line">add_executable(sample-tests tests.cpp)</div>
+<div class="line">target_link_libraries(sample-tests PRIVATE sample::sample)</div>
+<div class="line">target_link_libraries(sample-tests PRIVATE doctest::doctest)</div>
+<div class="line">target_compile_features(sample-tests PRIVATE cxx_std_20)</div>
+<div class="line">set_target_properties(sample-tests PROPERTIES</div>
 <div class="line">    CXX_STANDARD_REQUIRED ON</div>
 <div class="line">    CXX_EXTENSIONS OFF</div>
 <div class="line">    POSITION_INDEPENDENT_CODE ON</div>
 <div class="line">    WINDOWS_EXPORT_ALL_SYMBOLS OFF)</div>
+<div class="line">if(MSVC)</div>
+<div class="line">    if(SAMPLE_MSVC_DYNAMIC_RUNTIME)</div>
+<div class="line">        set_target_properties(sample-tests PROPERTIES MSVC_RUNTIME_LIBRARY &quot;MultiThreaded$&lt;$&lt;CONFIG:Debug&gt;:Debug&gt;DLL&quot;)</div>
+<div class="line">    else()</div>
+<div class="line">        set_target_properties(sample-tests PROPERTIES MSVC_RUNTIME_LIBRARY &quot;MultiThreaded$&lt;$&lt;CONFIG:Debug&gt;:Debug&gt;&quot;)</div>
+<div class="line">    endif()</div>
+<div class="line">endif()</div>
 <div class="line"> </div>
-<div class="line">add_test(AllTestsInMain lib-tests)</div>
+<div class="line">include(doctest)</div>
+<div class="line">doctest_discover_tests(sample-tests)</div>
 </div><!-- fragment --><p>Contents of <code>./vcpkg.json</code>:</p>
 <div class="fragment"><div class="line">{</div>
 <div class="line">  &quot;$schema&quot;: &quot;https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json&quot;,</div>
-<div class="line">  &quot;name&quot;: &quot;lib&quot;,</div>
+<div class="line">  &quot;name&quot;: &quot;sample&quot;,</div>
 <div class="line">  &quot;dependencies&quot;: [</div>
 <div class="line">    &quot;idlc&quot;</div>
 <div class="line">  ],</div>
@@ -540,17 +607,29 @@ View all changes</summary>
 <div class="line">    &quot;tests&quot;: {</div>
 <div class="line">      &quot;description&quot;: &quot;Build tests&quot;,</div>
 <div class="line">      &quot;dependencies&quot;: [</div>
-<div class="line">        &quot;gtest&quot;</div>
+<div class="line">        &quot;doctest&quot;</div>
 <div class="line">      ]</div>
 <div class="line">    }</div>
 <div class="line">  }</div>
 <div class="line">}</div>
 </div><!-- fragment --> </details>
-<div class="section_buttons"></div><div class="section_buttons"><table class="markdownTable">
+<p>You can now build the project and run the tests:</p>
+<div class="fragment"><div class="line"># Configure the project</div>
+<div class="line">cmake -B build -S .</div>
+<div class="line"> </div>
+<div class="line"># Build the project</div>
+<div class="line">cmake --build build</div>
+<div class="line"> </div>
+<div class="line"># Run tests</div>
+<div class="line">cd build</div>
+<div class="line">ctest --output-on-failure</div>
+<div class="line"># or (if cmake &gt;= 3.20)</div>
+<div class="line">ctest --test-dir build --output-on-failure</div>
+</div><!-- fragment --><div class="section_buttons"></div><div class="section_buttons"><table class="markdownTable">
 <tr class="markdownTableHead">
 <th class="markdownTableHeadLeft">Previous   </th><th class="markdownTableHeadRight">Next    </th></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyLeft"><a href="introduction.html">Introduction</a>   </td><td class="markdownTableBodyRight"><a href="tutorial.html">Tutorial</a>   </td></tr>
+<td class="markdownTableBodyLeft"><a href="index.html">Introduction</a>   </td><td class="markdownTableBodyRight"><a href="tutorial.html">Tutorial</a>   </td></tr>
 </table>
 </div><div class="section_buttons"></div> </div></div><!-- contents -->
 </div><!-- PageDoc -->

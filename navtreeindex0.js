@@ -245,9 +245,9 @@ var NAVTREEINDEX0 =
 "index.html":[0],
 "pages.html":[],
 "quick-start.html":[1],
-"quick-start.html#add-c-lib":[1,0],
-"quick-start.html#add-cmake-config":[1,0,2],
-"quick-start.html#add-idlc-dep":[1,0,1],
-"quick-start.html#gtest-lib":[1,0,4],
-"quick-start.html#idl-spec":[1,0,0]
+"quick-start.html#add-c-lib":[1,0,0],
+"quick-start.html#add-cmake-config":[1,0,0,2],
+"quick-start.html#add-idlc-dep":[1,0,0,1],
+"quick-start.html#create-lib":[1,0],
+"quick-start.html#doctest-lib":[1,0,0,4]
 };

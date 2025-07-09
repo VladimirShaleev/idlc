@@ -5,5 +5,6 @@ var searchData=
   ['c_20library_2',['Adding Specifications for a C Library',['../quick-start.html#add-c-lib',1,'']]],
   ['cmake_20configuration_3',['Adding CMake Configuration',['../quick-start.html#add-cmake-config',1,'']]],
   ['column_4',['column',['../structidl__message__t.html#ac5c33d759f594b29ed84c934518914a8',1,'idl_message_t']]],
-  ['configuration_5',['Adding CMake Configuration',['../quick-start.html#add-cmake-config',1,'']]]
+  ['configuration_5',['Adding CMake Configuration',['../quick-start.html#add-cmake-config',1,'']]],
+  ['creating_20a_20simple_20library_6',['Creating a Simple Library',['../quick-start.html#create-lib',1,'']]]
 ];

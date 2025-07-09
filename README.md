@@ -27,7 +27,15 @@ cmake -B build -S .
 cmake --build build
 
 # Run tests
-ctest --test-dir build --output-on-failure
+cd build
+ctest --output-on-failure
+```
+
+### Building and testing the Js npm package
+
+```bash
+# Build js modules
+npm run build
 ```
 
 ## How does this work

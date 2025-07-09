@@ -13,7 +13,10 @@ FetchContent_MakeAvailable(doxygen-awesome-css)
 set(IDLC_DOC_CSS "${doxygen-awesome-css_SOURCE_DIR}" CACHE STRING "doxygen-awesome")
 
 file(GLOB IDLC_DOC_SOURCES "${PROJECT_SOURCE_DIR}/include/idlc/*")
-file(GLOB IDLC_DOC_MARKDOWN "${CMAKE_CURRENT_LIST_DIR}/*.md")
+set(IDLC_DOC_MARKDOWN
+    "${CMAKE_CURRENT_LIST_DIR}/introduction.md"
+    "${CMAKE_CURRENT_LIST_DIR}/quick-start.md"
+    "${CMAKE_CURRENT_LIST_DIR}/language-guide.md")
 
 set(DOXYGEN_PROJECT_LOGO "${CMAKE_CURRENT_LIST_DIR}/logo.svg")
 set(DOXYGEN_PROJECT_ICON "${CMAKE_CURRENT_LIST_DIR}/icon.svg")

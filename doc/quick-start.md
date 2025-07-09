@@ -689,8 +689,8 @@ Continue learning about IDL by following the link below.
 
 <div class="section_buttons">
  
-| Previous                   |                      Next |
-|:---------------------------|--------------------------:|
-| [Introduction](index.html) | [Tutorial](tutorial.html) |
+| Previous                   |                                  Next |
+|:---------------------------|--------------------------------------:|
+| [Introduction](index.html) | [Language Guide](language-guide.html) |
  
 </div>

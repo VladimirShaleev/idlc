@@ -32,7 +32,7 @@ The language requires all names to begin with a capital letter. The main questio
 
 Let's say we have a method name TestName. The compiler tokenizes it into two words `Test` and `Name` based on capital letters and letter-digit-letter transitions. So in C, the name would be:
 
-```c
+```
 logger_test_name
 ```
 
@@ -46,7 +46,7 @@ Note that C isn't an OOP language, but many C libraries (like cairo, etc.) manua
 
 In JS, the interface translates to a JS class with methods and other features.
 
-@note If default tokenization doesn't work for your case, you can use the `[tokenizer]` attribute as shown in this TODO section.
+@note If default tokenization doesn't work for your case, you can use the `[tokenizer]` attribute as shown in this [[tokenizer]](#attr-tokenizer) section.
 
 ## Documentation {#documentation}
 
@@ -151,7 +151,7 @@ enum Feature [flags]
 
 Here None will be 0, and Bindless will be 1. For example, in C this would look like after compilation:
 
-```c
+```
 /**
  * @brief Graphics features.
  */
@@ -194,7 +194,16 @@ SAMPLE_FLAGS(sample_feature_flags_t)
 
 Generally these types look similar across languages, but there are exceptions. For example, in JS `Char` is represented as a string since JavaScript doesn't have single-character types. However, if you declare an array of `Char` in IDL, in C it will be a character array, while in JS it will simply be a string.
 
-Similarly, in C `Data` and `ConstData` are represented as pointers, while in JS they might be sized `Uint8Array` or `ArrayBuffer`. IDL provides a unified way to properly format buffers in syntax that feels native to each language (pointers in C, buffers/strings/arrays in JS). More on this later in the TODO section.
+Similarly, in C `Data` and `ConstData` are represented as pointers, while in JS they might be sized `Uint8Array` or `ArrayBuffer`. IDL provides a unified way to properly format buffers in syntax that feels native to each language (pointers in C, buffers/strings/arrays in JS). More on this later in the [[datasize]](#attr-datasize) section.
+
+The following special types are available for documentation purposes only:
+
+| Type    | Description                         |
+| -------:|:----------------------------------- |
+| `Year`  | Gets current year                   |
+| `Major` | Gets major component of api version |
+| `Minor` | Gets minor component of api version |
+| `Micro` | Gets micro component of api version |
 
 ## Structures {#structures}
 
@@ -272,7 +281,7 @@ func Func {Float32}
 
 Arguments can also have default values similar to structure fields.
 
-Arguments can have direction specified. This is useful in special cases to make function usage more native for target languages. More on this in TODO section.
+Arguments can have direction specified. This is useful in special cases to make function usage more native for target languages. More on this in [[result]](#attr-result) section.
 
 ## Interfaces {#interfaces}
 
@@ -323,7 +332,7 @@ The `Destroy` method will be used for object deallocation. The `[destroy]` attri
 
 `Method` is an instance method. It explicitly takes Obj argument with `[this]` attribute. In OOP languages this becomes implicit `this`/`self`. In non-OOP languages it remains as Obj argument. For example in C:
 
-```c
+```
 /**
  * @brief     Method of interface.
  * @param[in] obj this object
@@ -372,7 +381,7 @@ interface ObjType
     method SetValue
         arg Obj {ObjType} [this] @ this object
         arg Value {Float32} @ New value
-    
+
     prop Value [get(GetValue),set(SetValue)] @ Value property
 ```
 
@@ -380,22 +389,365 @@ In languages supporting properties (JS, C# etc.), this creates a `Value` propert
 
 ## Callbacks {#callbacks}
 
+Callbacks are declared similarly to functions:
+
+````
+@ Callback to which the compilation result is passed.
+@ ```
+    If you need to save the compilation result to a location other than the file
+    system, such as the network or console output, you can use this callback.``` [detail]
+@ The compiler can output multiple sources. The exact number depends on the selected generator {Generator}. [note]
+callback WriteCallback
+    arg Source {Source} [const,ref] @ Source of compiler output.
+    arg Data {Data} [userdata] @ User data specified when setting up a callback.
+````
+
+This example comes from the compiler's own specification.
+
+We can now use this callback in functions, static methods, and instance methods. It can also be used as a field type in structures.
+
+Let's examine the specification further:
+
+````
+@ Compilation options.
+@ This object specifies various compilation options. [detail]
+interface Options
+    @ Get the current write callback.
+    @ Returns a callback if one has been configured. [detail]
+    @ Returns a callback. [return]
+    @ {SetWriter} [see]
+    method GetWriter {WriteCallback} [const]
+        arg Options {Options} [this] @ Target options.
+        arg Data {Data} [out,optional,userdata] @ Returning a callback user data pointer (may be null).
+
+    @ Set write callback.
+    @ ```
+        Configures a callback to receive compiler output. If the callback is set, no output
+        will be made to the file system ({SetOutputDir} will also not be used).``` [detail]
+    @ Typical uses of a writer are writing to memory or outputting to the console and the like. [note]
+    @ {GetWriter} [see]
+    method SetWriter
+        arg Options {Options} [this] @ Target options.
+        arg Callback {WriteCallback} @ Callback function.
+        arg Data {Data} [optional,userdata] @ Callback user data.
+````
+
+As we can see, the Options interface can set a callback and store user data (useful for unmanaged languages like C to pass context to callbacks or even propagate C++ exceptions through C functions using `std::current_exception`).
+
+In C, these functions look like this:
+
+```
+/**
+ * @brief     Callback to which the compilation result is passed.
+ * @details   If you need to save the compilation result to a location other than the file
+ *            system, such as the network or console output, you can use this callback.
+ * @param[in] source Source of compiler output.
+ * @param[in] data User data specified when setting up a callback.
+ * @note      The compiler can output multiple sources. The exact number depends on the selected generator ::idl_generator_t.
+ * @ingroup   types
+ */
+typedef void
+(*idl_write_callback_t)(const idl_source_t* source,
+                        idl_data_t data);
+
+/**
+ * @brief      Get the current write callback.
+ * @details    Returns a callback if one has been configured.
+ * @param[in]  options Target options.
+ * @param[out] data Returning a callback user data pointer (may be null).
+ * @return     Returns a callback.
+ * @sa         ::idl_options_set_writer
+ * @ingroup    functions
+ */
+idl_api idl_write_callback_t
+idl_options_get_writer(idl_options_t options,
+                       idl_data_t* data);
+
+/**
+ * @brief     Set write callback.
+ * @details   Configures a callback to receive compiler output. If the callback is set, no output
+ *            will be made to the file system (::idl_options_set_output_dir will also not be used).
+ * @param[in] options Target options.
+ * @param[in] callback Callback function.
+ * @param[in] data Callback user data.
+ * @note      Typical uses of a writer are writing to memory or outputting to the console and the like.
+ * @sa        ::idl_options_get_writer
+ * @ingroup   functions
+ */
+idl_api void
+idl_options_set_writer(idl_options_t options,
+                       idl_write_callback_t callback,
+                       idl_data_t data);
+```
+
 ## Events {#events}
+
+We can use callbacks as events. For example:
+
+```
+@ Compilation options.
+@ This object specifies various compilation options. [detail]
+interface Options
+    event Writer [get(GetWriter),set(SetWriter)] @ Event that occurs when the compiler outputs.
+```
+
+This example comes from the compiler's own specification.
+
+This can be useful in certain languages. Let's look at JavaScript code for an online editor using this event with the callback:
+
+```javascript
+const options = new module.Options;
+
+const results = {};
+options.writer = function (source) {
+    results[source.name] = source.data;
+};
+
+const compiler = new module.Compiler;
+compiler.compile(generator, undefined, [source], options);
+```
+
+Here we assign a lambda to the writer property of the options instance, which takes compiled code and saves it to a captured dictionary variable as filename/code pairs.
 
 ## Import {#import}
 
+Large specifications are rarely practical to describe in a single file. For this purpose, imports are available:
+
+```
+@ IDLC
+api Idl [version(0,0,0)]
+
+@ Warning/Error codes.
+@ Here are the warning and error codes that may occur during compilation. [detail]
+import Results
+
+@ Compiler options.
+@ This is where the structures and various compilation options are located. [detail]
+import Options
+```
+
+Documentation for imports is also mandatory.
+
+Repeated inclusion of an import has no effect - it's simply skipped.
+
+@note Note that the C generator creates a separate file for each import.
+
+## Declaration References {#decl-refs}
+
+TODO
+
 ## Attributes {#attributes}
+
+As you may have noticed, the language provides only declarations - everything else is achieved by attaching attributes to these declarations. Even argument and field types are actually attributes:
+
+```
+@ Color values.
+struct Color
+    field Red {Float32} @ Red channel clear value.
+    field Green {Float32} @ Green channel clear value.
+    field Blue {Float32} @ Blue channel clear value.
+    field Alpha {Float32} @ Alpha channel clear value.
+```
+
+This is syntactic sugar for the `[type]` attribute:
+
+```
+@ Color values.
+struct Color
+    field Red [type(Float32)] @ Red channel clear value.
+    field Green [type(Float32)] @ Green channel clear value.
+    field Blue [type(Float32)] @ Blue channel clear value.
+    field Alpha [type(Float32)] @ Alpha channel clear value.
+```
+
+The same applies to default values:
+
+```
+@ Graphics features.
+enum Feature [flags]
+    const None @ No special features
+    const Bindless @ Bindless resource access
+    const GeometryShader : 2 @ Geometry shader support
+    const MeshShader : 4 @ Mesh shader support
+    const SamplerFilterMinmax : 8 @ Min/max sampler filtering
+    const DrawIndirect : 16 @ Indirect drawing
+    const Combine : MeshShader, DrawIndirect @ Combine flags sample
+```
+
+Is actually:
+
+```
+@ Graphics features.
+enum Feature [flags]
+    const None [type(Int32),value(0)] @ No special features
+    const Bindless [type(Int32),value(1)] @ Bindless resource access
+    const GeometryShader [type(Int32),value(2)] @ Geometry shader support
+    const MeshShader [type(Int32),value(4)] @ Mesh shader support
+    const SamplerFilterMinmax [type(Int32),value(8)] @ Min/max sampler filtering
+    const DrawIndirect [type(Int32),value(16)] @ Indirect drawing
+    const Combine [type(Int32),value(MeshShader,DrawIndirect)] @ Combine flags sample
+```
+
+In short, everything except declarations and documentation context is implemented through attributes.
+
+### [flags] {#attr-flags}
+
+TODO
+
+### [hex] {#attr-hex}
+
+TODO
+
+### [platform] {#attr-platform}
+
+TODO
+
+### [value] {#attr-value}
+
+TODO
+
+### [type] {#attr-type}
+
+TODO
+
+### [static] {#attr-static}
+
+TODO
+
+### [ctor] {#attr-ctor}
+
+TODO
+
+### [this] {#attr-this}
+
+TODO
+
+### [get] {#attr-get}
+
+TODO
+
+### [set] {#attr-set}
+
+TODO
+
+### [handle] {#attr-handle}
+
+TODO
+
+### [cname] {#attr-cname}
+
+TODO
+
+### [array] {#attr-array}
+
+TODO
+
+### [datasize] {#attr-datasize}
+
+TODO
+
+### [const] {#attr-const}
+
+TODO
+
+### [ref] {#attr-ref}
+
+TODO
+
+### [refinc] {#attr-refinc}
+
+TODO
+
+### [userdata] {#attr-userdata}
+
+TODO
+
+### [errorcode] {#attr-errorcode}
+
+TODO
+
+### [noerror] {#attr-noerror}
+
+TODO
+
+### [result] {#attr-result}
+
+TODO
+
+### [destroy] {#attr-destroy}
+
+TODO
+
+### [in] {#attr-in}
+
+TODO
+
+### [out] {#attr-out}
+
+TODO
+
+### [optional] {#attr-optional}
+
+TODO
+
+### [tokenizer] {#attr-tokenizer}
+
+TODO
+
+### [version] {#attr-version}
+
+TODO
+
+### [brief] {#attr-brief}
+
+TODO
+
+### [detail] {#attr-detail}
+
+TODO
+
+### [author] {#attr-author}
+
+TODO
+
+### [see] {#attr-see}
+
+TODO
+
+### [note] {#attr-note}
+
+TODO
+
+### [warning] {#attr-warning}
+
+TODO
+
+### [copyright] {#attr-copyright}
+
+TODO
+
+### [license] {#attr-license}
+
+TODO
+
+### [return] {#attr-return}
+
+TODO
 
 ## Error Handling {#error-handling}
 
 The language provides special facilities for cross-language error handling. This is necessary because C lacks exceptions and typically uses error codes, while JS has exceptions. Therefore, IDL offers a built-in way to describe errors that works natively across all target languages.
 
+TODO
+
 # Using the idlc Command Line Tool {#using-idlc}
 
+TODO
+
 <div class="section_buttons">
- 
+
 | Previous                        |                         Next |
 |:--------------------------------|-----------------------------:|
 | [Quick Start](quick-start.html) | [Documentation](topics.html) |
- 
+
 </div>

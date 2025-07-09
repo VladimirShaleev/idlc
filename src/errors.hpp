@@ -338,7 +338,7 @@ template <idl_status_t Status, typename... Args>
     } else if constexpr (Status == IDL_STATUS_E2127) {
         str = fmt::format("invalid attribute 'destroy' for {}, 'destroy' can only contain a method'", args...);
     } else {
-        static_assert(false, "unknown status code");
+        assert(!"unknown status code");
     }
     throw Exception(Status, *loc.begin.filename, loc.begin.line, loc.begin.column, str);
 }

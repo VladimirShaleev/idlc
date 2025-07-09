@@ -196,11 +196,17 @@ public:
         addBuiltin("Data", "data", "pointer to data.", ASTData{});
         addBuiltin("ConstData", "cdata", "pointer to immutable data.", ASTConstData{});
 
-        const std::chrono::time_point now{ std::chrono::system_clock::now() };
-        const std::chrono::year_month_day ymd{ std::chrono::floor<std::chrono::days>(now) };
+        char datatime[100];
+        auto now = std::time(nullptr);
+        std::tm buf;
+#ifdef IDL_PLATFORM_WINDOWS
+        gmtime_s(&buf, &now);
+#else
+        buf = *std::gmtime(&now);
+#endif
         auto year   = allocNode<ASTYear>(loc);
         year->name  = "Year";
-        year->value = static_cast<int>(ymd.year());
+        year->value = static_cast<int>(buf.tm_year + 1900);
         addDocSymbol(year);
 
         auto major   = allocNode<ASTMajor>(loc);
@@ -586,7 +592,7 @@ public:
                             } else if constexpr (std::is_same_v<T, ASTMethod>) {
                                 err<IDL_STATUS_E2103>(arg->location);
                             } else {
-                                static_assert(false, "unknown invokable");
+                                assert(!"unknown invokable");
                             }
                         }
                         auto type = resolveType(sizeField->template findAttr<ASTAttrType>()->type);
@@ -601,7 +607,7 @@ public:
                         } else if constexpr (std::is_same_v<T, ASTMethod>) {
                             err<IDL_STATUS_E2104>(attr->location, arg->fullname());
                         } else {
-                            static_assert(false, "unknown invokable");
+                            assert(!"unknown invokable");
                         }
                     }
                 }
@@ -620,7 +626,7 @@ public:
                             } else if constexpr (std::is_same_v<T, ASTMethod>) {
                                 err<IDL_STATUS_E2123>(attr->location, arg->fullname());
                             } else {
-                                static_assert(false, "unknown invokable");
+                                assert(!"unknown invokable");
                             }
                         }
                         auto type = resolveType(sizeField->template findAttr<ASTAttrType>()->type);
@@ -635,7 +641,7 @@ public:
                         } else if constexpr (std::is_same_v<T, ASTMethod>) {
                             err<IDL_STATUS_E2115>(attr->location, arg->fullname());
                         } else {
-                            static_assert(false, "unknown invokable");
+                            assert(!"unknown invokable");
                         }
                     }
                 }

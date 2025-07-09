@@ -3,6 +3,9 @@
 /.vscode
 /out
 /build
+/dist
+/wasmbuild
+/node_modules
 
 # Prerequisites
 *.d

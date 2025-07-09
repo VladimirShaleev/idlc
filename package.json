@@ -1,0 +1,37 @@
+{
+  "name": "sample",
+  "version": "1.0.0",
+  "description": "Example of creating a library",
+  "main": "dist/sample.js",
+  "module": "dist/sample.esm.js",
+  "browser": "dist/sample.js",
+  "types": "dist/sample.d.ts",
+  "files": ["dist"],
+  "type": "module",
+  "exports": {
+    ".": {
+      "require": "./dist/sample.js",
+      "import": "./dist/sample.esm.js",
+      "browser": "./dist/sample.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "cmake -Bwasmbuild -S. -DVCPKG_TARGET_TRIPLET=wasm32-emscripten -DCMAKE_TOOLCHAIN_FILE=${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=${EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake -DCMAKE_CROSSCOMPILING_EMULATOR=${EMSDK_NODE} -DSAMPLE_BUILD_TESTS=OFF -DSAMPLE_ENABLE_INSTALL=OFF -G Ninja -DCMAKE_BUILD_TYPE=MinSizeRel && cmake --build wasmbuild"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VladimirShaleev/idlc.git"
+  },
+  "keywords": [
+    "wasm",
+    "js",
+    "idlc"
+  ],
+  "author": "Vladimir Shaleev <vladimirshaleev@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/VladimirShaleev/idlc/issues"
+  },
+  "homepage": "https://github.com/VladimirShaleev/idlc/tree/sample"
+}

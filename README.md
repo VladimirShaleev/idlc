@@ -13,7 +13,7 @@ To build the library, you'll need:
 - CMake;
 - Preferably, the [vcpkg](https://learn.microsoft.com/vcpkg/get_started/get-started) package manager installed.
 
-Alternatively, you can use the **Dev Container** provided with the library, which comes preconfigured with all the necessary tools for building the C library and creating the npm package.
+Alternatively, you can use the [Dev Container](https://code.visualstudio.com/docs/devcontainers/containers) provided with the library, which comes preconfigured with all the necessary tools for building the C library and creating the npm package.
 
 ## Building 
 

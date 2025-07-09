@@ -1,0 +1,22 @@
+{
+	"name": "Development",
+	"build": {
+		"dockerfile": "Dockerfile"
+	},
+	"features": {
+		"ghcr.io/devcontainers/features/node:1": {
+			"version": "22",
+			"pnpmVersion": "8.8.0",
+			"nvmVersion": "0.39"
+		}
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-vscode.cpptools-extension-pack",
+				"ms-vscode.vscode-typescript-next",
+				"ms-vscode.wasm-dwarf-debugging"
+			]
+		}
+	}
+}

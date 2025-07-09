@@ -440,7 +440,7 @@ if(SAMPLE_ENABLE_INSTALL)
 endif()
 ```
 
-Contents of `./cmake/.vcpkg.cmake`:
+Contents of `./cmake/vcpkg.cmake`:
 
 ```cmake
 if(DEFINED Z_VCPKG_ROOT_DIR)
@@ -539,6 +539,153 @@ ctest --output-on-failure
 # or (if cmake >= 3.20)
 ctest --test-dir build --output-on-failure
 ```
+
+## Building a Native JavaScript Library {#js-lib}
+
+### Adding WASM Support {#add-wasm}
+
+If you're not working in the **Dev Container**, you'll need to:
+- Install **Emscripten** following the [official guide]((https://emscripten.org/docs/getting_started/downloads.html)) for JS module compilation
+- Install Node.js for **npm** package building
+
+While you could build the JS library directly using **emcc**, we'll instead add **Emscripten** configuration to `CMakeLists.txt`:
+
+```cmake
+if(EMSCRIPTEN)
+    idlc_compile(NAME api_js WARN_AS_ERRORS
+        SOURCE "${PROJECT_SOURCE_DIR}/specs/api.idl"
+        OUTPUT "${PROJECT_BINARY_DIR}/sample.js.cpp"
+        VERSION ${PROJECT_VERSION}
+        GENERATOR JS)
+
+    set(SAMPLE_JS_LINK_OPTIONS -sWASM=1 -sMODULARIZE=1 -sALLOW_MEMORY_GROWTH=1 -sEXPORT_NAME=sample --emit-tsd sample.d.ts)
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        list(APPEND SAMPLE_JS_LINK_OPTIONS "-sSINGLE_FILE=0")
+    else()
+        list(APPEND SAMPLE_JS_LINK_OPTIONS "-sSINGLE_FILE=1")
+    endif()
+
+    add_executable(samplejs ${IDLC_api_js_OUTPUTS})
+    target_link_libraries(samplejs PRIVATE embind sample::sample)
+    target_include_directories(samplejs PRIVATE "${PROJECT_SOURCE_DIR}/include/sample/")
+    target_compile_features(samplejs PRIVATE cxx_std_20)
+    target_link_options(samplejs PRIVATE ${SAMPLE_JS_LINK_OPTIONS})
+    set_target_properties(samplejs PROPERTIES OUTPUT_NAME "sample" SUFFIX ".js" RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/dist/")
+
+    add_executable(samplejsesm ${IDLC_api_js_OUTPUTS})
+    target_link_libraries(samplejsesm PRIVATE embind sample::sample)
+    target_include_directories(samplejsesm PRIVATE "${PROJECT_SOURCE_DIR}/include/sample/")
+    target_compile_features(samplejsesm PRIVATE cxx_std_20)
+    target_link_options(samplejsesm PRIVATE ${SAMPLE_JS_LINK_OPTIONS} -sEXPORT_ES6=1)
+    set_target_properties(samplejsesm PROPERTIES OUTPUT_NAME "sample.esm" SUFFIX ".js" RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/dist/")
+endif()
+```
+
+When CMake targets **WASM**, we'll generate **Embind** bindings in the build output directory. This output file will be a dependency for two targets: `samplejs` and `samplejsesm` (for UMD and ESM respectively). These two targets link our C library `sample::sample` along with **Embind**. When built, these targets create JS modules with **WASM** in the **npm** package's root `./dist/` directory.
+
+### Creating an NPM Package {#npm-package}
+
+If you also want to publish the resulting module as an npm package, you'll need to add a `package.json` file at the root of your library.
+
+Its contents might look like this:
+
+```json
+{
+  "name": "sample",
+  "version": "1.0.0",
+  "description": "Example of creating a library",
+  "main": "dist/sample.js",
+  "module": "dist/sample.esm.js",
+  "browser": "dist/sample.js",
+  "types": "dist/sample.d.ts",
+  "files": ["dist"],
+  "type": "module",
+  "exports": {
+    ".": {
+      "require": "./dist/sample.js",
+      "import": "./dist/sample.esm.js",
+      "browser": "./dist/sample.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "..."
+  }
+}
+
+```
+
+Add the following line to the build script:
+
+```bash
+cmake -Bwasmbuild -S. -DVCPKG_TARGET_TRIPLET=wasm32-emscripten -DCMAKE_TOOLCHAIN_FILE=${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=${EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake -DCMAKE_CROSSCOMPILING_EMULATOR=${EMSDK_NODE} -DSAMPLE_BUILD_TESTS=OFF -DSAMPLE_ENABLE_INSTALL=OFF -G Ninja -DCMAKE_BUILD_TYPE=MinSizeRel && cmake --build wasmbuild
+```
+
+This script configures CMake for the **WASM** target platform and then builds the `.js` modules.
+
+Now you can run:
+
+```bash
+npm run build
+```
+
+That's essentially all you need to create the JS module.
+
+### Adding Tests to the NPM Package {#npm-tests}
+
+We won't add dependencies for unit tests, but instead will simply include a Node.js script for working with our package at `./tests/node-test-esm.js`:
+
+```javascript
+import sampleInit from 'sample';
+
+const sample = await sampleInit();
+
+const result = sample.mul(3.2, 2.5)
+console.log(`3.2 * 2.5 = ${result}`);
+
+const vehicle = new sample.Vehicle("Truck");
+vehicle.setVelocity({ x: 1.0, y: 2.0, z: 3.0 });
+const dot = vehicle.dotVelocity({ x: 3.0, y: 2.0, z: 1.0 });
+
+console.log(`Vehicle '${vehicle.name}' dot: ${dot}`);
+
+vehicle.delete();
+```
+
+In the `package.json` file, you can add the following script:
+
+```json
+"tests": "node tests/node-test-esm.js",
+```
+
+To run the test, execute:
+
+```bash
+npm run tests
+```
+
+The expected output should be:
+
+```
+3.2 * 2.5 = 8
+Vehicle 'Truck' dot: 10
+```
+
+## Conclusion {#conclusion}
+
+In this guide, we've covered:
+- Creating a C library with automatic API updates from IDL specification files using IDLC
+- Packaging an npm module for native JavaScript usage - all powered by the same IDLC tool
+
+The complete example library can be cloned as follows. You'll also find a README with detailed build instructions there.
+
+```bash
+git clone -b sample https://github.com/VladimirShaleev/idlc.git idlc-sample
+```
+
+## Next Steps {#next-steps}
+
+Continue learning about IDL by following the link below.
 
 <div class="section_buttons">
  

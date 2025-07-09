@@ -8,7 +8,7 @@
   "registries": [
     {
       "kind": "git",
-      "baseline": "3a97e955f364ca4599fa186146cf525aff2bc64a",
+      "baseline": "466d36bf27d03a502568a473b1f37b855dd5ae07",
       "reference": "vcpkg-registry",
       "repository": "https://github.com/VladimirShaleev/idlc",
       "packages": [

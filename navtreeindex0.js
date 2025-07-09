@@ -244,10 +244,10 @@ var NAVTREEINDEX0 =
 "index.html":[],
 "index.html":[0],
 "language-guide.html":[2],
-"language-guide.html#attributes":[2,0,13],
-"language-guide.html#builtin-types":[2,0,4],
-"language-guide.html#callbacks":[2,0,9],
-"language-guide.html#declarations":[2,0,0],
-"language-guide.html#documentation":[2,0,1],
-"language-guide.html#enumerations":[2,0,3]
+"language-guide.html#attr-array":[2,0,13,12],
+"language-guide.html#attr-author":[2,0,13,29],
+"language-guide.html#attr-brief":[2,0,13,27],
+"language-guide.html#attr-cname":[2,0,13,11],
+"language-guide.html#attr-const":[2,0,13,14],
+"language-guide.html#attr-copyright":[2,0,13,33]
 };

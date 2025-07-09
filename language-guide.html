@@ -151,13 +151,10 @@ $(function(){initNavTree('language-guide.html',''); initResizable(true); });
         <a href="#interfaces">Interfaces</a>
       </li>
       <li class="level2">
-        <a href="#methods">Methods</a>
+        <a href="#properties">Properties</a>
       </li>
       <li class="level2">
         <a href="#callbacks">Callbacks</a>
-      </li>
-      <li class="level2">
-        <a href="#properties">Properties</a>
       </li>
       <li class="level2">
         <a href="#events">Events</a>
@@ -166,7 +163,120 @@ $(function(){initNavTree('language-guide.html',''); initResizable(true); });
         <a href="#import">Import</a>
       </li>
       <li class="level2">
+        <a href="#decl-refs">Declaration References</a>
+      </li>
+      <li class="level2">
         <a href="#attributes">Attributes</a>
+        <ul>
+          <li class="level3">
+            <a href="#attr-flags">[flags]</a>
+          </li>
+          <li class="level3">
+            <a href="#attr-hex">[hex]</a>
+          </li>
+          <li class="level3">
+            <a href="#attr-platform">[platform]</a>
+          </li>
+          <li class="level3">
+            <a href="#attr-value">[value]</a>
+          </li>
+          <li class="level3">
+            <a href="#attr-type">[type]</a>
+          </li>
+          <li class="level3">
+            <a href="#attr-static">[static]</a>
+          </li>
+          <li class="level3">
+            <a href="#attr-ctor">[ctor]</a>
+          </li>
+          <li class="level3">
+            <a href="#attr-this">[this]</a>
+          </li>
+          <li class="level3">
+            <a href="#attr-get">[get]</a>
+          </li>
+          <li class="level3">
+            <a href="#attr-set">[set]</a>
+          </li>
+          <li class="level3">
+            <a href="#attr-handle">[handle]</a>
+          </li>
+          <li class="level3">
+            <a href="#attr-cname">[cname]</a>
+          </li>
+          <li class="level3">
+            <a href="#attr-array">[array]</a>
+          </li>
+          <li class="level3">
+            <a href="#attr-datasize">[datasize]</a>
+          </li>
+          <li class="level3">
+            <a href="#attr-const">[const]</a>
+          </li>
+          <li class="level3">
+            <a href="#attr-ref">[ref]</a>
+          </li>
+          <li class="level3">
+            <a href="#attr-refinc">[refinc]</a>
+          </li>
+          <li class="level3">
+            <a href="#attr-userdata">[userdata]</a>
+          </li>
+          <li class="level3">
+            <a href="#attr-errorcode">[errorcode]</a>
+          </li>
+          <li class="level3">
+            <a href="#attr-noerror">[noerror]</a>
+          </li>
+          <li class="level3">
+            <a href="#attr-result">[result]</a>
+          </li>
+          <li class="level3">
+            <a href="#attr-destroy">[destroy]</a>
+          </li>
+          <li class="level3">
+            <a href="#attr-in">[in]</a>
+          </li>
+          <li class="level3">
+            <a href="#attr-out">[out]</a>
+          </li>
+          <li class="level3">
+            <a href="#attr-optional">[optional]</a>
+          </li>
+          <li class="level3">
+            <a href="#attr-tokenizer">[tokenizer]</a>
+          </li>
+          <li class="level3">
+            <a href="#attr-version">[version]</a>
+          </li>
+          <li class="level3">
+            <a href="#attr-brief">[brief]</a>
+          </li>
+          <li class="level3">
+            <a href="#attr-detail">[detail]</a>
+          </li>
+          <li class="level3">
+            <a href="#attr-author">[author]</a>
+          </li>
+          <li class="level3">
+            <a href="#attr-see">[see]</a>
+          </li>
+          <li class="level3">
+            <a href="#attr-note">[note]</a>
+          </li>
+          <li class="level3">
+            <a href="#attr-warning">[warning]</a>
+          </li>
+          <li class="level3">
+            <a href="#attr-copyright">[copyright]</a>
+          </li>
+          <li class="level3">
+            <a href="#attr-license">[license]</a>
+          </li>
+          <li class="level3">
+            <a href="#attr-return">[return]</a>
+          </li>
+        </ul>
       </li>
       <li class="level2">
         <a href="#error-handling">Error Handling</a>
@@ -205,7 +315,7 @@ Declarations</h2>
 <div class="fragment"><div class="line">testName</div>
 </div><!-- fragment --><p>Note that C isn't an OOP language, but many C libraries (like cairo, etc.) manually "implement OOP": they add opaque types that are passed as the first parameter in functions (acting as <code>this</code>). The function prefix indicates the "class" name. These opaque types can be implemented in C or even C++, as in this library.</p>
 <p>In JS, the interface translates to a JS class with methods and other features.</p>
-<dl class="section note"><dt>Note</dt><dd>If default tokenization doesn't work for your case, you can use the <code>[tokenizer]</code> attribute as shown in this TODO section.</dd></dl>
+<dl class="section note"><dt>Note</dt><dd>If default tokenization doesn't work for your case, you can use the <code>[tokenizer]</code> attribute as shown in this <a class="el" href="#attr-tokenizer">[tokenizer]</a> section.</dd></dl>
 <h2><a class="anchor" id="documentation"></a>
 Documentation</h2>
 <p>The language requires that all declarations have at least a brief description or detailed documentation.</p>
@@ -273,17 +383,19 @@ Enumerations</h2>
 <div class="line">    const DrawIndirect : 16 @ Indirect drawing</div>
 <div class="line">    const Combine : MeshShader, DrawIndirect @ Combine flags sample</div>
 </div><!-- fragment --><p>Here None will be 0, and Bindless will be 1. For example, in C this would look like after compilation:</p>
-<div class="fragment"><div class="line"> </div>
-<div class="line"><span class="keyword">typedef</span> <span class="keyword">enum</span></div>
+<div class="fragment"><div class="line">/**</div>
+<div class="line"> * @brief Graphics features.</div>
+<div class="line"> */</div>
+<div class="line">typedef enum</div>
 <div class="line">{</div>
-<div class="line">    SAMPLE_FEATURE_NONE_BIT                  = 0, </div>
-<div class="line">    SAMPLE_FEATURE_BINDLESS_BIT              = 1, </div>
-<div class="line">    SAMPLE_FEATURE_GEOMETRY_SHADER_BIT       = 2, </div>
-<div class="line">    SAMPLE_FEATURE_MESH_SHADER_BIT           = 4, </div>
-<div class="line">    SAMPLE_FEATURE_SAMPLER_FILTER_MINMAX_BIT = 8, </div>
-<div class="line">    SAMPLE_FEATURE_DRAW_INDIRECT_BIT         = 16, </div>
-<div class="line">    SAMPLE_FEATURE_COMBINE_BIT               = SAMPLE_FEATURE_MESH_SHADER_BIT | SAMPLE_FEATURE_DRAW_INDIRECT_BIT, </div>
-<div class="line">    SAMPLE_FEATURE_MAX_ENUM                  = 0x7FFFFFFF </div>
+<div class="line">    SAMPLE_FEATURE_NONE_BIT                  = 0, /**&lt; No special features */</div>
+<div class="line">    SAMPLE_FEATURE_BINDLESS_BIT              = 1, /**&lt; Bindless resource access */</div>
+<div class="line">    SAMPLE_FEATURE_GEOMETRY_SHADER_BIT       = 2, /**&lt; Geometry shader support */</div>
+<div class="line">    SAMPLE_FEATURE_MESH_SHADER_BIT           = 4, /**&lt; Mesh shader support */</div>
+<div class="line">    SAMPLE_FEATURE_SAMPLER_FILTER_MINMAX_BIT = 8, /**&lt; Min/max sampler filtering */</div>
+<div class="line">    SAMPLE_FEATURE_DRAW_INDIRECT_BIT         = 16, /**&lt; Indirect drawing */</div>
+<div class="line">    SAMPLE_FEATURE_COMBINE_BIT               = SAMPLE_FEATURE_MESH_SHADER_BIT | SAMPLE_FEATURE_DRAW_INDIRECT_BIT, /**&lt; Combine flags sample */</div>
+<div class="line">    SAMPLE_FEATURE_MAX_ENUM                  = 0x7FFFFFFF /**&lt; Max value of enum (not used) */</div>
 <div class="line">} sample_feature_flags_t;</div>
 <div class="line">SAMPLE_FLAGS(sample_feature_flags_t)</div>
 </div><!-- fragment --><dl class="section note"><dt>Note</dt><dd><code>SAMPLE_FEATURE_MAX_ENUM</code> ensures the constant is always 4 bytes across all platforms and compilers. <code>SAMPLE_FLAGS</code> enables bitwise operations in C++.</dd></dl>
@@ -326,7 +438,20 @@ Built-in Types</h2>
 <td class="markdownTableBodyRight"><code>ConstData</code>   </td><td class="markdownTableBodyLeft">Pointer to immutable data or buffer   </td></tr>
 </table>
 <p>Generally these types look similar across languages, but there are exceptions. For example, in JS <code>Char</code> is represented as a string since JavaScript doesn't have single-character types. However, if you declare an array of <code>Char</code> in IDL, in C it will be a character array, while in JS it will simply be a string.</p>
-<p>Similarly, in C <code>Data</code> and <code>ConstData</code> are represented as pointers, while in JS they might be sized <code>Uint8Array</code> or <code>ArrayBuffer</code>. IDL provides a unified way to properly format buffers in syntax that feels native to each language (pointers in C, buffers/strings/arrays in JS). More on this later in the TODO section.</p>
+<p>Similarly, in C <code>Data</code> and <code>ConstData</code> are represented as pointers, while in JS they might be sized <code>Uint8Array</code> or <code>ArrayBuffer</code>. IDL provides a unified way to properly format buffers in syntax that feels native to each language (pointers in C, buffers/strings/arrays in JS). More on this later in the <a class="el" href="#attr-datasize">[datasize]</a> section.</p>
+<p>The following special types are available for documentation purposes only:</p>
+<table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadRight">Type   </th><th class="markdownTableHeadLeft">Description    </th></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyRight"><code>Year</code>   </td><td class="markdownTableBodyLeft">Gets current year    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyRight"><code>Major</code>   </td><td class="markdownTableBodyLeft">Gets major component of api version    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyRight"><code>Minor</code>   </td><td class="markdownTableBodyLeft">Gets minor component of api version    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyRight"><code>Micro</code>   </td><td class="markdownTableBodyLeft">Gets micro component of api version   </td></tr>
+</table>
 <h2><a class="anchor" id="structures"></a>
 Structures</h2>
 <p>Structure declarations are no different from other declarations:</p>
@@ -358,25 +483,367 @@ Structures</h2>
 </div><!-- fragment --><p>Note the use of the fully qualified name Feature.Bindless to indicate that Bindless belongs to the Feature declaration, not Test.</p>
 <h2><a class="anchor" id="functions"></a>
 Functions</h2>
+<p>The simplest function can be declared as:</p>
+<div class="fragment"><div class="line">@ Sample</div>
+<div class="line">func Func</div>
+</div><!-- fragment --><p>Let's add some arguments:</p>
+<div class="fragment"><div class="line">@ Sample</div>
+<div class="line">func Func</div>
+<div class="line">    arg Value @ First arg</div>
+<div class="line">    arg OtherValue @ Second arg</div>
+</div><!-- fragment --><p>By default, argument types are <code>Int32</code>. Let's specify return type and argument types:</p>
+<div class="fragment"><div class="line">@ Sample</div>
+<div class="line">func Func {Float32}</div>
+<div class="line">    arg Value {Uint32} @ First arg</div>
+<div class="line">    arg OtherValue {Float32} @ Second arg</div>
+</div><!-- fragment --><p>Arguments can also have default values similar to structure fields.</p>
+<p>Arguments can have direction specified. This is useful in special cases to make function usage more native for target languages. More on this in <a class="el" href="#attr-result">[result]</a> section.</p>
 <h2><a class="anchor" id="interfaces"></a>
 Interfaces</h2>
-<h2><a class="anchor" id="methods"></a>
-Methods</h2>
-<h2><a class="anchor" id="callbacks"></a>
-Callbacks</h2>
+<p>In OOP languages, interfaces become classes, while in C they become opaque types.</p>
+<p>Let's add an interface with two creation methods:</p>
+<div class="fragment"><div class="line">@ Brief.</div>
+<div class="line">interface ObjType</div>
+<div class="line">    @ Creates new object instance</div>
+<div class="line">    method CreateByValue {ObjType} [ctor]</div>
+<div class="line">        arg Name {Str} @ Name of object.</div>
+<div class="line"> </div>
+<div class="line">    @ Creates new object instance</div>
+<div class="line">    method Create {ObjType} [ctor]</div>
+</div><!-- fragment --><p>Note both methods have <code>[ctor]</code> attributes, telling the compiler to make these methods constructors in OOP-capable languages. In JS, instantiation would look like <code>const inst1 = new sample.ObjType('test');</code>. Constructor methods are implicitly static. Constructors must return the type either as return value or argument (here it's returned).</p>
+<p>Let's add three more methods:</p>
+<div class="fragment"><div class="line">@ Brief.</div>
+<div class="line">interface ObjType</div>
+<div class="line">    @ Creates new object instance</div>
+<div class="line">    method CreateByValue {ObjType} [ctor]</div>
+<div class="line">        arg Name {Str} @ Name of object.</div>
+<div class="line"> </div>
+<div class="line">    @ Creates new object instance</div>
+<div class="line">    method Create {ObjType} [ctor]</div>
+<div class="line"> </div>
+<div class="line">    @ Destroy instance.</div>
+<div class="line">    method Destroy [destroy]</div>
+<div class="line">        arg Obj {ObjType} [this] @ object to destroy.</div>
+<div class="line"> </div>
+<div class="line">    @ Method of interface.</div>
+<div class="line">    method Method</div>
+<div class="line">        arg Obj {ObjType} [this] @ this object</div>
+<div class="line">        arg Val @ Value arg</div>
+<div class="line"> </div>
+<div class="line">    @ Method of interface.</div>
+<div class="line">    method ClassMethod [static]</div>
+<div class="line">        arg Val @ Value arg</div>
+</div><!-- fragment --><p>The <code>Destroy</code> method will be used for object deallocation. The <code>[destroy]</code> attribute tells RAII or garbage-collected languages which method releases unmanaged handles.</p>
+<p><code>Method</code> is an instance method. It explicitly takes Obj argument with <code>[this]</code> attribute. In OOP languages this becomes implicit <code>this</code>/<code>self</code>. In non-OOP languages it remains as Obj argument. For example in C:</p>
+<div class="fragment"><div class="line">/**</div>
+<div class="line"> * @brief     Method of interface.</div>
+<div class="line"> * @param[in] obj this object</div>
+<div class="line"> * @param[in] val Value arg</div>
+<div class="line"> */</div>
+<div class="line">sample_api void</div>
+<div class="line">sample_obj_type_method(sample_obj_type_t obj,</div>
+<div class="line">                       sample_sint32_t val);</div>
+</div><!-- fragment --><p><code>ClassMethod</code> is static and cannot have <code>[this]</code> argument.</p>
+<p>Let's add two more methods:</p>
+<div class="fragment"><div class="line">@ Brief.</div>
+<div class="line">interface ObjType</div>
+<div class="line">    // ...</div>
+<div class="line"> </div>
+<div class="line">    @ Get method</div>
+<div class="line">    method GetValue {Float32} [const]</div>
+<div class="line">        arg Obj {ObjType} [this] @ this object</div>
+<div class="line"> </div>
+<div class="line">    @ Set method</div>
+<div class="line">    method SetValue</div>
+<div class="line">        arg Obj {ObjType} [this] @ this object</div>
+<div class="line">        arg Value {Float32} @ New value</div>
+</div><!-- fragment --><p>Note <code>GetValue</code> is marked <code>[const]</code> to indicate it doesn't modify the instance.</p>
 <h2><a class="anchor" id="properties"></a>
 Properties</h2>
-<h2><a class="anchor" id="events"></a>
+<p>Let's add a property to the interface from <a class="el" href="#interfaces">Interfaces</a> section:</p>
+<div class="fragment"><div class="line">@ Brief.</div>
+<div class="line">interface ObjType</div>
+<div class="line">    // ...</div>
+<div class="line"> </div>
+<div class="line">    @ Get method</div>
+<div class="line">    method GetValue {Float32} [const]</div>
+<div class="line">        arg Obj {ObjType} [this] @ this object</div>
+<div class="line"> </div>
+<div class="line">    @ Set method</div>
+<div class="line">    method SetValue</div>
+<div class="line">        arg Obj {ObjType} [this] @ this object</div>
+<div class="line">        arg Value {Float32} @ New value</div>
+<div class="line"> </div>
+<div class="line">    prop Value [get(GetValue),set(SetValue)] @ Value property</div>
+</div><!-- fragment --><p>In languages supporting properties (JS, C# etc.), this creates a <code>Value</code> property instead of separate <code>GetValue</code>/<code>SetValue</code> methods. Class properties can also be created by adding <code>[static]</code> to methods.</p>
+<h2><a class="anchor" id="callbacks"></a>
+Callbacks</h2>
+<p>Callbacks are declared similarly to functions:</p>
+<div class="fragment"><div class="line">@ Callback to which the compilation result is passed.</div>
+<div class="line">@ ```</div>
+<div class="line">    If you need to save the compilation result to a location other than the file</div>
+<div class="line">    system, such as the network or console output, you can use this callback.``` [detail]</div>
+<div class="line">@ The compiler can output multiple sources. The exact number depends on the selected generator {Generator}. [note]</div>
+<div class="line">callback WriteCallback</div>
+<div class="line">    arg Source {Source} [const,ref] @ Source of compiler output.</div>
+<div class="line">    arg Data {Data} [userdata] @ User data specified when setting up a callback.</div>
+</div><!-- fragment --><p>This example comes from the compiler's own specification.</p>
+<p>We can now use this callback in functions, static methods, and instance methods. It can also be used as a field type in structures.</p>
+<p>Let's examine the specification further:</p>
+<div class="fragment"><div class="line">@ Compilation options.</div>
+<div class="line">@ This object specifies various compilation options. [detail]</div>
+<div class="line">interface Options</div>
+<div class="line">    @ Get the current write callback.</div>
+<div class="line">    @ Returns a callback if one has been configured. [detail]</div>
+<div class="line">    @ Returns a callback. [return]</div>
+<div class="line">    @ {SetWriter} [see]</div>
+<div class="line">    method GetWriter {WriteCallback} [const]</div>
+<div class="line">        arg Options {Options} [this] @ Target options.</div>
+<div class="line">        arg Data {Data} [out,optional,userdata] @ Returning a callback user data pointer (may be null).</div>
+<div class="line"> </div>
+<div class="line">    @ Set write callback.</div>
+<div class="line">    @ ```</div>
+<div class="line">        Configures a callback to receive compiler output. If the callback is set, no output</div>
+<div class="line">        will be made to the file system ({SetOutputDir} will also not be used).``` [detail]</div>
+<div class="line">    @ Typical uses of a writer are writing to memory or outputting to the console and the like. [note]</div>
+<div class="line">    @ {GetWriter} [see]</div>
+<div class="line">    method SetWriter</div>
+<div class="line">        arg Options {Options} [this] @ Target options.</div>
+<div class="line">        arg Callback {WriteCallback} @ Callback function.</div>
+<div class="line">        arg Data {Data} [optional,userdata] @ Callback user data.</div>
+</div><!-- fragment --><p>As we can see, the Options interface can set a callback and store user data (useful for unmanaged languages like C to pass context to callbacks or even propagate C++ exceptions through C functions using <code>std::current_exception</code>).</p>
+<p>In C, these functions look like this:</p>
+<div class="fragment"><div class="line">/**</div>
+<div class="line"> * @brief     Callback to which the compilation result is passed.</div>
+<div class="line"> * @details   If you need to save the compilation result to a location other than the file</div>
+<div class="line"> *            system, such as the network or console output, you can use this callback.</div>
+<div class="line"> * @param[in] source Source of compiler output.</div>
+<div class="line"> * @param[in] data User data specified when setting up a callback.</div>
+<div class="line"> * @note      The compiler can output multiple sources. The exact number depends on the selected generator ::idl_generator_t.</div>
+<div class="line"> * @ingroup   types</div>
+<div class="line"> */</div>
+<div class="line">typedef void</div>
+<div class="line">(*idl_write_callback_t)(const idl_source_t* source,</div>
+<div class="line">                        idl_data_t data);</div>
+<div class="line"> </div>
+<div class="line">/**</div>
+<div class="line"> * @brief      Get the current write callback.</div>
+<div class="line"> * @details    Returns a callback if one has been configured.</div>
+<div class="line"> * @param[in]  options Target options.</div>
+<div class="line"> * @param[out] data Returning a callback user data pointer (may be null).</div>
+<div class="line"> * @return     Returns a callback.</div>
+<div class="line"> * @sa         ::idl_options_set_writer</div>
+<div class="line"> * @ingroup    functions</div>
+<div class="line"> */</div>
+<div class="line">idl_api idl_write_callback_t</div>
+<div class="line">idl_options_get_writer(idl_options_t options,</div>
+<div class="line">                       idl_data_t* data);</div>
+<div class="line"> </div>
+<div class="line">/**</div>
+<div class="line"> * @brief     Set write callback.</div>
+<div class="line"> * @details   Configures a callback to receive compiler output. If the callback is set, no output</div>
+<div class="line"> *            will be made to the file system (::idl_options_set_output_dir will also not be used).</div>
+<div class="line"> * @param[in] options Target options.</div>
+<div class="line"> * @param[in] callback Callback function.</div>
+<div class="line"> * @param[in] data Callback user data.</div>
+<div class="line"> * @note      Typical uses of a writer are writing to memory or outputting to the console and the like.</div>
+<div class="line"> * @sa        ::idl_options_get_writer</div>
+<div class="line"> * @ingroup   functions</div>
+<div class="line"> */</div>
+<div class="line">idl_api void</div>
+<div class="line">idl_options_set_writer(idl_options_t options,</div>
+<div class="line">                       idl_write_callback_t callback,</div>
+<div class="line">                       idl_data_t data);</div>
+</div><!-- fragment --><h2><a class="anchor" id="events"></a>
 Events</h2>
+<p>We can use callbacks as events. For example:</p>
+<div class="fragment"><div class="line">@ Compilation options.</div>
+<div class="line">@ This object specifies various compilation options. [detail]</div>
+<div class="line">interface Options</div>
+<div class="line">    event Writer [get(GetWriter),set(SetWriter)] @ Event that occurs when the compiler outputs.</div>
+</div><!-- fragment --><p>This example comes from the compiler's own specification.</p>
+<p>This can be useful in certain languages. Let's look at JavaScript code for an online editor using this event with the callback:</p>
+<div class="fragment"><div class="line">const options = new module.Options;</div>
+<div class="line"> </div>
+<div class="line">const results = {};</div>
+<div class="line">options.writer = function (source) {</div>
+<div class="line">    results[source.name] = source.data;</div>
+<div class="line">};</div>
+<div class="line"> </div>
+<div class="line">const compiler = new module.Compiler;</div>
+<div class="line">compiler.compile(generator, undefined, [source], options);</div>
+</div><!-- fragment --><p>Here we assign a lambda to the writer property of the options instance, which takes compiled code and saves it to a captured dictionary variable as filename/code pairs.</p>
 <h2><a class="anchor" id="import"></a>
 Import</h2>
+<p>Large specifications are rarely practical to describe in a single file. For this purpose, imports are available:</p>
+<div class="fragment"><div class="line">@ IDLC</div>
+<div class="line">api Idl [version(0,0,0)]</div>
+<div class="line"> </div>
+<div class="line">@ Warning/Error codes.</div>
+<div class="line">@ Here are the warning and error codes that may occur during compilation. [detail]</div>
+<div class="line">import Results</div>
+<div class="line"> </div>
+<div class="line">@ Compiler options.</div>
+<div class="line">@ This is where the structures and various compilation options are located. [detail]</div>
+<div class="line">import Options</div>
+</div><!-- fragment --><p>Documentation for imports is also mandatory.</p>
+<p>Repeated inclusion of an import has no effect - it's simply skipped.</p>
+<dl class="section note"><dt>Note</dt><dd>Note that the C generator creates a separate file for each import.</dd></dl>
+<h2><a class="anchor" id="decl-refs"></a>
+Declaration References</h2>
+<p>TODO</p>
 <h2><a class="anchor" id="attributes"></a>
 Attributes</h2>
+<p>As you may have noticed, the language provides only declarations - everything else is achieved by attaching attributes to these declarations. Even argument and field types are actually attributes:</p>
+<div class="fragment"><div class="line">@ Color values.</div>
+<div class="line">struct Color</div>
+<div class="line">    field Red {Float32} @ Red channel clear value.</div>
+<div class="line">    field Green {Float32} @ Green channel clear value.</div>
+<div class="line">    field Blue {Float32} @ Blue channel clear value.</div>
+<div class="line">    field Alpha {Float32} @ Alpha channel clear value.</div>
+</div><!-- fragment --><p>This is syntactic sugar for the <code>[type]</code> attribute:</p>
+<div class="fragment"><div class="line">@ Color values.</div>
+<div class="line">struct Color</div>
+<div class="line">    field Red [type(Float32)] @ Red channel clear value.</div>
+<div class="line">    field Green [type(Float32)] @ Green channel clear value.</div>
+<div class="line">    field Blue [type(Float32)] @ Blue channel clear value.</div>
+<div class="line">    field Alpha [type(Float32)] @ Alpha channel clear value.</div>
+</div><!-- fragment --><p>The same applies to default values:</p>
+<div class="fragment"><div class="line">@ Graphics features.</div>
+<div class="line">enum Feature [flags]</div>
+<div class="line">    const None @ No special features</div>
+<div class="line">    const Bindless @ Bindless resource access</div>
+<div class="line">    const GeometryShader : 2 @ Geometry shader support</div>
+<div class="line">    const MeshShader : 4 @ Mesh shader support</div>
+<div class="line">    const SamplerFilterMinmax : 8 @ Min/max sampler filtering</div>
+<div class="line">    const DrawIndirect : 16 @ Indirect drawing</div>
+<div class="line">    const Combine : MeshShader, DrawIndirect @ Combine flags sample</div>
+</div><!-- fragment --><p>Is actually:</p>
+<div class="fragment"><div class="line">@ Graphics features.</div>
+<div class="line">enum Feature [flags]</div>
+<div class="line">    const None [type(Int32),value(0)] @ No special features</div>
+<div class="line">    const Bindless [type(Int32),value(1)] @ Bindless resource access</div>
+<div class="line">    const GeometryShader [type(Int32),value(2)] @ Geometry shader support</div>
+<div class="line">    const MeshShader [type(Int32),value(4)] @ Mesh shader support</div>
+<div class="line">    const SamplerFilterMinmax [type(Int32),value(8)] @ Min/max sampler filtering</div>
+<div class="line">    const DrawIndirect [type(Int32),value(16)] @ Indirect drawing</div>
+<div class="line">    const Combine [type(Int32),value(MeshShader,DrawIndirect)] @ Combine flags sample</div>
+</div><!-- fragment --><p>In short, everything except declarations and documentation context is implemented through attributes.</p>
+<h3><a class="anchor" id="attr-flags"></a>
+[flags]</h3>
+<p>TODO</p>
+<h3><a class="anchor" id="attr-hex"></a>
+[hex]</h3>
+<p>TODO</p>
+<h3><a class="anchor" id="attr-platform"></a>
+[platform]</h3>
+<p>TODO</p>
+<h3><a class="anchor" id="attr-value"></a>
+[value]</h3>
+<p>TODO</p>
+<h3><a class="anchor" id="attr-type"></a>
+[type]</h3>
+<p>TODO</p>
+<h3><a class="anchor" id="attr-static"></a>
+[static]</h3>
+<p>TODO</p>
+<h3><a class="anchor" id="attr-ctor"></a>
+[ctor]</h3>
+<p>TODO</p>
+<h3><a class="anchor" id="attr-this"></a>
+[this]</h3>
+<p>TODO</p>
+<h3><a class="anchor" id="attr-get"></a>
+[get]</h3>
+<p>TODO</p>
+<h3><a class="anchor" id="attr-set"></a>
+[set]</h3>
+<p>TODO</p>
+<h3><a class="anchor" id="attr-handle"></a>
+[handle]</h3>
+<p>TODO</p>
+<h3><a class="anchor" id="attr-cname"></a>
+[cname]</h3>
+<p>TODO</p>
+<h3><a class="anchor" id="attr-array"></a>
+[array]</h3>
+<p>TODO</p>
+<h3><a class="anchor" id="attr-datasize"></a>
+[datasize]</h3>
+<p>TODO</p>
+<h3><a class="anchor" id="attr-const"></a>
+[const]</h3>
+<p>TODO</p>
+<h3><a class="anchor" id="attr-ref"></a>
+[ref]</h3>
+<p>TODO</p>
+<h3><a class="anchor" id="attr-refinc"></a>
+[refinc]</h3>
+<p>TODO</p>
+<h3><a class="anchor" id="attr-userdata"></a>
+[userdata]</h3>
+<p>TODO</p>
+<h3><a class="anchor" id="attr-errorcode"></a>
+[errorcode]</h3>
+<p>TODO</p>
+<h3><a class="anchor" id="attr-noerror"></a>
+[noerror]</h3>
+<p>TODO</p>
+<h3><a class="anchor" id="attr-result"></a>
+[result]</h3>
+<p>TODO</p>
+<h3><a class="anchor" id="attr-destroy"></a>
+[destroy]</h3>
+<p>TODO</p>
+<h3><a class="anchor" id="attr-in"></a>
+[in]</h3>
+<p>TODO</p>
+<h3><a class="anchor" id="attr-out"></a>
+[out]</h3>
+<p>TODO</p>
+<h3><a class="anchor" id="attr-optional"></a>
+[optional]</h3>
+<p>TODO</p>
+<h3><a class="anchor" id="attr-tokenizer"></a>
+[tokenizer]</h3>
+<p>TODO</p>
+<h3><a class="anchor" id="attr-version"></a>
+[version]</h3>
+<p>TODO</p>
+<h3><a class="anchor" id="attr-brief"></a>
+[brief]</h3>
+<p>TODO</p>
+<h3><a class="anchor" id="attr-detail"></a>
+[detail]</h3>
+<p>TODO</p>
+<h3><a class="anchor" id="attr-author"></a>
+[author]</h3>
+<p>TODO</p>
+<h3><a class="anchor" id="attr-see"></a>
+[see]</h3>
+<p>TODO</p>
+<h3><a class="anchor" id="attr-note"></a>
+[note]</h3>
+<p>TODO</p>
+<h3><a class="anchor" id="attr-warning"></a>
+[warning]</h3>
+<p>TODO</p>
+<h3><a class="anchor" id="attr-copyright"></a>
+[copyright]</h3>
+<p>TODO</p>
+<h3><a class="anchor" id="attr-license"></a>
+[license]</h3>
+<p>TODO</p>
+<h3><a class="anchor" id="attr-return"></a>
+[return]</h3>
+<p>TODO</p>
 <h2><a class="anchor" id="error-handling"></a>
 Error Handling</h2>
 <p>The language provides special facilities for cross-language error handling. This is necessary because C lacks exceptions and typically uses error codes, while JS has exceptions. Therefore, IDL offers a built-in way to describe errors that works natively across all target languages.</p>
+<p>TODO</p>
 <h1><a class="anchor" id="using-idlc"></a>
 Using the idlc Command Line Tool</h1>
+<p>TODO</p>
 <div class="section_buttons"></div><div class="section_buttons"><table class="markdownTable">
 <tr class="markdownTableHead">
 <th class="markdownTableHeadLeft">Previous   </th><th class="markdownTableHeadRight">Next    </th></tr>

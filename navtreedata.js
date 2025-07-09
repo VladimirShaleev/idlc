@@ -54,12 +54,49 @@ var NAVTREE =
         [ "Structures", "language-guide.html#structures", null ],
         [ "Functions", "language-guide.html#functions", null ],
         [ "Interfaces", "language-guide.html#interfaces", null ],
-        [ "Methods", "language-guide.html#methods", null ],
-        [ "Callbacks", "language-guide.html#callbacks", null ],
         [ "Properties", "language-guide.html#properties", null ],
+        [ "Callbacks", "language-guide.html#callbacks", null ],
         [ "Events", "language-guide.html#events", null ],
         [ "Import", "language-guide.html#import", null ],
-        [ "Attributes", "language-guide.html#attributes", null ],
+        [ "Declaration References", "language-guide.html#decl-refs", null ],
+        [ "Attributes", "language-guide.html#attributes", [
+          [ "[flags]", "language-guide.html#attr-flags", null ],
+          [ "[hex]", "language-guide.html#attr-hex", null ],
+          [ "[platform]", "language-guide.html#attr-platform", null ],
+          [ "[value]", "language-guide.html#attr-value", null ],
+          [ "[type]", "language-guide.html#attr-type", null ],
+          [ "[static]", "language-guide.html#attr-static", null ],
+          [ "[ctor]", "language-guide.html#attr-ctor", null ],
+          [ "[this]", "language-guide.html#attr-this", null ],
+          [ "[get]", "language-guide.html#attr-get", null ],
+          [ "[set]", "language-guide.html#attr-set", null ],
+          [ "[handle]", "language-guide.html#attr-handle", null ],
+          [ "[cname]", "language-guide.html#attr-cname", null ],
+          [ "[array]", "language-guide.html#attr-array", null ],
+          [ "[datasize]", "language-guide.html#attr-datasize", null ],
+          [ "[const]", "language-guide.html#attr-const", null ],
+          [ "[ref]", "language-guide.html#attr-ref", null ],
+          [ "[refinc]", "language-guide.html#attr-refinc", null ],
+          [ "[userdata]", "language-guide.html#attr-userdata", null ],
+          [ "[errorcode]", "language-guide.html#attr-errorcode", null ],
+          [ "[noerror]", "language-guide.html#attr-noerror", null ],
+          [ "[result]", "language-guide.html#attr-result", null ],
+          [ "[destroy]", "language-guide.html#attr-destroy", null ],
+          [ "[in]", "language-guide.html#attr-in", null ],
+          [ "[out]", "language-guide.html#attr-out", null ],
+          [ "[optional]", "language-guide.html#attr-optional", null ],
+          [ "[tokenizer]", "language-guide.html#attr-tokenizer", null ],
+          [ "[version]", "language-guide.html#attr-version", null ],
+          [ "[brief]", "language-guide.html#attr-brief", null ],
+          [ "[detail]", "language-guide.html#attr-detail", null ],
+          [ "[author]", "language-guide.html#attr-author", null ],
+          [ "[see]", "language-guide.html#attr-see", null ],
+          [ "[note]", "language-guide.html#attr-note", null ],
+          [ "[warning]", "language-guide.html#attr-warning", null ],
+          [ "[copyright]", "language-guide.html#attr-copyright", null ],
+          [ "[license]", "language-guide.html#attr-license", null ],
+          [ "[return]", "language-guide.html#attr-return", null ]
+        ] ],
         [ "Error Handling", "language-guide.html#error-handling", null ]
       ] ],
       [ "Using the idlc Command Line Tool", "language-guide.html#using-idlc", null ]
@@ -71,7 +108,7 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "annotated.html",
-"language-guide.html#error-handling"
+"language-guide.html#attr-ctor"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

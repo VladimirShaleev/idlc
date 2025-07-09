@@ -15,6 +15,9 @@ To build the library, you'll need:
 
 Alternatively, you can use the [Dev Container](https://code.visualstudio.com/docs/devcontainers/containers) provided with the library, which comes preconfigured with all the necessary tools for building the C library and creating the npm package.
 
+> [!NOTE]
+> It is recommended to use **Dev Container** to setup the environment.
+
 ## Building 
 
 ### Building and testing the C library
@@ -31,7 +34,7 @@ cd build
 ctest --output-on-failure
 ```
 
-### Building and testing the Js npm package
+### Building and testing the JS npm package
 
 ```bash
 # Build js modules

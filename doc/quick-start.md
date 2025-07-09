@@ -8,7 +8,7 @@ Here we'll create a simple C library using **IDLC**:
 - ready for distribution via packages like **.deb** or package managers like **vcpkg** or **Conan**;
 - then we'll package this library as an **npm** package for native use in JavaScript applications.
 
-You can clone and build the ready-made example from [this branch](TODO).
+You can clone and build the ready-made example from [this branch](https://github.com/VladimirShaleev/idlc/tree/sample).
 
 To build the library, you'll need:
 - Build tools installed on your system;

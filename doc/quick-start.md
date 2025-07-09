@@ -2,7 +2,7 @@
 
 @tableofcontents
 
-# Creating a Simple C Library
+# Creating a Simple Library {#create-lib}
 
 Here we'll create a simple C library using **IDLC**:
 - ready for distribution via packages like **.deb** or package managers like **vcpkg** or **Conan**;
@@ -10,12 +10,11 @@ Here we'll create a simple C library using **IDLC**:
 
 You can clone and build the ready-made example from [this branch](https://github.com/VladimirShaleev/idlc/tree/sample).
 
-To build the library, you'll need:
-- Build tools installed on your system;
-- CMake;
-- Preferably, the [vcpkg](https://learn.microsoft.com/vcpkg/get_started/get-started) package manager installed.
+```bash
+git clone -b sample https://github.com/VladimirShaleev/idlc.git idlc-sample
+```
 
-Alternatively, you can use the **Dev Container** provided with the library, which comes preconfigured with all the necessary tools for building the C library and creating the npm package.
+and also follow its `README` on building and testing the library. Here we will also take a detailed step-by-step look at how to create this library.
 
 ## Adding Specifications for a C Library {#add-c-lib}
 

@@ -248,6 +248,6 @@ var NAVTREEINDEX0 =
 "quick-start.html#add-c-lib":[1,0,0],
 "quick-start.html#add-cmake-config":[1,0,0,2],
 "quick-start.html#add-idlc-dep":[1,0,0,1],
-"quick-start.html#create-lib":[1,0],
-"quick-start.html#doctest-lib":[1,0,0,4]
+"quick-start.html#add-wasm":[1,0,1,0],
+"quick-start.html#conclusion":[1,0,2]
 };

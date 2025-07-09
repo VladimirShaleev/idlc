@@ -34,7 +34,14 @@ var NAVTREE =
           [ "Adding CMake Configuration", "quick-start.html#add-cmake-config", null ],
           [ "Implementing C Declarations", "quick-start.html#impl-c-decls", null ],
           [ "Testing the Library", "quick-start.html#doctest-lib", null ]
-        ] ]
+        ] ],
+        [ "Building a Native JavaScript Library", "quick-start.html#js-lib", [
+          [ "Adding WASM Support", "quick-start.html#add-wasm", null ],
+          [ "Creating an NPM Package", "quick-start.html#npm-package", null ],
+          [ "Adding Tests to the NPM Package", "quick-start.html#npm-tests", null ]
+        ] ],
+        [ "Conclusion", "quick-start.html#conclusion", null ],
+        [ "Next Steps", "quick-start.html#next-steps", null ]
       ] ]
     ] ],
     [ "Tutorial", "tutorial.html", null ],
@@ -45,7 +52,7 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "annotated.html",
-"quick-start.html#idl-spec"
+"quick-start.html#create-lib"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

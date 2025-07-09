@@ -146,6 +146,26 @@ $(function(){initNavTree('quick-start.html',''); initResizable(true); });
           </li>
         </ul>
       </li>
+      <li class="level2">
+        <a href="#js-lib">Building a Native JavaScript Library</a>
+        <ul>
+          <li class="level3">
+            <a href="#add-wasm">Adding WASM Support</a>
+          </li>
+          <li class="level3">
+            <a href="#npm-package">Creating an NPM Package</a>
+          </li>
+          <li class="level3">
+            <a href="#npm-tests">Adding Tests to the NPM Package</a>
+          </li>
+        </ul>
+      </li>
+      <li class="level2">
+        <a href="#conclusion">Conclusion</a>
+      </li>
+      <li class="level2">
+        <a href="#next-steps">Next Steps</a>
+      </li>
     </ul>
   </li>
 </ul>
@@ -546,7 +566,7 @@ View all changes</summary>
 <div class="line">        DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/${PROJECT_NAME})</div>
 <div class="line">    install(DIRECTORY include/ DESTINATION include)</div>
 <div class="line">endif()</div>
-</div><!-- fragment --><p>Contents of <code>./cmake/.vcpkg.cmake</code>:</p>
+</div><!-- fragment --><p>Contents of <code>./cmake/vcpkg.cmake</code>:</p>
 <div class="fragment"><div class="line">if(DEFINED Z_VCPKG_ROOT_DIR)</div>
 <div class="line">    return()</div>
 <div class="line">endif()</div>
@@ -625,7 +645,112 @@ View all changes</summary>
 <div class="line">ctest --output-on-failure</div>
 <div class="line"># or (if cmake &gt;= 3.20)</div>
 <div class="line">ctest --test-dir build --output-on-failure</div>
-</div><!-- fragment --><div class="section_buttons"></div><div class="section_buttons"><table class="markdownTable">
+</div><!-- fragment --><h2><a class="anchor" id="js-lib"></a>
+Building a Native JavaScript Library</h2>
+<h3><a class="anchor" id="add-wasm"></a>
+Adding WASM Support</h3>
+<p>If you're not working in the <b>Dev Container</b>, you'll need to:</p><ul>
+<li>Install <b>Emscripten</b> following the <a href="(https://emscripten.org/docs/getting_started/downloads.html)">official guide</a> for JS module compilation</li>
+<li>Install Node.js for <b>npm</b> package building</li>
+</ul>
+<p>While you could build the JS library directly using <b>emcc</b>, we'll instead add <b>Emscripten</b> configuration to <code>CMakeLists.txt</code>:</p>
+<div class="fragment"><div class="line">if(EMSCRIPTEN)</div>
+<div class="line">    idlc_compile(NAME api_js WARN_AS_ERRORS</div>
+<div class="line">        SOURCE &quot;${PROJECT_SOURCE_DIR}/specs/api.idl&quot;</div>
+<div class="line">        OUTPUT &quot;${PROJECT_BINARY_DIR}/sample.js.cpp&quot;</div>
+<div class="line">        VERSION ${PROJECT_VERSION}</div>
+<div class="line">        GENERATOR JS)</div>
+<div class="line"> </div>
+<div class="line">    set(SAMPLE_JS_LINK_OPTIONS -sWASM=1 -sMODULARIZE=1 -sALLOW_MEMORY_GROWTH=1 -sEXPORT_NAME=sample --emit-tsd sample.d.ts)</div>
+<div class="line">    if(CMAKE_BUILD_TYPE STREQUAL &quot;Debug&quot;)</div>
+<div class="line">        list(APPEND SAMPLE_JS_LINK_OPTIONS &quot;-sSINGLE_FILE=0&quot;)</div>
+<div class="line">    else()</div>
+<div class="line">        list(APPEND SAMPLE_JS_LINK_OPTIONS &quot;-sSINGLE_FILE=1&quot;)</div>
+<div class="line">    endif()</div>
+<div class="line"> </div>
+<div class="line">    add_executable(samplejs ${IDLC_api_js_OUTPUTS})</div>
+<div class="line">    target_link_libraries(samplejs PRIVATE embind sample::sample)</div>
+<div class="line">    target_include_directories(samplejs PRIVATE &quot;${PROJECT_SOURCE_DIR}/include/sample/&quot;)</div>
+<div class="line">    target_compile_features(samplejs PRIVATE cxx_std_20)</div>
+<div class="line">    target_link_options(samplejs PRIVATE ${SAMPLE_JS_LINK_OPTIONS})</div>
+<div class="line">    set_target_properties(samplejs PROPERTIES OUTPUT_NAME &quot;sample&quot; SUFFIX &quot;.js&quot; RUNTIME_OUTPUT_DIRECTORY &quot;${PROJECT_SOURCE_DIR}/dist/&quot;)</div>
+<div class="line"> </div>
+<div class="line">    add_executable(samplejsesm ${IDLC_api_js_OUTPUTS})</div>
+<div class="line">    target_link_libraries(samplejsesm PRIVATE embind sample::sample)</div>
+<div class="line">    target_include_directories(samplejsesm PRIVATE &quot;${PROJECT_SOURCE_DIR}/include/sample/&quot;)</div>
+<div class="line">    target_compile_features(samplejsesm PRIVATE cxx_std_20)</div>
+<div class="line">    target_link_options(samplejsesm PRIVATE ${SAMPLE_JS_LINK_OPTIONS} -sEXPORT_ES6=1)</div>
+<div class="line">    set_target_properties(samplejsesm PROPERTIES OUTPUT_NAME &quot;sample.esm&quot; SUFFIX &quot;.js&quot; RUNTIME_OUTPUT_DIRECTORY &quot;${PROJECT_SOURCE_DIR}/dist/&quot;)</div>
+<div class="line">endif()</div>
+</div><!-- fragment --><p>When CMake targets <b>WASM</b>, we'll generate <b>Embind</b> bindings in the build output directory. This output file will be a dependency for two targets: <code>samplejs</code> and <code>samplejsesm</code> (for UMD and ESM respectively). These two targets link our C library <code>sample::sample</code> along with <b>Embind</b>. When built, these targets create JS modules with <b>WASM</b> in the <b>npm</b> package's root <code>./dist/</code> directory.</p>
+<h3><a class="anchor" id="npm-package"></a>
+Creating an NPM Package</h3>
+<p>If you also want to publish the resulting module as an npm package, you'll need to add a <code>package.json</code> file at the root of your library.</p>
+<p>Its contents might look like this:</p>
+<div class="fragment"><div class="line">{</div>
+<div class="line">  &quot;name&quot;: &quot;sample&quot;,</div>
+<div class="line">  &quot;version&quot;: &quot;1.0.0&quot;,</div>
+<div class="line">  &quot;description&quot;: &quot;Example of creating a library&quot;,</div>
+<div class="line">  &quot;main&quot;: &quot;dist/sample.js&quot;,</div>
+<div class="line">  &quot;module&quot;: &quot;dist/sample.esm.js&quot;,</div>
+<div class="line">  &quot;browser&quot;: &quot;dist/sample.js&quot;,</div>
+<div class="line">  &quot;types&quot;: &quot;dist/sample.d.ts&quot;,</div>
+<div class="line">  &quot;files&quot;: [&quot;dist&quot;],</div>
+<div class="line">  &quot;type&quot;: &quot;module&quot;,</div>
+<div class="line">  &quot;exports&quot;: {</div>
+<div class="line">    &quot;.&quot;: {</div>
+<div class="line">      &quot;require&quot;: &quot;./dist/sample.js&quot;,</div>
+<div class="line">      &quot;import&quot;: &quot;./dist/sample.esm.js&quot;,</div>
+<div class="line">      &quot;browser&quot;: &quot;./dist/sample.js&quot;</div>
+<div class="line">    },</div>
+<div class="line">    &quot;./package.json&quot;: &quot;./package.json&quot;</div>
+<div class="line">  },</div>
+<div class="line">  &quot;scripts&quot;: {</div>
+<div class="line">    &quot;build&quot;: &quot;...&quot;</div>
+<div class="line">  }</div>
+<div class="line">}</div>
+</div><!-- fragment --><p>Add the following line to the build script:</p>
+<div class="fragment"><div class="line">cmake -Bwasmbuild -S. -DVCPKG_TARGET_TRIPLET=wasm32-emscripten -DCMAKE_TOOLCHAIN_FILE=${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=${EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake -DCMAKE_CROSSCOMPILING_EMULATOR=${EMSDK_NODE} -DSAMPLE_BUILD_TESTS=OFF -DSAMPLE_ENABLE_INSTALL=OFF -G Ninja -DCMAKE_BUILD_TYPE=MinSizeRel &amp;&amp; cmake --build wasmbuild</div>
+</div><!-- fragment --><p>This script configures CMake for the <b>WASM</b> target platform and then builds the <code>.js</code> modules.</p>
+<p>Now you can run:</p>
+<div class="fragment"><div class="line">npm run build</div>
+</div><!-- fragment --><p>That's essentially all you need to create the JS module.</p>
+<h3><a class="anchor" id="npm-tests"></a>
+Adding Tests to the NPM Package</h3>
+<p>We won't add dependencies for unit tests, but instead will simply include a Node.js script for working with our package at <code>./tests/node-test-esm.js</code>:</p>
+<div class="fragment"><div class="line">import sampleInit from &#39;sample&#39;;</div>
+<div class="line"> </div>
+<div class="line">const sample = await sampleInit();</div>
+<div class="line"> </div>
+<div class="line">const result = sample.mul(3.2, 2.5)</div>
+<div class="line">console.log(`3.2 * 2.5 = ${result}`);</div>
+<div class="line"> </div>
+<div class="line">const vehicle = new sample.Vehicle(&quot;Truck&quot;);</div>
+<div class="line">vehicle.setVelocity({ x: 1.0, y: 2.0, z: 3.0 });</div>
+<div class="line">const dot = vehicle.dotVelocity({ x: 3.0, y: 2.0, z: 1.0 });</div>
+<div class="line"> </div>
+<div class="line">console.log(`Vehicle &#39;${vehicle.name}&#39; dot: ${dot}`);</div>
+<div class="line"> </div>
+<div class="line">vehicle.delete();</div>
+</div><!-- fragment --><p>In the <code>package.json</code> file, you can add the following script:</p>
+<div class="fragment"><div class="line">&quot;tests&quot;: &quot;node tests/node-test-esm.js&quot;,</div>
+</div><!-- fragment --><p>To run the test, execute:</p>
+<div class="fragment"><div class="line">npm run tests</div>
+</div><!-- fragment --><p>The expected output should be:</p>
+<div class="fragment"><div class="line">3.2 * 2.5 = 8</div>
+<div class="line">Vehicle &#39;Truck&#39; dot: 10</div>
+</div><!-- fragment --><h2><a class="anchor" id="conclusion"></a>
+Conclusion</h2>
+<p>In this guide, we've covered:</p><ul>
+<li>Creating a C library with automatic API updates from IDL specification files using IDLC</li>
+<li>Packaging an npm module for native JavaScript usage - all powered by the same IDLC tool</li>
+</ul>
+<p>The complete example library can be cloned as follows. You'll also find a README with detailed build instructions there.</p>
+<div class="fragment"><div class="line">git clone -b sample https://github.com/VladimirShaleev/idlc.git idlc-sample</div>
+</div><!-- fragment --><h2><a class="anchor" id="next-steps"></a>
+Next Steps</h2>
+<p>Continue learning about IDL by following the link below.</p>
+<div class="section_buttons"></div><div class="section_buttons"><table class="markdownTable">
 <tr class="markdownTableHead">
 <th class="markdownTableHeadLeft">Previous   </th><th class="markdownTableHeadRight">Next    </th></tr>
 <tr class="markdownTableRowOdd">

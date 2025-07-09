@@ -1,7 +1,13 @@
 var NAVTREEINDEX1 =
 {
+"quick-start.html#create-lib":[1,0],
+"quick-start.html#doctest-lib":[1,0,0,4],
 "quick-start.html#idl-spec":[1,0,0,0],
 "quick-start.html#impl-c-decls":[1,0,0,3],
+"quick-start.html#js-lib":[1,0,1],
+"quick-start.html#next-steps":[1,0,3],
+"quick-start.html#npm-package":[1,0,1,1],
+"quick-start.html#npm-tests":[1,0,1,2],
 "structidl__api__version__t.html":[3,0,3,1],
 "structidl__api__version__t.html#a8a21f4dc6944f98e73769173ace74350":[3,0,3,1,0],
 "structidl__api__version__t.html#a8beebe1b3a7ee7c62ff6fadec25ea2f0":[3,0,3,1,1],

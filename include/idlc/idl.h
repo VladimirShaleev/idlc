@@ -63,7 +63,7 @@ idl_version(void);
 
 /**
  * @brief   Current library version as human-readable string.
- * @details Format: "major.minor.micro", eg: "1.5.10".
+ * @details Format: "major.minor.micro", eg: "1.5.11".
  * @return  Return version string.
  * @ingroup functions
  */

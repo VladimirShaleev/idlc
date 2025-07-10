@@ -13,7 +13,7 @@ Produces idiomatic code for each target language as if written by hand:
 ### Automatic Cross-Language Wrapping
 
 - Seamless C ↔ Managed Language Interop:
-  * Converts C arrays ↔ JS/TS typed arrays (float[] ↔ number[]).
+  * Converts C arrays ↔ JS/TS typed arrays ((const float*, size_t) ↔ number[]).
   * Maps error codes to exceptions.
   * Wraps opaque handles as class instances.
 - WASM + Embind Integration: efficient JS bindings with managed ↔ native memory handling.

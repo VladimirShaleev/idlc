@@ -58,6 +58,7 @@ jobs:
         node-version: "20"
     - run: |
         cd ${{ steps.strings.outputs.build-output-dir }}
+        npm install --package-lock-only
         npm ci
 
     - uses: JS-DevTools/npm-publish@v3

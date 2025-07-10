@@ -1,24 +1,24 @@
 {
-  "name": "@PROJECT_NAME@",
-  "version": "@PROJECT_VERSION@",
-  "description": "@PROJECT_DESCRIPTION@",
-  "main": "dist/@PROJECT_NAME@.js",
-  "module": "dist/@PROJECT_NAME@.esm.js",
-  "browser": "dist/@PROJECT_NAME@.js",
-  "types": "dist/@PROJECT_NAME@.d.ts",
+  "name": "@vladimirshaleev/${PROJECT_NAME}",
+  "version": "${PROJECT_VERSION}",
+  "description": "${PROJECT_DESCRIPTION}",
+  "main": "dist/${PROJECT_NAME}.js",
+  "module": "dist/${PROJECT_NAME}.esm.js",
+  "browser": "dist/${PROJECT_NAME}.js",
+  "types": "dist/${PROJECT_NAME}.d.ts",
   "files": ["dist"],
   "type": "module",
   "exports": {
     ".": {
-      "require": "./dist/@PROJECT_NAME@.js",
-      "import": "./dist/@PROJECT_NAME@.esm.js",
-      "browser": "./dist/@PROJECT_NAME@.js"
+      "require": "./dist/${PROJECT_NAME}.js",
+      "import": "./dist/${PROJECT_NAME}.esm.js",
+      "browser": "./dist/${PROJECT_NAME}.js"
     },
     "./package.json": "./package.json"
   },
   "repository": {
     "type": "git",
-    "url": "git+@CMAKE_PROJECT_HOMEPAGE_URL@.git"
+    "url": "git+${CMAKE_PROJECT_HOMEPAGE_URL}.git"
   },
   "keywords": [
     "idlc",
@@ -28,7 +28,7 @@
   "author": "Vladimir Shaleev <vladimirshaleev@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "@CMAKE_PROJECT_HOMEPAGE_URL@/issues"
+    "url": "${CMAKE_PROJECT_HOMEPAGE_URL}/issues"
   },
   "homepage": "https://vladimirshaleev.github.io/idlc/"
 }

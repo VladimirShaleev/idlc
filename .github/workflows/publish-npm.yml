@@ -1,0 +1,67 @@
+name: Publish NPM package
+
+on:
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install vcpkg
+      uses: lukka/run-vcpkg@v11
+      with:
+        vcpkgDirectory: ${{ github.workspace }}/vcpkg
+        runVcpkgInstall: false
+
+    - name: Install Emsdk
+      uses: mymindstorm/setup-emsdk@v14
+      with:
+        version: 4.0.10
+        actions-cache-folder: 'emsdk-cache'
+
+    - name: Set build output dir
+      id: strings
+      shell: bash
+      run: echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+
+    - name: Install Ninja
+      run: sudo apt-get install -y ninja-build
+
+    - name: Configure CMake
+      run: >
+        cmake -B ${{ steps.strings.outputs.build-output-dir }} -S ${{ github.workspace }}
+        -DVCPKG_TARGET_TRIPLET=wasm32-emscripten
+        -DCMAKE_TOOLCHAIN_FILE=${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake
+        -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=${EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake
+        -DCMAKE_CROSSCOMPILING_EMULATOR=${EMSDK_NODE}
+        -DIDLC_BUILD_DOC=OFF
+        -DIDLC_BUILD_TOOL=OFF
+        -DIDLC_USE_IDLC=ON
+        -DIDLC_BUILD_PACKAGES=OFF
+        -DCMAKE_BUILD_TYPE=MinSizeRel
+        -DCMAKE_CXX_COMPILER=clang++
+        -DCMAKE_C_COMPILER=clang
+        -DCMAKE_MAKE_PROGRAM=/usr/bin/ninja
+        -G Ninja
+  
+    - name: Build JS module
+      run: cmake --build ${{ steps.strings.outputs.build-output-dir }}
+
+    - uses: actions/setup-node@v3
+      with:
+        node-version: "20"
+    - run: |
+        cd ${{ steps.strings.outputs.build-output-dir }}
+        npm ci
+
+    - uses: JS-DevTools/npm-publish@v3
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        registry: "https://npm.pkg.github.com"
+        package: ${{ steps.strings.outputs.build-output-dir }}

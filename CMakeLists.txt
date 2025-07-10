@@ -188,7 +188,7 @@ if(EMSCRIPTEN AND IDLC_USE_IDLC)
         SUFFIX ".js"
         RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/dist/")
 
-    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/package.json.in" "${PROJECT_BINARY_DIR}/package.json" @ONLY)        
+    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/package.json.in" "${PROJECT_BINARY_DIR}/package.json")        
 endif()
 
 if(IDLC_BUILD_DOC)

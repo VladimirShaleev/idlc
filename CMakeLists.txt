@@ -175,7 +175,7 @@ if(EMSCRIPTEN AND IDLC_USE_IDLC)
         COMPILE_FLAGS "-fexceptions"
         OUTPUT_NAME "idlc"
         SUFFIX ".js"
-        RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/")
+        RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/dist/")
 
     add_executable(idlc-js-esm ${IDLC_api_js_OUTPUTS})
     target_link_libraries(idlc-js-esm PRIVATE embind idl)
@@ -186,7 +186,9 @@ if(EMSCRIPTEN AND IDLC_USE_IDLC)
         COMPILE_FLAGS "-fexceptions"
         OUTPUT_NAME "idlc.esm"
         SUFFIX ".js"
-        RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/")
+        RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/dist/")
+
+    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/package.json.in" "${PROJECT_BINARY_DIR}/package.json" @ONLY)        
 endif()
 
 if(IDLC_BUILD_DOC)

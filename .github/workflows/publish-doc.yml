@@ -65,7 +65,7 @@ jobs:
     - name: Build JS module
       run: |
         cmake --build ${{ steps.strings.outputs.build-output-wasm-dir }}
-        cp ${{ steps.strings.outputs.build-output-wasm-dir }}/idlc.esm.js ${{ github.workspace }}/doc/idlc.esm.js
+        cp ${{ steps.strings.outputs.build-output-wasm-dir }}/dist/idlc.esm.js ${{ github.workspace }}/doc/idlc.esm.js
 
     - name: Configure CMake
       run: >

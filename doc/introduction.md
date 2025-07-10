@@ -266,6 +266,44 @@ While this project is not intended as an industrial-grade solution, it serves as
 - building host tools as dependencies;
 - integrating them into a build system.
 
+Why a New IDL Language? Traditional Interface Definition Languages (IDLs) consistently fall short in achieving true cross-language interoperability. Most of these languages ​​try to impose a "lowest common denominator" approach, which makes them awkward and unnative to use everywhere. This leads to context blindness — not adapting to linguistic idioms:
+- Creates unnatural APIs across all target languages.
+- Requires manual adaptation of generated code.
+- Fails to respect language-specific idioms.
+
+For example, differences in working with arrays:
+- In C: Typically requires (pointer, length) parameter pairs
+- In Modern Languages: Native array types handle bounds automatically
+
+This language overcomes this by generating APIs and automatic wrappers for C, so that the API can be used natively in any supported language.
+
+```
+@ API Sample
+api Sample
+
+@ Sample func
+func ProcessData
+    arg Items {Float32} [array(Count)] @ Item values
+    arg Count {Uint32} @ Number of items
+```
+
+Usage in C:
+
+```c
+float items[] = { 3.2f, 4.5f, 1.2f };
+sample_process_data(items, 3);
+```
+
+Usage in JavaScript:
+
+```javascript
+// Uses native array types with built-in bounds
+// function processData(items: number[]);
+
+const items = [ 3.2, 4.5, 1.2 ];
+module.processData(items);
+```
+
 For a step-by-step guide on embedding the compiler into your project (to enable API support and generate native wrappers for other languages), check out the Quick Start.
 
 <div class="section_buttons">

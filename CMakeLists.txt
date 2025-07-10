@@ -155,8 +155,7 @@ if(EMSCRIPTEN AND IDLC_USE_IDLC)
         -sMODULARIZE=1
         -sALLOW_MEMORY_GROWTH=1
         -sEXPORT_NAME=idlc
-        -sDISABLE_EXCEPTION_CATCHING=0
-        --emit-tsd idlc.d.ts)
+        -sDISABLE_EXCEPTION_CATCHING=0)
 
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         list(APPEND IDLC_JS_LINK_OPTIONS "-sSINGLE_FILE=0")
@@ -170,7 +169,7 @@ if(EMSCRIPTEN AND IDLC_USE_IDLC)
     target_link_libraries(idlc-js PRIVATE embind idl)
     target_include_directories(idlc-js PRIVATE "${PROJECT_SOURCE_DIR}/include/idlc/")
     target_compile_features(idlc-js PRIVATE cxx_std_20)
-    target_link_options(idlc-js PRIVATE ${IDLC_JS_LINK_OPTIONS})
+    target_link_options(idlc-js PRIVATE ${IDLC_JS_LINK_OPTIONS} --emit-tsd idlc.d.ts)
     set_target_properties(idlc-js PROPERTIES
         COMPILE_FLAGS "-fexceptions"
         OUTPUT_NAME "idlc"
@@ -181,7 +180,7 @@ if(EMSCRIPTEN AND IDLC_USE_IDLC)
     target_link_libraries(idlc-js-esm PRIVATE embind idl)
     target_include_directories(idlc-js-esm PRIVATE "${PROJECT_SOURCE_DIR}/include/idlc/")
     target_compile_features(idlc-js-esm PRIVATE cxx_std_20)
-    target_link_options(idlc-js-esm PRIVATE ${IDLC_JS_LINK_OPTIONS} -sEXPORT_ES6=1)
+    target_link_options(idlc-js-esm PRIVATE ${IDLC_JS_LINK_OPTIONS} --emit-tsd idlc.esm.d.ts -sEXPORT_ES6=1)
     set_target_properties(idlc-js-esm PROPERTIES
         COMPILE_FLAGS "-fexceptions"
         OUTPUT_NAME "idlc.esm"

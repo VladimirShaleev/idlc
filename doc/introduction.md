@@ -15,7 +15,7 @@ Below is an online demo of the compiler:
 </div>
 
 <script type="module">
-    import idlc from './idlc.js'
+    import idlc from './idlc.esm.js'
 
     const module = await idlc();
     
@@ -266,14 +266,14 @@ While this project is not intended as an industrial-grade solution, it serves as
 - building host tools as dependencies;
 - integrating them into a build system.
 
-Why a New IDL Language? Traditional Interface Definition Languages (IDLs) consistently fall short in achieving true cross-language interoperability. Most of these languages ​​try to impose a "lowest common denominator" approach, which makes them awkward and unnative to use everywhere. This leads to context blindness — not adapting to linguistic idioms:
+Why a new IDL language? Traditional Interface Definition Languages (IDLs) consistently fall short in achieving true cross-language interoperability. Most of these languages ​​try to impose a "lowest common denominator" approach, which makes them awkward and unnative to use everywhere. This leads to context blindness — not adapting to linguistic idioms:
 - Creates unnatural APIs across all target languages.
 - Requires manual adaptation of generated code.
 - Fails to respect language-specific idioms.
 
 For example, differences in working with arrays:
-- In C: Typically requires (pointer, length) parameter pairs
-- In Modern Languages: Native array types handle bounds automatically
+- In C: typically requires (pointer, length) parameter pairs
+- In Modern Languages: native array types handle bounds automatically
 
 This language overcomes this by generating APIs and automatic wrappers for C, so that the API can be used natively in any supported language.
 

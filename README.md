@@ -16,4 +16,4 @@ The IDL Compiler generates native APIs across programming languages while mainta
   - Opaque handles ↔ Class instances
 - **Zero-Overhead**: Generated C code matches hand-written performance
 
-[📚 Explore Full Documentation](https://vladimirshaleev.github.io/idlc/)
+[Explore Full Documentation](https://vladimirshaleev.github.io/idlc/)

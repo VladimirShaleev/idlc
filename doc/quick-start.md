@@ -91,7 +91,7 @@ While the complete IDL syntax isn't crucial at this stage, here are the key poin
 - **Naming conventions**:
   * Names must start with a capital letter.
   * Automatic tokenization occurs at capital letters.
-  * See the **TODO** for customizing tokenization rules.
+  * See the [[tokenizer]](language-guide.html#attr-tokenizer) for customizing tokenization rules.
 - **Documentation requirements**:
   * Every declaration must include at least `[brief]` or `[detail]` documentation.
   * Documentation starts with the `@` symbol - everything until the newline counts as documentation.

@@ -54,7 +54,7 @@ set(DOXYGEN_HTML_EXTRA_FILES
     "${IDLC_DOC_CSS}/doxygen-custom/toggle-alternative-theme.js"
     "${IDLC_DOC_CSS}/doxygen-awesome-interactive-toc.js"
     "${IDLC_DOC_CSS}/doxygen-awesome-tabs.js"
-    "${CMAKE_CURRENT_LIST_DIR}/idlc.js"
+    "${CMAKE_CURRENT_LIST_DIR}/idlc.esm.js"
     "${CMAKE_CURRENT_LIST_DIR}/diagram.svg")
 set(DOXYGEN_HTML_COLORSTYLE LIGHT)
 set(DOXYGEN_HTML_COLORSTYLE_HUE 209)

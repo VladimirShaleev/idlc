@@ -56,21 +56,16 @@ jobs:
         -DIDLC_BUILD_TOOL=OFF
         -DIDLC_USE_IDLC=ON
         -DIDLC_BUILD_PACKAGES=OFF
-        -DCMAKE_C_COMPILER=clang
+        -DCMAKE_BUILD_TYPE=MinSizeRel
         -DCMAKE_CXX_COMPILER=clang++
-        -DCMAKE_BUILD_TYPE=Release
-        -DCMAKE_C_FLAGS="-fexceptions -Oz"
-        -DCMAKE_CXX_FLAGS="-fexceptions -Oz"
-        -DCMAKE_EXE_LINKER_FLAGS="-fexceptions -Oz"
+        -DCMAKE_C_COMPILER=clang
         -DCMAKE_MAKE_PROGRAM=/usr/bin/ninja
-        -DCMAKE_INSTALL_PREFIX=${{ steps.strings.outputs.build-output-wasm-dir }}/install
         -G Ninja
   
     - name: Build JS module
       run: |
-        cmake --build ${{ steps.strings.outputs.build-output-wasm-dir }} --target install
-        ${{ steps.strings.outputs.build-output-wasm-dir }}/vcpkg_installed/x64-linux/tools/idlc/idlc -g js -o ${{ steps.strings.outputs.build-output-wasm-dir }}/ -w ${{ github.workspace }}/specs/api.idl
-        emcc -std=c++20 -I${{ steps.strings.outputs.build-output-wasm-dir }}/install/include/idlc -Wl,--whole-archive ${{ steps.strings.outputs.build-output-wasm-dir }}/install/lib/libidl.a ${{ steps.strings.outputs.build-output-wasm-dir }}/vcpkg_installed/wasm32-emscripten/lib/libfmt.a ${{ steps.strings.outputs.build-output-wasm-dir }}/vcpkg_installed/wasm32-emscripten/lib/libxxhash.a -Wl,--no-whole-archive ${{ steps.strings.outputs.build-output-wasm-dir }}/idl.js.cpp -o ${{ github.workspace }}/doc/idlc.js -lembind -s WASM=1 -s MODULARIZE=1 -s ALLOW_MEMORY_GROWTH=1 -s EXPORT_NAME=idlc -s DISABLE_EXCEPTION_CATCHING=0 --emit-tsd idlc.d.ts -s EXPORT_ES6=1 -Oz -s SINGLE_FILE=1 -fexceptions
+        cmake --build ${{ steps.strings.outputs.build-output-wasm-dir }}
+        cp ${{ steps.strings.outputs.build-output-wasm-dir }}/idlc.esm.js ${{ github.workspace }}/doc/idlc.esm.js
 
     - name: Configure CMake
       run: >
@@ -79,9 +74,9 @@ jobs:
         -DIDLC_BUILD_TOOL=OFF
         -DIDLC_USE_IDLC=OFF
         -DIDLC_BUILD_PACKAGES=OFF
-        -DCMAKE_C_COMPILER=clang
-        -DCMAKE_CXX_COMPILER=clang++
         -DCMAKE_BUILD_TYPE=Release
+        -DCMAKE_CXX_COMPILER=clang++
+        -DCMAKE_C_COMPILER=clang
         -G Ninja
 
     - name: Build Documentation

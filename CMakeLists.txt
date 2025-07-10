@@ -139,6 +139,47 @@ if(IDLC_BUILD_TOOL)
 endif()
 add_library(idlc::idl ALIAS idl)
 
+if(EMSCRIPTEN AND IDLC_USE_IDLC)
+    idlc_compile(NAME api_js WARN_AS_ERRORS
+        SOURCE "${PROJECT_SOURCE_DIR}/specs/api.idl"
+        OUTPUT "${PROJECT_BINARY_DIR}/idl.js.cpp"
+        VERSION ${PROJECT_VERSION}
+        GENERATOR JS
+        DEPENDS
+            "${PROJECT_SOURCE_DIR}/specs/api.idl"
+            "${PROJECT_SOURCE_DIR}/specs/options.idl"
+            "${PROJECT_SOURCE_DIR}/specs/results.idl")
+
+    set(IDLC_JS_LINK_OPTIONS
+        -sWASM=1
+        -sMODULARIZE=1
+        -sALLOW_MEMORY_GROWTH=1
+        -sEXPORT_NAME=idlc
+        -sDISABLE_EXCEPTION_CATCHING=0
+        -fexceptions
+        --emit-tsd idlc.d.ts)
+
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        list(APPEND IDLC_JS_LINK_OPTIONS "-sSINGLE_FILE=0")
+    else()
+        list(APPEND IDLC_JS_LINK_OPTIONS "-sSINGLE_FILE=1")
+    endif()
+
+    add_executable(idlc-js ${IDLC_api_js_OUTPUTS})
+    target_link_libraries(idlc-js PRIVATE embind idl)
+    target_include_directories(idlc-js PRIVATE "${PROJECT_SOURCE_DIR}/include/idlc/")
+    target_compile_features(idlc-js PRIVATE cxx_std_20)
+    target_link_options(idlc-js PRIVATE ${IDLC_JS_LINK_OPTIONS})
+    set_target_properties(idlc-js PROPERTIES OUTPUT_NAME "idlc" SUFFIX ".js" RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/")
+
+    add_executable(idlc-js-esm ${IDLC_api_js_OUTPUTS})
+    target_link_libraries(idlc-js-esm PRIVATE embind idl)
+    target_include_directories(idlc-js-esm PRIVATE "${PROJECT_SOURCE_DIR}/include/idlc/")
+    target_compile_features(idlc-js-esm PRIVATE cxx_std_20)
+    target_link_options(idlc-js-esm PRIVATE ${IDLC_JS_LINK_OPTIONS} -sEXPORT_ES6=1)
+    set_target_properties(idlc-js-esm PROPERTIES OUTPUT_NAME "idlc.esm" SUFFIX ".js" RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/")
+endif()
+
 if(IDLC_BUILD_DOC)
   add_subdirectory(doc)
 endif()

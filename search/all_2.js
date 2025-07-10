@@ -8,11 +8,12 @@ var searchData=
   ['cname_5',['[cname]',['../language-guide.html#attr-cname',1,'']]],
   ['column_6',['column',['../structidl__message__t.html#ac5c33d759f594b29ed84c934518914a8',1,'idl_message_t']]],
   ['command_20line_20tool_7',['Using the idlc Command Line Tool',['../language-guide.html#using-idlc',1,'']]],
-  ['conclusion_8',['Conclusion',['../quick-start.html#conclusion',1,'']]],
-  ['configuration_9',['Adding CMake Configuration',['../quick-start.html#add-cmake-config',1,'']]],
-  ['const_10',['[const]',['../language-guide.html#attr-const',1,'']]],
-  ['copyright_11',['[copyright]',['../language-guide.html#attr-copyright',1,'']]],
-  ['creating_20a_20simple_20library_12',['Creating a Simple Library',['../quick-start.html#create-lib',1,'']]],
-  ['creating_20an_20npm_20package_13',['Creating an NPM Package',['../quick-start.html#npm-package',1,'']]],
-  ['ctor_14',['[ctor]',['../language-guide.html#attr-ctor',1,'']]]
+  ['comments_8',['Comments',['../language-guide.html#autotoc_md0',1,'']]],
+  ['conclusion_9',['Conclusion',['../quick-start.html#conclusion',1,'']]],
+  ['configuration_10',['Adding CMake Configuration',['../quick-start.html#add-cmake-config',1,'']]],
+  ['const_11',['[const]',['../language-guide.html#attr-const',1,'']]],
+  ['copyright_12',['[copyright]',['../language-guide.html#attr-copyright',1,'']]],
+  ['creating_20a_20simple_20library_13',['Creating a Simple Library',['../quick-start.html#create-lib',1,'']]],
+  ['creating_20an_20npm_20package_14',['Creating an NPM Package',['../quick-start.html#npm-package',1,'']]],
+  ['ctor_15',['[ctor]',['../language-guide.html#attr-ctor',1,'']]]
 ];

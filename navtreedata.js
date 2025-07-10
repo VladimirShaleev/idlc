@@ -59,6 +59,7 @@ var NAVTREE =
         [ "Events", "language-guide.html#events", null ],
         [ "Import", "language-guide.html#import", null ],
         [ "Declaration References", "language-guide.html#decl-refs", null ],
+        [ "Comments", "language-guide.html#autotoc_md0", null ],
         [ "Attributes", "language-guide.html#attributes", [
           [ "[flags]", "language-guide.html#attr-flags", null ],
           [ "[hex]", "language-guide.html#attr-hex", null ],

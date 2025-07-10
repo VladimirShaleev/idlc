@@ -379,7 +379,33 @@ interface Logger
 <li>building host tools as dependencies;</li>
 <li>integrating them into a build system.</li>
 </ul>
-<p>For a step-by-step guide on embedding the compiler into your project (to enable API support and generate native wrappers for other languages), check out the Quick Start.</p>
+<p>Why a New IDL Language? Traditional Interface Definition Languages (IDLs) consistently fall short in achieving true cross-language interoperability. Most of these languages ​​try to impose a "lowest common denominator" approach, which makes them awkward and unnative to use everywhere. This leads to context blindness — not adapting to linguistic idioms:</p><ul>
+<li>Creates unnatural APIs across all target languages.</li>
+<li>Requires manual adaptation of generated code.</li>
+<li>Fails to respect language-specific idioms.</li>
+</ul>
+<p>For example, differences in working with arrays:</p><ul>
+<li>In C: Typically requires (pointer, length) parameter pairs</li>
+<li>In Modern Languages: Native array types handle bounds automatically</li>
+</ul>
+<p>This language overcomes this by generating APIs and automatic wrappers for C, so that the API can be used natively in any supported language.</p>
+<div class="fragment"><div class="line">@ API Sample</div>
+<div class="line">api Sample</div>
+<div class="line"> </div>
+<div class="line">@ Sample func</div>
+<div class="line">func ProcessData</div>
+<div class="line">    arg Items {Float32} [array(Count)] @ Item values</div>
+<div class="line">    arg Count {Uint32} @ Number of items</div>
+</div><!-- fragment --><p>Usage in C:</p>
+<div class="fragment"><div class="line"><span class="keywordtype">float</span> items[] = { 3.2f, 4.5f, 1.2f };</div>
+<div class="line">sample_process_data(items, 3);</div>
+</div><!-- fragment --><p>Usage in JavaScript:</p>
+<div class="fragment"><div class="line">// Uses native array types with built-in bounds</div>
+<div class="line">// function processData(items: number[]);</div>
+<div class="line"> </div>
+<div class="line">const items = [ 3.2, 4.5, 1.2 ];</div>
+<div class="line">module.processData(items);</div>
+</div><!-- fragment --><p>For a step-by-step guide on embedding the compiler into your project (to enable API support and generate native wrappers for other languages), check out the Quick Start.</p>
 <div class="section_buttons"></div><div class="section_buttons"><table class="markdownTable">
 <tr class="markdownTableHead">
 <th class="markdownTableHeadRight">Next    </th></tr>

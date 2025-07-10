@@ -166,6 +166,9 @@ $(function(){initNavTree('language-guide.html',''); initResizable(true); });
         <a href="#decl-refs">Declaration References</a>
       </li>
       <li class="level2">
+        <a href="#autotoc_md0">Comments</a>
+      </li>
+      <li class="level2">
         <a href="#attributes">Attributes</a>
         <ul>
           <li class="level3">
@@ -327,7 +330,7 @@ Documentation</h2>
 </div><!-- fragment --><p> The <code>[brief]</code> attribute is the default attribute when no attribute is specified.</p>
 <p>You can also place documentation on the same line as the declaration. In this case, the default attribute for this documentation will be <code>[detail]</code>. The example below is equivalent to the previous one:</p>
 <div class="fragment"><div class="line">@ Color values</div>
-<div class="line">struct Color @ Detailed description. [detail]</div>
+<div class="line">struct Color @ Detailed description.</div>
 <div class="line">    ...</div>
 </div><!-- fragment --><p>This isn't very elegant. This feature is mainly intended for cleaner documentation of fields and function arguments:</p>
 <div class="fragment"><div class="line">@ Color values.</div>
@@ -691,7 +694,68 @@ Import</h2>
 <dl class="section note"><dt>Note</dt><dd>Note that the C generator creates a separate file for each import.</dd></dl>
 <h2><a class="anchor" id="decl-refs"></a>
 Declaration References</h2>
-<p>TODO</p>
+<p>References to declarations use the <code>{DeclRef}</code> syntax. Forward references are allowed in documentation. Generated documentation will adapt reference names to match target language conventions.</p>
+<p>Example Specification:</p>
+<div class="fragment"><div class="line">@ Compiler interface.</div>
+<div class="line">@ Interface for interacting with the compiler. [detail]</div>
+<div class="line">interface Compiler</div>
+<div class="line">    @ Compile IDL.</div>
+<div class="line">    @ Compilation result. [return]</div>
+<div class="line">    @ ```</div>
+<div class="line">        To read source code from memory instead of the file system, use {Sources} and/or configure </div>
+<div class="line">        the importer with {Options.SetImporter} and pass the {File} argument as empty.``` [note]</div>
+<div class="line">    @ ```</div>
+<div class="line">        Priorities for resolving source code imports:</div>
+<div class="line">        - {Options.SetImporter} - import callback if specified;</div>
+<div class="line">        - {Sources} - then the source code array, if specified;</div>
+<div class="line">        - {Options.SetImportDirs} - then in the paths to the import directories, if specified;</div>
+<div class="line">        - then the current working directory.</div>
+<div class="line">        ``` [note]</div>
+<div class="line">    method Compile {Result}</div>
+<div class="line">        arg Compiler {Compiler} [this] @ Target compiler.</div>
+<div class="line">        arg Generator {Generator} @ Target of generator.</div>
+<div class="line">        arg File {Str} [optional] @ Path to .idl file for compile.</div>
+<div class="line">        arg SourceCount {Uint32} @ Number of sources.</div>
+<div class="line">        arg Sources {Source} [const,array(SourceCount)] @ Sources.</div>
+<div class="line">        arg Options {Options} [optional] @ Compile options, may be null.</div>
+<div class="line">        arg Result {CompilationResult} [optional,result] @ Compilation result.</div>
+</div><!-- fragment --><p>Result of resolving declaration reference for C:</p>
+<div class="fragment"><div class="line">/**</div>
+<div class="line"> * @brief      Compile IDL.</div>
+<div class="line"> * @param[in]  compiler Target compiler.</div>
+<div class="line"> * @param[in]  generator Target of generator.</div>
+<div class="line"> * @param[in]  file Path to .idl file for compile.</div>
+<div class="line"> * @param[in]  source_count Number of sources.</div>
+<div class="line"> * @param[in]  sources Sources.</div>
+<div class="line"> * @param[in]  options Compile options, may be null.</div>
+<div class="line"> * @param[out] result Compilation result.</div>
+<div class="line"> * @return     Compilation result.</div>
+<div class="line"> * @parblock</div>
+<div class="line"> * @note       To read source code from memory instead of the file system, use *sources* and/or configure</div>
+<div class="line"> *             the importer with ::idl_options_set_importer and pass the *file* argument as empty.</div>
+<div class="line"> * @endparblock</div>
+<div class="line"> * @parblock</div>
+<div class="line"> * @note       Priorities for resolving source code imports:</div>
+<div class="line"> *             - ::idl_options_set_importer - import callback if specified;</div>
+<div class="line"> *             - *sources* - then the source code array, if specified;</div>
+<div class="line"> *             - ::idl_options_set_import_dirs - then in the paths to the import directories, if specified;</div>
+<div class="line"> *             - then the current working directory.</div>
+<div class="line"> *             </div>
+<div class="line"> * @endparblock</div>
+<div class="line"> * @ingroup    functions</div>
+<div class="line"> */</div>
+<div class="line">idl_api idl_result_t</div>
+<div class="line">idl_compiler_compile(idl_compiler_t compiler,</div>
+<div class="line">                     idl_generator_t generator,</div>
+<div class="line">                     idl_utf8_t file,</div>
+<div class="line">                     idl_uint32_t source_count,</div>
+<div class="line">                     const idl_source_t* sources,</div>
+<div class="line">                     idl_options_t options,</div>
+<div class="line">                     idl_compilation_result_t* result);</div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md0"></a>
+Comments</h2>
+<p>Comments start with two <code>//</code>, everything that comes after them will be considered a comment until the end of the line and will not be taken into account when compiling.</p>
+<dl class="section note"><dt>Note</dt><dd>In the documentation, two consecutive characters <code>//</code> are just two characters <code>//</code>.</dd></dl>
 <h2><a class="anchor" id="attributes"></a>
 Attributes</h2>
 <p>As you may have noticed, the language provides only declarations - everything else is achieved by attaching attributes to these declarations. Even argument and field types are actually attributes:</p>
@@ -731,116 +795,392 @@ Attributes</h2>
 </div><!-- fragment --><p>In short, everything except declarations and documentation context is implemented through attributes.</p>
 <h3><a class="anchor" id="attr-flags"></a>
 [flags]</h3>
-<p>TODO</p>
-<h3><a class="anchor" id="attr-hex"></a>
+<p>Marks an enum as a bitmask type where values can be combined using bitwise operations. Automatically adds bitwise operation support in target languages:</p>
+<div class="fragment"><div class="line">@ Graphics features.</div>
+<div class="line">enum Feature [flags]</div>
+<div class="line">    const None @ No special features</div>
+<div class="line">    const Bindless @ Bindless resource access</div>
+<div class="line">    const GeometryShader : 2 @ Geometry shader support</div>
+<div class="line">    const MeshShader : 4 @ Mesh shader support</div>
+<div class="line">    const SamplerFilterMinmax : 8 @ Min/max sampler filtering</div>
+<div class="line">    const DrawIndirect : 16 @ Indirect drawing</div>
+</div><!-- fragment --><h3><a class="anchor" id="attr-hex"></a>
 [hex]</h3>
-<p>TODO</p>
-<h3><a class="anchor" id="attr-platform"></a>
+<p>Specifies that enum values should be displayed in hexadecimal format in documentation and outputs:</p>
+<div class="fragment"><div class="line">@ Graphics features.</div>
+<div class="line">enum Feature [flags,hex]</div>
+<div class="line">    const None @ No special features</div>
+<div class="line">    const Bindless @ Bindless resource access</div>
+<div class="line">    const GeometryShader : 2 @ Geometry shader support</div>
+<div class="line">    const MeshShader : 4 @ Mesh shader support</div>
+<div class="line">    const SamplerFilterMinmax : 8 @ Min/max sampler filtering</div>
+<div class="line">    const DrawIndirect : 16 @ Indirect drawing</div>
+</div><!-- fragment --><p>C output:</p>
+<div class="fragment"><div class="line">/**</div>
+<div class="line"> * @brief Graphics features.</div>
+<div class="line"> */</div>
+<div class="line">typedef enum</div>
+<div class="line">{</div>
+<div class="line">    SAMPLE_FEATURE_NONE_BIT                  = 0x00, /**&lt; No special features */</div>
+<div class="line">    SAMPLE_FEATURE_BINDLESS_BIT              = 0x01, /**&lt; Bindless resource access */</div>
+<div class="line">    SAMPLE_FEATURE_GEOMETRY_SHADER_BIT       = 0x02, /**&lt; Geometry shader support */</div>
+<div class="line">    SAMPLE_FEATURE_MESH_SHADER_BIT           = 0x04, /**&lt; Mesh shader support */</div>
+<div class="line">    SAMPLE_FEATURE_SAMPLER_FILTER_MINMAX_BIT = 0x08, /**&lt; Min/max sampler filtering */</div>
+<div class="line">    SAMPLE_FEATURE_DRAW_INDIRECT_BIT         = 0x10, /**&lt; Indirect drawing */</div>
+<div class="line">    SAMPLE_FEATURE_MAX_ENUM                  = 0x7FFFFFFF /**&lt; Max value of enum (not used) */</div>
+<div class="line">} sample_feature_flags_t;</div>
+<div class="line">SAMPLE_FLAGS(sample_feature_flags_t)</div>
+</div><!-- fragment --><h3><a class="anchor" id="attr-platform"></a>
 [platform]</h3>
-<p>TODO</p>
+<p>Indicates platform-specific declarations. Format: <code>[platform(windows,linux)]</code>. Generates conditional compilation in target languages.</p>
+<dl class="section warning"><dt>Warning</dt><dd>Generators currently do not implement this attribute.</dd></dl>
 <h3><a class="anchor" id="attr-value"></a>
 [value]</h3>
-<p>TODO</p>
+<p>Explicitly sets the numeric value for enum constants or default values for fields/arguments. Accepts expressions.</p>
+<dl class="section warning"><dt>Warning</dt><dd>Currently only supports integers and enum constants.</dd></dl>
 <h3><a class="anchor" id="attr-type"></a>
 [type]</h3>
-<p>TODO</p>
-<h3><a class="anchor" id="attr-static"></a>
+<p>Specifies the underlying type for declarations. Used implicitly in shorthand syntax like <code>{Float32}</code>.</p>
+<div class="fragment"><div class="line">@ Color values.</div>
+<div class="line">struct Color</div>
+<div class="line">    field Red {Float32} @ Red channel clear value.</div>
+<div class="line">    field Green [type(Float32)] @ Green channel clear value.</div>
+</div><!-- fragment --><h3><a class="anchor" id="attr-static"></a>
 [static]</h3>
-<p>TODO</p>
+<p>Marks methods or properties as class-level rather than instance-level members.</p>
 <h3><a class="anchor" id="attr-ctor"></a>
 [ctor]</h3>
-<p>TODO</p>
-<h3><a class="anchor" id="attr-this"></a>
+<p>Designates a method as a constructor. Implies <code>[static]</code>. In OOP languages, enables <code>new</code> syntax:</p>
+<div class="fragment"><div class="line">@ Brief.</div>
+<div class="line">interface ObjType</div>
+<div class="line">    @ Creates new object instance</div>
+<div class="line">    @ New instance [return]</div>
+<div class="line">    method CreateByName {ObjType} [ctor]</div>
+<div class="line">        arg Name {Str} @ Name of object.</div>
+<div class="line"> </div>
+<div class="line">    @ Creates new object instance</div>
+<div class="line">    method CreateByValue {Bool} [ctor]</div>
+<div class="line">        arg Name {Str} @ Name of object.</div>
+<div class="line">        arg Value {Float32} @ Name of object.</div>
+<div class="line">        arg Obj {ObjType} [result] @ New object instance.</div>
+</div><!-- fragment --><p>In the second case, the new instance is returned as an argument:</p>
+<div class="fragment"><div class="line">/**</div>
+<div class="line"> * @brief     Creates new object instance</div>
+<div class="line"> * @param[in] name Name of object.</div>
+<div class="line"> * @return    New instance</div>
+<div class="line"> */</div>
+<div class="line">sample_api sample_obj_type_t</div>
+<div class="line">sample_obj_type_create_by_name(sample_utf8_t name);</div>
+<div class="line"> </div>
+<div class="line">/**</div>
+<div class="line"> * @brief      Creates new object instance</div>
+<div class="line"> * @param[in]  name Name of object.</div>
+<div class="line"> * @param[in]  value Name of object.</div>
+<div class="line"> * @param[out] obj New object instance.</div>
+<div class="line"> */</div>
+<div class="line">sample_api sample_bool_t</div>
+<div class="line">sample_obj_type_create_by_value(sample_utf8_t name,</div>
+<div class="line">                                sample_float32_t value,</div>
+<div class="line">                                sample_obj_type_t* obj);</div>
+</div><!-- fragment --><p>In OOP languages ​​these methods will become constructors:</p>
+<div class="fragment"><div class="line">const inst1 = new sample.ObjType(&#39;test&#39;);</div>
+<div class="line">const inst2 = new sample.ObjType(&#39;test&#39;, 3.4);</div>
+</div><!-- fragment --><h3><a class="anchor" id="attr-this"></a>
 [this]</h3>
-<p>TODO</p>
+<p>Identifies the implicit instance parameter in methods. Remapped to <code>this</code>/<code>self</code> in OOP languages.</p>
 <h3><a class="anchor" id="attr-get"></a>
 [get]</h3>
-<p>TODO</p>
+<p>Links a property to its getter method. Format: <code>[get(GetMethodName)]</code>.</p>
 <h3><a class="anchor" id="attr-set"></a>
 [set]</h3>
-<p>TODO</p>
+<p>Links a property to its setter method. Format: <code>[set(SetMethodName)]</code>.</p>
 <h3><a class="anchor" id="attr-handle"></a>
 [handle]</h3>
-<p>TODO</p>
-<h3><a class="anchor" id="attr-cname"></a>
+<p>Declares index descriptors. Useful for providing resources with an index or other structure. For example, distributing resources linearly from a pool in games:</p>
+<div class="fragment"><div class="line">@ Handle type.</div>
+<div class="line">@ This structure describes the handle template. [detail]</div>
+<div class="line">struct Handle [handle]</div>
+<div class="line">    field Index {Uint16} @ The type that determines the size of the handle.</div>
+<div class="line"> </div>
+<div class="line">handle Buffer        {Handle} @ Handle to GPU buffer resource.</div>
+<div class="line">handle Texture       {Handle} @ Handle to GPU texture resource.</div>
+<div class="line">handle Technique     {Handle} @ Handle to rendering technique.</div>
+<div class="line">handle DescriptorSet {Handle} @ Handle to resource binding set.</div>
+</div><!-- fragment --><h3><a class="anchor" id="attr-cname"></a>
 [cname]</h3>
-<p>TODO</p>
-<h3><a class="anchor" id="attr-array"></a>
+<p>Overrides the default C identifier naming:</p>
+<div class="fragment"><div class="line">@ Keyboard scancodes.</div>
+<div class="line">enum Scancode</div>
+<div class="line">    const Unknown @ Unidentified key.</div>
+<div class="line">    const Digit0 [cname(0)] @ 0 key.</div>
+<div class="line">    const Digit1 [cname(1)] @ 1 key.</div>
+<div class="line">    const Digit2 [cname(2)] @ 2 key.</div>
+<div class="line">    ...</div>
+</div><!-- fragment --><p>C output:</p>
+<div class="fragment"><div class="line">/**</div>
+<div class="line"> * @brief Keyboard scancodes.</div>
+<div class="line"> */</div>
+<div class="line">typedef enum</div>
+<div class="line">{</div>
+<div class="line">    GERIUM_SCANCODE_UNKNOWN = 0, /**&lt; Unidentified key. */</div>
+<div class="line">    GERIUM_SCANCODE_0       = 1, /**&lt; 0 key. */</div>
+<div class="line">    GERIUM_SCANCODE_1       = 2, /**&lt; 1 key. */</div>
+<div class="line">    ...</div>
+</div><!-- fragment --><h3><a class="anchor" id="attr-array"></a>
 [array]</h3>
-<p>TODO</p>
-<h3><a class="anchor" id="attr-datasize"></a>
+<p>Indicates array:</p>
+<div class="fragment"><div class="line">@ Compilation options.</div>
+<div class="line">@ This object specifies various compilation options. [detail]</div>
+<div class="line">interface Options</div>
+<div class="line">    prop ImportDirs [get(GetImportDirs),set(SetImportDirs)] @ Directories to search for files when importing.</div>
+<div class="line"> </div>
+<div class="line">    @ Returns an array of directories to search for imports.</div>
+<div class="line">    @ These paths are used to search source code when an import is encountered during compilation. [detail]</div>
+<div class="line">    @ {SetImportDirs} [see]</div>
+<div class="line">    method GetImportDirs [const]</div>
+<div class="line">        arg Options {Options} [this] @ Target options.</div>
+<div class="line">        arg DirCount {Uint32} [in,out] @ Number of directories.</div>
+<div class="line">        arg Dirs {Str} [result,array(DirCount)] @ Import directories.</div>
+<div class="line"> </div>
+<div class="line">    @ Configures directories to search for source files.</div>
+<div class="line">    @ These paths are used to search source code when an import is encountered during compilation. [detail]</div>
+<div class="line">    @ {GetImportDirs} [see]</div>
+<div class="line">    method SetImportDirs</div>
+<div class="line">        arg Options {Options} [this] @ Target options.</div>
+<div class="line">        arg DirCount {Uint32} @ Number of directories.</div>
+<div class="line">        arg Dirs {Str} [const,array(DirCount)] @ Import directories.</div>
+</div><!-- fragment --><p>C output:</p>
+<div class="fragment"><div class="line">/**</div>
+<div class="line"> * @brief         Returns an array of directories to search for imports.</div>
+<div class="line"> * @details       These paths are used to search source code when an import is encountered during compilation.</div>
+<div class="line"> * @param[in]     options Target options.</div>
+<div class="line"> * @param[in,out] dir_count Number of directories.</div>
+<div class="line"> * @param[out]    dirs Import directories.</div>
+<div class="line"> * @sa            ::sample_options_set_import_dirs</div>
+<div class="line"> */</div>
+<div class="line">sample_api void</div>
+<div class="line">sample_options_get_import_dirs(sample_options_t options,</div>
+<div class="line">                               sample_uint32_t* dir_count,</div>
+<div class="line">                               sample_utf8_t* dirs);</div>
+<div class="line"> </div>
+<div class="line">/**</div>
+<div class="line"> * @brief     Configures directories to search for source files.</div>
+<div class="line"> * @details   These paths are used to search source code when an import is encountered during compilation.</div>
+<div class="line"> * @param[in] options Target options.</div>
+<div class="line"> * @param[in] dir_count Number of directories.</div>
+<div class="line"> * @param[in] dirs Import directories.</div>
+<div class="line"> * @sa        ::sample_options_get_import_dirs</div>
+<div class="line"> */</div>
+<div class="line">sample_api void</div>
+<div class="line">sample_options_set_import_dirs(sample_options_t options,</div>
+<div class="line">                               sample_uint32_t dir_count,</div>
+<div class="line">                               const sample_utf8_t* dirs);</div>
+</div><!-- fragment --><p>JavaScript use:</p>
+<div class="fragment"><div class="line">const options = new idlc.Options;</div>
+<div class="line">options.importDirs = [ &quot;path1&quot;, &quot;path2&quot;, &quot;path3&quot; ];</div>
+</div><!-- fragment --><p>As you can see in higher-level languages, working with arrays becomes more native.</p>
+<p>Arrays are also supported in structure fields. But fixed-length arrays are also supported in structure fields:</p>
+<div class="fragment"><div class="line">@ Brief.</div>
+<div class="line">struct Test</div>
+<div class="line">    field Values {Float32} [const,array(Size)] @ Values.</div>
+<div class="line">    field Size {Uint32} @ Count values.</div>
+<div class="line">    field Symbol {Char} [const,array(5)] @ Symbol.</div>
+</div><!-- fragment --><p>C output:</p>
+<div class="fragment"><div class="line">/**</div>
+<div class="line"> * @brief Brief.</div>
+<div class="line"> */</div>
+<div class="line">typedef struct</div>
+<div class="line">{</div>
+<div class="line">    const sample_float32_t* values; /**&lt; Values. */</div>
+<div class="line">    sample_uint32_t         size; /**&lt; Count values. */</div>
+<div class="line">    sample_char_t           symbol[5]; /**&lt; Symbol. */</div>
+<div class="line">} sample_test_t;</div>
+</div><!-- fragment --><p>JavaScript use:</p>
+<div class="fragment"><div class="line">func({ values: [ 3.4, 2.3 ], symbol: &#39;a&#39; });</div>
+</div><!-- fragment --><h3><a class="anchor" id="attr-datasize"></a>
 [datasize]</h3>
-<p>TODO</p>
+<p>Marks fields or arguments of types <code>Date</code> and <code>ConstData</code> as dimensional buffers:</p>
+<dl class="section warning"><dt>Warning</dt><dd>I'm not sure yet if this attribute is necessary</dd></dl>
 <h3><a class="anchor" id="attr-const"></a>
 [const]</h3>
-<p>TODO</p>
+<p>Refers to immutable fields, parameters, or methods that do not change the state of the instance.</p>
 <h3><a class="anchor" id="attr-ref"></a>
 [ref]</h3>
-<p>TODO</p>
+<p>Hints that a field or argument should be passed by reference rather than by value.</p>
 <h3><a class="anchor" id="attr-refinc"></a>
 [refinc]</h3>
-<p>TODO</p>
+<p>Marks a method as a specific method for reference counter incrementing.</p>
+<div class="fragment"><div class="line">@ Compilation options.</div>
+<div class="line">@ This object specifies various compilation options. [detail]</div>
+<div class="line">interface Options</div>
+<div class="line">    @ Increments reference count.</div>
+<div class="line">    @ Manages options instance lifetime. [detail]</div>
+<div class="line">    @ Reference to same options. [return]</div>
+<div class="line">    @ {Destroy} [see]</div>
+<div class="line">    method Reference {Options} [refinc]</div>
+<div class="line">        arg Options {Options} [this] @ Target options instance.</div>
+<div class="line"> </div>
+<div class="line">    @ Releases options instance.</div>
+<div class="line">    @ Destroys when reference count reaches zero. [detail]</div>
+<div class="line">    @ {Reference} [see]</div>
+<div class="line">    method Destroy [destroy]</div>
+<div class="line">        arg Options {Options} [this] @ Options to destroy.</div>
+</div><!-- fragment --><p>High-level languages ​​will manage the lifetime of an object either through the garbage collector or automatically through this method (the method itself will be hidden).</p>
 <h3><a class="anchor" id="attr-userdata"></a>
 [userdata]</h3>
-<p>TODO</p>
+<p>Marks parameters for passing context data to callbacks.</p>
+<p>In high-level languages ​​it will be removed, the generator will use it automatically for data closure.</p>
 <h3><a class="anchor" id="attr-errorcode"></a>
 [errorcode]</h3>
-<p>TODO</p>
+<p>Designates enums as error code containers. Enables special error handling.</p>
+<p>You can also mark the function. Read about it in the <a class="el" href="#error-handling">Error Handling</a> section</p>
 <h3><a class="anchor" id="attr-noerror"></a>
 [noerror]</h3>
-<p>TODO</p>
+<p>Marks an enum constant as not an error.</p>
 <h3><a class="anchor" id="attr-result"></a>
 [result]</h3>
-<p>TODO</p>
+<p>Marks the argument as the return value. Higher priority than the return value (unless it is an enumeration with error codes).</p>
 <h3><a class="anchor" id="attr-destroy"></a>
 [destroy]</h3>
-<p>TODO</p>
+<p>Marks resource cleanup methods.</p>
 <h3><a class="anchor" id="attr-in"></a>
 [in]</h3>
-<p>TODO</p>
+<p>Input-only parameters (default). Helps with code generation for <code>[out]</code> pairs.</p>
 <h3><a class="anchor" id="attr-out"></a>
 [out]</h3>
-<p>TODO</p>
+<p>Output parameters.</p>
 <h3><a class="anchor" id="attr-optional"></a>
 [optional]</h3>
-<p>TODO</p>
+<p>Marks nullable parameters. Generates different signatures in strict languages.</p>
 <h3><a class="anchor" id="attr-tokenizer"></a>
 [tokenizer]</h3>
-<p>TODO</p>
+<p>Overrides default name tokenization rules for specific declarations.</p>
+<div class="fragment"><div class="line">@ Keyboard scancodes.</div>
+<div class="line">enum Scancode</div>
+<div class="line">    const F1 [tokenizer(0)] @ F1 function key.</div>
+<div class="line">    const BC1RgbSrgb [tokenizer(3-3)] @ block-compressed format</div>
+<div class="line">    const PVRTC2v2BppSrgb [tokenizer(6-^1-4)] @ PVRTC compressed format </div>
+</div><!-- fragment --><p>In this example, the names will be tokenized as follows:</p><ul>
+<li><code>F1</code>;</li>
+<li><code>BC1 Rgb Srgb</code>;</li>
+<li><code>PVRTC2 2Bpp Srgb</code>.</li>
+</ul>
+<p>The number in the tokenizer indicates how many characters to take as a token. Numbers are separated by hyphens. If there is <code>^</code> before the number, it indicates how many characters to skip.</p>
 <h3><a class="anchor" id="attr-version"></a>
 [version]</h3>
-<p>TODO</p>
+<p>Specifies API versioning. Format: [version(major,minor,micro)].</p>
 <h3><a class="anchor" id="attr-brief"></a>
 [brief]</h3>
-<p>TODO</p>
-<h3><a class="anchor" id="attr-detail"></a>
+<p>Short description attribute (default for standalone <code>@ docs</code>).</p>
+<div class="fragment"><div class="line">@ Logging severity levels.</div>
+<div class="line">enum LoggerLevel</div>
+<div class="line">    ...</div>
+<div class="line"> </div>
+<div class="line">// or</div>
+<div class="line"> </div>
+<div class="line">@ Logging severity levels. [brief]</div>
+<div class="line">enum LoggerLevel</div>
+<div class="line">    ...</div>
+</div><!-- fragment --><h3><a class="anchor" id="attr-detail"></a>
 [detail]</h3>
-<p>TODO</p>
-<h3><a class="anchor" id="attr-author"></a>
+<p>Detailed description attribute (default for inline <code>@ docs</code>).</p>
+<div class="fragment"><div class="line">@ Logging severity levels. [detail]</div>
+<div class="line">enum LoggerLevel</div>
+<div class="line">    ...</div>
+<div class="line"> </div>
+<div class="line">// or</div>
+<div class="line"> </div>
+<div class="line">enum LoggerLevel @ Logging severity levels. [detail]</div>
+<div class="line">    ...</div>
+<div class="line">    </div>
+<div class="line">// or</div>
+<div class="line"> </div>
+<div class="line">enum LoggerLevel @ Logging severity levels.</div>
+<div class="line">    ...</div>
+</div><!-- fragment --><h3><a class="anchor" id="attr-author"></a>
 [author]</h3>
-<p>TODO</p>
-<h3><a class="anchor" id="attr-see"></a>
+<p>Credits the original author:</p>
+<div class="fragment"><div class="line">@ IDLC</div>
+<div class="line">@ Author Name &lt;authorname@email.com&gt; [author]</div>
+<div class="line">api Idl</div>
+</div><!-- fragment --><h3><a class="anchor" id="attr-see"></a>
 [see]</h3>
-<p>TODO</p>
-<h3><a class="anchor" id="attr-note"></a>
+<p>See also:</p>
+<div class="fragment"><div class="line">@ Callback to get sources.</div>
+<div class="line">@ If the callback allocates memory, then you can free it in the callback {ReleaseImportCallback}. [see]</div>
+<div class="line">callback ImportCallback {Source} [ref,optional]</div>
+<div class="line">    ...</div>
+</div><!-- fragment --><h3><a class="anchor" id="attr-note"></a>
 [note]</h3>
-<p>TODO</p>
+<p>Highlights important usage notes in documentation.</p>
 <h3><a class="anchor" id="attr-warning"></a>
 [warning]</h3>
-<p>TODO</p>
+<p>Marks warnings in documentation.</p>
 <h3><a class="anchor" id="attr-copyright"></a>
 [copyright]</h3>
-<p>TODO</p>
-<h3><a class="anchor" id="attr-license"></a>
+<p>Copyright notice:</p>
+<div class="fragment"><div class="line">@ IDLC</div>
+<div class="line">@ MIT License [copyright]</div>
+<div class="line">api Idl</div>
+</div><!-- fragment --><h3><a class="anchor" id="attr-license"></a>
 [license]</h3>
-<p>TODO</p>
+<p>License text.</p>
 <h3><a class="anchor" id="attr-return"></a>
 [return]</h3>
-<p>TODO</p>
+<p>Documents the semantics of the return value from a method/function/callback.</p>
 <h2><a class="anchor" id="error-handling"></a>
 Error Handling</h2>
 <p>The language provides special facilities for cross-language error handling. This is necessary because C lacks exceptions and typically uses error codes, while JS has exceptions. Therefore, IDL offers a built-in way to describe errors that works natively across all target languages.</p>
-<p>TODO</p>
+<div class="fragment"><div class="line">@ Result codes.</div>
+<div class="line">@ Enumeration of result codes. [detail]</div>
+<div class="line">enum Result [errorcode]</div>
+<div class="line">    const Success [noerror] @ Indicates success (this is not an error).</div>
+<div class="line">    const ErrorUnknown @ Unknown error.</div>
+<div class="line">    const ErrorOutOfMemory @ Out of memory.</div>
+<div class="line">    const ErrorInvalidArg @ Invalid argument.</div>
+<div class="line">    const ErrorFileCreate @ Failed to create file.</div>
+<div class="line">    const ErrorCompilation @ Compilation failed.</div>
+<div class="line">    const ErrorNotSupported @ Not supporeted.</div>
+<div class="line"> </div>
+<div class="line">@ Converts error code to descriptive string.</div>
+<div class="line">@ Provides a text description for the result code. [detail]</div>
+<div class="line">@ Corresponding text description of the result code. [return]</div>
+<div class="line">func ResultToString {Str} [errorcode]</div>
+<div class="line">    arg Result {Result} @ Result code.</div>
+<div class="line"> </div>
+<div class="line">@ Compilation options.</div>
+<div class="line">@ This object specifies various compilation options. [detail]</div>
+<div class="line">interface Options</div>
+<div class="line">    @ Creates new options instance.</div>
+<div class="line">    @ Creates an object for setting compiler options. [detail]</div>
+<div class="line">    @ New options instance. [return]</div>
+<div class="line">    method Create {Result} [ctor]</div>
+<div class="line">        arg Options {Options} [result] @ New options instance.</div>
+</div><!-- fragment --><p>Note that the <code>Create</code> method returns a new instance via an argument. This is quite normal, because the programmer will not be able to ignore the object allocation. Instead, the return value is an error code.</p>
+<p>In C, this would look like this:</p>
+<div class="fragment"><div class="line">/**</div>
+<div class="line"> * @brief      Creates new options instance.</div>
+<div class="line"> * @details    Creates an object for setting compiler options.</div>
+<div class="line"> * @param[out] options New options instance.</div>
+<div class="line"> * @return     New options instance.</div>
+<div class="line"> * @ingroup    functions</div>
+<div class="line"> */</div>
+<div class="line">idl_api idl_result_t</div>
+<div class="line">idl_options_create(idl_options_t* options);</div>
+</div><!-- fragment --><p>Which can be used as:</p>
+<div class="fragment"><div class="line">idl_options_t options;</div>
+<div class="line">idl_result_t code = idl_options_create(&amp;options);</div>
+<div class="line">if (code != IDL_RESULT_SUCCESS) {</div>
+<div class="line">    printf(&quot;%s\n&quot;, idl_result_to_string(code));</div>
+<div class="line">    return;</div>
+<div class="line">}</div>
+<div class="line">idl_options_destroy(options);</div>
+</div><!-- fragment --><p>In languages ​​with exceptions, when calling functions/methods if an error code is returned (in any way), in case of an error an exception will be thrown with the text of the error constant name. If there is a function marked <code>[errorcode]</code>:</p>
+<div class="fragment"><div class="line">func ResultToString {Str} [errorcode]</div>
+</div><!-- fragment --><p>Then it will be used to convert the error code into a text message for the exception.</p>
+<p>JavaScript:</p>
+<div class="fragment"><div class="line">const options = new module.Options;</div>
+</div><!-- fragment --><p>If the object cannot be created, an exception will be thrown.</p>
 <h1><a class="anchor" id="using-idlc"></a>
 Using the idlc Command Line Tool</h1>
 <p>TODO</p>

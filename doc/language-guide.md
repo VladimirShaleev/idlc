@@ -1195,14 +1195,14 @@ const options = new module.Options;
 
 If the object cannot be created, an exception will be thrown.
 
-# Using the idlc Command Line Tool {#using-idlc}
+## Next Steps {#learn-how-to-install}
 
-TODO
+Learn how to install and use the compiler.
 
 <div class="section_buttons">
 
-| Previous                        |                         Next |
-|:--------------------------------|-----------------------------:|
-| [Quick Start](quick-start.html) | [Documentation](topics.html) |
+| Previous                        |                              Next |
+|:--------------------------------|----------------------------------:|
+| [Quick Start](quick-start.html) | [Installation](installation.html) |
 
 </div>

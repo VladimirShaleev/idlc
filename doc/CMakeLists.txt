@@ -16,7 +16,8 @@ file(GLOB IDLC_DOC_SOURCES "${PROJECT_SOURCE_DIR}/include/idlc/*")
 set(IDLC_DOC_MARKDOWN
     "${CMAKE_CURRENT_LIST_DIR}/introduction.md"
     "${CMAKE_CURRENT_LIST_DIR}/quick-start.md"
-    "${CMAKE_CURRENT_LIST_DIR}/language-guide.md")
+    "${CMAKE_CURRENT_LIST_DIR}/language-guide.md"
+    "${CMAKE_CURRENT_LIST_DIR}/installation.md")
 
 set(DOXYGEN_PROJECT_LOGO "${CMAKE_CURRENT_LIST_DIR}/logo.svg")
 set(DOXYGEN_PROJECT_ICON "${CMAKE_CURRENT_LIST_DIR}/icon.svg")

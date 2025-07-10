@@ -4,16 +4,20 @@ The IDL Compiler generates native APIs across programming languages while mainta
 
 ## Key Features
 
-- **Native API Generation**: IDLC produces:
-  - C headers with optimal layout
-  - JavaScript/TypeScript classes with proper typing
-- **Automatic C Wrapping**: Creates zero-boilerplate bridges:
-  - JavaScript → C via Node-API/WebAssembly
-  - Managed ↔ Native memory conversion
-- **Smart Parameter Handling**: Automatically adapts:
-  - C-style arrays ↔ Managed language collections
-  - Error codes ↔ Exceptions
-  - Opaque handles ↔ Class instances
-- **Zero-Overhead**: Generated C code matches hand-written performance
+### Generates Native-Looking APIs
+
+Produces idiomatic code for each target language as if written by hand:
+- C: clean headers with optimal struct layouts and type-safe signatures.
+- JavaScript/TypeScript: classes with methods, properties, and full typing.
+
+### Automatic Cross-Language Wrapping
+
+- Seamless C ↔ Managed Language Interop:
+  * Converts C arrays ↔ JS/TS typed arrays (float[] ↔ number[]).
+  * Maps error codes to exceptions.
+  * Wraps opaque handles as class instances.
+- WASM + Embind Integration: efficient JS bindings with managed ↔ native memory handling.
+- The compiler generates its own C API and JS bindings.
+- Works as a CLI tool or embeddable C library (CMake-supported).
 
 [Explore Full Documentation](https://vladimirshaleev.github.io/idlc/)

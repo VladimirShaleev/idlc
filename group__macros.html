@@ -48,7 +48,7 @@
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="logo.svg"/></td>
   <td id="projectalign">
-   <div id="projectname">idlc<span id="projectnumber">&#160;1.5.11</span>
+   <div id="projectname">idlc<span id="projectnumber">&#160;1.5.12</span>
    </div>
    <div id="projectbrief">Interface Definition Language Compiler</div>
   </td>
@@ -151,7 +151,7 @@ Macros</h2></td></tr>
 <tr class="memitem:ga8b1aa84f30bf2a6b2ca8e02aab39e30e" id="r_ga8b1aa84f30bf2a6b2ca8e02aab39e30e"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ga8b1aa84f30bf2a6b2ca8e02aab39e30e">IDL_VERSION_MINOR</a>&#160;&#160;&#160;5</td></tr>
 <tr class="memdesc:ga8b1aa84f30bf2a6b2ca8e02aab39e30e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Minor version number (backwards-compatible additions).  <br /></td></tr>
 <tr class="separator:ga8b1aa84f30bf2a6b2ca8e02aab39e30e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga9fd5454964e5424518f8d1715e4d6792" id="r_ga9fd5454964e5424518f8d1715e4d6792"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ga9fd5454964e5424518f8d1715e4d6792">IDL_VERSION_MICRO</a>&#160;&#160;&#160;11</td></tr>
+<tr class="memitem:ga9fd5454964e5424518f8d1715e4d6792" id="r_ga9fd5454964e5424518f8d1715e4d6792"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ga9fd5454964e5424518f8d1715e4d6792">IDL_VERSION_MICRO</a>&#160;&#160;&#160;12</td></tr>
 <tr class="memdesc:ga9fd5454964e5424518f8d1715e4d6792"><td class="mdescLeft">&#160;</td><td class="mdescRight">Micro version number (bug fixes and patches).  <br /></td></tr>
 <tr class="separator:ga9fd5454964e5424518f8d1715e4d6792"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -383,7 +383,7 @@ Macros</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define IDL_VERSION_MICRO&#160;&#160;&#160;11</td>
+          <td class="memname">#define IDL_VERSION_MICRO&#160;&#160;&#160;12</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -432,7 +432,7 @@ Macros</h2></td></tr>
 <div class="ttc" id="agroup__macros_html_gabffb48ffd96aa277b2acac089ed9e051"><div class="ttname"><a href="#gabffb48ffd96aa277b2acac089ed9e051">IDL_VERSION_STRINGIZE</a></div><div class="ttdeci">#define IDL_VERSION_STRINGIZE(major, minor, micro)</div><div class="ttdoc">Creates version string from components.</div><div class="ttdef"><b>Definition</b> idl-version.h:94</div></div>
 </div><!-- fragment -->
 <p>Library version as human-readable string. </p>
-<p>Version string in "MAJOR.MINOR.MICRO" format (e.g., "1.5.11"). Use <a class="el" href="#gaeaefaefeb508c22951ba323d7dcff522" title="Encoded library version as integer.">IDL_VERSION</a> for numeric comparisons. </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="#gaeaefaefeb508c22951ba323d7dcff522" title="Encoded library version as integer.">IDL_VERSION</a> </dd></dl>
+<p>Version string in "MAJOR.MINOR.MICRO" format (e.g., "1.5.12"). Use <a class="el" href="#gaeaefaefeb508c22951ba323d7dcff522" title="Encoded library version as integer.">IDL_VERSION</a> for numeric comparisons. </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="#gaeaefaefeb508c22951ba323d7dcff522" title="Encoded library version as integer.">IDL_VERSION</a> </dd></dl>
 
 </div>
 </div>
@@ -463,7 +463,7 @@ Macros</h2></td></tr>
 <div class="ttc" id="agroup__macros_html_gaee6aab7bddddc60e73ef8d4285242f37"><div class="ttname"><a href="#gaee6aab7bddddc60e73ef8d4285242f37">IDL_VERSION_STRINGIZE_</a></div><div class="ttdeci">#define IDL_VERSION_STRINGIZE_(major, minor, micro)</div><div class="ttdoc">Internal macro for string version generation.</div><div class="ttdef"><b>Definition</b> idl-version.h:82</div></div>
 </div><!-- fragment -->
 <p>Creates version string from components. </p>
-<p>Generates a string literal from version components (e.g., 1, 5, 11 -&gt; "1.5.11"). </p><dl class="params"><dt>Parameters</dt><dd>
+<p>Generates a string literal from version components (e.g., 1, 5, 12 -&gt; "1.5.12"). </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">major</td><td>Major version number. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">minor</td><td>Minor version number. </td></tr>
@@ -502,7 +502,7 @@ Macros</h2></td></tr>
 <b>Value:</b><div class="fragment"><div class="line"><span class="preprocessor">#major &quot;.&quot; #minor &quot;.&quot; #micro</span></div>
 </div><!-- fragment -->
 <p>Internal macro for string version generation. </p>
-<p>Helper macro that stringizes version components (e.g., 1, 5, 11 -&gt; "1.5.11"). </p><dl class="params"><dt>Parameters</dt><dd>
+<p>Helper macro that stringizes version components (e.g., 1, 5, 12 -&gt; "1.5.12"). </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramdir">[in]</td><td class="paramname">major</td><td>Major version number. </td></tr>
     <tr><td class="paramdir">[in]</td><td class="paramname">minor</td><td>Minor version number. </td></tr>

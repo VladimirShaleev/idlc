@@ -98,9 +98,17 @@ var NAVTREE =
           [ "[license]", "language-guide.html#attr-license", null ],
           [ "[return]", "language-guide.html#attr-return", null ]
         ] ],
-        [ "Error Handling", "language-guide.html#error-handling", null ]
-      ] ],
-      [ "Using the idlc Command Line Tool", "language-guide.html#using-idlc", null ]
+        [ "Error Handling", "language-guide.html#error-handling", null ],
+        [ "Next Steps", "language-guide.html#learn-how-to-install", null ]
+      ] ]
+    ] ],
+    [ "Installation", "installation.html", [
+      [ "Installing and Using the Library", "installation.html#autotoc_md1", [
+        [ "JavaScript", "installation.html#autotoc_md2", [
+          [ "Install the NPM Package", "installation.html#autotoc_md3", null ],
+          [ "Using the Embedded Compiler", "installation.html#autotoc_md4", null ]
+        ] ]
+      ] ]
     ] ],
     [ "Documentation", "topics.html", "topics" ]
   ] ]
@@ -109,7 +117,7 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "annotated.html",
-"language-guide.html#attr-ctor"
+"language-guide.html#attr-author"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

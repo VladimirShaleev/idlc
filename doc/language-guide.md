@@ -534,7 +534,78 @@ Repeated inclusion of an import has no effect - it's simply skipped.
 
 ## Declaration References {#decl-refs}
 
-TODO
+References to declarations use the `{DeclRef}` syntax. Forward references are allowed in documentation. Generated documentation will adapt reference names to match target language conventions.
+
+Example Specification:
+
+````
+@ Compiler interface.
+@ Interface for interacting with the compiler. [detail]
+interface Compiler
+    @ Compile IDL.
+    @ Compilation result. [return]
+    @ ```
+        To read source code from memory instead of the file system, use {Sources} and/or configure 
+        the importer with {Options.SetImporter} and pass the {File} argument as empty.``` [note]
+    @ ```
+        Priorities for resolving source code imports:
+        - {Options.SetImporter} - import callback if specified;
+        - {Sources} - then the source code array, if specified;
+        - {Options.SetImportDirs} - then in the paths to the import directories, if specified;
+        - then the current working directory.
+        ``` [note]
+    method Compile {Result}
+        arg Compiler {Compiler} [this] @ Target compiler.
+        arg Generator {Generator} @ Target of generator.
+        arg File {Str} [optional] @ Path to .idl file for compile.
+        arg SourceCount {Uint32} @ Number of sources.
+        arg Sources {Source} [const,array(SourceCount)] @ Sources.
+        arg Options {Options} [optional] @ Compile options, may be null.
+        arg Result {CompilationResult} [optional,result] @ Compilation result.
+````
+
+Result of resolving declaration reference for C:
+
+```
+/**
+ * @brief      Compile IDL.
+ * @param[in]  compiler Target compiler.
+ * @param[in]  generator Target of generator.
+ * @param[in]  file Path to .idl file for compile.
+ * @param[in]  source_count Number of sources.
+ * @param[in]  sources Sources.
+ * @param[in]  options Compile options, may be null.
+ * @param[out] result Compilation result.
+ * @return     Compilation result.
+ * @parblock
+ * @note       To read source code from memory instead of the file system, use *sources* and/or configure
+ *             the importer with ::idl_options_set_importer and pass the *file* argument as empty.
+ * @endparblock
+ * @parblock
+ * @note       Priorities for resolving source code imports:
+ *             - ::idl_options_set_importer - import callback if specified;
+ *             - *sources* - then the source code array, if specified;
+ *             - ::idl_options_set_import_dirs - then in the paths to the import directories, if specified;
+ *             - then the current working directory.
+ *             
+ * @endparblock
+ * @ingroup    functions
+ */
+idl_api idl_result_t
+idl_compiler_compile(idl_compiler_t compiler,
+                     idl_generator_t generator,
+                     idl_utf8_t file,
+                     idl_uint32_t source_count,
+                     const idl_source_t* sources,
+                     idl_options_t options,
+                     idl_compilation_result_t* result);
+```
+
+## Comments
+
+Comments start with two `//`, everything that comes after them will be considered a comment until the end of the line and will not be taken into account when compiling.
+
+@note In the documentation, two consecutive characters `//` are just two characters `//`.
 
 ## Attributes {#attributes}
 

@@ -1051,7 +1051,78 @@ Documents the semantics of the return value from a method/function/callback.
 
 The language provides special facilities for cross-language error handling. This is necessary because C lacks exceptions and typically uses error codes, while JS has exceptions. Therefore, IDL offers a built-in way to describe errors that works natively across all target languages.
 
-TODO
+```
+@ Result codes.
+@ Enumeration of result codes. [detail]
+enum Result [errorcode]
+    const Success [noerror] @ Indicates success (this is not an error).
+    const ErrorUnknown @ Unknown error.
+    const ErrorOutOfMemory @ Out of memory.
+    const ErrorInvalidArg @ Invalid argument.
+    const ErrorFileCreate @ Failed to create file.
+    const ErrorCompilation @ Compilation failed.
+    const ErrorNotSupported @ Not supporeted.
+
+@ Converts error code to descriptive string.
+@ Provides a text description for the result code. [detail]
+@ Corresponding text description of the result code. [return]
+func ResultToString {Str} [errorcode]
+    arg Result {Result} @ Result code.
+
+@ Compilation options.
+@ This object specifies various compilation options. [detail]
+interface Options
+    @ Creates new options instance.
+    @ Creates an object for setting compiler options. [detail]
+    @ New options instance. [return]
+    method Create {Result} [ctor]
+        arg Options {Options} [result] @ New options instance.
+```
+
+Note that the `Create` method returns a new instance via an argument. This is quite normal, because the programmer will not be able to ignore the object allocation. Instead, the return value is an error code.
+
+In C, this would look like this:
+
+```
+
+/**
+ * @brief      Creates new options instance.
+ * @details    Creates an object for setting compiler options.
+ * @param[out] options New options instance.
+ * @return     New options instance.
+ * @ingroup    functions
+ */
+idl_api idl_result_t
+idl_options_create(idl_options_t* options);
+```
+
+Which can be used as:
+
+```
+idl_options_t options;
+idl_result_t code = idl_options_create(&options);
+if (code != IDL_RESULT_SUCCESS) {
+    printf("%s\n", idl_result_to_string(code));
+    return;
+}
+idl_options_destroy(options);
+```
+
+In languages ​​with exceptions, when calling functions/methods if an error code is returned (in any way), in case of an error an exception will be thrown with the text of the error constant name. If there is a function marked `[errorcode]`:
+
+```
+func ResultToString {Str} [errorcode]
+```
+
+Then it will be used to convert the error code into a text message for the exception.
+
+JavaScript:
+
+```javascript
+const options = new module.Options;
+```
+
+If the object cannot be created, an exception will be thrown.
 
 # Using the idlc Command Line Tool {#using-idlc}
 

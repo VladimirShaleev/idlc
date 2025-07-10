@@ -66,7 +66,7 @@ You can also place documentation on the same line as the declaration. In this ca
 
 ```
 @ Color values
-struct Color @ Detailed description. [detail]
+struct Color @ Detailed description.
     ...
 ```
 
@@ -592,147 +592,460 @@ In short, everything except declarations and documentation context is implemente
 
 ### [flags] {#attr-flags}
 
-TODO
+Marks an enum as a bitmask type where values can be combined using bitwise operations. Automatically adds bitwise operation support in target languages:
+
+```
+@ Graphics features.
+enum Feature [flags]
+    const None @ No special features
+    const Bindless @ Bindless resource access
+    const GeometryShader : 2 @ Geometry shader support
+    const MeshShader : 4 @ Mesh shader support
+    const SamplerFilterMinmax : 8 @ Min/max sampler filtering
+    const DrawIndirect : 16 @ Indirect drawing
+```
 
 ### [hex] {#attr-hex}
 
-TODO
+Specifies that enum values should be displayed in hexadecimal format in documentation and outputs:
+
+```
+@ Graphics features.
+enum Feature [flags,hex]
+    const None @ No special features
+    const Bindless @ Bindless resource access
+    const GeometryShader : 2 @ Geometry shader support
+    const MeshShader : 4 @ Mesh shader support
+    const SamplerFilterMinmax : 8 @ Min/max sampler filtering
+    const DrawIndirect : 16 @ Indirect drawing
+```
+
+C output:
+
+```
+/**
+ * @brief Graphics features.
+ */
+typedef enum
+{
+    SAMPLE_FEATURE_NONE_BIT                  = 0x00, /**< No special features */
+    SAMPLE_FEATURE_BINDLESS_BIT              = 0x01, /**< Bindless resource access */
+    SAMPLE_FEATURE_GEOMETRY_SHADER_BIT       = 0x02, /**< Geometry shader support */
+    SAMPLE_FEATURE_MESH_SHADER_BIT           = 0x04, /**< Mesh shader support */
+    SAMPLE_FEATURE_SAMPLER_FILTER_MINMAX_BIT = 0x08, /**< Min/max sampler filtering */
+    SAMPLE_FEATURE_DRAW_INDIRECT_BIT         = 0x10, /**< Indirect drawing */
+    SAMPLE_FEATURE_MAX_ENUM                  = 0x7FFFFFFF /**< Max value of enum (not used) */
+} sample_feature_flags_t;
+SAMPLE_FLAGS(sample_feature_flags_t)
+```
 
 ### [platform] {#attr-platform}
 
-TODO
+Indicates platform-specific declarations. Format: `[platform(windows,linux)]`. Generates conditional compilation in target languages.
+
+@warning Generators currently do not implement this attribute.
 
 ### [value] {#attr-value}
 
-TODO
+Explicitly sets the numeric value for enum constants or default values for fields/arguments. Accepts expressions.
+
+@warning Currently only supports integers and enum constants.
 
 ### [type] {#attr-type}
 
-TODO
+Specifies the underlying type for declarations. Used implicitly in shorthand syntax like `{Float32}`.
+
+```
+@ Color values.
+struct Color
+    field Red {Float32} @ Red channel clear value.
+    field Green [type(Float32)] @ Green channel clear value.
+```
 
 ### [static] {#attr-static}
 
-TODO
+Marks methods or properties as class-level rather than instance-level members.
 
 ### [ctor] {#attr-ctor}
 
-TODO
+Designates a method as a constructor. Implies `[static]`. In OOP languages, enables `new` syntax:
+
+```
+@ Brief.
+interface ObjType
+    @ Creates new object instance
+    @ New instance [return]
+    method CreateByName {ObjType} [ctor]
+        arg Name {Str} @ Name of object.
+
+    @ Creates new object instance
+    method CreateByValue {Bool} [ctor]
+        arg Name {Str} @ Name of object.
+        arg Value {Float32} @ Name of object.
+        arg Obj {ObjType} [result] @ New object instance.
+```
+
+In the second case, the new instance is returned as an argument:
+
+```
+/**
+ * @brief     Creates new object instance
+ * @param[in] name Name of object.
+ * @return    New instance
+ */
+sample_api sample_obj_type_t
+sample_obj_type_create_by_name(sample_utf8_t name);
+
+/**
+ * @brief      Creates new object instance
+ * @param[in]  name Name of object.
+ * @param[in]  value Name of object.
+ * @param[out] obj New object instance.
+ */
+sample_api sample_bool_t
+sample_obj_type_create_by_value(sample_utf8_t name,
+                                sample_float32_t value,
+                                sample_obj_type_t* obj);
+```
+
+In OOP languages ​​these methods will become constructors:
+
+```javascript
+const inst1 = new sample.ObjType('test');
+const inst2 = new sample.ObjType('test', 3.4);
+```
 
 ### [this] {#attr-this}
 
-TODO
+Identifies the implicit instance parameter in methods. Remapped to `this`/`self` in OOP languages.
 
 ### [get] {#attr-get}
 
-TODO
+Links a property to its getter method. Format: `[get(GetMethodName)]`.
 
 ### [set] {#attr-set}
 
-TODO
+Links a property to its setter method. Format: `[set(SetMethodName)]`.
 
 ### [handle] {#attr-handle}
 
-TODO
+Declares index descriptors. Useful for providing resources with an index or other structure. For example, distributing resources linearly from a pool in games:
+
+```
+@ Handle type.
+@ This structure describes the handle template. [detail]
+struct Handle [handle]
+    field Index {Uint16} @ The type that determines the size of the handle.
+
+handle Buffer        {Handle} @ Handle to GPU buffer resource.
+handle Texture       {Handle} @ Handle to GPU texture resource.
+handle Technique     {Handle} @ Handle to rendering technique.
+handle DescriptorSet {Handle} @ Handle to resource binding set.
+```
 
 ### [cname] {#attr-cname}
 
-TODO
+Overrides the default C identifier naming:
+
+```
+@ Keyboard scancodes.
+enum Scancode
+    const Unknown @ Unidentified key.
+    const Digit0 [cname(0)] @ 0 key.
+    const Digit1 [cname(1)] @ 1 key.
+    const Digit2 [cname(2)] @ 2 key.
+    ...
+```
+
+C output:
+
+```
+/**
+ * @brief Keyboard scancodes.
+ */
+typedef enum
+{
+    GERIUM_SCANCODE_UNKNOWN = 0, /**< Unidentified key. */
+    GERIUM_SCANCODE_0       = 1, /**< 0 key. */
+    GERIUM_SCANCODE_1       = 2, /**< 1 key. */
+    ...
+```
 
 ### [array] {#attr-array}
 
-TODO
+Indicates array:
+
+```
+@ Compilation options.
+@ This object specifies various compilation options. [detail]
+interface Options
+    prop ImportDirs [get(GetImportDirs),set(SetImportDirs)] @ Directories to search for files when importing.
+
+    @ Returns an array of directories to search for imports.
+    @ These paths are used to search source code when an import is encountered during compilation. [detail]
+    @ {SetImportDirs} [see]
+    method GetImportDirs [const]
+        arg Options {Options} [this] @ Target options.
+        arg DirCount {Uint32} [in,out] @ Number of directories.
+        arg Dirs {Str} [result,array(DirCount)] @ Import directories.
+
+    @ Configures directories to search for source files.
+    @ These paths are used to search source code when an import is encountered during compilation. [detail]
+    @ {GetImportDirs} [see]
+    method SetImportDirs
+        arg Options {Options} [this] @ Target options.
+        arg DirCount {Uint32} @ Number of directories.
+        arg Dirs {Str} [const,array(DirCount)] @ Import directories.
+```
+
+C output:
+
+```
+/**
+ * @brief         Returns an array of directories to search for imports.
+ * @details       These paths are used to search source code when an import is encountered during compilation.
+ * @param[in]     options Target options.
+ * @param[in,out] dir_count Number of directories.
+ * @param[out]    dirs Import directories.
+ * @sa            ::sample_options_set_import_dirs
+ */
+sample_api void
+sample_options_get_import_dirs(sample_options_t options,
+                               sample_uint32_t* dir_count,
+                               sample_utf8_t* dirs);
+
+/**
+ * @brief     Configures directories to search for source files.
+ * @details   These paths are used to search source code when an import is encountered during compilation.
+ * @param[in] options Target options.
+ * @param[in] dir_count Number of directories.
+ * @param[in] dirs Import directories.
+ * @sa        ::sample_options_get_import_dirs
+ */
+sample_api void
+sample_options_set_import_dirs(sample_options_t options,
+                               sample_uint32_t dir_count,
+                               const sample_utf8_t* dirs);
+```
+
+JavaScript use:
+
+```
+const options = new idlc.Options;
+options.importDirs = [ "path1", "path2", "path3" ];
+```
+
+As you can see in higher-level languages, working with arrays becomes more native.
+
+Arrays are also supported in structure fields. But fixed-length arrays are also supported in structure fields:
+
+```
+@ Brief.
+struct Test
+    field Values {Float32} [const,array(Size)] @ Values.
+    field Size {Uint32} @ Count values.
+    field Symbol {Char} [const,array(5)] @ Symbol.
+```
+
+C output:
+
+```
+/**
+ * @brief Brief.
+ */
+typedef struct
+{
+    const sample_float32_t* values; /**< Values. */
+    sample_uint32_t         size; /**< Count values. */
+    sample_char_t           symbol[5]; /**< Symbol. */
+} sample_test_t;
+```
+
+JavaScript use:
+
+```
+func({ values: [ 3.4, 2.3 ], symbol: 'a' });
+```
 
 ### [datasize] {#attr-datasize}
 
-TODO
+Marks fields or arguments of types `Date` and `ConstData` as dimensional buffers:
+
+@warning I'm not sure yet if this attribute is necessary
 
 ### [const] {#attr-const}
 
-TODO
+Refers to immutable fields, parameters, or methods that do not change the state of the instance.
 
 ### [ref] {#attr-ref}
 
-TODO
+Hints that a field or argument should be passed by reference rather than by value.
 
 ### [refinc] {#attr-refinc}
 
-TODO
+Marks a method as a specific method for reference counter incrementing.
+
+```
+@ Compilation options.
+@ This object specifies various compilation options. [detail]
+interface Options
+    @ Increments reference count.
+    @ Manages options instance lifetime. [detail]
+    @ Reference to same options. [return]
+    @ {Destroy} [see]
+    method Reference {Options} [refinc]
+        arg Options {Options} [this] @ Target options instance.
+
+    @ Releases options instance.
+    @ Destroys when reference count reaches zero. [detail]
+    @ {Reference} [see]
+    method Destroy [destroy]
+        arg Options {Options} [this] @ Options to destroy.
+```
+
+High-level languages ​​will manage the lifetime of an object either through the garbage collector or automatically through this method (the method itself will be hidden).
 
 ### [userdata] {#attr-userdata}
 
-TODO
+Marks parameters for passing context data to callbacks.
+
+In high-level languages ​​it will be removed, the generator will use it automatically for data closure.
 
 ### [errorcode] {#attr-errorcode}
 
-TODO
+Designates enums as error code containers. Enables special error handling.
+
+You can also mark the function. Read about it in the [Error Handling](#error-handling) section
 
 ### [noerror] {#attr-noerror}
 
-TODO
+Marks an enum constant as not an error.
 
 ### [result] {#attr-result}
 
-TODO
+Marks the argument as the return value. Higher priority than the return value (unless it is an enumeration with error codes).
 
 ### [destroy] {#attr-destroy}
 
-TODO
+Marks resource cleanup methods.
 
 ### [in] {#attr-in}
 
-TODO
+Input-only parameters (default). Helps with code generation for `[out]` pairs.
 
 ### [out] {#attr-out}
 
-TODO
+Output parameters.
 
 ### [optional] {#attr-optional}
 
-TODO
+Marks nullable parameters. Generates different signatures in strict languages.
 
 ### [tokenizer] {#attr-tokenizer}
 
-TODO
+Overrides default name tokenization rules for specific declarations.
+
+```
+@ Keyboard scancodes.
+enum Scancode
+    const F1 [tokenizer(0)] @ F1 function key.
+    const BC1RgbSrgb [tokenizer(3-3)] @ block-compressed format
+    const PVRTC2v2BppSrgb [tokenizer(6-^1-4)] @ PVRTC compressed format 
+```
+
+In this example, the names will be tokenized as follows:
+- `F1`;
+- `BC1 Rgb Srgb`;
+- `PVRTC2 2Bpp Srgb`.
+
+The number in the tokenizer indicates how many characters to take as a token. Numbers are separated by hyphens. If there is `^` before the number, it indicates how many characters to skip.
 
 ### [version] {#attr-version}
 
-TODO
+Specifies API versioning. Format: [version(major,minor,micro)].
 
 ### [brief] {#attr-brief}
 
-TODO
+Short description attribute (default for standalone `@ docs`).
+
+```
+@ Logging severity levels.
+enum LoggerLevel
+    ...
+
+// or
+
+@ Logging severity levels. [brief]
+enum LoggerLevel
+    ...
+```
 
 ### [detail] {#attr-detail}
 
-TODO
+Detailed description attribute (default for inline `@ docs`).
+
+```
+@ Logging severity levels. [detail]
+enum LoggerLevel
+    ...
+
+// or
+
+enum LoggerLevel @ Logging severity levels. [detail]
+    ...
+    
+// or
+
+enum LoggerLevel @ Logging severity levels.
+    ...
+```
 
 ### [author] {#attr-author}
 
-TODO
+Credits the original author:
+
+```
+@ IDLC
+@ Author Name <authorname@email.com> [author]
+api Idl
+```
 
 ### [see] {#attr-see}
 
-TODO
+See also:
+
+```
+@ Callback to get sources.
+@ If the callback allocates memory, then you can free it in the callback {ReleaseImportCallback}. [see]
+callback ImportCallback {Source} [ref,optional]
+    ...
+```
 
 ### [note] {#attr-note}
 
-TODO
+Highlights important usage notes in documentation.
 
 ### [warning] {#attr-warning}
 
-TODO
+Marks warnings in documentation.
 
 ### [copyright] {#attr-copyright}
 
-TODO
+Copyright notice:
+
+```
+@ IDLC
+@ MIT License [copyright]
+api Idl
+```
 
 ### [license] {#attr-license}
 
-TODO
+License text.
 
 ### [return] {#attr-return}
 
-TODO
+Documents the semantics of the return value from a method/function/callback.
 
 ## Error Handling {#error-handling}
 

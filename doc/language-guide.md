@@ -1201,8 +1201,8 @@ Learn how to install and use the compiler.
 
 <div class="section_buttons">
 
-| Previous                        |                              Next |
-|:--------------------------------|----------------------------------:|
-| [Quick Start](quick-start.html) | [Installation](installation.html) |
+| Previous                        |                                        Next |
+|:--------------------------------|--------------------------------------------:|
+| [Quick Start](quick-start.html) | [Embedded Compiler](embedded-compiler.html) |
 
 </div>

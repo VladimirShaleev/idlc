@@ -226,11 +226,10 @@ var searchData=
   ['import_223',['Import',['../language-guide.html#import',1,'']]],
   ['in_224',['[in]',['../language-guide.html#attr-in',1,'']]],
   ['in_20types_225',['Built-in Types',['../language-guide.html#builtin-types',1,'']]],
-  ['install_20the_20npm_20package_226',['Install the NPM Package',['../installation.html#autotoc_md3',1,'']]],
-  ['installation_227',['Installation',['../installation.html',1,'']]],
-  ['installing_20and_20using_20the_20library_228',['Installing and Using the Library',['../installation.html#autotoc_md1',1,'']]],
-  ['interface_20definition_20language_229',['Interface Definition Language',['../language-guide.html#idl',1,'']]],
-  ['interfaces_230',['Interfaces',['../language-guide.html#interfaces',1,'']]],
-  ['introduction_231',['Introduction',['../index.html',1,'']]],
-  ['is_5ferror_232',['is_error',['../structidl__message__t.html#ac6954744822af07c3db28c94b4144436',1,'idl_message_t']]]
+  ['install_20the_20npm_20package_226',['Install the NPM Package',['../embedded-compiler.html#install-npm-package',1,'']]],
+  ['install_20the_20vcpkg_20port_227',['Install the Vcpkg Port',['../embedded-compiler.html#install-vcpkg-port',1,'']]],
+  ['interface_20definition_20language_228',['Interface Definition Language',['../language-guide.html#idl',1,'']]],
+  ['interfaces_229',['Interfaces',['../language-guide.html#interfaces',1,'']]],
+  ['introduction_230',['Introduction',['../index.html',1,'']]],
+  ['is_5ferror_231',['is_error',['../structidl__message__t.html#ac6954744822af07c3db28c94b4144436',1,'idl_message_t']]]
 ];

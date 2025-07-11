@@ -102,12 +102,17 @@ var NAVTREE =
         [ "Next Steps", "language-guide.html#learn-how-to-install", null ]
       ] ]
     ] ],
-    [ "Installation", "installation.html", [
-      [ "Installing and Using the Library", "installation.html#autotoc_md1", [
-        [ "JavaScript", "installation.html#autotoc_md2", [
-          [ "Install the NPM Package", "installation.html#autotoc_md3", null ],
-          [ "Using the Embedded Compiler", "installation.html#autotoc_md4", null ]
-        ] ]
+    [ "Embedded Compiler", "embedded-compiler.html", [
+      [ "Using the Embedded Сompiler", "embedded-compiler.html#embedded-compiler", [
+        [ "JavaScript", "embedded-compiler.html#javascript-guide", [
+          [ "Install the NPM Package", "embedded-compiler.html#install-npm-package", null ],
+          [ "Using the Embedded Compiler", "embedded-compiler.html#using-compiler-in-js", null ]
+        ] ],
+        [ "C", "embedded-compiler.html#c-guide", [
+          [ "Install the Vcpkg Port", "embedded-compiler.html#install-vcpkg-port", null ],
+          [ "Using the Embedded Compiler", "embedded-compiler.html#using-compiler-in-cpp", null ]
+        ] ],
+        [ "Next Steps", "embedded-compiler.html#learn-documentation", null ]
       ] ]
     ] ],
     [ "Documentation", "topics.html", "topics" ]
@@ -117,7 +122,7 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "annotated.html",
-"language-guide.html#attr-author"
+"index.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

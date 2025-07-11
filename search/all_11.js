@@ -10,7 +10,7 @@ var searchData=
   ['start_7',['Start',['../quick-start.html',1,'Quick Start'],['../language-guide.html#start',1,'Specification Start']]],
   ['static_8',['[static]',['../language-guide.html#attr-static',1,'']]],
   ['status_9',['status',['../structidl__message__t.html#af288cc2a32060767870d760c7580906c',1,'idl_message_t']]],
-  ['steps_10',['Steps',['../quick-start.html#next-steps',1,'Next Steps'],['../language-guide.html#learn-how-to-install',1,'Next Steps']]],
+  ['steps_10',['Steps',['../quick-start.html#next-steps',1,'Next Steps'],['../language-guide.html#learn-how-to-install',1,'Next Steps'],['../embedded-compiler.html#learn-documentation',1,'Next Steps']]],
   ['structures_11',['Structures',['../group__structs.html',1,'Structures'],['../language-guide.html#structures',1,'Structures']]],
   ['support_12',['Adding WASM Support',['../quick-start.html#add-wasm',1,'']]]
 ];

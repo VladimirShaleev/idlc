@@ -545,7 +545,7 @@ ctest --test-dir build --output-on-failure
 ### Adding WASM Support {#add-wasm}
 
 If you're not working in the **Dev Container**, you'll need to:
-- Install **Emscripten** following the [official guide]((https://emscripten.org/docs/getting_started/downloads.html)) for JS module compilation
+- Install **Emscripten** following the [official guide](https://emscripten.org/docs/getting_started/downloads.html) for JS module compilation
 - Install Node.js for **npm** package building
 
 While you could build the JS library directly using **emcc**, we'll instead add **Emscripten** configuration to `CMakeLists.txt`:
@@ -558,7 +558,7 @@ if(EMSCRIPTEN)
         VERSION ${PROJECT_VERSION}
         GENERATOR JS)
 
-    set(SAMPLE_JS_LINK_OPTIONS -sWASM=1 -sMODULARIZE=1 -sALLOW_MEMORY_GROWTH=1 -sEXPORT_NAME=sample --emit-tsd sample.d.ts)
+    set(SAMPLE_JS_LINK_OPTIONS -sWASM=1 -sMODULARIZE=1 -sALLOW_MEMORY_GROWTH=1 -sEXPORT_NAME=sample)
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         list(APPEND SAMPLE_JS_LINK_OPTIONS "-sSINGLE_FILE=0")
     else()
@@ -569,14 +569,14 @@ if(EMSCRIPTEN)
     target_link_libraries(samplejs PRIVATE embind sample::sample)
     target_include_directories(samplejs PRIVATE "${PROJECT_SOURCE_DIR}/include/sample/")
     target_compile_features(samplejs PRIVATE cxx_std_20)
-    target_link_options(samplejs PRIVATE ${SAMPLE_JS_LINK_OPTIONS})
+    target_link_options(samplejs PRIVATE ${SAMPLE_JS_LINK_OPTIONS} --emit-tsd sample.d.ts)
     set_target_properties(samplejs PROPERTIES OUTPUT_NAME "sample" SUFFIX ".js" RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/dist/")
 
     add_executable(samplejsesm ${IDLC_api_js_OUTPUTS})
     target_link_libraries(samplejsesm PRIVATE embind sample::sample)
     target_include_directories(samplejsesm PRIVATE "${PROJECT_SOURCE_DIR}/include/sample/")
     target_compile_features(samplejsesm PRIVATE cxx_std_20)
-    target_link_options(samplejsesm PRIVATE ${SAMPLE_JS_LINK_OPTIONS} -sEXPORT_ES6=1)
+    target_link_options(samplejsesm PRIVATE ${SAMPLE_JS_LINK_OPTIONS} --emit-tsd sample.esm.d.ts -sEXPORT_ES6=1)
     set_target_properties(samplejsesm PROPERTIES OUTPUT_NAME "sample.esm" SUFFIX ".js" RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/dist/")
 endif()
 ```

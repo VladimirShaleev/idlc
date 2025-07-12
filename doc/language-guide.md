@@ -33,7 +33,7 @@ The language requires all names to begin with a capital letter. The main questio
 Let's say we have a method name TestName. The compiler tokenizes it into two words `Test` and `Name` based on capital letters and letter-digit-letter transitions. So in C, the name would be:
 
 ```
-logger_test_name
+sample_logger_test_name
 ```
 
 and in JS:

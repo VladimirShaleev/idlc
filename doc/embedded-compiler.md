@@ -2,7 +2,7 @@
 
 @tableofcontents
 
-# Using the Embedded Сompiler {#embedded-compiler}
+# Using the Embedded Сompiler {#using-embedded-compiler}
 
 This section covers how to integrate the built-in compiler and use the API.
 

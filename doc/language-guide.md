@@ -11,6 +11,7 @@ This guide describes the use of IDL for creating library specifications, its syn
 All declarations, whether they're structure declarations or functions and their arguments, must begin with the appropriate keyword followed by the declaration name. Example:
 
 ```
+@idl
 @ API Sample
 api Sample
 
@@ -32,13 +33,15 @@ The language requires all names to begin with a capital letter. The main questio
 
 Let's say we have a method name TestName. The compiler tokenizes it into two words `Test` and `Name` based on capital letters and letter-digit-letter transitions. So in C, the name would be:
 
-```
+```c
+@c
 sample_logger_test_name
 ```
 
 and in JS:
 
 ```javascript
+@javascript
 testName
 ```
 
@@ -55,6 +58,7 @@ The language requires that all declarations have at least a brief description or
 Documentation begins with the `@` symbol followed by documentation until the end of the line. You can end the documentation with an attribute indicating what it refers to, for example:
 
 ```
+@idl
 @ Color values [brief]
 @ Detailed description. [detail]
 struct Color
@@ -65,6 +69,7 @@ The `[brief]` attribute is the default attribute when no attribute is specified.
 You can also place documentation on the same line as the declaration. In this case, the default attribute for this documentation will be `[detail]`. The example below is equivalent to the previous one:
 
 ```
+@idl
 @ Color values
 struct Color @ Detailed description.
     ...
@@ -73,6 +78,7 @@ struct Color @ Detailed description.
 This isn't very elegant. This feature is mainly intended for cleaner documentation of fields and function arguments:
 
 ```
+@idl
 @ Color values.
 @ Detailed description. [detail]
 struct Color
@@ -87,6 +93,7 @@ struct Color
 To create a multiline comment, use three consecutive backtick symbols `` ` ``:
 
 ````
+@idl
 @ Color values.
 @ ```
     Detailed description.
@@ -117,6 +124,7 @@ Everything else, including imports, must come after it.
 A constant declaration can look like this:
 
 ```
+@idl
 @ Graphics features.
 enum Feature
     const None @ No special features
@@ -130,6 +138,7 @@ enum Feature
 The constant type must always be `Int32`, even if explicitly specified:
 
 ```
+@idl
 @ Graphics features.
 enum Feature
     const None {Int32} @ No special features
@@ -138,6 +147,7 @@ enum Feature
 By default, each constant's value increments by one from the previous constant's value. The first constant has a value of 0. However, we can explicitly specify constant values:
 
 ```
+@idl
 @ Graphics features.
 enum Feature [flags]
     const None @ No special features
@@ -152,6 +162,7 @@ enum Feature [flags]
 Here None will be 0, and Bindless will be 1. For example, in C this would look like after compilation:
 
 ```
+@c
 /**
  * @brief Graphics features.
  */
@@ -210,6 +221,7 @@ The following special types are available for documentation purposes only:
 Structure declarations are no different from other declarations:
 
 ```
+@idl
 @ Color values.
 @ Detailed description. [detail]
 struct Color
@@ -222,6 +234,7 @@ struct Color
 The default field type is `Int32`. To specify a type, use a type reference in braces `{DeclRef}`:
 
 ```
+@idl
 @ Color values.
 struct Color
     field Red {Float32} @ Red channel clear value.
@@ -233,6 +246,7 @@ struct Color
 You can also set default values for fields. These will be assigned during initialization in languages that support it (e.g., C++):
 
 ```
+@idl
 @ Color values.
 struct Color
     field Red {Float32} @ Red channel clear value.
@@ -244,6 +258,7 @@ struct Color
 @note Currently only integers and constants can be specified as defaults.
 
 ```
+@idl
 @ Brief.
 struct Test
     field Flags {Feature} : Feature.Bindless, Feature.MeshShader @ Sample.
@@ -256,6 +271,7 @@ Note the use of the fully qualified name Feature.Bindless to indicate that Bindl
 The simplest function can be declared as:
 
 ```
+@idl
 @ Sample
 func Func
 ```
@@ -263,6 +279,7 @@ func Func
 Let's add some arguments:
 
 ```
+@idl
 @ Sample
 func Func
     arg Value @ First arg
@@ -273,6 +290,7 @@ By default, argument types are `Int32`. Let's specify return type and argument t
 
 
 ```
+@idl
 @ Sample
 func Func {Float32}
     arg Value {Uint32} @ First arg
@@ -290,6 +308,7 @@ In OOP languages, interfaces become classes, while in C they become opaque types
 Let's add an interface with two creation methods:
 
 ```
+@idl
 @ Brief.
 interface ObjType
     @ Creates new object instance
@@ -305,6 +324,7 @@ Note both methods have `[ctor]` attributes, telling the compiler to make these m
 Let's add three more methods:
 
 ```
+@idl
 @ Brief.
 interface ObjType
     @ Creates new object instance
@@ -333,6 +353,7 @@ The `Destroy` method will be used for object deallocation. The `[destroy]` attri
 `Method` is an instance method. It explicitly takes Obj argument with `[this]` attribute. In OOP languages this becomes implicit `this`/`self`. In non-OOP languages it remains as Obj argument. For example in C:
 
 ```
+@c
 /**
  * @brief     Method of interface.
  * @param[in] obj this object
@@ -348,6 +369,7 @@ sample_obj_type_method(sample_obj_type_t obj,
 Let's add two more methods:
 
 ```
+@idl
 @ Brief.
 interface ObjType
     // ...
@@ -369,6 +391,7 @@ Note `GetValue` is marked `[const]` to indicate it doesn't modify the instance.
 Let's add a property to the interface from [Interfaces](#interfaces) section:
 
 ```
+@idl
 @ Brief.
 interface ObjType
     // ...
@@ -392,6 +415,7 @@ In languages supporting properties (JS, C# etc.), this creates a `Value` propert
 Callbacks are declared similarly to functions:
 
 ````
+@idl
 @ Callback to which the compilation result is passed.
 @ ```
     If you need to save the compilation result to a location other than the file
@@ -409,6 +433,7 @@ We can now use this callback in functions, static methods, and instance methods.
 Let's examine the specification further:
 
 ````
+@idl
 @ Compilation options.
 @ This object specifies various compilation options. [detail]
 interface Options
@@ -437,6 +462,7 @@ As we can see, the Options interface can set a callback and store user data (use
 In C, these functions look like this:
 
 ```
+@c
 /**
  * @brief     Callback to which the compilation result is passed.
  * @details   If you need to save the compilation result to a location other than the file
@@ -485,6 +511,7 @@ idl_options_set_writer(idl_options_t options,
 We can use callbacks as events. For example:
 
 ```
+@idl
 @ Compilation options.
 @ This object specifies various compilation options. [detail]
 interface Options
@@ -496,6 +523,7 @@ This example comes from the compiler's own specification.
 This can be useful in certain languages. Let's look at JavaScript code for an online editor using this event with the callback:
 
 ```javascript
+@javascript
 const options = new module.Options;
 
 const results = {};
@@ -514,6 +542,7 @@ Here we assign a lambda to the writer property of the options instance, which ta
 Large specifications are rarely practical to describe in a single file. For this purpose, imports are available:
 
 ```
+@idl
 @ IDLC
 api Idl [version(0,0,0)]
 
@@ -539,6 +568,7 @@ References to declarations use the `{DeclRef}` syntax. Forward references are al
 Example Specification:
 
 ````
+@idl
 @ Compiler interface.
 @ Interface for interacting with the compiler. [detail]
 interface Compiler
@@ -567,6 +597,7 @@ interface Compiler
 Result of resolving declaration reference for C:
 
 ```
+@c
 /**
  * @brief      Compile IDL.
  * @param[in]  compiler Target compiler.
@@ -612,6 +643,7 @@ Comments start with two `//`, everything that comes after them will be considere
 As you may have noticed, the language provides only declarations - everything else is achieved by attaching attributes to these declarations. Even argument and field types are actually attributes:
 
 ```
+@idl
 @ Color values.
 struct Color
     field Red {Float32} @ Red channel clear value.
@@ -623,6 +655,7 @@ struct Color
 This is syntactic sugar for the `[type]` attribute:
 
 ```
+@idl
 @ Color values.
 struct Color
     field Red [type(Float32)] @ Red channel clear value.
@@ -634,6 +667,7 @@ struct Color
 The same applies to default values:
 
 ```
+@idl
 @ Graphics features.
 enum Feature [flags]
     const None @ No special features
@@ -648,6 +682,7 @@ enum Feature [flags]
 Is actually:
 
 ```
+@idl
 @ Graphics features.
 enum Feature [flags]
     const None [type(Int32),value(0)] @ No special features
@@ -666,6 +701,7 @@ In short, everything except declarations and documentation context is implemente
 Marks an enum as a bitmask type where values can be combined using bitwise operations. Automatically adds bitwise operation support in target languages:
 
 ```
+@idl
 @ Graphics features.
 enum Feature [flags]
     const None @ No special features
@@ -681,6 +717,7 @@ enum Feature [flags]
 Specifies that enum values should be displayed in hexadecimal format in documentation and outputs:
 
 ```
+@idl
 @ Graphics features.
 enum Feature [flags,hex]
     const None @ No special features
@@ -694,6 +731,7 @@ enum Feature [flags,hex]
 C output:
 
 ```
+@c
 /**
  * @brief Graphics features.
  */
@@ -727,6 +765,7 @@ Explicitly sets the numeric value for enum constants or default values for field
 Specifies the underlying type for declarations. Used implicitly in shorthand syntax like `{Float32}`.
 
 ```
+@idl
 @ Color values.
 struct Color
     field Red {Float32} @ Red channel clear value.
@@ -742,6 +781,7 @@ Marks methods or properties as class-level rather than instance-level members.
 Designates a method as a constructor. Implies `[static]`. In OOP languages, enables `new` syntax:
 
 ```
+@idl
 @ Brief.
 interface ObjType
     @ Creates new object instance
@@ -759,6 +799,7 @@ interface ObjType
 In the second case, the new instance is returned as an argument:
 
 ```
+@c
 /**
  * @brief     Creates new object instance
  * @param[in] name Name of object.
@@ -782,6 +823,7 @@ sample_obj_type_create_by_value(sample_utf8_t name,
 In OOP languages ​​these methods will become constructors:
 
 ```javascript
+@javascript
 const inst1 = new sample.ObjType('test');
 const inst2 = new sample.ObjType('test', 3.4);
 ```
@@ -803,6 +845,7 @@ Links a property to its setter method. Format: `[set(SetMethodName)]`.
 Declares index descriptors. Useful for providing resources with an index or other structure. For example, distributing resources linearly from a pool in games:
 
 ```
+@idl
 @ Handle type.
 @ This structure describes the handle template. [detail]
 struct Handle [handle]
@@ -819,6 +862,7 @@ handle DescriptorSet {Handle} @ Handle to resource binding set.
 Overrides the default C identifier naming:
 
 ```
+@idl
 @ Keyboard scancodes.
 enum Scancode
     const Unknown @ Unidentified key.
@@ -831,6 +875,7 @@ enum Scancode
 C output:
 
 ```
+@c
 /**
  * @brief Keyboard scancodes.
  */
@@ -847,6 +892,7 @@ typedef enum
 Indicates array:
 
 ```
+@idl
 @ Compilation options.
 @ This object specifies various compilation options. [detail]
 interface Options
@@ -872,6 +918,7 @@ interface Options
 C output:
 
 ```
+@c
 /**
  * @brief         Returns an array of directories to search for imports.
  * @details       These paths are used to search source code when an import is encountered during compilation.
@@ -902,6 +949,7 @@ sample_options_set_import_dirs(sample_options_t options,
 JavaScript use:
 
 ```
+@javascript
 const options = new idlc.Options;
 options.importDirs = [ "path1", "path2", "path3" ];
 ```
@@ -911,6 +959,7 @@ As you can see in higher-level languages, working with arrays becomes more nativ
 Arrays are also supported in structure fields. But fixed-length arrays are also supported in structure fields:
 
 ```
+@idl
 @ Brief.
 struct Test
     field Values {Float32} [const,array(Size)] @ Values.
@@ -921,6 +970,7 @@ struct Test
 C output:
 
 ```
+@c
 /**
  * @brief Brief.
  */
@@ -935,6 +985,7 @@ typedef struct
 JavaScript use:
 
 ```
+@javascript
 func({ values: [ 3.4, 2.3 ], symbol: 'a' });
 ```
 
@@ -957,6 +1008,7 @@ Hints that a field or argument should be passed by reference rather than by valu
 Marks a method as a specific method for reference counter incrementing.
 
 ```
+@idl
 @ Compilation options.
 @ This object specifies various compilation options. [detail]
 interface Options
@@ -1017,6 +1069,7 @@ Marks nullable parameters. Generates different signatures in strict languages.
 Overrides default name tokenization rules for specific declarations.
 
 ```
+@idl
 @ Keyboard scancodes.
 enum Scancode
     const F1 [tokenizer(0)] @ F1 function key.
@@ -1040,6 +1093,7 @@ Specifies API versioning. Format: [version(major,minor,micro)].
 Short description attribute (default for standalone `@ docs`).
 
 ```
+@idl
 @ Logging severity levels.
 enum LoggerLevel
     ...
@@ -1056,6 +1110,7 @@ enum LoggerLevel
 Detailed description attribute (default for inline `@ docs`).
 
 ```
+@idl
 @ Logging severity levels. [detail]
 enum LoggerLevel
     ...
@@ -1076,6 +1131,7 @@ enum LoggerLevel @ Logging severity levels.
 Credits the original author:
 
 ```
+@idl
 @ IDLC
 @ Author Name <authorname@email.com> [author]
 api Idl
@@ -1086,6 +1142,7 @@ api Idl
 See also:
 
 ```
+@idl
 @ Callback to get sources.
 @ If the callback allocates memory, then you can free it in the callback {ReleaseImportCallback}. [see]
 callback ImportCallback {Source} [ref,optional]
@@ -1105,6 +1162,7 @@ Marks warnings in documentation.
 Copyright notice:
 
 ```
+@idl
 @ IDLC
 @ MIT License [copyright]
 api Idl
@@ -1123,6 +1181,7 @@ Documents the semantics of the return value from a method/function/callback.
 The language provides special facilities for cross-language error handling. This is necessary because C lacks exceptions and typically uses error codes, while JS has exceptions. Therefore, IDL offers a built-in way to describe errors that works natively across all target languages.
 
 ```
+@idl
 @ Result codes.
 @ Enumeration of result codes. [detail]
 enum Result [errorcode]
@@ -1155,7 +1214,7 @@ Note that the `Create` method returns a new instance via an argument. This is qu
 In C, this would look like this:
 
 ```
-
+@c
 /**
  * @brief      Creates new options instance.
  * @details    Creates an object for setting compiler options.
@@ -1170,6 +1229,7 @@ idl_options_create(idl_options_t* options);
 Which can be used as:
 
 ```
+@c
 idl_options_t options;
 idl_result_t code = idl_options_create(&options);
 if (code != IDL_RESULT_SUCCESS) {
@@ -1182,6 +1242,7 @@ idl_options_destroy(options);
 In languages ​​with exceptions, when calling functions/methods if an error code is returned (in any way), in case of an error an exception will be thrown with the text of the error constant name. If there is a function marked `[errorcode]`:
 
 ```
+@idl
 func ResultToString {Str} [errorcode]
 ```
 
@@ -1190,6 +1251,7 @@ Then it will be used to convert the error code into a text message for the excep
 JavaScript:
 
 ```javascript
+@javascript
 const options = new module.Options;
 ```
 

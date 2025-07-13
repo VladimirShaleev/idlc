@@ -11,6 +11,7 @@ Here we'll create a simple C library using **IDLC**:
 You can clone and build the ready-made example from [this branch](https://github.com/VladimirShaleev/idlc/tree/sample).
 
 ```bash
+@bash
 git clone -b sample https://github.com/VladimirShaleev/idlc.git idlc-sample
 ```
 
@@ -38,6 +39,7 @@ sample/
 Add the following content to your `api.idl` file:
 
 ```
+@idl
 @ API Sample
 @ Author <author@email.org> [author]
 @ MIT License [copyright]
@@ -108,6 +110,7 @@ While the complete IDL syntax isn't crucial at this stage, here are the key poin
 **IDLC** is registered in the **vcpkg** user registry. You need to add this registry to your `vcpkg-configuration.json` file:
 
 ```json
+@json
 {
   "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg-configuration.schema.json",
   "default-registry": {
@@ -132,6 +135,7 @@ While the complete IDL syntax isn't crucial at this stage, here are the key poin
 Then add the dependency in your `vcpkg.json` file:
 
 ```json
+@json
 {
   "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
   "name": "sample",
@@ -161,6 +165,7 @@ sample/
 ### Adding CMake Configuration {#add-cmake-config}
 
 ```cmake
+@cmake
 find_package(idlc CONFIG REQUIRED)
 idlc_compile(NAME api WARN_AS_ERRORS
     SOURCE "${PROJECT_SOURCE_DIR}/specs/api.idl"
@@ -175,6 +180,7 @@ add_library(sample src/sample.c ${IDLC_api_OUTPUTS})
 <summary>A complete `CMakeLists.txt` file might look like this</summary>
 
 ```cmake
+@cmake
 cmake_minimum_required(VERSION 3.16)
 
 option(SAMPLE_BUILD_TESTS "Build tests" ON)
@@ -233,6 +239,7 @@ The public headers are now automatically updated when `.idl` specifications chan
 <summary>Here's an example implementation (`sample.c`)</summary>
 
 ```c
+@c
 #include "sample/sample.h"
 
 #include <stdlib.h>
@@ -295,6 +302,7 @@ sample_float32_t sample_vehicle_dot_velocity(sample_vehicle_t vehicle, const sam
 We'll add **doctest** to test the library:
 
 ```cpp
+@cpp
 #include <sample/sample.h>
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
@@ -359,6 +367,7 @@ sample/
 Contents of `./CMakeLists.txt` (including **install** target):
 
 ```cmake
+@cmake
 cmake_minimum_required(VERSION 3.16)
 
 include(cmake/vcpkg.cmake)
@@ -443,6 +452,7 @@ endif()
 Contents of `./cmake/vcpkg.cmake`:
 
 ```cmake
+@cmake
 if(DEFINED Z_VCPKG_ROOT_DIR)
     return()
 endif()
@@ -471,6 +481,7 @@ Contents of `./cmake/sample-config.cmake.in`:
 
 
 ```cmake
+@cmake
 @PACKAGE_INIT@
 include("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@-targets.cmake")
 ```
@@ -478,6 +489,7 @@ include("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@-targets.cmake")
 Contents of `./tests/CMakeLists.txt`:
 
 ```cmake
+@cmake
 enable_testing()
 
 find_package(doctest CONFIG REQUIRED)
@@ -506,6 +518,7 @@ doctest_discover_tests(sample-tests)
 Contents of `./vcpkg.json`:
 
 ```json
+@json
 {
   "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
   "name": "sample",
@@ -527,6 +540,7 @@ Contents of `./vcpkg.json`:
 You can now build the project and run the tests:
 
 ```bash
+@bash
 # Configure the project
 cmake -B build -S .
 
@@ -551,6 +565,7 @@ If you're not working in the **Dev Container**, you'll need to:
 While you could build the JS library directly using **emcc**, we'll instead add **Emscripten** configuration to `CMakeLists.txt`:
 
 ```cmake
+@cmake
 if(EMSCRIPTEN)
     idlc_compile(NAME api_js WARN_AS_ERRORS
         SOURCE "${PROJECT_SOURCE_DIR}/specs/api.idl"
@@ -590,6 +605,7 @@ If you also want to publish the resulting module as an npm package, you'll need 
 Its contents might look like this:
 
 ```json
+@json
 {
   "name": "sample",
   "version": "1.0.0",
@@ -618,6 +634,7 @@ Its contents might look like this:
 Add the following line to the build script:
 
 ```bash
+@bash
 cmake -Bwasmbuild -S. -DVCPKG_TARGET_TRIPLET=wasm32-emscripten -DCMAKE_TOOLCHAIN_FILE=${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=${EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake -DCMAKE_CROSSCOMPILING_EMULATOR=${EMSDK_NODE} -DSAMPLE_BUILD_TESTS=OFF -DSAMPLE_ENABLE_INSTALL=OFF -G Ninja -DCMAKE_BUILD_TYPE=MinSizeRel && cmake --build wasmbuild
 ```
 
@@ -626,6 +643,7 @@ This script configures CMake for the **WASM** target platform and then builds th
 Now you can run:
 
 ```bash
+@bash
 npm run build
 ```
 
@@ -636,6 +654,7 @@ That's essentially all you need to create the JS module.
 We won't add dependencies for unit tests, but instead will simply include a Node.js script for working with our package at `./tests/node-test-esm.js`:
 
 ```javascript
+@javascript
 import sampleInit from 'sample';
 
 const sample = await sampleInit();
@@ -655,12 +674,14 @@ vehicle.delete();
 In the `package.json` file, you can add the following script:
 
 ```json
-"tests": "node tests/node-test-esm.js",
+@json
+"tests": "node tests/node-test-esm.js"
 ```
 
 To run the test, execute:
 
 ```bash
+@bash
 npm run tests
 ```
 
@@ -680,6 +701,7 @@ In this guide, we've covered:
 The complete example library can be cloned as follows. You'll also find a README with detailed build instructions there.
 
 ```bash
+@bash
 git clone -b sample https://github.com/VladimirShaleev/idlc.git idlc-sample
 ```
 

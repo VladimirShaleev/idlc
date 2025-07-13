@@ -73,7 +73,7 @@ Below is an online demo of the compiler:
         options.delete();
         
         if (Object.keys(results).length !== 0) {
-            showResults(results);
+            showResults(results, generator);
         }
     }
 
@@ -101,7 +101,7 @@ Below is an online demo of the compiler:
         status.style.display = 'none';
     }
 
-    function showResults(files) {
+    function showResults(files, generator) {
         tabContainer.innerHTML = '';
 
         const tabs = document.createElement('div');
@@ -129,11 +129,27 @@ Below is an online demo of the compiler:
             tab.addEventListener('click', () => switchTab(filename, names));
             tabs.appendChild(tab);
 
+            const code = document.createElement('code');
+            if (generator == module.Generator.C) {
+                code.className = 'language-c';
+            } else if (module.Generator.JAVA_SCRIPT) {
+                code.className = 'language-cpp';
+            } else {
+                code.className = 'language-plaintext';
+            }
+            code.style.whiteSpace = 'pre';
+            code.innerHTML = escapeHtml(content);
+
+            const pre = document.createElement('pre');
+            pre.appendChild(code);
+
             const div = document.createElement('div');
             div.className = 'fragment';
-            div.innerHTML = `<pre>${escapeHtml(content)}<\/pre>`;
             div.style.maxHeight = '300px';
             div.style.overflow = 'auto';
+            div.appendChild(pre);
+
+            hljs.highlightElement(pre);
 
             const li = document.createElement('li');
             if (first) {
@@ -278,6 +294,7 @@ For example, differences in working with arrays:
 This language overcomes this by generating APIs and automatic wrappers for C, so that the API can be used natively in any supported language.
 
 ```
+@idl
 @ API Sample
 api Sample
 
@@ -290,6 +307,7 @@ func ProcessData
 Usage in C:
 
 ```c
+@c
 float items[] = { 3.2f, 4.5f, 1.2f };
 sample_process_data(items, 3);
 ```
@@ -297,6 +315,7 @@ sample_process_data(items, 3);
 Usage in JavaScript:
 
 ```javascript
+@javascript
 // Uses native array types with built-in bounds
 // function processData(items: number[]);
 

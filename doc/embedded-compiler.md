@@ -17,12 +17,14 @@ This section covers how to integrate the built-in compiler and use the API.
 - Create an empty project (e.g., in a folder like `test-js`). Inside it, generate a package.json by running `npm init`.
 - Then, add the **idlc** npm package as a dependency:
   ```
+  @bash
   npm install @vladimirshaleev/idlc
   ```
   <details>
   <summary>After this, your `package.json` might look like this:</summary>
   
-  ```javascript
+  ```json
+  @json
   {
     "name": "test-js",
     "main": "index.js",
@@ -40,6 +42,7 @@ This section covers how to integrate the built-in compiler and use the API.
 Now, in `index.js`, you can add the following code:
 
 ```javascript
+@javascript
 import idlcInit from '@vladimirshaleev/idlc';
 
 const idlc = await idlcInit();
@@ -96,6 +99,7 @@ As we can see, the JavaScript API created by IDLC can work with lambda expressio
 The port is located in a custom registry. To add the custom registry, include the following registry with the **idlc** port in your `vcpkg-configuration.json` (in the same directory as your `vcpkg.json`):
 
 ```json
+@json
 {
   "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg-configuration.schema.json",
   "default-registry": {
@@ -120,6 +124,7 @@ The port is located in a custom registry. To add the custom registry, include th
 After that, you can add the dependency to your `vcpkg.json`:
 
 ```json
+@json
 {
   "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
   "name": "test-c",
@@ -134,6 +139,7 @@ After that, you can add the dependency to your `vcpkg.json`:
 Add the following configuration to your `CMakeLists.txt`:
 
 ```cmake
+@cmake
 cmake_minimum_required(VERSION 3.16)
 
 project(test-c CXX)
@@ -150,6 +156,7 @@ target_compile_features(test-c PRIVATE cxx_std_17)
 Now you can add the following code to `main.cpp`, which is functionally similar to the code above for JavaScript:
 
 ```cpp
+@cpp
 #include <idlc/idl.h>
 
 #include <iostream>

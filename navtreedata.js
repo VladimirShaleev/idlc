@@ -103,7 +103,7 @@ var NAVTREE =
       ] ]
     ] ],
     [ "Embedded Compiler", "embedded-compiler.html", [
-      [ "Using the Embedded Сompiler", "embedded-compiler.html#embedded-compiler", [
+      [ "Using the Embedded Сompiler", "embedded-compiler.html#using-embedded-compiler", [
         [ "JavaScript", "embedded-compiler.html#javascript-guide", [
           [ "Install the NPM Package", "embedded-compiler.html#install-npm-package", null ],
           [ "Using the Embedded Compiler", "embedded-compiler.html#using-compiler-in-js", null ]

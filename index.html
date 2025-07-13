@@ -17,12 +17,134 @@
 <script type="text/javascript" src="doxygen-awesome-interactive-toc.js"></script>
 <script type="text/javascript" src="doxygen-awesome-tabs.js"></script>
 <script type="text/javascript" src="toggle-alternative-theme.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/bash.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/c.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/cmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/cpp.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/json.min.js"></script>
 <script type="text/javascript">
     DoxygenAwesomeFragmentCopyButton.init()
     DoxygenAwesomeDarkModeToggle.init()
     DoxygenAwesomeParagraphLink.init()
     DoxygenAwesomeInteractiveToc.init()
     DoxygenAwesomeTabs.init()
+    document.addEventListener('DOMContentLoaded', () => {
+        hljs.registerLanguage('cmake-ext', (hljs) => {
+            const cmakeLanguage = hljs.getLanguage('cmake');
+            return {
+                name: "CMakeExt",
+                aliases: cmakeLanguage.aliases,
+                case_insensitive: cmakeLanguage.case_insensitive,
+                contains: cmakeLanguage.contains,
+                keywords: {
+                    keyword: cmakeLanguage.keywords.keyword + ' ' + 'idlc_compile'
+                }
+            };
+        });
+        hljs.registerLanguage('idl', (hljs) => {
+            const KEYWORDS = {
+                keyword: 'api enum const struct field interface method arg prop event handle func callback import'
+            }
+            const DOCUMENTATION = {
+                className: 'comment',
+                begin: '@\\s*(\\w+)?',
+                end: '(?=\\n|$)',
+                contains: [
+                    {
+                        className: 'attribute',
+                        begin: '\\{',
+                        end: '\\}'
+                    },
+                    {
+                        className: 'symbol',
+                        begin: '\\[',
+                        end: '\\]'
+                    }
+                ]
+            };
+            const MDOCUMENTATION = {
+                className: 'comment',
+                begin: '@\\s*```',
+                end: '```',
+                contains: [
+                    {
+                        className: 'attribute',
+                        begin: '\\{',
+                        end: '\\}'
+                    },
+                    {
+                        className: 'symbol',
+                        begin: '\\[',
+                        end: '\\]'
+                    }
+                ]
+            };
+            const LITERAL = {
+                className: 'type',
+                begin: ':\\s*\\d+',
+                end: '(?=\\n|$|@|\\[)'
+            };
+            const LITERAL_REF = {
+                className: 'attribute',
+                begin: ':\\s*\\w+',
+                end: '(?=\\n|$|@|\\[)'
+            };
+            const TYPE = {
+                className: 'attribute',
+                begin: '\\{',
+                end: '\\}'
+            };
+            const ATTRIBUTE = {
+                className: 'symbol',
+                begin: '\\[',
+                end: '\\]',
+                contains: [
+                    {
+                        className: 'type',
+                        begin: '\\(\\s*\\d+',
+                        end: '\\)'
+                    },
+                    {
+                        className: 'attribute',
+                        begin: '\\(\\s*\\w+',
+                        end: '\\)'
+                    }
+                ]
+            };
+            return {
+                name: "IDL",
+                case_insensitive: false,
+                keywords: KEYWORDS,
+                contains: [
+                    DOCUMENTATION,
+                    MDOCUMENTATION,
+                    TYPE,
+                    ATTRIBUTE,
+                    LITERAL,
+                    LITERAL_REF
+                ]
+            };
+        });
+    });
+    $(function() {
+        $(document).ready(function() {
+            if(navigator.clipboard) {
+                const fragments = document.getElementsByClassName("hljs")
+                for(const fragment of fragments) {
+                    const fragmentWrapper = document.createElement("div")
+                    fragmentWrapper.className = "doxygen-awesome-fragment-wrapper"
+                    const fragmentCopyButton = document.createElement("doxygen-awesome-fragment-copy-button")
+                    fragmentCopyButton.innerHTML = DoxygenAwesomeFragmentCopyButton.copyIcon
+                    fragmentCopyButton.title = DoxygenAwesomeFragmentCopyButton.title
+                    fragment.parentNode.replaceChild(fragmentWrapper, fragment)
+                    fragmentWrapper.appendChild(fragment)
+                    fragmentWrapper.appendChild(fragmentCopyButton)
+                }
+            }
+        })
+    })
 </script>
 <link href="navtree.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="navtreedata.js"></script>
@@ -193,7 +315,7 @@ $(function(){initNavTree('index.html',''); initResizable(true); });
         options.delete();
         
         if (Object.keys(results).length !== 0) {
-            showResults(results);
+            showResults(results, generator);
         }
     }
 
@@ -221,7 +343,7 @@ $(function(){initNavTree('index.html',''); initResizable(true); });
         status.style.display = 'none';
     }
 
-    function showResults(files) {
+    function showResults(files, generator) {
         tabContainer.innerHTML = '';
 
         const tabs = document.createElement('div');
@@ -249,11 +371,27 @@ $(function(){initNavTree('index.html',''); initResizable(true); });
             tab.addEventListener('click', () => switchTab(filename, names));
             tabs.appendChild(tab);
 
+            const code = document.createElement('code');
+            if (generator == module.Generator.C) {
+                code.className = 'language-c';
+            } else if (module.Generator.JAVA_SCRIPT) {
+                code.className = 'language-cpp';
+            } else {
+                code.className = 'language-plaintext';
+            }
+            code.style.whiteSpace = 'pre';
+            code.innerHTML = escapeHtml(content);
+
+            const pre = document.createElement('pre');
+            pre.appendChild(code);
+
             const div = document.createElement('div');
             div.className = 'fragment';
-            div.innerHTML = `<pre>${escapeHtml(content)}<\/pre>`;
             div.style.maxHeight = '300px';
             div.style.overflow = 'auto';
+            div.appendChild(pre);
+
+            hljs.highlightElement(pre);
 
             const li = document.createElement('li');
             if (first) {
@@ -389,7 +527,8 @@ interface Logger
 <li>In Modern Languages: native array types handle bounds automatically</li>
 </ul>
 <p>This language overcomes this by generating APIs and automatic wrappers for C, so that the API can be used natively in any supported language.</p>
-<div class="fragment"><div class="line">@ API Sample</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ API Sample</div>
 <div class="line">api Sample</div>
 <div class="line"> </div>
 <div class="line">@ Sample func</div>
@@ -397,10 +536,12 @@ interface Logger
 <div class="line">    arg Items {Float32} [array(Count)] @ Item values</div>
 <div class="line">    arg Count {Uint32} @ Number of items</div>
 </div><!-- fragment --><p>Usage in C:</p>
-<div class="fragment"><div class="line"><span class="keywordtype">float</span> items[] = { 3.2f, 4.5f, 1.2f };</div>
+<div class="fragment"><div class="line">@c</div>
+<div class="line"><span class="keywordtype">float</span> items[] = { 3.2f, 4.5f, 1.2f };</div>
 <div class="line">sample_process_data(items, 3);</div>
 </div><!-- fragment --><p>Usage in JavaScript:</p>
-<div class="fragment"><div class="line">// Uses native array types with built-in bounds</div>
+<div class="fragment"><div class="line">@javascript</div>
+<div class="line">// Uses native array types with built-in bounds</div>
 <div class="line">// function processData(items: number[]);</div>
 <div class="line"> </div>
 <div class="line">const items = [ 3.2, 4.5, 1.2 ];</div>
@@ -416,6 +557,52 @@ interface Logger
 <a href="doxygen_crawl.html"></a>
 </div><!-- contents -->
 </div><!-- doc-content -->
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.fragment').forEach(fragment => {
+      const pre = document.createElement('pre');
+      const code = document.createElement('code');
+      code.className = 'language-plaintext';
+      code.style.whiteSpace = 'pre';
+      let skip = false;
+      let first = true;
+      let codeContent = '';
+      fragment.querySelectorAll('.line').forEach(line => {
+        if (first) {
+          const lang = line.textContent;
+          if (lang == '@cmake') {
+            code.className = `language-cmake-ext`;
+          } else if (lang == '@idl') {
+            code.className = `language-idl`;
+          } else if (lang == '@json') {
+            code.className = `language-json`;
+          } else if (lang == '@c') {
+            code.className = `language-c`;
+          } else if (lang == '@cpp') {
+            code.className = `language-cpp`;
+          } else if (lang == '@javascript') {
+            code.className = `language-javascript`;
+          } else if (lang == '@bash') {
+            code.className = `language-bash`;
+          } else {
+            skip = true;
+          }
+        } else {
+          codeContent += line.textContent + '\n';
+        }
+        first = false;
+      });
+      if (!skip) {
+        code.textContent = codeContent.trimEnd();
+        pre.appendChild(code);
+        fragment.replaceWith(pre);
+      }
+    });
+    if (typeof hljs !== 'undefined') {
+      hljs.highlightAll();
+    }
+  });
+</script>
 <!-- HTML footer for doxygen 1.12.0-->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->

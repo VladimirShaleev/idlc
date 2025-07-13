@@ -17,12 +17,134 @@
 <script type="text/javascript" src="doxygen-awesome-interactive-toc.js"></script>
 <script type="text/javascript" src="doxygen-awesome-tabs.js"></script>
 <script type="text/javascript" src="toggle-alternative-theme.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/bash.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/c.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/cmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/cpp.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/json.min.js"></script>
 <script type="text/javascript">
     DoxygenAwesomeFragmentCopyButton.init()
     DoxygenAwesomeDarkModeToggle.init()
     DoxygenAwesomeParagraphLink.init()
     DoxygenAwesomeInteractiveToc.init()
     DoxygenAwesomeTabs.init()
+    document.addEventListener('DOMContentLoaded', () => {
+        hljs.registerLanguage('cmake-ext', (hljs) => {
+            const cmakeLanguage = hljs.getLanguage('cmake');
+            return {
+                name: "CMakeExt",
+                aliases: cmakeLanguage.aliases,
+                case_insensitive: cmakeLanguage.case_insensitive,
+                contains: cmakeLanguage.contains,
+                keywords: {
+                    keyword: cmakeLanguage.keywords.keyword + ' ' + 'idlc_compile'
+                }
+            };
+        });
+        hljs.registerLanguage('idl', (hljs) => {
+            const KEYWORDS = {
+                keyword: 'api enum const struct field interface method arg prop event handle func callback import'
+            }
+            const DOCUMENTATION = {
+                className: 'comment',
+                begin: '@\\s*(\\w+)?',
+                end: '(?=\\n|$)',
+                contains: [
+                    {
+                        className: 'attribute',
+                        begin: '\\{',
+                        end: '\\}'
+                    },
+                    {
+                        className: 'symbol',
+                        begin: '\\[',
+                        end: '\\]'
+                    }
+                ]
+            };
+            const MDOCUMENTATION = {
+                className: 'comment',
+                begin: '@\\s*```',
+                end: '```',
+                contains: [
+                    {
+                        className: 'attribute',
+                        begin: '\\{',
+                        end: '\\}'
+                    },
+                    {
+                        className: 'symbol',
+                        begin: '\\[',
+                        end: '\\]'
+                    }
+                ]
+            };
+            const LITERAL = {
+                className: 'type',
+                begin: ':\\s*\\d+',
+                end: '(?=\\n|$|@|\\[)'
+            };
+            const LITERAL_REF = {
+                className: 'attribute',
+                begin: ':\\s*\\w+',
+                end: '(?=\\n|$|@|\\[)'
+            };
+            const TYPE = {
+                className: 'attribute',
+                begin: '\\{',
+                end: '\\}'
+            };
+            const ATTRIBUTE = {
+                className: 'symbol',
+                begin: '\\[',
+                end: '\\]',
+                contains: [
+                    {
+                        className: 'type',
+                        begin: '\\(\\s*\\d+',
+                        end: '\\)'
+                    },
+                    {
+                        className: 'attribute',
+                        begin: '\\(\\s*\\w+',
+                        end: '\\)'
+                    }
+                ]
+            };
+            return {
+                name: "IDL",
+                case_insensitive: false,
+                keywords: KEYWORDS,
+                contains: [
+                    DOCUMENTATION,
+                    MDOCUMENTATION,
+                    TYPE,
+                    ATTRIBUTE,
+                    LITERAL,
+                    LITERAL_REF
+                ]
+            };
+        });
+    });
+    $(function() {
+        $(document).ready(function() {
+            if(navigator.clipboard) {
+                const fragments = document.getElementsByClassName("hljs")
+                for(const fragment of fragments) {
+                    const fragmentWrapper = document.createElement("div")
+                    fragmentWrapper.className = "doxygen-awesome-fragment-wrapper"
+                    const fragmentCopyButton = document.createElement("doxygen-awesome-fragment-copy-button")
+                    fragmentCopyButton.innerHTML = DoxygenAwesomeFragmentCopyButton.copyIcon
+                    fragmentCopyButton.title = DoxygenAwesomeFragmentCopyButton.title
+                    fragment.parentNode.replaceChild(fragmentWrapper, fragment)
+                    fragmentWrapper.appendChild(fragment)
+                    fragmentWrapper.appendChild(fragmentCopyButton)
+                }
+            }
+        })
+    })
 </script>
 <link href="navtree.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="navtreedata.js"></script>
@@ -177,7 +299,8 @@ Creating a Simple Library</h1>
 <li>then we'll package this library as an <b>npm</b> package for native use in JavaScript applications.</li>
 </ul>
 <p>You can clone and build the ready-made example from <a href="https://github.com/VladimirShaleev/idlc/tree/sample">this branch</a>.</p>
-<div class="fragment"><div class="line">git clone -b sample https://github.com/VladimirShaleev/idlc.git idlc-sample</div>
+<div class="fragment"><div class="line">@bash</div>
+<div class="line">git clone -b sample https://github.com/VladimirShaleev/idlc.git idlc-sample</div>
 </div><!-- fragment --><p>and also follow its <code>README</code> on building and testing the library. Here we will also take a detailed step-by-step look at how to create this library.</p>
 <h2><a class="anchor" id="add-c-lib"></a>
 Adding Specifications for a C Library</h2>
@@ -194,7 +317,8 @@ IDL Specifications</h3>
 <div class="line">|   `-- api.idl</div>
 <div class="line">`-- CMakeLists.txt</div>
 </div><!-- fragment --><p>Add the following content to your <code>api.idl</code> file:</p>
-<div class="fragment"><div class="line">@ API Sample</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ API Sample</div>
 <div class="line">@ Author &lt;author@email.org&gt; [author]</div>
 <div class="line">@ MIT License [copyright]</div>
 <div class="line">api Sample</div>
@@ -265,7 +389,8 @@ IDL Specifications</h3>
 Adding IDLC Dependency</h3>
 <dl class="section note"><dt>Note</dt><dd>This example will use <b>vcpkg</b> for dependency management. Install <b>vcpkg</b> by following the <a href="https://learn.microsoft.com/vcpkg/get_started/get-started">official installation guide</a>.</dd></dl>
 <p><b>IDLC</b> is registered in the <b>vcpkg</b> user registry. You need to add this registry to your <code>vcpkg-configuration.json</code> file:</p>
-<div class="fragment"><div class="line">{</div>
+<div class="fragment"><div class="line">@json</div>
+<div class="line">{</div>
 <div class="line">  &quot;$schema&quot;: &quot;https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg-configuration.schema.json&quot;,</div>
 <div class="line">  &quot;default-registry&quot;: {</div>
 <div class="line">    &quot;kind&quot;: &quot;git&quot;,</div>
@@ -285,7 +410,8 @@ Adding IDLC Dependency</h3>
 <div class="line">  ]</div>
 <div class="line">}</div>
 </div><!-- fragment --><p>Then add the dependency in your <code>vcpkg.json</code> file:</p>
-<div class="fragment"><div class="line">{</div>
+<div class="fragment"><div class="line">@json</div>
+<div class="line">{</div>
 <div class="line">  &quot;$schema&quot;: &quot;https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json&quot;,</div>
 <div class="line">  &quot;name&quot;: &quot;sample&quot;,</div>
 <div class="line">  &quot;dependencies&quot;: [</div>
@@ -306,7 +432,8 @@ Adding IDLC Dependency</h3>
 <div class="line">`-- vcpkg.json</div>
 </div><!-- fragment --><h3><a class="anchor" id="add-cmake-config"></a>
 Adding CMake Configuration</h3>
-<div class="fragment"><div class="line">find_package(idlc CONFIG REQUIRED)</div>
+<div class="fragment"><div class="line">@cmake</div>
+<div class="line">find_package(idlc CONFIG REQUIRED)</div>
 <div class="line">idlc_compile(NAME api WARN_AS_ERRORS</div>
 <div class="line">    SOURCE &quot;${PROJECT_SOURCE_DIR}/specs/api.idl&quot;</div>
 <div class="line">    OUTPUT &quot;${PROJECT_SOURCE_DIR}/include/sample/sample.h&quot;</div>
@@ -318,7 +445,8 @@ Adding CMake Configuration</h3>
 <summary >
 A complete <code>CMakeLists.txt</code> file might look like this</summary>
 <p></p>
-<div class="fragment"><div class="line">cmake_minimum_required(VERSION 3.16)</div>
+<div class="fragment"><div class="line">@cmake</div>
+<div class="line">cmake_minimum_required(VERSION 3.16)</div>
 <div class="line"> </div>
 <div class="line">option(SAMPLE_BUILD_TESTS &quot;Build tests&quot; ON)</div>
 <div class="line">if(SAMPLE_BUILD_TESTS)</div>
@@ -372,7 +500,8 @@ Implementing C Declarations</h3>
 <summary >
 Here's an example implementation (<code>sample.c</code>)</summary>
 <p></p>
-<div class="fragment"><div class="line"><span class="preprocessor">#include &quot;sample/sample.h&quot;</span></div>
+<div class="fragment"><div class="line">@c</div>
+<div class="line"><span class="preprocessor">#include &quot;sample/sample.h&quot;</span></div>
 <div class="line"> </div>
 <div class="line"><span class="preprocessor">#include &lt;stdlib.h&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;string.h&gt;</span></div>
@@ -430,7 +559,8 @@ Here's an example implementation (<code>sample.c</code>)</summary>
 <h3><a class="anchor" id="doctest-lib"></a>
 Testing the Library</h3>
 <p>We'll add <b>doctest</b> to test the library:</p>
-<div class="fragment"><div class="line"><span class="preprocessor">#include &lt;sample/sample.h&gt;</span></div>
+<div class="fragment"><div class="line">@cpp</div>
+<div class="line"><span class="preprocessor">#include &lt;sample/sample.h&gt;</span></div>
 <div class="line"> </div>
 <div class="line"><span class="preprocessor">#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN</span></div>
 <div class="line"><span class="preprocessor">#include &lt;doctest/doctest.h&gt;</span></div>
@@ -487,7 +617,8 @@ View all changes</summary>
 <div class="line">|-- vcpkg-configuration.json</div>
 <div class="line">`-- vcpkg.json</div>
 </div><!-- fragment --><p>Contents of <code>./CMakeLists.txt</code> (including <b>install</b> target):</p>
-<div class="fragment"><div class="line">cmake_minimum_required(VERSION 3.16)</div>
+<div class="fragment"><div class="line">@cmake</div>
+<div class="line">cmake_minimum_required(VERSION 3.16)</div>
 <div class="line"> </div>
 <div class="line">include(cmake/vcpkg.cmake)</div>
 <div class="line"> </div>
@@ -567,7 +698,8 @@ View all changes</summary>
 <div class="line">    install(DIRECTORY include/ DESTINATION include)</div>
 <div class="line">endif()</div>
 </div><!-- fragment --><p>Contents of <code>./cmake/vcpkg.cmake</code>:</p>
-<div class="fragment"><div class="line">if(DEFINED Z_VCPKG_ROOT_DIR)</div>
+<div class="fragment"><div class="line">@cmake</div>
+<div class="line">if(DEFINED Z_VCPKG_ROOT_DIR)</div>
 <div class="line">    return()</div>
 <div class="line">endif()</div>
 <div class="line"> </div>
@@ -590,10 +722,12 @@ View all changes</summary>
 <div class="line">    set(CMAKE_TOOLCHAIN_FILE &quot;${vcpkg_SOURCE_DIR}/scripts/buildsystems/vcpkg.cmake&quot; CACHE STRING &quot;Vcpkg toolchain file&quot;)</div>
 <div class="line">endif()</div>
 </div><!-- fragment --><p>Contents of <code>./cmake/sample-config.cmake.in</code>:</p>
-<div class="fragment"><div class="line">@PACKAGE_INIT@</div>
+<div class="fragment"><div class="line">@cmake</div>
+<div class="line">@PACKAGE_INIT@</div>
 <div class="line">include(&quot;${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@-targets.cmake&quot;)</div>
 </div><!-- fragment --><p>Contents of <code>./tests/CMakeLists.txt</code>:</p>
-<div class="fragment"><div class="line">enable_testing()</div>
+<div class="fragment"><div class="line">@cmake</div>
+<div class="line">enable_testing()</div>
 <div class="line"> </div>
 <div class="line">find_package(doctest CONFIG REQUIRED)</div>
 <div class="line"> </div>
@@ -617,7 +751,8 @@ View all changes</summary>
 <div class="line">include(doctest)</div>
 <div class="line">doctest_discover_tests(sample-tests)</div>
 </div><!-- fragment --><p>Contents of <code>./vcpkg.json</code>:</p>
-<div class="fragment"><div class="line">{</div>
+<div class="fragment"><div class="line">@json</div>
+<div class="line">{</div>
 <div class="line">  &quot;$schema&quot;: &quot;https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json&quot;,</div>
 <div class="line">  &quot;name&quot;: &quot;sample&quot;,</div>
 <div class="line">  &quot;dependencies&quot;: [</div>
@@ -634,7 +769,8 @@ View all changes</summary>
 <div class="line">}</div>
 </div><!-- fragment --> </details>
 <p>You can now build the project and run the tests:</p>
-<div class="fragment"><div class="line"># Configure the project</div>
+<div class="fragment"><div class="line">@bash</div>
+<div class="line"># Configure the project</div>
 <div class="line">cmake -B build -S .</div>
 <div class="line"> </div>
 <div class="line"># Build the project</div>
@@ -650,18 +786,19 @@ Building a Native JavaScript Library</h2>
 <h3><a class="anchor" id="add-wasm"></a>
 Adding WASM Support</h3>
 <p>If you're not working in the <b>Dev Container</b>, you'll need to:</p><ul>
-<li>Install <b>Emscripten</b> following the <a href="(https://emscripten.org/docs/getting_started/downloads.html)">official guide</a> for JS module compilation</li>
+<li>Install <b>Emscripten</b> following the <a href="https://emscripten.org/docs/getting_started/downloads.html">official guide</a> for JS module compilation</li>
 <li>Install Node.js for <b>npm</b> package building</li>
 </ul>
 <p>While you could build the JS library directly using <b>emcc</b>, we'll instead add <b>Emscripten</b> configuration to <code>CMakeLists.txt</code>:</p>
-<div class="fragment"><div class="line">if(EMSCRIPTEN)</div>
+<div class="fragment"><div class="line">@cmake</div>
+<div class="line">if(EMSCRIPTEN)</div>
 <div class="line">    idlc_compile(NAME api_js WARN_AS_ERRORS</div>
 <div class="line">        SOURCE &quot;${PROJECT_SOURCE_DIR}/specs/api.idl&quot;</div>
 <div class="line">        OUTPUT &quot;${PROJECT_BINARY_DIR}/sample.js.cpp&quot;</div>
 <div class="line">        VERSION ${PROJECT_VERSION}</div>
 <div class="line">        GENERATOR JS)</div>
 <div class="line"> </div>
-<div class="line">    set(SAMPLE_JS_LINK_OPTIONS -sWASM=1 -sMODULARIZE=1 -sALLOW_MEMORY_GROWTH=1 -sEXPORT_NAME=sample --emit-tsd sample.d.ts)</div>
+<div class="line">    set(SAMPLE_JS_LINK_OPTIONS -sWASM=1 -sMODULARIZE=1 -sALLOW_MEMORY_GROWTH=1 -sEXPORT_NAME=sample)</div>
 <div class="line">    if(CMAKE_BUILD_TYPE STREQUAL &quot;Debug&quot;)</div>
 <div class="line">        list(APPEND SAMPLE_JS_LINK_OPTIONS &quot;-sSINGLE_FILE=0&quot;)</div>
 <div class="line">    else()</div>
@@ -672,14 +809,14 @@ Adding WASM Support</h3>
 <div class="line">    target_link_libraries(samplejs PRIVATE embind sample::sample)</div>
 <div class="line">    target_include_directories(samplejs PRIVATE &quot;${PROJECT_SOURCE_DIR}/include/sample/&quot;)</div>
 <div class="line">    target_compile_features(samplejs PRIVATE cxx_std_20)</div>
-<div class="line">    target_link_options(samplejs PRIVATE ${SAMPLE_JS_LINK_OPTIONS})</div>
+<div class="line">    target_link_options(samplejs PRIVATE ${SAMPLE_JS_LINK_OPTIONS} --emit-tsd sample.d.ts)</div>
 <div class="line">    set_target_properties(samplejs PROPERTIES OUTPUT_NAME &quot;sample&quot; SUFFIX &quot;.js&quot; RUNTIME_OUTPUT_DIRECTORY &quot;${PROJECT_SOURCE_DIR}/dist/&quot;)</div>
 <div class="line"> </div>
 <div class="line">    add_executable(samplejsesm ${IDLC_api_js_OUTPUTS})</div>
 <div class="line">    target_link_libraries(samplejsesm PRIVATE embind sample::sample)</div>
 <div class="line">    target_include_directories(samplejsesm PRIVATE &quot;${PROJECT_SOURCE_DIR}/include/sample/&quot;)</div>
 <div class="line">    target_compile_features(samplejsesm PRIVATE cxx_std_20)</div>
-<div class="line">    target_link_options(samplejsesm PRIVATE ${SAMPLE_JS_LINK_OPTIONS} -sEXPORT_ES6=1)</div>
+<div class="line">    target_link_options(samplejsesm PRIVATE ${SAMPLE_JS_LINK_OPTIONS} --emit-tsd sample.esm.d.ts -sEXPORT_ES6=1)</div>
 <div class="line">    set_target_properties(samplejsesm PROPERTIES OUTPUT_NAME &quot;sample.esm&quot; SUFFIX &quot;.js&quot; RUNTIME_OUTPUT_DIRECTORY &quot;${PROJECT_SOURCE_DIR}/dist/&quot;)</div>
 <div class="line">endif()</div>
 </div><!-- fragment --><p>When CMake targets <b>WASM</b>, we'll generate <b>Embind</b> bindings in the build output directory. This output file will be a dependency for two targets: <code>samplejs</code> and <code>samplejsesm</code> (for UMD and ESM respectively). These two targets link our C library <code>sample::sample</code> along with <b>Embind</b>. When built, these targets create JS modules with <b>WASM</b> in the <b>npm</b> package's root <code>./dist/</code> directory.</p>
@@ -687,7 +824,8 @@ Adding WASM Support</h3>
 Creating an NPM Package</h3>
 <p>If you also want to publish the resulting module as an npm package, you'll need to add a <code>package.json</code> file at the root of your library.</p>
 <p>Its contents might look like this:</p>
-<div class="fragment"><div class="line">{</div>
+<div class="fragment"><div class="line">@json</div>
+<div class="line">{</div>
 <div class="line">  &quot;name&quot;: &quot;sample&quot;,</div>
 <div class="line">  &quot;version&quot;: &quot;1.0.0&quot;,</div>
 <div class="line">  &quot;description&quot;: &quot;Example of creating a library&quot;,</div>
@@ -710,15 +848,18 @@ Creating an NPM Package</h3>
 <div class="line">  }</div>
 <div class="line">}</div>
 </div><!-- fragment --><p>Add the following line to the build script:</p>
-<div class="fragment"><div class="line">cmake -Bwasmbuild -S. -DVCPKG_TARGET_TRIPLET=wasm32-emscripten -DCMAKE_TOOLCHAIN_FILE=${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=${EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake -DCMAKE_CROSSCOMPILING_EMULATOR=${EMSDK_NODE} -DSAMPLE_BUILD_TESTS=OFF -DSAMPLE_ENABLE_INSTALL=OFF -G Ninja -DCMAKE_BUILD_TYPE=MinSizeRel &amp;&amp; cmake --build wasmbuild</div>
+<div class="fragment"><div class="line">@bash</div>
+<div class="line">cmake -Bwasmbuild -S. -DVCPKG_TARGET_TRIPLET=wasm32-emscripten -DCMAKE_TOOLCHAIN_FILE=${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=${EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake -DCMAKE_CROSSCOMPILING_EMULATOR=${EMSDK_NODE} -DSAMPLE_BUILD_TESTS=OFF -DSAMPLE_ENABLE_INSTALL=OFF -G Ninja -DCMAKE_BUILD_TYPE=MinSizeRel &amp;&amp; cmake --build wasmbuild</div>
 </div><!-- fragment --><p>This script configures CMake for the <b>WASM</b> target platform and then builds the <code>.js</code> modules.</p>
 <p>Now you can run:</p>
-<div class="fragment"><div class="line">npm run build</div>
+<div class="fragment"><div class="line">@bash</div>
+<div class="line">npm run build</div>
 </div><!-- fragment --><p>That's essentially all you need to create the JS module.</p>
 <h3><a class="anchor" id="npm-tests"></a>
 Adding Tests to the NPM Package</h3>
 <p>We won't add dependencies for unit tests, but instead will simply include a Node.js script for working with our package at <code>./tests/node-test-esm.js</code>:</p>
-<div class="fragment"><div class="line">import sampleInit from &#39;sample&#39;;</div>
+<div class="fragment"><div class="line">@javascript</div>
+<div class="line">import sampleInit from &#39;sample&#39;;</div>
 <div class="line"> </div>
 <div class="line">const sample = await sampleInit();</div>
 <div class="line"> </div>
@@ -733,9 +874,11 @@ Adding Tests to the NPM Package</h3>
 <div class="line"> </div>
 <div class="line">vehicle.delete();</div>
 </div><!-- fragment --><p>In the <code>package.json</code> file, you can add the following script:</p>
-<div class="fragment"><div class="line">&quot;tests&quot;: &quot;node tests/node-test-esm.js&quot;,</div>
+<div class="fragment"><div class="line">@json</div>
+<div class="line">&quot;tests&quot;: &quot;node tests/node-test-esm.js&quot;</div>
 </div><!-- fragment --><p>To run the test, execute:</p>
-<div class="fragment"><div class="line">npm run tests</div>
+<div class="fragment"><div class="line">@bash</div>
+<div class="line">npm run tests</div>
 </div><!-- fragment --><p>The expected output should be:</p>
 <div class="fragment"><div class="line">3.2 * 2.5 = 8</div>
 <div class="line">Vehicle &#39;Truck&#39; dot: 10</div>
@@ -746,7 +889,8 @@ Conclusion</h2>
 <li>Packaging an npm module for native JavaScript usage - all powered by the same IDLC tool</li>
 </ul>
 <p>The complete example library can be cloned as follows. You'll also find a README with detailed build instructions there.</p>
-<div class="fragment"><div class="line">git clone -b sample https://github.com/VladimirShaleev/idlc.git idlc-sample</div>
+<div class="fragment"><div class="line">@bash</div>
+<div class="line">git clone -b sample https://github.com/VladimirShaleev/idlc.git idlc-sample</div>
 </div><!-- fragment --><h2><a class="anchor" id="next-steps"></a>
 Next Steps</h2>
 <p>Continue learning about IDL by following the link below.</p>
@@ -759,6 +903,52 @@ Next Steps</h2>
 </div><div class="section_buttons"></div> </div></div><!-- contents -->
 </div><!-- PageDoc -->
 </div><!-- doc-content -->
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.fragment').forEach(fragment => {
+      const pre = document.createElement('pre');
+      const code = document.createElement('code');
+      code.className = 'language-plaintext';
+      code.style.whiteSpace = 'pre';
+      let skip = false;
+      let first = true;
+      let codeContent = '';
+      fragment.querySelectorAll('.line').forEach(line => {
+        if (first) {
+          const lang = line.textContent;
+          if (lang == '@cmake') {
+            code.className = `language-cmake-ext`;
+          } else if (lang == '@idl') {
+            code.className = `language-idl`;
+          } else if (lang == '@json') {
+            code.className = `language-json`;
+          } else if (lang == '@c') {
+            code.className = `language-c`;
+          } else if (lang == '@cpp') {
+            code.className = `language-cpp`;
+          } else if (lang == '@javascript') {
+            code.className = `language-javascript`;
+          } else if (lang == '@bash') {
+            code.className = `language-bash`;
+          } else {
+            skip = true;
+          }
+        } else {
+          codeContent += line.textContent + '\n';
+        }
+        first = false;
+      });
+      if (!skip) {
+        code.textContent = codeContent.trimEnd();
+        pre.appendChild(code);
+        fragment.replaceWith(pre);
+      }
+    });
+    if (typeof hljs !== 'undefined') {
+      hljs.highlightAll();
+    }
+  });
+</script>
 <!-- HTML footer for doxygen 1.12.0-->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->

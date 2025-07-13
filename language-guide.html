@@ -17,12 +17,134 @@
 <script type="text/javascript" src="doxygen-awesome-interactive-toc.js"></script>
 <script type="text/javascript" src="doxygen-awesome-tabs.js"></script>
 <script type="text/javascript" src="toggle-alternative-theme.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/bash.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/c.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/cmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/cpp.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/json.min.js"></script>
 <script type="text/javascript">
     DoxygenAwesomeFragmentCopyButton.init()
     DoxygenAwesomeDarkModeToggle.init()
     DoxygenAwesomeParagraphLink.init()
     DoxygenAwesomeInteractiveToc.init()
     DoxygenAwesomeTabs.init()
+    document.addEventListener('DOMContentLoaded', () => {
+        hljs.registerLanguage('cmake-ext', (hljs) => {
+            const cmakeLanguage = hljs.getLanguage('cmake');
+            return {
+                name: "CMakeExt",
+                aliases: cmakeLanguage.aliases,
+                case_insensitive: cmakeLanguage.case_insensitive,
+                contains: cmakeLanguage.contains,
+                keywords: {
+                    keyword: cmakeLanguage.keywords.keyword + ' ' + 'idlc_compile'
+                }
+            };
+        });
+        hljs.registerLanguage('idl', (hljs) => {
+            const KEYWORDS = {
+                keyword: 'api enum const struct field interface method arg prop event handle func callback import'
+            }
+            const DOCUMENTATION = {
+                className: 'comment',
+                begin: '@\\s*(\\w+)?',
+                end: '(?=\\n|$)',
+                contains: [
+                    {
+                        className: 'attribute',
+                        begin: '\\{',
+                        end: '\\}'
+                    },
+                    {
+                        className: 'symbol',
+                        begin: '\\[',
+                        end: '\\]'
+                    }
+                ]
+            };
+            const MDOCUMENTATION = {
+                className: 'comment',
+                begin: '@\\s*```',
+                end: '```',
+                contains: [
+                    {
+                        className: 'attribute',
+                        begin: '\\{',
+                        end: '\\}'
+                    },
+                    {
+                        className: 'symbol',
+                        begin: '\\[',
+                        end: '\\]'
+                    }
+                ]
+            };
+            const LITERAL = {
+                className: 'type',
+                begin: ':\\s*\\d+',
+                end: '(?=\\n|$|@|\\[)'
+            };
+            const LITERAL_REF = {
+                className: 'attribute',
+                begin: ':\\s*\\w+',
+                end: '(?=\\n|$|@|\\[)'
+            };
+            const TYPE = {
+                className: 'attribute',
+                begin: '\\{',
+                end: '\\}'
+            };
+            const ATTRIBUTE = {
+                className: 'symbol',
+                begin: '\\[',
+                end: '\\]',
+                contains: [
+                    {
+                        className: 'type',
+                        begin: '\\(\\s*\\d+',
+                        end: '\\)'
+                    },
+                    {
+                        className: 'attribute',
+                        begin: '\\(\\s*\\w+',
+                        end: '\\)'
+                    }
+                ]
+            };
+            return {
+                name: "IDL",
+                case_insensitive: false,
+                keywords: KEYWORDS,
+                contains: [
+                    DOCUMENTATION,
+                    MDOCUMENTATION,
+                    TYPE,
+                    ATTRIBUTE,
+                    LITERAL,
+                    LITERAL_REF
+                ]
+            };
+        });
+    });
+    $(function() {
+        $(document).ready(function() {
+            if(navigator.clipboard) {
+                const fragments = document.getElementsByClassName("hljs")
+                for(const fragment of fragments) {
+                    const fragmentWrapper = document.createElement("div")
+                    fragmentWrapper.className = "doxygen-awesome-fragment-wrapper"
+                    const fragmentCopyButton = document.createElement("doxygen-awesome-fragment-copy-button")
+                    fragmentCopyButton.innerHTML = DoxygenAwesomeFragmentCopyButton.copyIcon
+                    fragmentCopyButton.title = DoxygenAwesomeFragmentCopyButton.title
+                    fragment.parentNode.replaceChild(fragmentWrapper, fragment)
+                    fragmentWrapper.appendChild(fragment)
+                    fragmentWrapper.appendChild(fragmentCopyButton)
+                }
+            }
+        })
+    })
 </script>
 <link href="navtree.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="navtreedata.js"></script>
@@ -297,7 +419,8 @@ Interface Definition Language</h1>
 <h2><a class="anchor" id="declarations"></a>
 Declarations</h2>
 <p>All declarations, whether they're structure declarations or functions and their arguments, must begin with the appropriate keyword followed by the declaration name. Example:</p>
-<div class="fragment"><div class="line">@ API Sample</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ API Sample</div>
 <div class="line">api Sample</div>
 <div class="line"> </div>
 <div class="line">@ Color values.</div>
@@ -313,9 +436,11 @@ Declarations</h2>
 </div><!-- fragment --><p>In this example, <code>api</code>, <code>struct</code>, <code>interface</code>, and <code>method</code> are keywords that create declarations. They're followed by the declaration name.</p>
 <p>The language requires all names to begin with a capital letter. The main question is how the compiler will represent these names for target languages during compilation? The answer is that naming conventions depend on the target language - for example, C uses snake_case, JS uses camelCase, and C# uses PascalCase.</p>
 <p>Let's say we have a method name TestName. The compiler tokenizes it into two words <code>Test</code> and <code>Name</code> based on capital letters and letter-digit-letter transitions. So in C, the name would be:</p>
-<div class="fragment"><div class="line">logger_test_name</div>
+<div class="fragment"><div class="line">@c</div>
+<div class="line">sample_logger_test_name</div>
 </div><!-- fragment --><p>and in JS:</p>
-<div class="fragment"><div class="line">testName</div>
+<div class="fragment"><div class="line">@javascript</div>
+<div class="line">testName</div>
 </div><!-- fragment --><p>Note that C isn't an OOP language, but many C libraries (like cairo, etc.) manually "implement OOP": they add opaque types that are passed as the first parameter in functions (acting as <code>this</code>). The function prefix indicates the "class" name. These opaque types can be implemented in C or even C++, as in this library.</p>
 <p>In JS, the interface translates to a JS class with methods and other features.</p>
 <dl class="section note"><dt>Note</dt><dd>If default tokenization doesn't work for your case, you can use the <code>[tokenizer]</code> attribute as shown in this <a class="el" href="#attr-tokenizer">[tokenizer]</a> section.</dd></dl>
@@ -323,17 +448,20 @@ Declarations</h2>
 Documentation</h2>
 <p>The language requires that all declarations have at least a brief description or detailed documentation.</p>
 <p>Documentation begins with the <code>@</code> symbol followed by documentation until the end of the line. You can end the documentation with an attribute indicating what it refers to, for example:</p>
-<div class="fragment"><div class="line">@ Color values [brief]</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Color values [brief]</div>
 <div class="line">@ Detailed description. [detail]</div>
 <div class="line">struct Color</div>
 <div class="line">    ...</div>
 </div><!-- fragment --><p> The <code>[brief]</code> attribute is the default attribute when no attribute is specified.</p>
 <p>You can also place documentation on the same line as the declaration. In this case, the default attribute for this documentation will be <code>[detail]</code>. The example below is equivalent to the previous one:</p>
-<div class="fragment"><div class="line">@ Color values</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Color values</div>
 <div class="line">struct Color @ Detailed description.</div>
 <div class="line">    ...</div>
 </div><!-- fragment --><p>This isn't very elegant. This feature is mainly intended for cleaner documentation of fields and function arguments:</p>
-<div class="fragment"><div class="line">@ Color values.</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Color values.</div>
 <div class="line">@ Detailed description. [detail]</div>
 <div class="line">struct Color</div>
 <div class="line">    field Red @ Red channel clear value.</div>
@@ -342,7 +470,8 @@ Documentation</h2>
 <div class="line">    field Alpha @ Alpha channel clear value.</div>
 </div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Note that the language doesn't care about line breaks and indentation. The language understands everything from context. Naturally, except for documentation context.</dd></dl>
 <p>To create a multiline comment, use three consecutive backtick symbols <code>`</code>:</p>
-<div class="fragment"><div class="line">@ Color values.</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Color values.</div>
 <div class="line">@ ```</div>
 <div class="line">    Detailed description.</div>
 <div class="line">    Other string.</div>
@@ -363,7 +492,8 @@ Specification Start</h2>
 <h2><a class="anchor" id="enumerations"></a>
 Enumerations</h2>
 <p>A constant declaration can look like this:</p>
-<div class="fragment"><div class="line">@ Graphics features.</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Graphics features.</div>
 <div class="line">enum Feature</div>
 <div class="line">    const None @ No special features</div>
 <div class="line">    const Bindless @ Bindless resource access</div>
@@ -372,11 +502,13 @@ Enumerations</h2>
 <div class="line">    const SamplerFilterMinmax @ Min/max sampler filtering</div>
 <div class="line">    const DrawIndirect @ Indirect drawing</div>
 </div><!-- fragment --><p>The constant type must always be <code>Int32</code>, even if explicitly specified:</p>
-<div class="fragment"><div class="line">@ Graphics features.</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Graphics features.</div>
 <div class="line">enum Feature</div>
 <div class="line">    const None {Int32} @ No special features</div>
 </div><!-- fragment --><p>By default, each constant's value increments by one from the previous constant's value. The first constant has a value of 0. However, we can explicitly specify constant values:</p>
-<div class="fragment"><div class="line">@ Graphics features.</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Graphics features.</div>
 <div class="line">enum Feature [flags]</div>
 <div class="line">    const None @ No special features</div>
 <div class="line">    const Bindless @ Bindless resource access</div>
@@ -386,7 +518,8 @@ Enumerations</h2>
 <div class="line">    const DrawIndirect : 16 @ Indirect drawing</div>
 <div class="line">    const Combine : MeshShader, DrawIndirect @ Combine flags sample</div>
 </div><!-- fragment --><p>Here None will be 0, and Bindless will be 1. For example, in C this would look like after compilation:</p>
-<div class="fragment"><div class="line">/**</div>
+<div class="fragment"><div class="line">@c</div>
+<div class="line">/**</div>
 <div class="line"> * @brief Graphics features.</div>
 <div class="line"> */</div>
 <div class="line">typedef enum</div>
@@ -458,7 +591,8 @@ Built-in Types</h2>
 <h2><a class="anchor" id="structures"></a>
 Structures</h2>
 <p>Structure declarations are no different from other declarations:</p>
-<div class="fragment"><div class="line">@ Color values.</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Color values.</div>
 <div class="line">@ Detailed description. [detail]</div>
 <div class="line">struct Color</div>
 <div class="line">    field Red @ Red channel clear value.</div>
@@ -466,36 +600,42 @@ Structures</h2>
 <div class="line">    field Blue @ Blue channel clear value.</div>
 <div class="line">    field Alpha @ Alpha channel clear value.</div>
 </div><!-- fragment --><p>The default field type is <code>Int32</code>. To specify a type, use a type reference in braces <code>{DeclRef}</code>:</p>
-<div class="fragment"><div class="line">@ Color values.</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Color values.</div>
 <div class="line">struct Color</div>
 <div class="line">    field Red {Float32} @ Red channel clear value.</div>
 <div class="line">    field Green {Float32} @ Green channel clear value.</div>
 <div class="line">    field Blue {Float32} @ Blue channel clear value.</div>
 <div class="line">    field Alpha {Float32} @ Alpha channel clear value.</div>
 </div><!-- fragment --><p>You can also set default values for fields. These will be assigned during initialization in languages that support it (e.g., C++):</p>
-<div class="fragment"><div class="line">@ Color values.</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Color values.</div>
 <div class="line">struct Color</div>
 <div class="line">    field Red {Float32} @ Red channel clear value.</div>
 <div class="line">    field Green {Float32} @ Green channel clear value.</div>
 <div class="line">    field Blue {Float32} @ Blue channel clear value.</div>
 <div class="line">    field Alpha {Float32} : 1 @ Alpha channel clear value.</div>
 </div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Currently only integers and constants can be specified as defaults.</dd></dl>
-<div class="fragment"><div class="line">@ Brief.</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Brief.</div>
 <div class="line">struct Test</div>
 <div class="line">    field Flags {Feature} : Feature.Bindless, Feature.MeshShader @ Sample.</div>
 </div><!-- fragment --><p>Note the use of the fully qualified name Feature.Bindless to indicate that Bindless belongs to the Feature declaration, not Test.</p>
 <h2><a class="anchor" id="functions"></a>
 Functions</h2>
 <p>The simplest function can be declared as:</p>
-<div class="fragment"><div class="line">@ Sample</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Sample</div>
 <div class="line">func Func</div>
 </div><!-- fragment --><p>Let's add some arguments:</p>
-<div class="fragment"><div class="line">@ Sample</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Sample</div>
 <div class="line">func Func</div>
 <div class="line">    arg Value @ First arg</div>
 <div class="line">    arg OtherValue @ Second arg</div>
 </div><!-- fragment --><p>By default, argument types are <code>Int32</code>. Let's specify return type and argument types:</p>
-<div class="fragment"><div class="line">@ Sample</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Sample</div>
 <div class="line">func Func {Float32}</div>
 <div class="line">    arg Value {Uint32} @ First arg</div>
 <div class="line">    arg OtherValue {Float32} @ Second arg</div>
@@ -505,7 +645,8 @@ Functions</h2>
 Interfaces</h2>
 <p>In OOP languages, interfaces become classes, while in C they become opaque types.</p>
 <p>Let's add an interface with two creation methods:</p>
-<div class="fragment"><div class="line">@ Brief.</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Brief.</div>
 <div class="line">interface ObjType</div>
 <div class="line">    @ Creates new object instance</div>
 <div class="line">    method CreateByValue {ObjType} [ctor]</div>
@@ -515,7 +656,8 @@ Interfaces</h2>
 <div class="line">    method Create {ObjType} [ctor]</div>
 </div><!-- fragment --><p>Note both methods have <code>[ctor]</code> attributes, telling the compiler to make these methods constructors in OOP-capable languages. In JS, instantiation would look like <code>const inst1 = new sample.ObjType('test');</code>. Constructor methods are implicitly static. Constructors must return the type either as return value or argument (here it's returned).</p>
 <p>Let's add three more methods:</p>
-<div class="fragment"><div class="line">@ Brief.</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Brief.</div>
 <div class="line">interface ObjType</div>
 <div class="line">    @ Creates new object instance</div>
 <div class="line">    method CreateByValue {ObjType} [ctor]</div>
@@ -538,7 +680,8 @@ Interfaces</h2>
 <div class="line">        arg Val @ Value arg</div>
 </div><!-- fragment --><p>The <code>Destroy</code> method will be used for object deallocation. The <code>[destroy]</code> attribute tells RAII or garbage-collected languages which method releases unmanaged handles.</p>
 <p><code>Method</code> is an instance method. It explicitly takes Obj argument with <code>[this]</code> attribute. In OOP languages this becomes implicit <code>this</code>/<code>self</code>. In non-OOP languages it remains as Obj argument. For example in C:</p>
-<div class="fragment"><div class="line">/**</div>
+<div class="fragment"><div class="line">@c</div>
+<div class="line">/**</div>
 <div class="line"> * @brief     Method of interface.</div>
 <div class="line"> * @param[in] obj this object</div>
 <div class="line"> * @param[in] val Value arg</div>
@@ -548,7 +691,8 @@ Interfaces</h2>
 <div class="line">                       sample_sint32_t val);</div>
 </div><!-- fragment --><p><code>ClassMethod</code> is static and cannot have <code>[this]</code> argument.</p>
 <p>Let's add two more methods:</p>
-<div class="fragment"><div class="line">@ Brief.</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Brief.</div>
 <div class="line">interface ObjType</div>
 <div class="line">    // ...</div>
 <div class="line"> </div>
@@ -564,7 +708,8 @@ Interfaces</h2>
 <h2><a class="anchor" id="properties"></a>
 Properties</h2>
 <p>Let's add a property to the interface from <a class="el" href="#interfaces">Interfaces</a> section:</p>
-<div class="fragment"><div class="line">@ Brief.</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Brief.</div>
 <div class="line">interface ObjType</div>
 <div class="line">    // ...</div>
 <div class="line"> </div>
@@ -582,7 +727,8 @@ Properties</h2>
 <h2><a class="anchor" id="callbacks"></a>
 Callbacks</h2>
 <p>Callbacks are declared similarly to functions:</p>
-<div class="fragment"><div class="line">@ Callback to which the compilation result is passed.</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Callback to which the compilation result is passed.</div>
 <div class="line">@ ```</div>
 <div class="line">    If you need to save the compilation result to a location other than the file</div>
 <div class="line">    system, such as the network or console output, you can use this callback.``` [detail]</div>
@@ -593,7 +739,8 @@ Callbacks</h2>
 </div><!-- fragment --><p>This example comes from the compiler's own specification.</p>
 <p>We can now use this callback in functions, static methods, and instance methods. It can also be used as a field type in structures.</p>
 <p>Let's examine the specification further:</p>
-<div class="fragment"><div class="line">@ Compilation options.</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Compilation options.</div>
 <div class="line">@ This object specifies various compilation options. [detail]</div>
 <div class="line">interface Options</div>
 <div class="line">    @ Get the current write callback.</div>
@@ -616,7 +763,8 @@ Callbacks</h2>
 <div class="line">        arg Data {Data} [optional,userdata] @ Callback user data.</div>
 </div><!-- fragment --><p>As we can see, the Options interface can set a callback and store user data (useful for unmanaged languages like C to pass context to callbacks or even propagate C++ exceptions through C functions using <code>std::current_exception</code>).</p>
 <p>In C, these functions look like this:</p>
-<div class="fragment"><div class="line">/**</div>
+<div class="fragment"><div class="line">@c</div>
+<div class="line">/**</div>
 <div class="line"> * @brief     Callback to which the compilation result is passed.</div>
 <div class="line"> * @details   If you need to save the compilation result to a location other than the file</div>
 <div class="line"> *            system, such as the network or console output, you can use this callback.</div>
@@ -660,13 +808,15 @@ Callbacks</h2>
 </div><!-- fragment --><h2><a class="anchor" id="events"></a>
 Events</h2>
 <p>We can use callbacks as events. For example:</p>
-<div class="fragment"><div class="line">@ Compilation options.</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Compilation options.</div>
 <div class="line">@ This object specifies various compilation options. [detail]</div>
 <div class="line">interface Options</div>
 <div class="line">    event Writer [get(GetWriter),set(SetWriter)] @ Event that occurs when the compiler outputs.</div>
 </div><!-- fragment --><p>This example comes from the compiler's own specification.</p>
 <p>This can be useful in certain languages. Let's look at JavaScript code for an online editor using this event with the callback:</p>
-<div class="fragment"><div class="line">const options = new module.Options;</div>
+<div class="fragment"><div class="line">@javascript</div>
+<div class="line">const options = new module.Options;</div>
 <div class="line"> </div>
 <div class="line">const results = {};</div>
 <div class="line">options.writer = function (source) {</div>
@@ -679,7 +829,8 @@ Events</h2>
 <h2><a class="anchor" id="import"></a>
 Import</h2>
 <p>Large specifications are rarely practical to describe in a single file. For this purpose, imports are available:</p>
-<div class="fragment"><div class="line">@ IDLC</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ IDLC</div>
 <div class="line">api Idl [version(0,0,0)]</div>
 <div class="line"> </div>
 <div class="line">@ Warning/Error codes.</div>
@@ -696,7 +847,8 @@ Import</h2>
 Declaration References</h2>
 <p>References to declarations use the <code>{DeclRef}</code> syntax. Forward references are allowed in documentation. Generated documentation will adapt reference names to match target language conventions.</p>
 <p>Example Specification:</p>
-<div class="fragment"><div class="line">@ Compiler interface.</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Compiler interface.</div>
 <div class="line">@ Interface for interacting with the compiler. [detail]</div>
 <div class="line">interface Compiler</div>
 <div class="line">    @ Compile IDL.</div>
@@ -720,7 +872,8 @@ Declaration References</h2>
 <div class="line">        arg Options {Options} [optional] @ Compile options, may be null.</div>
 <div class="line">        arg Result {CompilationResult} [optional,result] @ Compilation result.</div>
 </div><!-- fragment --><p>Result of resolving declaration reference for C:</p>
-<div class="fragment"><div class="line">/**</div>
+<div class="fragment"><div class="line">@c</div>
+<div class="line">/**</div>
 <div class="line"> * @brief      Compile IDL.</div>
 <div class="line"> * @param[in]  compiler Target compiler.</div>
 <div class="line"> * @param[in]  generator Target of generator.</div>
@@ -759,21 +912,24 @@ Comments</h2>
 <h2><a class="anchor" id="attributes"></a>
 Attributes</h2>
 <p>As you may have noticed, the language provides only declarations - everything else is achieved by attaching attributes to these declarations. Even argument and field types are actually attributes:</p>
-<div class="fragment"><div class="line">@ Color values.</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Color values.</div>
 <div class="line">struct Color</div>
 <div class="line">    field Red {Float32} @ Red channel clear value.</div>
 <div class="line">    field Green {Float32} @ Green channel clear value.</div>
 <div class="line">    field Blue {Float32} @ Blue channel clear value.</div>
 <div class="line">    field Alpha {Float32} @ Alpha channel clear value.</div>
 </div><!-- fragment --><p>This is syntactic sugar for the <code>[type]</code> attribute:</p>
-<div class="fragment"><div class="line">@ Color values.</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Color values.</div>
 <div class="line">struct Color</div>
 <div class="line">    field Red [type(Float32)] @ Red channel clear value.</div>
 <div class="line">    field Green [type(Float32)] @ Green channel clear value.</div>
 <div class="line">    field Blue [type(Float32)] @ Blue channel clear value.</div>
 <div class="line">    field Alpha [type(Float32)] @ Alpha channel clear value.</div>
 </div><!-- fragment --><p>The same applies to default values:</p>
-<div class="fragment"><div class="line">@ Graphics features.</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Graphics features.</div>
 <div class="line">enum Feature [flags]</div>
 <div class="line">    const None @ No special features</div>
 <div class="line">    const Bindless @ Bindless resource access</div>
@@ -783,7 +939,8 @@ Attributes</h2>
 <div class="line">    const DrawIndirect : 16 @ Indirect drawing</div>
 <div class="line">    const Combine : MeshShader, DrawIndirect @ Combine flags sample</div>
 </div><!-- fragment --><p>Is actually:</p>
-<div class="fragment"><div class="line">@ Graphics features.</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Graphics features.</div>
 <div class="line">enum Feature [flags]</div>
 <div class="line">    const None [type(Int32),value(0)] @ No special features</div>
 <div class="line">    const Bindless [type(Int32),value(1)] @ Bindless resource access</div>
@@ -796,7 +953,8 @@ Attributes</h2>
 <h3><a class="anchor" id="attr-flags"></a>
 [flags]</h3>
 <p>Marks an enum as a bitmask type where values can be combined using bitwise operations. Automatically adds bitwise operation support in target languages:</p>
-<div class="fragment"><div class="line">@ Graphics features.</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Graphics features.</div>
 <div class="line">enum Feature [flags]</div>
 <div class="line">    const None @ No special features</div>
 <div class="line">    const Bindless @ Bindless resource access</div>
@@ -807,7 +965,8 @@ Attributes</h2>
 </div><!-- fragment --><h3><a class="anchor" id="attr-hex"></a>
 [hex]</h3>
 <p>Specifies that enum values should be displayed in hexadecimal format in documentation and outputs:</p>
-<div class="fragment"><div class="line">@ Graphics features.</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Graphics features.</div>
 <div class="line">enum Feature [flags,hex]</div>
 <div class="line">    const None @ No special features</div>
 <div class="line">    const Bindless @ Bindless resource access</div>
@@ -816,7 +975,8 @@ Attributes</h2>
 <div class="line">    const SamplerFilterMinmax : 8 @ Min/max sampler filtering</div>
 <div class="line">    const DrawIndirect : 16 @ Indirect drawing</div>
 </div><!-- fragment --><p>C output:</p>
-<div class="fragment"><div class="line">/**</div>
+<div class="fragment"><div class="line">@c</div>
+<div class="line">/**</div>
 <div class="line"> * @brief Graphics features.</div>
 <div class="line"> */</div>
 <div class="line">typedef enum</div>
@@ -841,7 +1001,8 @@ Attributes</h2>
 <h3><a class="anchor" id="attr-type"></a>
 [type]</h3>
 <p>Specifies the underlying type for declarations. Used implicitly in shorthand syntax like <code>{Float32}</code>.</p>
-<div class="fragment"><div class="line">@ Color values.</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Color values.</div>
 <div class="line">struct Color</div>
 <div class="line">    field Red {Float32} @ Red channel clear value.</div>
 <div class="line">    field Green [type(Float32)] @ Green channel clear value.</div>
@@ -851,7 +1012,8 @@ Attributes</h2>
 <h3><a class="anchor" id="attr-ctor"></a>
 [ctor]</h3>
 <p>Designates a method as a constructor. Implies <code>[static]</code>. In OOP languages, enables <code>new</code> syntax:</p>
-<div class="fragment"><div class="line">@ Brief.</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Brief.</div>
 <div class="line">interface ObjType</div>
 <div class="line">    @ Creates new object instance</div>
 <div class="line">    @ New instance [return]</div>
@@ -864,7 +1026,8 @@ Attributes</h2>
 <div class="line">        arg Value {Float32} @ Name of object.</div>
 <div class="line">        arg Obj {ObjType} [result] @ New object instance.</div>
 </div><!-- fragment --><p>In the second case, the new instance is returned as an argument:</p>
-<div class="fragment"><div class="line">/**</div>
+<div class="fragment"><div class="line">@c</div>
+<div class="line">/**</div>
 <div class="line"> * @brief     Creates new object instance</div>
 <div class="line"> * @param[in] name Name of object.</div>
 <div class="line"> * @return    New instance</div>
@@ -883,7 +1046,8 @@ Attributes</h2>
 <div class="line">                                sample_float32_t value,</div>
 <div class="line">                                sample_obj_type_t* obj);</div>
 </div><!-- fragment --><p>In OOP languages ​​these methods will become constructors:</p>
-<div class="fragment"><div class="line">const inst1 = new sample.ObjType(&#39;test&#39;);</div>
+<div class="fragment"><div class="line">@javascript</div>
+<div class="line">const inst1 = new sample.ObjType(&#39;test&#39;);</div>
 <div class="line">const inst2 = new sample.ObjType(&#39;test&#39;, 3.4);</div>
 </div><!-- fragment --><h3><a class="anchor" id="attr-this"></a>
 [this]</h3>
@@ -897,7 +1061,8 @@ Attributes</h2>
 <h3><a class="anchor" id="attr-handle"></a>
 [handle]</h3>
 <p>Declares index descriptors. Useful for providing resources with an index or other structure. For example, distributing resources linearly from a pool in games:</p>
-<div class="fragment"><div class="line">@ Handle type.</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Handle type.</div>
 <div class="line">@ This structure describes the handle template. [detail]</div>
 <div class="line">struct Handle [handle]</div>
 <div class="line">    field Index {Uint16} @ The type that determines the size of the handle.</div>
@@ -909,7 +1074,8 @@ Attributes</h2>
 </div><!-- fragment --><h3><a class="anchor" id="attr-cname"></a>
 [cname]</h3>
 <p>Overrides the default C identifier naming:</p>
-<div class="fragment"><div class="line">@ Keyboard scancodes.</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Keyboard scancodes.</div>
 <div class="line">enum Scancode</div>
 <div class="line">    const Unknown @ Unidentified key.</div>
 <div class="line">    const Digit0 [cname(0)] @ 0 key.</div>
@@ -917,7 +1083,8 @@ Attributes</h2>
 <div class="line">    const Digit2 [cname(2)] @ 2 key.</div>
 <div class="line">    ...</div>
 </div><!-- fragment --><p>C output:</p>
-<div class="fragment"><div class="line">/**</div>
+<div class="fragment"><div class="line">@c</div>
+<div class="line">/**</div>
 <div class="line"> * @brief Keyboard scancodes.</div>
 <div class="line"> */</div>
 <div class="line">typedef enum</div>
@@ -929,7 +1096,8 @@ Attributes</h2>
 </div><!-- fragment --><h3><a class="anchor" id="attr-array"></a>
 [array]</h3>
 <p>Indicates array:</p>
-<div class="fragment"><div class="line">@ Compilation options.</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Compilation options.</div>
 <div class="line">@ This object specifies various compilation options. [detail]</div>
 <div class="line">interface Options</div>
 <div class="line">    prop ImportDirs [get(GetImportDirs),set(SetImportDirs)] @ Directories to search for files when importing.</div>
@@ -950,7 +1118,8 @@ Attributes</h2>
 <div class="line">        arg DirCount {Uint32} @ Number of directories.</div>
 <div class="line">        arg Dirs {Str} [const,array(DirCount)] @ Import directories.</div>
 </div><!-- fragment --><p>C output:</p>
-<div class="fragment"><div class="line">/**</div>
+<div class="fragment"><div class="line">@c</div>
+<div class="line">/**</div>
 <div class="line"> * @brief         Returns an array of directories to search for imports.</div>
 <div class="line"> * @details       These paths are used to search source code when an import is encountered during compilation.</div>
 <div class="line"> * @param[in]     options Target options.</div>
@@ -976,17 +1145,20 @@ Attributes</h2>
 <div class="line">                               sample_uint32_t dir_count,</div>
 <div class="line">                               const sample_utf8_t* dirs);</div>
 </div><!-- fragment --><p>JavaScript use:</p>
-<div class="fragment"><div class="line">const options = new idlc.Options;</div>
+<div class="fragment"><div class="line">@javascript</div>
+<div class="line">const options = new idlc.Options;</div>
 <div class="line">options.importDirs = [ &quot;path1&quot;, &quot;path2&quot;, &quot;path3&quot; ];</div>
 </div><!-- fragment --><p>As you can see in higher-level languages, working with arrays becomes more native.</p>
 <p>Arrays are also supported in structure fields. But fixed-length arrays are also supported in structure fields:</p>
-<div class="fragment"><div class="line">@ Brief.</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Brief.</div>
 <div class="line">struct Test</div>
 <div class="line">    field Values {Float32} [const,array(Size)] @ Values.</div>
 <div class="line">    field Size {Uint32} @ Count values.</div>
 <div class="line">    field Symbol {Char} [const,array(5)] @ Symbol.</div>
 </div><!-- fragment --><p>C output:</p>
-<div class="fragment"><div class="line">/**</div>
+<div class="fragment"><div class="line">@c</div>
+<div class="line">/**</div>
 <div class="line"> * @brief Brief.</div>
 <div class="line"> */</div>
 <div class="line">typedef struct</div>
@@ -996,7 +1168,8 @@ Attributes</h2>
 <div class="line">    sample_char_t           symbol[5]; /**&lt; Symbol. */</div>
 <div class="line">} sample_test_t;</div>
 </div><!-- fragment --><p>JavaScript use:</p>
-<div class="fragment"><div class="line">func({ values: [ 3.4, 2.3 ], symbol: &#39;a&#39; });</div>
+<div class="fragment"><div class="line">@javascript</div>
+<div class="line">func({ values: [ 3.4, 2.3 ], symbol: &#39;a&#39; });</div>
 </div><!-- fragment --><h3><a class="anchor" id="attr-datasize"></a>
 [datasize]</h3>
 <p>Marks fields or arguments of types <code>Date</code> and <code>ConstData</code> as dimensional buffers:</p>
@@ -1010,7 +1183,8 @@ Attributes</h2>
 <h3><a class="anchor" id="attr-refinc"></a>
 [refinc]</h3>
 <p>Marks a method as a specific method for reference counter incrementing.</p>
-<div class="fragment"><div class="line">@ Compilation options.</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Compilation options.</div>
 <div class="line">@ This object specifies various compilation options. [detail]</div>
 <div class="line">interface Options</div>
 <div class="line">    @ Increments reference count.</div>
@@ -1055,7 +1229,8 @@ Attributes</h2>
 <h3><a class="anchor" id="attr-tokenizer"></a>
 [tokenizer]</h3>
 <p>Overrides default name tokenization rules for specific declarations.</p>
-<div class="fragment"><div class="line">@ Keyboard scancodes.</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Keyboard scancodes.</div>
 <div class="line">enum Scancode</div>
 <div class="line">    const F1 [tokenizer(0)] @ F1 function key.</div>
 <div class="line">    const BC1RgbSrgb [tokenizer(3-3)] @ block-compressed format</div>
@@ -1072,7 +1247,8 @@ Attributes</h2>
 <h3><a class="anchor" id="attr-brief"></a>
 [brief]</h3>
 <p>Short description attribute (default for standalone <code>@ docs</code>).</p>
-<div class="fragment"><div class="line">@ Logging severity levels.</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Logging severity levels.</div>
 <div class="line">enum LoggerLevel</div>
 <div class="line">    ...</div>
 <div class="line"> </div>
@@ -1084,7 +1260,8 @@ Attributes</h2>
 </div><!-- fragment --><h3><a class="anchor" id="attr-detail"></a>
 [detail]</h3>
 <p>Detailed description attribute (default for inline <code>@ docs</code>).</p>
-<div class="fragment"><div class="line">@ Logging severity levels. [detail]</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Logging severity levels. [detail]</div>
 <div class="line">enum LoggerLevel</div>
 <div class="line">    ...</div>
 <div class="line"> </div>
@@ -1100,13 +1277,15 @@ Attributes</h2>
 </div><!-- fragment --><h3><a class="anchor" id="attr-author"></a>
 [author]</h3>
 <p>Credits the original author:</p>
-<div class="fragment"><div class="line">@ IDLC</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ IDLC</div>
 <div class="line">@ Author Name &lt;authorname@email.com&gt; [author]</div>
 <div class="line">api Idl</div>
 </div><!-- fragment --><h3><a class="anchor" id="attr-see"></a>
 [see]</h3>
 <p>See also:</p>
-<div class="fragment"><div class="line">@ Callback to get sources.</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Callback to get sources.</div>
 <div class="line">@ If the callback allocates memory, then you can free it in the callback {ReleaseImportCallback}. [see]</div>
 <div class="line">callback ImportCallback {Source} [ref,optional]</div>
 <div class="line">    ...</div>
@@ -1119,7 +1298,8 @@ Attributes</h2>
 <h3><a class="anchor" id="attr-copyright"></a>
 [copyright]</h3>
 <p>Copyright notice:</p>
-<div class="fragment"><div class="line">@ IDLC</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ IDLC</div>
 <div class="line">@ MIT License [copyright]</div>
 <div class="line">api Idl</div>
 </div><!-- fragment --><h3><a class="anchor" id="attr-license"></a>
@@ -1131,7 +1311,8 @@ Attributes</h2>
 <h2><a class="anchor" id="error-handling"></a>
 Error Handling</h2>
 <p>The language provides special facilities for cross-language error handling. This is necessary because C lacks exceptions and typically uses error codes, while JS has exceptions. Therefore, IDL offers a built-in way to describe errors that works natively across all target languages.</p>
-<div class="fragment"><div class="line">@ Result codes.</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">@ Result codes.</div>
 <div class="line">@ Enumeration of result codes. [detail]</div>
 <div class="line">enum Result [errorcode]</div>
 <div class="line">    const Success [noerror] @ Indicates success (this is not an error).</div>
@@ -1158,7 +1339,8 @@ Error Handling</h2>
 <div class="line">        arg Options {Options} [result] @ New options instance.</div>
 </div><!-- fragment --><p>Note that the <code>Create</code> method returns a new instance via an argument. This is quite normal, because the programmer will not be able to ignore the object allocation. Instead, the return value is an error code.</p>
 <p>In C, this would look like this:</p>
-<div class="fragment"><div class="line">/**</div>
+<div class="fragment"><div class="line">@c</div>
+<div class="line">/**</div>
 <div class="line"> * @brief      Creates new options instance.</div>
 <div class="line"> * @details    Creates an object for setting compiler options.</div>
 <div class="line"> * @param[out] options New options instance.</div>
@@ -1168,7 +1350,8 @@ Error Handling</h2>
 <div class="line">idl_api idl_result_t</div>
 <div class="line">idl_options_create(idl_options_t* options);</div>
 </div><!-- fragment --><p>Which can be used as:</p>
-<div class="fragment"><div class="line">idl_options_t options;</div>
+<div class="fragment"><div class="line">@c</div>
+<div class="line">idl_options_t options;</div>
 <div class="line">idl_result_t code = idl_options_create(&amp;options);</div>
 <div class="line">if (code != IDL_RESULT_SUCCESS) {</div>
 <div class="line">    printf(&quot;%s\n&quot;, idl_result_to_string(code));</div>
@@ -1176,10 +1359,12 @@ Error Handling</h2>
 <div class="line">}</div>
 <div class="line">idl_options_destroy(options);</div>
 </div><!-- fragment --><p>In languages ​​with exceptions, when calling functions/methods if an error code is returned (in any way), in case of an error an exception will be thrown with the text of the error constant name. If there is a function marked <code>[errorcode]</code>:</p>
-<div class="fragment"><div class="line">func ResultToString {Str} [errorcode]</div>
+<div class="fragment"><div class="line">@idl</div>
+<div class="line">func ResultToString {Str} [errorcode]</div>
 </div><!-- fragment --><p>Then it will be used to convert the error code into a text message for the exception.</p>
 <p>JavaScript:</p>
-<div class="fragment"><div class="line">const options = new module.Options;</div>
+<div class="fragment"><div class="line">@javascript</div>
+<div class="line">const options = new module.Options;</div>
 </div><!-- fragment --><p>If the object cannot be created, an exception will be thrown.</p>
 <h2><a class="anchor" id="learn-how-to-install"></a>
 Next Steps</h2>
@@ -1193,6 +1378,52 @@ Next Steps</h2>
 </div><div class="section_buttons"></div> </div></div><!-- contents -->
 </div><!-- PageDoc -->
 </div><!-- doc-content -->
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.fragment').forEach(fragment => {
+      const pre = document.createElement('pre');
+      const code = document.createElement('code');
+      code.className = 'language-plaintext';
+      code.style.whiteSpace = 'pre';
+      let skip = false;
+      let first = true;
+      let codeContent = '';
+      fragment.querySelectorAll('.line').forEach(line => {
+        if (first) {
+          const lang = line.textContent;
+          if (lang == '@cmake') {
+            code.className = `language-cmake-ext`;
+          } else if (lang == '@idl') {
+            code.className = `language-idl`;
+          } else if (lang == '@json') {
+            code.className = `language-json`;
+          } else if (lang == '@c') {
+            code.className = `language-c`;
+          } else if (lang == '@cpp') {
+            code.className = `language-cpp`;
+          } else if (lang == '@javascript') {
+            code.className = `language-javascript`;
+          } else if (lang == '@bash') {
+            code.className = `language-bash`;
+          } else {
+            skip = true;
+          }
+        } else {
+          codeContent += line.textContent + '\n';
+        }
+        first = false;
+      });
+      if (!skip) {
+        code.textContent = codeContent.trimEnd();
+        pre.appendChild(code);
+        fragment.replaceWith(pre);
+      }
+    });
+    if (typeof hljs !== 'undefined') {
+      hljs.highlightAll();
+    }
+  });
+</script>
 <!-- HTML footer for doxygen 1.12.0-->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->

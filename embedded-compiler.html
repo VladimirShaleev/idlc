@@ -17,12 +17,134 @@
 <script type="text/javascript" src="doxygen-awesome-interactive-toc.js"></script>
 <script type="text/javascript" src="doxygen-awesome-tabs.js"></script>
 <script type="text/javascript" src="toggle-alternative-theme.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/bash.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/c.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/cmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/cpp.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/json.min.js"></script>
 <script type="text/javascript">
     DoxygenAwesomeFragmentCopyButton.init()
     DoxygenAwesomeDarkModeToggle.init()
     DoxygenAwesomeParagraphLink.init()
     DoxygenAwesomeInteractiveToc.init()
     DoxygenAwesomeTabs.init()
+    document.addEventListener('DOMContentLoaded', () => {
+        hljs.registerLanguage('cmake-ext', (hljs) => {
+            const cmakeLanguage = hljs.getLanguage('cmake');
+            return {
+                name: "CMakeExt",
+                aliases: cmakeLanguage.aliases,
+                case_insensitive: cmakeLanguage.case_insensitive,
+                contains: cmakeLanguage.contains,
+                keywords: {
+                    keyword: cmakeLanguage.keywords.keyword + ' ' + 'idlc_compile'
+                }
+            };
+        });
+        hljs.registerLanguage('idl', (hljs) => {
+            const KEYWORDS = {
+                keyword: 'api enum const struct field interface method arg prop event handle func callback import'
+            }
+            const DOCUMENTATION = {
+                className: 'comment',
+                begin: '@\\s*(\\w+)?',
+                end: '(?=\\n|$)',
+                contains: [
+                    {
+                        className: 'attribute',
+                        begin: '\\{',
+                        end: '\\}'
+                    },
+                    {
+                        className: 'symbol',
+                        begin: '\\[',
+                        end: '\\]'
+                    }
+                ]
+            };
+            const MDOCUMENTATION = {
+                className: 'comment',
+                begin: '@\\s*```',
+                end: '```',
+                contains: [
+                    {
+                        className: 'attribute',
+                        begin: '\\{',
+                        end: '\\}'
+                    },
+                    {
+                        className: 'symbol',
+                        begin: '\\[',
+                        end: '\\]'
+                    }
+                ]
+            };
+            const LITERAL = {
+                className: 'type',
+                begin: ':\\s*\\d+',
+                end: '(?=\\n|$|@|\\[)'
+            };
+            const LITERAL_REF = {
+                className: 'attribute',
+                begin: ':\\s*\\w+',
+                end: '(?=\\n|$|@|\\[)'
+            };
+            const TYPE = {
+                className: 'attribute',
+                begin: '\\{',
+                end: '\\}'
+            };
+            const ATTRIBUTE = {
+                className: 'symbol',
+                begin: '\\[',
+                end: '\\]',
+                contains: [
+                    {
+                        className: 'type',
+                        begin: '\\(\\s*\\d+',
+                        end: '\\)'
+                    },
+                    {
+                        className: 'attribute',
+                        begin: '\\(\\s*\\w+',
+                        end: '\\)'
+                    }
+                ]
+            };
+            return {
+                name: "IDL",
+                case_insensitive: false,
+                keywords: KEYWORDS,
+                contains: [
+                    DOCUMENTATION,
+                    MDOCUMENTATION,
+                    TYPE,
+                    ATTRIBUTE,
+                    LITERAL,
+                    LITERAL_REF
+                ]
+            };
+        });
+    });
+    $(function() {
+        $(document).ready(function() {
+            if(navigator.clipboard) {
+                const fragments = document.getElementsByClassName("hljs")
+                for(const fragment of fragments) {
+                    const fragmentWrapper = document.createElement("div")
+                    fragmentWrapper.className = "doxygen-awesome-fragment-wrapper"
+                    const fragmentCopyButton = document.createElement("doxygen-awesome-fragment-copy-button")
+                    fragmentCopyButton.innerHTML = DoxygenAwesomeFragmentCopyButton.copyIcon
+                    fragmentCopyButton.title = DoxygenAwesomeFragmentCopyButton.title
+                    fragment.parentNode.replaceChild(fragmentWrapper, fragment)
+                    fragmentWrapper.appendChild(fragment)
+                    fragmentWrapper.appendChild(fragmentCopyButton)
+                }
+            }
+        })
+    })
 </script>
 <link href="navtree.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="navtreedata.js"></script>
@@ -124,7 +246,7 @@ $(function(){initNavTree('embedded-compiler.html',''); initResizable(true); });
 <div class="toc"><h3>Table of Contents</h3>
 <ul>
   <li class="level1">
-    <a href="#embedded-compiler">Using the Embedded Сompiler</a>
+    <a href="#using-embedded-compiler">Using the Embedded Сompiler</a>
     <ul>
       <li class="level2">
         <a href="#javascript-guide">JavaScript</a>
@@ -155,7 +277,7 @@ $(function(){initNavTree('embedded-compiler.html',''); initResizable(true); });
   </li>
 </ul>
 </div>
-<div class="textblock"><h1><a class="anchor" id="embedded-compiler"></a>
+<div class="textblock"><h1><a class="anchor" id="using-embedded-compiler"></a>
 Using the Embedded Сompiler</h1>
 <p>This section covers how to integrate the built-in compiler and use the API.</p>
 <h2><a class="anchor" id="javascript-guide"></a>
@@ -166,12 +288,14 @@ Install the NPM Package</h3>
 <li>Add the <b>GitHub</b> repository to your <code>.npmrc</code> under the <code>NAMESPACE</code> <code>vladimirshaleev</code> (<a href="https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry#installing-a-package">GitHub repo setup</a>).</li>
 <li>Authenticate with <b>GitHub</b> to access GitHub repositories (<a href="https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry#authenticating-to-github-packages">GitHub auth</a>).</li>
 <li>Create an empty project (e.g., in a folder like <code>test-js</code>). Inside it, generate a package.json by running <code>npm init</code>.</li>
-<li>Then, add the <b>idlc</b> npm package as a dependency: <div class="fragment"><div class="line">npm install @vladimirshaleev/idlc</div>
+<li>Then, add the <b>idlc</b> npm package as a dependency: <div class="fragment"><div class="line">@bash</div>
+<div class="line">npm install @vladimirshaleev/idlc</div>
 </div><!-- fragment --> <details >
 <summary >
 After this, your <code>package.json</code> might look like this:</summary>
 <p></p>
-<div class="fragment"><div class="line">{</div>
+<div class="fragment"><div class="line">@json</div>
+<div class="line">{</div>
 <div class="line">  &quot;name&quot;: &quot;test-js&quot;,</div>
 <div class="line">  &quot;main&quot;: &quot;index.js&quot;,</div>
 <div class="line">  &quot;type&quot;: &quot;module&quot;,</div>
@@ -187,7 +311,8 @@ After this, your <code>package.json</code> might look like this:</summary>
 <h3><a class="anchor" id="using-compiler-in-js"></a>
 Using the Embedded Compiler</h3>
 <p>Now, in <code>index.js</code>, you can add the following code:</p>
-<div class="fragment"><div class="line">import idlcInit from &#39;@vladimirshaleev/idlc&#39;;</div>
+<div class="fragment"><div class="line">@javascript</div>
+<div class="line">import idlcInit from &#39;@vladimirshaleev/idlc&#39;;</div>
 <div class="line"> </div>
 <div class="line">const idlc = await idlcInit();</div>
 <div class="line"> </div>
@@ -238,7 +363,8 @@ C</h2>
 <h3><a class="anchor" id="install-vcpkg-port"></a>
 Install the Vcpkg Port</h3>
 <p>The port is located in a custom registry. To add the custom registry, include the following registry with the <b>idlc</b> port in your <code>vcpkg-configuration.json</code> (in the same directory as your <code>vcpkg.json</code>):</p>
-<div class="fragment"><div class="line">{</div>
+<div class="fragment"><div class="line">@json</div>
+<div class="line">{</div>
 <div class="line">  &quot;$schema&quot;: &quot;https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg-configuration.schema.json&quot;,</div>
 <div class="line">  &quot;default-registry&quot;: {</div>
 <div class="line">    &quot;kind&quot;: &quot;git&quot;,</div>
@@ -258,7 +384,8 @@ Install the Vcpkg Port</h3>
 <div class="line">  ]</div>
 <div class="line">}</div>
 </div><!-- fragment --><p>After that, you can add the dependency to your <code>vcpkg.json</code>:</p>
-<div class="fragment"><div class="line">{</div>
+<div class="fragment"><div class="line">@json</div>
+<div class="line">{</div>
 <div class="line">  &quot;$schema&quot;: &quot;https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json&quot;,</div>
 <div class="line">  &quot;name&quot;: &quot;test-c&quot;,</div>
 <div class="line">  &quot;dependencies&quot;: [</div>
@@ -267,7 +394,8 @@ Install the Vcpkg Port</h3>
 <div class="line">}</div>
 </div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>For information on using <b>vcpkg</b>, refer to the <a href="https://learn.microsoft.com/vcpkg/">official website</a></dd></dl>
 <p>Add the following configuration to your <code>CMakeLists.txt</code>:</p>
-<div class="fragment"><div class="line">cmake_minimum_required(VERSION 3.16)</div>
+<div class="fragment"><div class="line">@cmake</div>
+<div class="line">cmake_minimum_required(VERSION 3.16)</div>
 <div class="line"> </div>
 <div class="line">project(test-c CXX)</div>
 <div class="line"> </div>
@@ -279,7 +407,8 @@ Install the Vcpkg Port</h3>
 </div><!-- fragment --><h3><a class="anchor" id="using-compiler-in-cpp"></a>
 Using the Embedded Compiler</h3>
 <p>Now you can add the following code to <code>main.cpp</code>, which is functionally similar to the code above for JavaScript:</p>
-<div class="fragment"><div class="line"><span class="preprocessor">#include &lt;<a class="code" href="idl_8h.html">idlc/idl.h</a>&gt;</span></div>
+<div class="fragment"><div class="line">@cpp</div>
+<div class="line"><span class="preprocessor">#include &lt;<a class="code" href="idl_8h.html">idlc/idl.h</a>&gt;</span></div>
 <div class="line"> </div>
 <div class="line"><span class="preprocessor">#include &lt;iostream&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;vector&gt;</span></div>
@@ -402,6 +531,52 @@ Next Steps</h2>
 </div><div class="section_buttons"></div> </div></div><!-- contents -->
 </div><!-- PageDoc -->
 </div><!-- doc-content -->
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.fragment').forEach(fragment => {
+      const pre = document.createElement('pre');
+      const code = document.createElement('code');
+      code.className = 'language-plaintext';
+      code.style.whiteSpace = 'pre';
+      let skip = false;
+      let first = true;
+      let codeContent = '';
+      fragment.querySelectorAll('.line').forEach(line => {
+        if (first) {
+          const lang = line.textContent;
+          if (lang == '@cmake') {
+            code.className = `language-cmake-ext`;
+          } else if (lang == '@idl') {
+            code.className = `language-idl`;
+          } else if (lang == '@json') {
+            code.className = `language-json`;
+          } else if (lang == '@c') {
+            code.className = `language-c`;
+          } else if (lang == '@cpp') {
+            code.className = `language-cpp`;
+          } else if (lang == '@javascript') {
+            code.className = `language-javascript`;
+          } else if (lang == '@bash') {
+            code.className = `language-bash`;
+          } else {
+            skip = true;
+          }
+        } else {
+          codeContent += line.textContent + '\n';
+        }
+        first = false;
+      });
+      if (!skip) {
+        code.textContent = codeContent.trimEnd();
+        pre.appendChild(code);
+        fragment.replaceWith(pre);
+      }
+    });
+    if (typeof hljs !== 'undefined') {
+      hljs.highlightAll();
+    }
+  });
+</script>
 <!-- HTML footer for doxygen 1.12.0-->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->

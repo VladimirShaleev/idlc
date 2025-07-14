@@ -52,6 +52,11 @@
             const KEYWORDS = {
                 keyword: 'api enum const struct field interface method arg prop event handle func callback import'
             }
+            const COMMENT = {
+                className: 'meta',
+                begin: '//',
+                end: '(?=\\n|$)'
+            }
             const DOCUMENTATION = {
                 className: 'comment',
                 begin: '@\\s*(\\w+)?',
@@ -123,8 +128,9 @@
                 case_insensitive: false,
                 keywords: KEYWORDS,
                 contains: [
-                    DOCUMENTATION,
+                    COMMENT,
                     MDOCUMENTATION,
+                    DOCUMENTATION,
                     TYPE,
                     ATTRIBUTE,
                     LITERAL,

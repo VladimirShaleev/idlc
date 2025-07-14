@@ -13,6 +13,7 @@ FetchContent_MakeAvailable(doxygen-awesome-css)
 set(IDLC_DOC_CSS "${doxygen-awesome-css_SOURCE_DIR}" CACHE STRING "doxygen-awesome")
 
 file(GLOB IDLC_DOC_SOURCES "${PROJECT_SOURCE_DIR}/include/idlc/*")
+file(GLOB IDLC_DOC_ICONS "${CMAKE_CURRENT_LIST_DIR}/icons/*")
 set(IDLC_DOC_MARKDOWN
     "${CMAKE_CURRENT_LIST_DIR}/introduction.md"
     "${CMAKE_CURRENT_LIST_DIR}/quick-start.md"
@@ -20,7 +21,7 @@ set(IDLC_DOC_MARKDOWN
     "${CMAKE_CURRENT_LIST_DIR}/embedded-compiler.md")
 
 set(DOXYGEN_PROJECT_LOGO "${CMAKE_CURRENT_LIST_DIR}/logo.svg")
-set(DOXYGEN_PROJECT_ICON "${CMAKE_CURRENT_LIST_DIR}/icon.svg")
+set(DOXYGEN_PROJECT_ICON "${CMAKE_CURRENT_LIST_DIR}/icons/favicon.svg")
 set(DOXYGEN_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 set(DOXYGEN_INLINE_INHERITED_MEMB YES)
 set(DOXYGEN_STRIP_FROM_PATH "${PROJECT_SOURCE_DIR}/include/idlc/")
@@ -57,7 +58,8 @@ set(DOXYGEN_HTML_EXTRA_FILES
     "${IDLC_DOC_CSS}/doxygen-awesome-tabs.js"
     "${CMAKE_CURRENT_LIST_DIR}/idlc-doc.js"
     "${CMAKE_CURRENT_LIST_DIR}/idlc.esm.js"
-    "${CMAKE_CURRENT_LIST_DIR}/diagram.svg")
+    "${CMAKE_CURRENT_LIST_DIR}/diagram.svg"
+    ${IDLC_DOC_ICONS})
 set(DOXYGEN_HTML_COLORSTYLE LIGHT)
 set(DOXYGEN_HTML_COLORSTYLE_HUE 209)
 set(DOXYGEN_HTML_COLORSTYLE_SAT 255)

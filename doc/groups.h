@@ -38,8 +38,3 @@
  * @ingroup api_c
  * @brief List of files.
  */
-
-/**
- * @defgroup api_js API JavaScript
- * @brief API JavaScript
- */

@@ -137,30 +137,35 @@ class DoxygenHighlight {
                 code.className = 'language-plaintext';
                 code.style.whiteSpace = 'pre';
 
-                let skip = false;
+                let skip = true;
                 let first = true;
                 let codeContent = '';
                 fragment.querySelectorAll('.line').forEach(line => {
                     if (first) {
                         const lang = line.textContent;
                         if (lang == '@cmake') {
+                            skip = false;
                             code.className = `language-cmake-ext`;
                         } else if (lang == '@idl') {
+                            skip = false;
                             code.className = `language-idl`;
                         } else if (lang == '@json') {
+                            skip = false;
                             code.className = `language-json`;
                         } else if (lang == '@c') {
+                            skip = false;
                             code.className = `language-c`;
                         } else if (lang == '@cpp') {
+                            skip = false;
                             code.className = `language-cpp`;
                         } else if (lang == '@javascript') {
+                            skip = false;
                             code.className = `language-javascript`;
                         } else if (lang == '@bash') {
+                            skip = false;
                             code.className = `language-bash`;
-                        } else {
-                            skip = true;
                         }
-                    } else {
+                    } else if (!skip) {
                         codeContent += line.textContent + '\n';
                     }
                     first = false;

@@ -13,7 +13,6 @@ var NAVTREEINDEX0 =
 "embedded-compiler.html#using-embedded-compiler":[3,0],
 "files.html":[6,0],
 "group__api__c.html":[4,0],
-"group__api__js.html":[4,1],
 "group__enums.html":[4,0,2],
 "group__enums.html#ga6aafad650316a600c79c655f92f70f3d":[4,0,2,0],
 "group__enums.html#gacb465e5698f0b0cf6d5f1c569614b02a":[4,0,2,1],
@@ -249,5 +248,6 @@ var NAVTREEINDEX0 =
 "idl-version_8h_source.html":[6,0,5],
 "idl_8h.html":[4,0,5,5],
 "idl_8h.html":[6,0,6],
-"idl_8h_source.html":[6,0,6]
+"idl_8h_source.html":[6,0,6],
+"index.html":[]
 };

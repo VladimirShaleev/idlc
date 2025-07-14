@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['macros_0',['Macros',['../group__macros.html',1,'']]]
+  ['structures_0',['Structures',['../group__structs.html',1,'']]]
 ];

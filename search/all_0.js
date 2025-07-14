@@ -10,8 +10,7 @@ var searchData=
   ['adding_20wasm_20support_7',['Adding WASM Support',['../quick-start.html#add-wasm',1,'']]],
   ['an_20npm_20package_8',['Creating an NPM Package',['../quick-start.html#npm-package',1,'']]],
   ['api_20c_9',['API C',['../group__api__c.html',1,'']]],
-  ['api_20javascript_10',['API JavaScript',['../group__api__js.html',1,'']]],
-  ['array_11',['[array]',['../language-guide.html#attr-array',1,'']]],
-  ['attributes_12',['Attributes',['../language-guide.html#attributes',1,'']]],
-  ['author_13',['[author]',['../language-guide.html#attr-author',1,'']]]
+  ['array_10',['[array]',['../language-guide.html#attr-array',1,'']]],
+  ['attributes_11',['Attributes',['../language-guide.html#attributes',1,'']]],
+  ['author_12',['[author]',['../language-guide.html#attr-author',1,'']]]
 ];

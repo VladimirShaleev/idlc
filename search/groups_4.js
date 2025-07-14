@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['javascript_0',['API JavaScript',['../group__api__js.html',1,'']]]
+  ['macros_0',['Macros',['../group__macros.html',1,'']]]
 ];

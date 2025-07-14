@@ -1,6 +1,5 @@
 var NAVTREEINDEX1 =
 {
-"index.html":[],
 "index.html":[0],
 "language-guide.html":[2],
 "language-guide.html#attr-array":[2,0,14,12],

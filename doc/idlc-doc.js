@@ -108,22 +108,25 @@ class DoxygenHighlight {
         $(function () {
             $(document).ready(function () {
                 if (navigator.clipboard) {
-                    const fragments = document.getElementsByClassName("hljs")
-                    for (const fragment of fragments) {
-                        const fragmentWrapper = document.createElement("div")
-                        fragmentWrapper.className = "doxygen-awesome-fragment-wrapper"
-                        const fragmentCopyButton = document.createElement("doxygen-awesome-fragment-copy-button")
-                        fragmentCopyButton.innerHTML = DoxygenAwesomeFragmentCopyButton.copyIcon
-                        fragmentCopyButton.title = DoxygenAwesomeFragmentCopyButton.title
-
-                        fragment.parentNode.replaceChild(fragmentWrapper, fragment)
-                        fragmentWrapper.appendChild(fragment)
-                        fragmentWrapper.appendChild(fragmentCopyButton)
-
+                    const elements = document.getElementsByClassName("hljs")
+                    for (const el of elements) {
+                        DoxygenHighlight.addCopyButton(el);
                     }
                 }
             })
         })
+    }
+    static addCopyButton(el) {
+        const fragmentWrapper = document.createElement("div")
+        fragmentWrapper.className = "doxygen-awesome-fragment-wrapper"
+        const fragmentCopyButton = document.createElement("doxygen-awesome-fragment-copy-button")
+        fragmentCopyButton.innerHTML = DoxygenAwesomeFragmentCopyButton.copyIcon
+        fragmentCopyButton.title = DoxygenAwesomeFragmentCopyButton.title
+
+        el.parentNode.replaceChild(fragmentWrapper, el)
+        fragmentWrapper.appendChild(el)
+        fragmentWrapper.appendChild(fragmentCopyButton)
+        return fragmentCopyButton
     }
     static apply() {
         document.addEventListener('DOMContentLoaded', () => {

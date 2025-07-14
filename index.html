@@ -272,20 +272,20 @@ $(function(){initNavTree('index.html',''); initResizable(true); });
             const pre = document.createElement('pre');
             pre.appendChild(code);
 
-            const div = document.createElement('div');
-            div.className = 'fragment';
-            div.style.maxHeight = '300px';
-            div.style.overflow = 'auto';
-            div.appendChild(pre);
+            hljs.highlightElement(code);
+            code.style.maxHeight = '300px';
+            code.style.overflow = 'auto';
+            code.style.lineHeight = '22px';
 
-            hljs.highlightElement(pre);
+            const copyButton = DoxygenHighlight.addCopyButton(code);
+            copyButton.style.right = '25px'; 
 
             const li = document.createElement('li');
             if (first) {
                 li.className = 'selected';
             }
             li.id = `tab-content-${filename}`;
-            li.appendChild(div);
+            li.appendChild(pre);
             tabContents.appendChild(li);
 
             first = false;

@@ -47,7 +47,7 @@ set(DOXYGEN_HTML_EXTRA_STYLESHEET
     "${IDLC_DOC_CSS}/doxygen-awesome-sidebar-only.css"
     "${IDLC_DOC_CSS}/doxygen-awesome-sidebar-only-darkmode-toggle.css"
     "${IDLC_DOC_CSS}/doxygen-custom/custom-alternative.css"
-    "${CMAKE_CURRENT_LIST_DIR}/custom.css")
+    "${CMAKE_CURRENT_LIST_DIR}/idlc-doc.css")
 set(DOXYGEN_HTML_EXTRA_FILES
     "${IDLC_DOC_CSS}/doxygen-awesome-darkmode-toggle.js"
     "${IDLC_DOC_CSS}/doxygen-awesome-fragment-copy-button.js"
@@ -55,6 +55,7 @@ set(DOXYGEN_HTML_EXTRA_FILES
     "${IDLC_DOC_CSS}/doxygen-custom/toggle-alternative-theme.js"
     "${IDLC_DOC_CSS}/doxygen-awesome-interactive-toc.js"
     "${IDLC_DOC_CSS}/doxygen-awesome-tabs.js"
+    "${CMAKE_CURRENT_LIST_DIR}/idlc-doc.js"
     "${CMAKE_CURRENT_LIST_DIR}/idlc.esm.js"
     "${CMAKE_CURRENT_LIST_DIR}/diagram.svg")
 set(DOXYGEN_HTML_COLORSTYLE LIGHT)

@@ -314,77 +314,47 @@ $(function(){initNavTree('index.html',''); initResizable(true); });
     }
 
     editor.value = `@ API Sample
-@ Demonstration of the .idl file for describing the library interface [detail]
-@ Author <author@mail.org> [author]
+@ Author <author@email.org> [author]
 @ MIT License [copyright]
-api Sample [version(1,1,0)]
+api Sample
 
-@ Logging severity levels.
-@ Hierarchical message importance classification. [detail]
-enum LoggerLevel
-    const Verbose @ Detailed diagnostic messages.
-    const Debug   @ Debugging information.
-    const Info    @ Informational messages.
-    const Warning @ Potentially problematic situations.
-    const Error   @ Recoverable error conditions.
-    const Fatal   @ Critical unrecoverable errors.
-    const Off     @ No logging output.
+@ Function sample.
+@ The result of multiplying {First} by {Second}. [return]
+func Mul {Float32}
+    arg First {Float32} @ First value
+    arg Second {Float32} @ Second value
 
-@ Graphics features.
-@ Bitmask of supported hardware capabilities. [detail]
-@ Sample ref {LoggerLevel}. [see]
-enum Feature [flags]
-    const None : 0 @ No special features
-    const Bindless : 1 @ Bindless resource access
-    const GeometryShader : 2 @ Geometry shader support
-    const MeshShader : 4 @ Mesh shader support
-    const SamplerFilterMinmax : 8 @ Min/max sampler filtering
-    const DrawIndirect : 16 @ Indirect drawing
+@ Vector 3.
+struct Vector
+    field X {Float32} @ X component
+    field Y {Float32} @ Y component
+    field Z {Float32} @ Z component
 
-@ Color clear values.
-@ Specifies RGBA values for color attachment clearing. [detail]
-struct Color
-    field Red {Float32} @ Red channel clear value.
-    field Green {Float32} @ Green channel clear value.
-    field Blue {Float32} @ Blue channel clear value.
-    field Alpha {Float32} @ Alpha channel clear value.
+@ Sample object.
+interface Vehicle
+    prop Name [get(GetName)] @ Name of vehicle
 
-@ Ger version lib
-@ Format: (major << 16) | (minor << 8) | micro. [detail]
-@ Return packed version number of "{Major}.{Minor}.{Micro}"[return]
-func Version {Uint32}
+    @ Create new vehicle instance.
+    @ Vehicle instance. [return]
+    @ {Destroy} [see]
+    method Create {Vehicle} [ctor]
+        arg Name {Str} @ Name of vehicle.
 
-@ Logging system interface.
-@ Provides logging facilities with multiple severity levels. [detail]
-interface Logger
-    prop Level [get(GetLevel),set(SetLevel)] @ Current log severity threshold.
-
-    @ Creates new logger instance
-    @ Initializes logging subsystem with specific tag. [detail]
-    @ Operation result [return]
-    @ The tag string is specified in the format: "mygame:logic:health". [note]
-    method Create {Bool} [ctor]
-        arg Tag {Str} @ Tag string.
-        arg Logger {Logger} [result] @ New logger instance.
-
-    @ Releases logger instance.
-    @ Destroys when reference count reaches zero. [detail]
+    @ Destroy vehicle instance.
+    @ {Create} [see]
     method Destroy [destroy]
-        arg Logger {Logger} [this] @ Logger to destroy.
+        arg Vehicle {Vehicle} [this] @ The 'this/self' object in OOP languages.
 
-    @ Gets current severity level.
-    @ Returns minimum level for logged messages. [detail]
-    @ Current severity threshold. [return]
-    @ {SetLevel} [see]
-    method GetLevel {LoggerLevel} [const]
-        arg Logger {Logger} [this] @ Target logger.
+    @ Get name
+    @ Get name of vehicle [detail]
+    @ Return name of vehicle [return]
+    method GetName {Str} [const]
+        arg Vehicle {Vehicle} [this] @ The 'this/self' object in OOP languages.
 
-    @ Sets logging severity level.
-    @ Filters messages below specified level. [detail]
-    @ {GetLevel} [see]
-    method SetLevel
-        arg Logger {Logger} [this] @ Target logger.
-        arg Level {LoggerLevel} @ New severity threshold.
+    @ Set velocity of vehicle.
+    method SetVelocity
+        arg Vehicle {Vehicle} [this] @ The 'this/self' object in OOP languages.
+        arg Value {Vector} [const,ref] @ Value of velocity.
 `;
 
 </script>

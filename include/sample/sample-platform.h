@@ -95,11 +95,6 @@
 #endif
 
 /**
- * @addtogroup types Types
- * @{
- */
-
-/**
  * @name  Platform-independent type definitions.
  * @brief Fixed-size types guaranteed to work across all supported platforms.
  * @{
@@ -120,8 +115,6 @@ typedef double      sample_float64_t; /**< 64 bit float point. */
 typedef const char* sample_utf8_t;    /**< utf8 string. */
 typedef void*       sample_data_t;    /**< pointer to data. */
 typedef const void* sample_cdata_t;   /**< pointer to immutable data. */
-/** @} */
-
 /** @} */
 
 /**

@@ -24,7 +24,6 @@
  * @brief Major version number (API-breaking changes).
  * @sa    SAMPLE_VERSION
  * @sa    SAMPLE_VERSION_STRING
- * @ingroup macros
  */
 #define SAMPLE_VERSION_MAJOR 1
 
@@ -32,7 +31,6 @@
  * @brief Minor version number (backwards-compatible additions).
  * @sa    SAMPLE_VERSION
  * @sa    SAMPLE_VERSION_STRING
- * @ingroup macros
  */
 #define SAMPLE_VERSION_MINOR 0
 
@@ -40,7 +38,6 @@
  * @brief Micro version number (bug fixes and patches).
  * @sa    SAMPLE_VERSION
  * @sa    SAMPLE_VERSION_STRING
- * @ingroup macros
  */
 #define SAMPLE_VERSION_MICRO 0
 
@@ -63,7 +60,6 @@
  * @param[in] micro Micro version number.
  * @return    Encoded version as unsigned long.
  * @sa        SAMPLE_VERSION
- * @ingroup   macros
  */
 #define SAMPLE_VERSION_ENCODE(major, minor, micro) (((unsigned long) major) << 16 | (minor) << 8 | (micro))
 
@@ -75,7 +71,6 @@
  * @param[in] micro Micro version number.
  * @return    Stringified version.
  * @note      For internal use only.
- * @ingroup   macros
  * @private
  */
 #define SAMPLE_VERSION_STRINGIZE_(major, minor, micro) #major "." #minor "." #micro
@@ -88,7 +83,6 @@
  * @param[in] micro Micro version number.
  * @return    Stringified version.
  * @sa        SAMPLE_VERSION_STRING
- * @ingroup   macros
  */
 #define SAMPLE_VERSION_STRINGIZE(major, minor, micro)  SAMPLE_VERSION_STRINGIZE_(major, minor, micro)
 
@@ -105,7 +99,6 @@
  * @details Combined version value suitable for numeric comparisons.
  *          Use #SAMPLE_VERSION_STRING for human-readable format.
  * @sa      SAMPLE_VERSION_STRING
- * @ingroup macros
  */
 #define SAMPLE_VERSION SAMPLE_VERSION_ENCODE( \
     SAMPLE_VERSION_MAJOR, \
@@ -117,7 +110,6 @@
  * @details Version string in "MAJOR.MINOR.MICRO" format (e.g., "1.0.0").
  *          Use #SAMPLE_VERSION for numeric comparisons.
  * @sa      SAMPLE_VERSION
- * @ingroup macros
  */
 #define SAMPLE_VERSION_STRING SAMPLE_VERSION_STRINGIZE( \
     SAMPLE_VERSION_MAJOR, \

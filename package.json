@@ -7,7 +7,6 @@
   "browser": "dist/sample.js",
   "types": "dist/sample.d.ts",
   "files": ["dist"],
-  "type": "module",
   "exports": {
     ".": {
       "require": "./dist/sample.js",

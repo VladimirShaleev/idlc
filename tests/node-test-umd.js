@@ -1,4 +1,4 @@
-import sampleInit from 'sample';
+const sampleInit = require('sample')
 
 console.log(`Sample UMD node.js`);
 

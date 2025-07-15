@@ -15,11 +15,6 @@
 SAMPLE_BEGIN
 
 /**
- * @addtogroup types Types
- * @{
- */
-
-/**
  * @name    Opaque Object Types
  * @brief   Forward declarations for framework objects using opaque pointer types
  * @details These macros generate typedefs for pointers to incomplete struct types,
@@ -29,8 +24,6 @@ SAMPLE_BEGIN
  * @{
  */
 SAMPLE_TYPE(sample_vehicle)
-/** @} */
-
 /** @} */
 
 SAMPLE_END

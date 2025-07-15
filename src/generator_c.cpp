@@ -932,11 +932,13 @@ static void generatePlatform(idl::Context& ctx,
     fmt::println(header.stream, "#  define {}_CONSTEXPR_14", API);
     fmt::println(header.stream, "#endif");
     fmt::println(header.stream, "");
-    fmt::println(header.stream, "/**");
-    fmt::println(header.stream, " * @addtogroup types Types");
-    fmt::println(header.stream, " * @{{");
-    fmt::println(header.stream, " */");
-    fmt::println(header.stream, "");
+    if (grouping) {
+        fmt::println(header.stream, "/**");
+        fmt::println(header.stream, " * @addtogroup types Types");
+        fmt::println(header.stream, " * @{{");
+        fmt::println(header.stream, " */");
+        fmt::println(header.stream, "");
+    }
     fmt::println(header.stream, "/**");
     fmt::println(header.stream, " * @name  Platform-independent type definitions.");
     fmt::println(header.stream, " * @brief Fixed-size types guaranteed to work across all supported platforms.");
@@ -950,8 +952,10 @@ static void generatePlatform(idl::Context& ctx,
     }
     fmt::println(header.stream, "/** @}} */");
     fmt::println(header.stream, "");
-    fmt::println(header.stream, "/** @}} */");
-    fmt::println(header.stream, "");
+    if (grouping) {
+        fmt::println(header.stream, "/** @}} */");
+        fmt::println(header.stream, "");
+    }
     constexpr auto tmpFlags = R"(/**
  * @def       {API}_FLAGS
  * @brief     Enables bit flag operations for enumerations (C++ only).
@@ -1110,11 +1114,13 @@ static void generateTypes(idl::Context& ctx,
     generateDoc(header, ctx.api(), grouping ? "files" : "", false, &file);
     beginHeader(ctx, header, "platform");
 
-    fmt::println(header.stream, "/**");
-    fmt::println(header.stream, " * @addtogroup types Types");
-    fmt::println(header.stream, " * @{{");
-    fmt::println(header.stream, " */");
-    fmt::println(header.stream, "");
+    if (grouping) {
+        fmt::println(header.stream, "/**");
+        fmt::println(header.stream, " * @addtogroup types Types");
+        fmt::println(header.stream, " * @{{");
+        fmt::println(header.stream, " */");
+        fmt::println(header.stream, "");
+    }
 
     if (hasInterfaces) {
         size_t maxLength = 0;
@@ -1173,8 +1179,10 @@ static void generateTypes(idl::Context& ctx,
         fmt::println(header.stream, "/** @}} */");
         fmt::println(header.stream, "");
     }
-    fmt::println(header.stream, "/** @}} */");
-    fmt::println(header.stream, "");
+    if (grouping) {
+        fmt::println(header.stream, "/** @}} */");
+        fmt::println(header.stream, "");
+    }
     endHeader(ctx, header);
 }
 

@@ -43,7 +43,7 @@
  * @sa      IDL_VERSION_STRING
  * @ingroup macros
  */
-#define IDL_VERSION_MICRO 13
+#define IDL_VERSION_MICRO 14
 
 /** @} */
 
@@ -70,7 +70,7 @@
 
 /**
  * @brief     Internal macro for string version generation.
- * @details   Helper macro that stringizes version components (e.g., 1, 5, 13 -> "1.5.13").
+ * @details   Helper macro that stringizes version components (e.g., 1, 5, 14 -> "1.5.14").
  * @param[in] major Major version number.
  * @param[in] minor Minor version number.
  * @param[in] micro Micro version number.
@@ -83,7 +83,7 @@
 
 /**
  * @brief     Creates version string from components.
- * @details   Generates a string literal from version components (e.g., 1, 5, 13 -> "1.5.13").
+ * @details   Generates a string literal from version components (e.g., 1, 5, 14 -> "1.5.14").
  * @param[in] major Major version number.
  * @param[in] minor Minor version number.
  * @param[in] micro Micro version number.
@@ -115,7 +115,7 @@
 
 /**
  * @brief   Library version as human-readable string.
- * @details Version string in "MAJOR.MINOR.MICRO" format (e.g., "1.5.13").
+ * @details Version string in "MAJOR.MINOR.MICRO" format (e.g., "1.5.14").
  *          Use #IDL_VERSION for numeric comparisons.
  * @sa      IDL_VERSION
  * @ingroup macros

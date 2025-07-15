@@ -121,7 +121,7 @@ While the complete IDL syntax isn't crucial at this stage, here are the key poin
   "registries": [
     {
       "kind": "git",
-      "baseline": "7970f9c6150c8d6d839123dced0693da4f17c5df",
+      "baseline": "124f27dfa5e457147722d976eeecba8332937f2f",
       "reference": "vcpkg-registry",
       "repository": "https://github.com/VladimirShaleev/idlc",
       "packages": [

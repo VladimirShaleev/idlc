@@ -777,8 +777,8 @@ static void generateVersion(idl::Context& ctx,
                  fmt::arg("micro", micro),
                  fmt::arg("s", ' '),
                  fmt::arg("c", grouping ? 3 : 1),
-                 fmt::arg("group1", "\n * @ingroup macros"),
-                 fmt::arg("group2", "\n * @ingroup   macros"));
+                 fmt::arg("group1", grouping ? "\n * @ingroup macros" : ""),
+                 fmt::arg("group2", grouping ? "\n * @ingroup   macros" : ""));
     endHeader(ctx, header);
 }
 
@@ -1216,7 +1216,17 @@ static void generateMain(idl::Context& ctx,
                          idl_data_t writerData,
                          std::span<idl_utf8_t> includes,
                          bool grouping) {
-    auto header = createHeader(ctx, out, "", true, writer, writerData);
+    bool hasDecl = false;
+    ctx.filter<ASTDecl>([&hasDecl](ASTDecl* decl) {
+        if (!decl->file && ((decl->is<ASTStruct>() && !decl->findAttr<ASTAttrHandle>()) || decl->is<ASTEnum>() ||
+                            decl->is<ASTInterface>() || decl->is<ASTFunc>() || decl->is<ASTCallback>())) {
+            hasDecl = true;
+            return false;
+        }
+        return true;
+    });
+
+    auto header = createHeader(ctx, out, "", hasDecl, writer, writerData);
     generateDoc(header, ctx.api(), grouping ? "files" : "", true);
     if (prevFile) {
         beginHeader(ctx, header, convert(prevFile->name, Case::LispCase), includes);

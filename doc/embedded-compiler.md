@@ -110,7 +110,7 @@ The port is located in a custom registry. To add the custom registry, include th
   "registries": [
     {
       "kind": "git",
-      "baseline": "124f27dfa5e457147722d976eeecba8332937f2f",
+      "baseline": "88b3d5b8d6466493c2215f10d5fc8618b578fe13",
       "reference": "vcpkg-registry",
       "repository": "https://github.com/VladimirShaleev/idlc",
       "packages": [

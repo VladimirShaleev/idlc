@@ -14,11 +14,11 @@ void generateJs(idl::Context& ctx,
                 idl_write_callback_t writer,
                 idl_data_t writerData);
 
-void generateCSharp(idl::Context& ctx,
-                    const std::filesystem::path& out,
-                    idl_write_callback_t writer,
-                    idl_data_t writerData,
-                    std::span<idl_utf8_t> additions);
+void generateCs(idl::Context& ctx,
+                const std::filesystem::path& out,
+                idl_write_callback_t writer,
+                idl_data_t writerData,
+                std::span<idl_utf8_t> additions);
 
 struct _idl_compiler : public idl::Object {};
 
@@ -89,9 +89,8 @@ public:
                     return IDL_RESULT_ERROR_NOT_SUPPORTED;
 #endif
                 case IDL_GENERATOR_CSHARP:
-#ifdef IDLC_SUPPORTED_CSHARP
-                    generateCSharp(
-                        context, output, writer, writerData, std::span{ additions.data(), additions.size() });
+#ifdef IDLC_SUPPORTED_CS
+                    generateCs(context, output, writer, writerData, std::span{ additions.data(), additions.size() });
                     break;
 #else
                     return IDL_RESULT_ERROR_NOT_SUPPORTED;

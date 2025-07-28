@@ -26,6 +26,7 @@ include(cmake/bison-install.cmake)
 
 option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 option(IDLC_SUPPORTED_JS "Support JavaScript generator" ON)
+option(IDLC_SUPPORTED_CSHARP "Support C# generator" ON)
 option(IDLC_MSVC_DYNAMIC_RUNTIME "Link dynamic runtime library instead of static" OFF)
 cmake_dependent_option(IDLC_BUILD_DOC "Build doc" ON
   "CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR" OFF)
@@ -62,6 +63,9 @@ endif()
 set(IDL_SOURCES src/compiler.cpp src/generator_c.cpp)
 if(IDLC_SUPPORTED_JS)
     list(APPEND IDL_SOURCES src/generator_js.cpp)
+endif()
+if(IDLC_SUPPORTED_CSHARP)
+    list(APPEND IDL_SOURCES src/generator_csharp.cpp)
 endif()
 
 add_library(idl
@@ -106,6 +110,9 @@ if(MSVC)
 endif()
 if(IDLC_SUPPORTED_JS)
     target_compile_definitions(idl PRIVATE IDLC_SUPPORTED_JS)
+endif()
+if(IDLC_SUPPORTED_CSHARP)
+    target_compile_definitions(idl PRIVATE IDLC_SUPPORTED_CSHARP)
 endif()
 set(IDLC_TARGETS idl)
 

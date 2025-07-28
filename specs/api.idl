@@ -40,20 +40,19 @@ import Results
 @ This is where the structures and various compilation options are located. [detail]
 import Options
 
-@ Generation language
+@ Generation language.
 @ Enumeration possible languages for generating interfaces and wrapping C libraries for other languages. [note]
 enum Generator
-    const C @ C generator
-    // const Cpp @ C++ generator
-    // const Python @ Python generator
-    const JavaScript : 3 @ JavaScript generator (generates Embind bindings)
-    // const TypeScript @ TypeScript generator
-    // const CSharp [tokenizer(0)] @ C# generator
-    // const Java @ Java generator
+    const C @ C generator.
+    // const Cpp @ C++ generator.
+    // const Python @ Python generator.
+    const JavaScript : 3 @ JavaScript generator (generates Embind bindings).
+    const CSharp [tokenizer(0)] @ C# generator.
+    // const Java @ Java generator.
 
 @ Current library version as packed 32-bit value.
 @ Format: (major << 16) | (minor << 8) | micro. [detail]
-@ Return packed version number [return]
+@ Return packed version number. [return]
 func Version {Uint32}
 
 @ Current library version as human-readable string.

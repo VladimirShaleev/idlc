@@ -41,21 +41,22 @@
 IDL_BEGIN
 
 /**
- * @brief   Generation language
+ * @brief   Generation language.
  * @note    Enumeration possible languages for generating interfaces and wrapping C libraries for other languages.
  * @ingroup enums
  */
 typedef enum
 {
-    IDL_GENERATOR_C           = 0, /**< C generator */
-    IDL_GENERATOR_JAVA_SCRIPT = 3, /**< JavaScript generator (generates Embind bindings) */
+    IDL_GENERATOR_C           = 0, /**< C generator. */
+    IDL_GENERATOR_JAVA_SCRIPT = 3, /**< JavaScript generator (generates Embind bindings). */
+    IDL_GENERATOR_CSHARP      = 4, /**< C# generator. */
     IDL_GENERATOR_MAX_ENUM    = 0x7FFFFFFF /**< Max value of enum (not used) */
 } idl_generator_t;
 
 /**
  * @brief   Current library version as packed 32-bit value.
  * @details Format: (major << 16) | (minor << 8) | micro.
- * @return  Return packed version number
+ * @return  Return packed version number.
  * @ingroup functions
  */
 idl_api idl_uint32_t

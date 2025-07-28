@@ -92,7 +92,7 @@
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="logo.svg"/></td>
   <td id="projectalign">
-   <div id="projectname">idlc<span id="projectnumber">&#160;1.5.14</span>
+   <div id="projectname">idlc<span id="projectnumber">&#160;1.5.15</span>
    </div>
    <div id="projectbrief">Interface Definition Language Compiler</div>
   </td>
@@ -1152,13 +1152,13 @@ Attributes</h2>
 [tokenizer]</h3>
 <p>Overrides default name tokenization rules for specific declarations.</p>
 <div class="fragment"><div class="line">@idl</div>
-<div class="line">@ Keyboard scancodes.</div>
-<div class="line">enum Scancode</div>
-<div class="line">    const F1 [tokenizer(0)] @ F1 function key.</div>
-<div class="line">    const BC1RgbSrgb [tokenizer(3-3)] @ block-compressed format</div>
-<div class="line">    const PVRTC2v2BppSrgb [tokenizer(6-^1-4)] @ PVRTC compressed format </div>
+<div class="line">@ Texture formats.</div>
+<div class="line">enum Format</div>
+<div class="line">    const R4G4 [tokenizer(0)] @ R4G4.</div>
+<div class="line">    const BC1RgbSrgb [tokenizer(3-3)] @ block-compressed format.</div>
+<div class="line">    const PVRTC2v2BppSrgb [tokenizer(6-^1-4)] @ PVRTC compressed format.</div>
 </div><!-- fragment --><p>In this example, the names will be tokenized as follows:</p><ul>
-<li><code>F1</code>;</li>
+<li><code>R4G4</code>;</li>
 <li><code>BC1 Rgb Srgb</code>;</li>
 <li><code>PVRTC2 2Bpp Srgb</code>.</li>
 </ul>

@@ -1070,15 +1070,15 @@ Overrides default name tokenization rules for specific declarations.
 
 ```
 @idl
-@ Keyboard scancodes.
-enum Scancode
-    const F1 [tokenizer(0)] @ F1 function key.
-    const BC1RgbSrgb [tokenizer(3-3)] @ block-compressed format
-    const PVRTC2v2BppSrgb [tokenizer(6-^1-4)] @ PVRTC compressed format 
+@ Texture formats.
+enum Format
+    const R4G4 [tokenizer(0)] @ R4G4.
+    const BC1RgbSrgb [tokenizer(3-3)] @ block-compressed format.
+    const PVRTC2v2BppSrgb [tokenizer(6-^1-4)] @ PVRTC compressed format.
 ```
 
 In this example, the names will be tokenized as follows:
-- `F1`;
+- `R4G4`;
 - `BC1 Rgb Srgb`;
 - `PVRTC2 2Bpp Srgb`.
 

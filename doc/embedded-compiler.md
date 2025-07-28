@@ -6,7 +6,7 @@
 
 This section covers how to integrate the built-in compiler and use the API.
 
-## JavaScript {#javascript-guide}
+## JavaScript API {#javascript-guide}
 
 ### Install the NPM Package {#install-npm-package}
 
@@ -31,7 +31,7 @@ This section covers how to integrate the built-in compiler and use the API.
     "type": "module",
     "description": "",
     "dependencies": {
-      "@vladimirshaleev/idlc": "^1.5.12"
+      "@vladimirshaleev/idlc": "^1.5.15"
     }
   }
   ```
@@ -92,7 +92,7 @@ for (const [filename, code] of Object.entries(compiledCodes)) {
 
 As we can see, the JavaScript API created by IDLC can work with lambda expressions, closures, properties, and JavaScript arrays.
 
-## C {#c-guide}
+## C API {#c-guide}
 
 ### Install the Vcpkg Port {#install-vcpkg-port}
 

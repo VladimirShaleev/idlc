@@ -39,6 +39,12 @@ public:
         import(loc, path, false);
     }
 
+    ~Scanner() {
+        while (!_imports.empty()) {
+            popImport();
+        }
+    }
+
     int yylex(Parser::semantic_type* yylval, Parser::location_type* yylloc);
 
     Context& context() noexcept {

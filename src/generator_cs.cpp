@@ -1,9 +1,15 @@
 #include "case_converter.hpp"
 #include "context.hpp"
 
+#include <stduuid/uuid.h>
+
 using namespace idl;
 
 struct Package {
+    std::string dllosx;
+    std::string dllwin32;
+    std::string dllwin64;
+    std::string dlllinux;
     int assemblyVersion;
     std::string assemblyName;
     std::string authors;
@@ -152,11 +158,58 @@ std::string escapeXml(const std::string& str) {
     return ss.str();
 }
 
-static void createSCharpProj(const Package& package,
-                             idl::Context& ctx,
-                             const std::filesystem::path& out,
-                             idl_write_callback_t writer,
-                             idl_data_t writerData) {
+static void createTargets(const Package& package,
+                          idl::Context& ctx,
+                          const std::filesystem::path& out,
+                          idl_write_callback_t writer,
+                          idl_data_t writerData) {
+    const auto apiName = csharpName(ctx.api());
+
+    auto getName = [&apiName](const std::string& fullname, const std::string& prefix, const std::string& ext) {
+        return fullname.length() ? std::filesystem::path(fullname).filename().string() : prefix + apiName + ext;
+    };
+
+    const auto winName   = getName(package.dllwin64, "", ".dll");
+    const auto osxName   = getName(package.dllosx, "lib", ".dylib");
+    const auto linuxName = getName(package.dlllinux, "lib", ".so");
+
+    constexpr auto targets = R"xml(<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <_IsWindows Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))' == 'true'">true</_IsWindows>
+    <_IsMacOS Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">true</_IsMacOS>
+    <_IsLinux Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">true</_IsLinux>
+
+    <_NativeRuntime Condition=" '$(_NativeRuntime)' == '' And '$(_IsMacOS)' == 'true' And '$(PlatformTarget)' == 'x64'">osx</_NativeRuntime>
+    <_NativeRuntime Condition=" '$(_NativeRuntime)' == '' And '$(_IsMacOS)' == 'true' And '$(PlatformTarget)' == 'ARM64'">osx</_NativeRuntime>
+    <_NativeRuntime Condition=" '$(_NativeRuntime)' == '' And '$(_IsLinux)' == 'true' And ('$(Prefer32Bit)' == 'false' Or '$(PlatformTarget)' == 'x64')">linux-x64</_NativeRuntime>
+    <_NativeRuntime Condition=" '$(_NativeRuntime)' == '' And '$(_IsWindows)' == 'true' And ('$(Prefer32Bit)' == 'true' Or '$(PlatformTarget)' == 'x86')">win-x86</_NativeRuntime>
+    <_NativeRuntime Condition=" '$(_NativeRuntime)' == '' And '$(_IsWindows)' == 'true' And ('$(Prefer32Bit)' == 'false' Or '$(PlatformTarget)' == 'x64')">win-x64</_NativeRuntime>
+
+    <_NativeLibName Condition="'$(_NativeRuntime)' == 'win-x86' Or '$(_NativeRuntime)' == 'win-x64'">{}</_NativeLibName>
+    <_NativeLibName Condition="'$(_NativeRuntime)' == 'osx'">{}</_NativeLibName>
+    <_NativeLibName Condition="'$(_NativeRuntime)' == 'linux-x64'">{}</_NativeLibName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Condition="'$(_NativeRuntime)' != ''" Include="$(MSBuildThisFileDirectory)..\..\runtimes\$(_NativeRuntime)\native\$(_NativeLibName)">
+      <Link>%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </Content>
+  </ItemGroup>
+</Project>
+)xml";
+
+    auto stream = createStream(ctx, out, package.assemblyName + ".targets", writer, writerData);
+    fmt::println(stream.stream, targets, winName, osxName, linuxName);
+    endStream(stream);
+}
+
+static void createProj(const Package& package,
+                       idl::Context& ctx,
+                       const std::filesystem::path& out,
+                       idl_write_callback_t writer,
+                       idl_data_t writerData) {
     constexpr auto props = R"(  <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
     <ImplicitUsings>disable</ImplicitUsings>
@@ -226,6 +279,33 @@ static void createSCharpProj(const Package& package,
                  fmt::arg("assemblyVersion", package.assemblyVersion),
                  fmt::arg("readmeFile", readme),
                  fmt::arg("license", license));
+
+    fmt::println(stream.stream, "  <ItemGroup>");
+    auto addDll = [&stream, &out](const std::string& fullpath, const std::string& folder) {
+        if (fullpath.length()) {
+            std::filesystem::path path(fullpath);
+            const auto rel = std::filesystem::relative(path, out).string();
+            fmt::println(stream.stream,
+                         R"(    <Content Include="{}">
+      <PackagePath>runtimes/{}/native</PackagePath>
+      <Pack>true</Pack>
+    </Content>)",
+                         rel,
+                         folder);
+        }
+    };
+    addDll(package.dllwin32, "win-x86");
+    addDll(package.dllwin64, "win-x64");
+    const auto targets = package.assemblyName + ".targets";
+    fmt::println(stream.stream,
+                 R"(    <Content Include="{targets}">
+      <PackagePath>build/net40/{targets}</PackagePath>
+      <Pack>true</Pack>
+    </Content>)",
+                 fmt::arg("targets", targets));
+    fmt::println(stream.stream, "  </ItemGroup>");
+    fmt::println(stream.stream, "");
+
     if (package.readmeFile.length()) {
         std::filesystem::path path(package.readmeFile);
         const auto rel = std::filesystem::relative(path, out);
@@ -260,6 +340,56 @@ static void createSCharpProj(const Package& package,
     endStream(stream);
 }
 
+static void createSln(const Package& package,
+                      idl::Context& ctx,
+                      const std::filesystem::path& out,
+                      idl_write_callback_t writer,
+                      idl_data_t writerData) {
+    std::random_device rd;
+    auto seed_data = std::array<int, std::mt19937::state_size>{};
+    std::generate(std::begin(seed_data), std::end(seed_data), std::ref(rd));
+    std::seed_seq seq(std::begin(seed_data), std::end(seed_data));
+    std::mt19937 generator(seq);
+    uuids::uuid_random_generator gen{ generator };
+
+    const auto solutionGuid = uuids::to_string(gen());
+    const auto projectGuid  = uuids::to_string(gen());
+
+    constexpr auto sln = R"(
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35931.197
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{{{solution}}}") = "{assembly}", "{assembly}.csproj", "{{{project}}}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{{{project}}}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{{{project}}}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{{{project}}}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{{{project}}}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {{A81396C2-22AA-4DF6-B7CA-48278CA8DB61}}
+	EndGlobalSection
+EndGlobal)";
+
+    auto stream = createStream(ctx, out, package.assemblyName + ".sln", writer, writerData);
+    fmt::println(stream.stream,
+                 sln,
+                 fmt::arg("assembly", package.assemblyName),
+                 fmt::arg("solution", solutionGuid),
+                 fmt::arg("project", projectGuid));
+    endStream(stream);
+}
+
 void generateCs(idl::Context& ctx,
                 const std::filesystem::path& out,
                 idl_write_callback_t writer,
@@ -281,7 +411,15 @@ void generateCs(idl::Context& ctx,
     package.copyright = docString(ctx.api()->doc->license);
     for (auto arg : additions) {
         const auto [key, value] = keyValue(arg);
-        if (key == "+assemblyver") {
+        if (key == "+dllosx") {
+            package.dllosx = value;
+        } else if (key == "+dllwin32") {
+            package.dllwin32 = value;
+        } else if (key == "+dllwin64") {
+            package.dllwin64 = value;
+        } else if (key == "+dlllinux") {
+            package.dlllinux = value;
+        } else if (key == "+assemblyver") {
             package.assemblyVersion = std::atoi(value.c_str());
         } else if (key == "+assemblyname") {
             package.assemblyName = value;
@@ -309,5 +447,7 @@ void generateCs(idl::Context& ctx,
             package.licenseFile = value;
         }
     }
-    createSCharpProj(package, ctx, out, writer, writerData);
+    createTargets(package, ctx, out, writer, writerData);
+    createProj(package, ctx, out, writer, writerData);
+    createSln(package, ctx, out, writer, writerData);
 }

@@ -5,7 +5,8 @@
   "dependencies": [
     "fmt",
     "magic-enum",
-    "xxhash"
+    "xxhash",
+    "stduuid"
   ],
   "features": {
     "tool": {

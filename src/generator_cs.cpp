@@ -235,6 +235,7 @@ static void createProj(const Package& package,
     <AssemblyVersion>{version}.{assemblyVersion}</AssemblyVersion>
     <PackageReadmeFile>{readmeFile}</PackageReadmeFile>
     {license}<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
   </PropertyGroup>
 )";
 
@@ -398,6 +399,34 @@ EndGlobal)";
     endStream(stream);
 }
 
+static void createDocComment(std::ostream& stream, int indent) {
+    fmt::print(stream, "{:<{}}/// ", ' ', indent);
+}
+
+static void createDocField(std::ostream& stream, int indent, const std::vector<ASTNode*> nodes) {
+    std::istringstream doc(docString(nodes));
+    std::string line;
+    while (std::getline(doc, line, '\n')) {
+        createDocComment(stream, indent);
+        fmt::println(stream, "{}", line);
+    }
+}
+
+static void createDoc(std::ostream& stream, int indent, const ASTDoc* doc) {
+    if (!doc->brief.empty() || !doc->detail.empty()) {
+        createDocComment(stream, indent);
+        fmt::println(stream, "<summary>");
+        if (!doc->brief.empty()) {
+            createDocField(stream, indent, doc->brief);
+        }
+        if (!doc->detail.empty()) {
+            createDocField(stream, indent, doc->detail);
+        }
+        createDocComment(stream, indent);
+        fmt::println(stream, "</summary>");
+    }
+}
+
 static void createEnums(const Package& package,
                         idl::Context& ctx,
                         const std::filesystem::path& out,
@@ -414,6 +443,7 @@ static void createEnums(const Package& package,
             fmt::println(stream.stream, "");
         }
         first = false;
+        createDoc(stream.stream, 4, node->doc);
         if (node->findAttr<ASTAttrFlags>()) {
             fmt::println(stream.stream, "    [Flags]");
         }
@@ -435,6 +465,8 @@ static void createEnums(const Package& package,
             } else {
                 value = std::to_string(ec->value);
             }
+            fmt::println(stream.stream, "");
+            createDoc(stream.stream, 8, ec->doc);
             fmt::println(stream.stream, "        {} = {}{}", csharpName(ec), value, isLast ? "" : ",");
         }
         fmt::println(stream.stream, "    }}");

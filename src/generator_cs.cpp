@@ -36,19 +36,27 @@ struct Stream {
 
 struct CSharpName : Visitor {
     void visit(ASTApi* node) override {
-        str = pascalCase(node);
+        str = changeCase(node);
+    }
+
+    void visit(ASTEnum* node) override {
+        str = changeCase(node);
+    }
+
+    void visit(ASTEnumConst* node) override {
+        str = changeCase(node);
     }
 
     void discarded(ASTNode*) override {
         assert(!"Default value is missing");
     }
 
-    static std::string pascalCase(ASTDecl* decl) {
+    static std::string changeCase(ASTDecl* decl, Case newCase = Case::PascalCase) {
         std::vector<int>* nums = nullptr;
         if (auto attr = decl->findAttr<ASTAttrTokenizer>()) {
             nums = &attr->nums;
         }
-        return convert(decl->name, Case::PascalCase, nums);
+        return convert(decl->name, newCase, nums);
     }
 
     std::string str;
@@ -390,6 +398,82 @@ EndGlobal)";
     endStream(stream);
 }
 
+static void createEnums(const Package& package,
+                        idl::Context& ctx,
+                        const std::filesystem::path& out,
+                        idl_write_callback_t writer,
+                        idl_data_t writerData) {
+    auto stream = createStream(ctx, out, "Enums.cs", writer, writerData);
+    fmt::println(stream.stream, "using System;");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "namespace {}", package.rootNamespace);
+    fmt::println(stream.stream, "{{");
+    auto first = true;
+    ctx.filter<ASTEnum>([&stream, &first](ASTEnum* node) {
+        if (!first) {
+            fmt::println(stream.stream, "");
+        }
+        first = false;
+        if (node->findAttr<ASTAttrFlags>()) {
+            fmt::println(stream.stream, "    [Flags]");
+        }
+        fmt::println(stream.stream, "    public enum {}", csharpName(node));
+        fmt::println(stream.stream, "    {{");
+        for (size_t i = 0; i < node->consts.size(); ++i) {
+            const auto isLast = i + 1 == node->consts.size();
+
+            auto ec      = node->consts[i];
+            auto literal = ec->findAttr<ASTAttrValue>()->value;
+            std::string value;
+            if (auto litConsts = literal->as<ASTLiteralConsts>(); litConsts && node->findAttr<ASTAttrFlags>()) {
+                for (auto decl : litConsts->decls) {
+                    if (value.length()) {
+                        value += " | ";
+                    }
+                    value += csharpName(decl->decl);
+                }
+            } else {
+                value = std::to_string(ec->value);
+            }
+            fmt::println(stream.stream, "        {} = {}{}", csharpName(ec), value, isLast ? "" : ",");
+        }
+        fmt::println(stream.stream, "    }}");
+    });
+    fmt::println(stream.stream, "}}");
+    endStream(stream);
+}
+
+static void createNative(const Package& package,
+                         idl::Context& ctx,
+                         const std::filesystem::path& out,
+                         idl_write_callback_t writer,
+                         idl_data_t writerData) {
+    std::vector<ASTEnum*> checkEnums;
+    ctx.filter<ASTEnum>([&checkEnums](ASTEnum* node) {
+        if (node->findAttr<ASTAttrErrorCode>()) {
+            checkEnums.push_back(node);
+        }
+    });
+
+    auto stream = createStream(ctx, out, "NativeWrapper.cs", writer, writerData);
+    fmt::println(stream.stream, "using System;");
+    fmt::println(stream.stream, "using System.Collections.Generic;");
+    fmt::println(stream.stream, "using System.Runtime.InteropServices;");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "namespace {}", package.rootNamespace);
+    fmt::println(stream.stream, "{{");
+    fmt::println(stream.stream, "    internal unsafe static class NativeWrapper");
+    fmt::println(stream.stream, "    {{");
+    for (auto en : checkEnums) {
+        fmt::println(stream.stream, "        public static void Check({} result)", csharpName(en));
+        fmt::println(stream.stream, "        {{");
+        fmt::println(stream.stream, "        }}");
+    }
+    fmt::println(stream.stream, "    }}");
+    fmt::println(stream.stream, "}}");
+    endStream(stream);
+}
+
 void generateCs(idl::Context& ctx,
                 const std::filesystem::path& out,
                 idl_write_callback_t writer,
@@ -450,4 +534,6 @@ void generateCs(idl::Context& ctx,
     createTargets(package, ctx, out, writer, writerData);
     createProj(package, ctx, out, writer, writerData);
     createSln(package, ctx, out, writer, writerData);
+    createEnums(package, ctx, out, writer, writerData);
+    createNative(package, ctx, out, writer, writerData);
 }

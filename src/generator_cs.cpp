@@ -47,8 +47,32 @@ struct CSharpName : Visitor {
         str = changeCase(node);
     }
 
+    void visit(ASTStruct* node) override {
+        str = changeCase(node);
+    }
+
+    void visit(ASTField* node) override {
+        str = changeCase(node, field ? Case::CamelCase : Case::PascalCase);
+    }
+
+    void visit(ASTFunc* node) override {
+        str = changeCase(node);
+    }
+
+    void visit(ASTMethod* node) override {
+        str = changeCase(node);
+    }
+
+    void visit(ASTInterface* node) override {
+        str = changeCase(node);
+    }
+
+    void visit(ASTCallback* node) override {
+        str = changeCase(node);
+    }
+
     void discarded(ASTNode*) override {
-        assert(!"Default value is missing");
+        assert(!"C# name is missing");
     }
 
     static std::string changeCase(ASTDecl* decl, Case newCase = Case::PascalCase) {
@@ -60,12 +84,278 @@ struct CSharpName : Visitor {
     }
 
     std::string str;
+    bool field;
 };
 
-static std::string csharpName(ASTDecl* decl) {
+static std::string csharpName(ASTDecl* decl, bool field = false) {
     CSharpName name{};
+    name.field = field;
     decl->accept(name);
     return name.str;
+}
+
+static std::string nativeFuncName(ASTDecl* decl) {
+    std::string parent;
+    if (decl->parent->is<ASTInterface>()) {
+        parent = csharpName(decl->parent->as<ASTDecl>());
+    }
+    return parent + csharpName(decl);
+}
+
+static std::string cName(ASTDecl* decl) {
+    CName name{};
+    decl->accept(name);
+    return name.str;
+}
+
+struct CFieldType : Visitor {
+    void visit(ASTChar* node) override {
+        str = "byte" + addRef(node);
+    }
+
+    void visit(ASTStr* node) override {
+        str = "char*";
+    }
+
+    void visit(ASTBool* node) override {
+        str = "bool" + addRef(node);
+    }
+
+    void visit(ASTInt8* node) override {
+        str = "sbyte" + addRef(node);
+    }
+
+    void visit(ASTUint8* node) override {
+        str = "byte" + addRef(node);
+    }
+
+    void visit(ASTInt16* node) override {
+        str = "short" + addRef(node);
+    }
+
+    void visit(ASTUint16* node) override {
+        str = "ushort" + addRef(node);
+    }
+
+    void visit(ASTInt32* node) override {
+        str = "int" + addRef(node);
+    }
+
+    void visit(ASTUint32* node) override {
+        str = "uint" + addRef(node);
+    }
+
+    void visit(ASTInt64* node) override {
+        str = "long" + addRef(node);
+    }
+
+    void visit(ASTUint64* node) override {
+        str = "ulong" + addRef(node);
+    }
+
+    void visit(ASTFloat32* node) override {
+        str = "float" + addRef(node);
+    }
+
+    void visit(ASTFloat64* node) override {
+        str = "double" + addRef(node);
+    }
+
+    void visit(ASTEnum* node) override {
+        str = csharpName(node);
+    }
+
+    void discarded(ASTNode*) override {
+        assert(!"C field type is missing");
+    }
+
+    std::string addRef(ASTDecl* node) {
+        return ref ? "*" : "";
+    }
+
+    bool ref;
+    std::string str;
+};
+
+struct DocRef : Visitor {
+    void visit(ASTField* node) override {
+        str = "<see cref=\"TODO\"/>";
+    }
+
+    void discarded(ASTNode*) override {
+        assert(!"Doc ref is missing");
+    }
+
+    std::string str;
+};
+
+static std::string cfieldType(ASTField* decl) {
+    auto typeDecl = decl->findAttr<ASTAttrType>()->type->decl;
+    CFieldType type{};
+    type.ref = decl->findAttr<ASTAttrRef>() != nullptr;
+    typeDecl->accept(type);
+    return type.str;
+}
+
+struct CSharpType : Visitor {
+    void visit(ASTVoid* node) override {
+        str = "void";
+    }
+
+    void visit(ASTChar* node) override {
+        str = "byte";
+    }
+
+    void visit(ASTStr* node) override {
+        str = "string";
+    }
+
+    void visit(ASTBool* node) override {
+        str = "bool";
+    }
+
+    void visit(ASTInt8* node) override {
+        str = "sbyte";
+    }
+
+    void visit(ASTUint8* node) override {
+        str = "byte";
+    }
+
+    void visit(ASTInt16* node) override {
+        str = "short";
+    }
+
+    void visit(ASTUint16* node) override {
+        str = "ushort";
+    }
+
+    void visit(ASTInt32* node) override {
+        str = "int";
+    }
+
+    void visit(ASTUint32* node) override {
+        str = "uint";
+    }
+
+    void visit(ASTInt64* node) override {
+        str = "long";
+    }
+
+    void visit(ASTUint64* node) override {
+        str = "ulong";
+    }
+
+    void visit(ASTFloat32* node) override {
+        str = "float";
+    }
+
+    void visit(ASTFloat64* node) override {
+        str = "double";
+    }
+
+    void visit(ASTEnum* node) override {
+        str = csharpName(node);
+    }
+
+    void visit(ASTStruct* node) override {
+        str = csharpName(node);
+    }
+
+    void visit(ASTInterface* node) override {
+        str = csharpName(node);
+    }
+
+    void visit(ASTCallback* node) override {
+        str = csharpName(node);
+    }
+
+    void discarded(ASTNode*) override {
+        assert(!"C# type is missing");
+    }
+
+    std::string str;
+};
+
+static std::string csharpType(ASTDecl* decl) {
+    auto typeDecl = decl->findAttr<ASTAttrType>()->type->decl;
+    CSharpType type{};
+    typeDecl->accept(type);
+    return type.str;
+}
+
+struct Marshaller : Visitor {
+    void visit(ASTVoid* node) override {
+    }
+
+    void visit(ASTChar* node) override {
+    }
+
+    void visit(ASTStr* node) override {
+        if (!isArg) {
+            str = "MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(StringMarshaller))";
+        }
+    }
+
+    void visit(ASTBool* node) override {
+    }
+
+    void visit(ASTInt8* node) override {
+    }
+
+    void visit(ASTUint8* node) override {
+    }
+
+    void visit(ASTInt16* node) override {
+    }
+
+    void visit(ASTUint16* node) override {
+    }
+
+    void visit(ASTInt32* node) override {
+    }
+
+    void visit(ASTUint32* node) override {
+    }
+
+    void visit(ASTInt64* node) override {
+    }
+
+    void visit(ASTUint64* node) override {
+    }
+
+    void visit(ASTFloat32* node) override {
+    }
+
+    void visit(ASTFloat64* node) override {
+    }
+
+    void visit(ASTEnum* node) override {
+    }
+
+    void visit(ASTStruct* node) override {
+    }
+
+    void visit(ASTInterface* node) override {
+    }
+
+    void visit(ASTCallback* node) override {
+    }
+
+    void discarded(ASTNode*) override {
+        assert(!"Marshaller is missing");
+    }
+
+    bool isArg;
+    std::string str;
+};
+
+static std::string marshaller(ASTDecl* decl) {
+    auto typeDecl = decl->findAttr<ASTAttrType>()->type->decl;
+    Marshaller m{};
+    m.isArg = decl->is<ASTArg>();
+    typeDecl->accept(m);
+    return m.str;
 }
 
 static std::string& ltrim(std::string& str) {
@@ -427,6 +717,55 @@ static void createDoc(std::ostream& stream, int indent, const ASTDoc* doc) {
     }
 }
 
+static void createMarshallers(const Package& package,
+                              idl::Context& ctx,
+                              const std::filesystem::path& out,
+                              idl_write_callback_t writer,
+                              idl_data_t writerData) {
+    auto stream = createStream(ctx, out, "Marshallers.cs", writer, writerData);
+    fmt::println(stream.stream, "using System;");
+    fmt::println(stream.stream, "using System.Collections.Generic;");
+    fmt::println(stream.stream, "using System.Linq;");
+    fmt::println(stream.stream, "using System.Reflection;");
+    fmt::println(stream.stream, "using System.Runtime.CompilerServices;");
+    fmt::println(stream.stream, "using System.Runtime.InteropServices;");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "namespace {}", package.rootNamespace);
+    fmt::println(stream.stream, "{{");
+    fmt::println(stream.stream, "    internal class StringMarshaller : ICustomMarshaler");
+    fmt::println(stream.stream, "    {{");
+    fmt::println(stream.stream,
+                 "        public static ICustomMarshaler GetInstance(string cookie) => new StringMarshaller();");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "        public void CleanUpManagedData(object ManagedObj)");
+    fmt::println(stream.stream, "        {{");
+    fmt::println(stream.stream, "            throw new NotImplementedException();");
+    fmt::println(stream.stream, "        }}");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "        public void CleanUpNativeData(IntPtr pNativeData)");
+    fmt::println(stream.stream, "        {{");
+    fmt::println(stream.stream, "        }}");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "        public int GetNativeDataSize()");
+    fmt::println(stream.stream, "        {{");
+    fmt::println(stream.stream, "            throw new NotImplementedException();");
+    fmt::println(stream.stream, "        }}");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "        public IntPtr MarshalManagedToNative(object ManagedObj)");
+    fmt::println(stream.stream, "        {{");
+    fmt::println(stream.stream, "            throw new NotImplementedException();");
+    fmt::println(stream.stream, "        }}");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "        public object MarshalNativeToManaged(IntPtr pNativeData)");
+    fmt::println(stream.stream, "        {{");
+    fmt::println(stream.stream, "            return Marshal.PtrToStringAnsi(pNativeData);");
+    fmt::println(stream.stream, "        }}");
+    fmt::println(stream.stream, "    }}");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "}}");
+    endStream(stream);
+}
+
 static void createEnums(const Package& package,
                         idl::Context& ctx,
                         const std::filesystem::path& out,
@@ -494,13 +833,118 @@ static void createNative(const Package& package,
     fmt::println(stream.stream, "");
     fmt::println(stream.stream, "namespace {}", package.rootNamespace);
     fmt::println(stream.stream, "{{");
+    if (!checkEnums.empty()) {
+        fmt::println(stream.stream, "    public class BaseException : Exception");
+        fmt::println(stream.stream, "    {{");
+        fmt::println(stream.stream, "        public BaseException(string message) : base(message)");
+        fmt::println(stream.stream, "        {{");
+        fmt::println(stream.stream, "        }}");
+        fmt::println(stream.stream, "    }}    ");
+        fmt::println(stream.stream, "");
+        for (auto en : checkEnums) {
+            fmt::println(stream.stream,
+                         R"(    public class {name}Exception : BaseException
+    {{
+        public {name}Exception({name} result) : base("TODO")
+        {{
+            Result = result;
+        }}
+
+        public {name} Result {{ get; private set; }}
+    }}
+)",
+                         fmt::arg("name", csharpName(en)));
+        }
+    }
     fmt::println(stream.stream, "    internal unsafe static class NativeWrapper");
     fmt::println(stream.stream, "    {{");
     for (auto en : checkEnums) {
-        fmt::println(stream.stream, "        public static void Check({} result)", csharpName(en));
+        std::vector<ASTEnumConst*> success;
+        for (auto ec : en->consts) {
+            if (ec->findAttr<ASTAttrNoError>()) {
+                success.push_back(ec);
+            }
+        }
+        const auto enName = csharpName(en);
+        fmt::println(stream.stream, "        public static void Check({} result)", enName);
         fmt::println(stream.stream, "        {{");
+        if (success.size() == 1) {
+            fmt::println(stream.stream, "            if (result != {}.{})", enName, csharpName(success[0]));
+            fmt::println(stream.stream, "            {{");
+            fmt::println(stream.stream, "                throw new {}Exception(result);", enName);
+            fmt::println(stream.stream, "            }}");
+        } else if (success.size() > 1) {
+            fmt::println(stream.stream, "            switch (result)");
+            fmt::println(stream.stream, "            {{");
+            for (auto ec : en->consts) {
+                fmt::println(stream.stream, "                case {}.{}:", enName, csharpName(ec));
+            }
+            fmt::println(stream.stream, "                    break;");
+            fmt::println(stream.stream, "                default:");
+            fmt::println(stream.stream, "                    throw new {}Exception(result);", enName);
+            fmt::println(stream.stream, "            }}");
+        }
         fmt::println(stream.stream, "        }}");
+        fmt::println(stream.stream, "");
     }
+    ctx.filter<ASTStruct>([&stream](ASTStruct* node) {
+        if (!node->findAttr<ASTAttrHandle>()) {
+            fmt::println(stream.stream, "        public struct {}", csharpName(node));
+            fmt::println(stream.stream, "        {{");
+            for (auto field : node->fields) {
+                fmt::println(stream.stream, "            public {} {};", cfieldType(field), csharpName(field, true));
+            }
+            fmt::println(stream.stream, "        }}");
+            fmt::println(stream.stream, "");
+        }
+    });
+    std::filesystem::path dll;
+    std::string dllName;
+    if (package.dllwin64.length()) {
+        dll = std::filesystem::path(package.dllwin64).filename();
+        dll.replace_extension();
+        dllName = dll.string();
+    } else if (package.dllwin32.length()) {
+        dll = std::filesystem::path(package.dllwin32).filename();
+        dll.replace_extension();
+        dllName = dll.string();
+    } else if (package.dllosx.length()) {
+        dll = std::filesystem::path(package.dllosx).filename();
+        dll.replace_extension();
+        dllName = dll.string();
+        if (dllName.length() > 3 && dllName[0] == 'l' && dllName[1] == 'i' && dllName[2] == 'b') {
+            dllName = dllName.substr(3);
+        }
+    } else if (package.dlllinux.length()) {
+        dll = std::filesystem::path(package.dlllinux).filename();
+        dll.replace_extension();
+        dllName = dll.string();
+        if (dllName.length() > 3 && dllName[0] == 'l' && dllName[1] == 'i' && dllName[2] == 'b') {
+            dllName = dllName.substr(3);
+        }
+    } else {
+        dllName = csharpName(ctx.api());
+    }
+    auto addMethod = [&stream, &dllName](ASTDecl* decl, const std::vector<ASTArg*>& args) {
+        fmt::println(stream.stream,
+                     "        [DllImport(\"{}\", EntryPoint = \"{}\", CallingConvention = "
+                     "CallingConvention.Cdecl, CharSet = CharSet.Ansi)]",
+                     dllName,
+                     cName(decl));
+        auto m = marshaller(decl);
+        if (m.length()) {
+            fmt::println(stream.stream, "        [return: {}]", m);
+        }
+        fmt::print(stream.stream, "        public static extern {} {}(", csharpType(decl), nativeFuncName(decl));
+        fmt::println(stream.stream, ");");
+        fmt::println(stream.stream, "");
+    };
+    ctx.filter<ASTFunc>([&addMethod](ASTFunc* node) {
+        addMethod(node, node->args);
+    });
+    ctx.filter<ASTMethod>([&addMethod](ASTMethod* node) {
+        addMethod(node, node->args);
+    });
     fmt::println(stream.stream, "    }}");
     fmt::println(stream.stream, "}}");
     endStream(stream);
@@ -566,6 +1010,7 @@ void generateCs(idl::Context& ctx,
     createTargets(package, ctx, out, writer, writerData);
     createProj(package, ctx, out, writer, writerData);
     createSln(package, ctx, out, writer, writerData);
+    createMarshallers(package, ctx, out, writer, writerData);
     createEnums(package, ctx, out, writer, writerData);
     createNative(package, ctx, out, writer, writerData);
 }

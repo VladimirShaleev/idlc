@@ -71,6 +71,10 @@ struct CSharpName : Visitor {
         str = changeCase(node);
     }
 
+    void visit(ASTArg* node) override {
+        str = changeCase(node, Case::CamelCase);
+    }
+
     void discarded(ASTNode*) override {
         assert(!"C# name is missing");
     }
@@ -203,7 +207,7 @@ struct CSharpType : Visitor {
     }
 
     void visit(ASTChar* node) override {
-        str = "byte";
+        str = addRef() + "byte";
     }
 
     void visit(ASTStr* node) override {
@@ -211,75 +215,100 @@ struct CSharpType : Visitor {
     }
 
     void visit(ASTBool* node) override {
-        str = "bool";
+        str = addRef() + "bool";
     }
 
     void visit(ASTInt8* node) override {
-        str = "sbyte";
+        str = addRef() + "sbyte";
     }
 
     void visit(ASTUint8* node) override {
-        str = "byte";
+        str = addRef() + "byte";
     }
 
     void visit(ASTInt16* node) override {
-        str = "short";
+        str = addRef() + "short";
     }
 
     void visit(ASTUint16* node) override {
-        str = "ushort";
+        str = addRef() + "ushort";
     }
 
     void visit(ASTInt32* node) override {
-        str = "int";
+        str = addRef() + "int";
     }
 
     void visit(ASTUint32* node) override {
-        str = "uint";
+        str = addRef() + "uint";
     }
 
     void visit(ASTInt64* node) override {
-        str = "long";
+        str = addRef() + "long";
     }
 
     void visit(ASTUint64* node) override {
-        str = "ulong";
+        str = addRef() + "ulong";
     }
 
     void visit(ASTFloat32* node) override {
-        str = "float";
+        str = addRef() + "float";
     }
 
     void visit(ASTFloat64* node) override {
-        str = "double";
+        str = addRef() + "double";
+    }
+
+    void visit(ASTData* node) override {
+        str = addRef() + "IntPtr";
+    }
+
+    void visit(ASTConstData* node) override {
+        str = addRef() + "IntPtr";
     }
 
     void visit(ASTEnum* node) override {
-        str = csharpName(node);
+        str = addRef() + csharpName(node);
     }
 
     void visit(ASTStruct* node) override {
-        str = csharpName(node);
+        str = addRef() + ns + '.' + csharpName(node) + addArr();
     }
 
     void visit(ASTInterface* node) override {
-        str = csharpName(node);
+        str = addRef() + csharpName(node);
     }
 
     void visit(ASTCallback* node) override {
-        str = csharpName(node);
+        str = addRef() + csharpName(node);
     }
 
     void discarded(ASTNode*) override {
         assert(!"C# type is missing");
     }
 
+    std::string addRef() {
+        return isOut && !isArray ? (isIn ? "ref " : "out ") : "";
+    }
+
+    std::string addArr() {
+        return isArray ? "[]" : "";
+    }
+
+    bool isIn;
+    bool isOut;
+    bool isArray;
+    std::string ns;
     std::string str;
 };
 
-static std::string csharpType(ASTDecl* decl) {
+static std::string csharpType(ASTDecl* decl, const std::string& ns) {
     auto typeDecl = decl->findAttr<ASTAttrType>()->type->decl;
     CSharpType type{};
+    type.ns      = ns;
+    type.isArray = decl->findAttr<ASTAttrArray>() != nullptr;
+    type.isIn    = decl->findAttr<ASTAttrIn>() != nullptr;
+    type.isOut   = decl->findAttr<ASTAttrOut>() != nullptr || decl->findAttr<ASTAttrResult>() != nullptr;
+
     typeDecl->accept(type);
     return type.str;
 }
@@ -334,6 +363,11 @@ struct Marshaller : Visitor {
     }
 
     void visit(ASTStruct* node) override {
+        if (isOut && isArray) {
+            const auto name = csharpName(node);
+            str = "[MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ArrOutMarshaller<" + name + ", " +
+                  ns + '.' + name + ">)), In, Out]";
+        }
     }
 
     void visit(ASTInterface* node) override {
@@ -342,18 +376,30 @@ struct Marshaller : Visitor {
     void visit(ASTCallback* node) override {
     }
 
+    void visit(ASTData* node) override {
+    }
+
+    void visit(ASTConstData* node) override {
+    }
+
     void discarded(ASTNode*) override {
         assert(!"Marshaller is missing");
     }
 
     bool isArg;
+    bool isArray;
+    bool isOut;
+    std::string ns;
     std::string str;
 };
 
-static std::string marshaller(ASTDecl* decl) {
+static std::string marshaller(ASTDecl* decl, const std::string& ns) {
     auto typeDecl = decl->findAttr<ASTAttrType>()->type->decl;
     Marshaller m{};
-    m.isArg = decl->is<ASTArg>();
+    m.ns      = ns;
+    m.isArg   = decl->is<ASTArg>();
+    m.isArray = decl->findAttr<ASTAttrArray>() != nullptr;
+    m.isOut   = decl->findAttr<ASTAttrOut>() || decl->findAttr<ASTAttrResult>();
     typeDecl->accept(m);
     return m.str;
 }
@@ -762,6 +808,70 @@ static void createMarshallers(const Package& package,
     fmt::println(stream.stream, "        }}");
     fmt::println(stream.stream, "    }}");
     fmt::println(stream.stream, "");
+    fmt::println(
+        stream.stream,
+        "    internal unsafe class ArrOutMarshaller<Raw, T> : ICustomMarshaler where Raw : unmanaged where T : Base");
+    fmt::println(stream.stream, "    {{");
+    fmt::println(
+        stream.stream,
+        "        public static ICustomMarshaler GetInstance(string cookie) => new ArrOutMarshaller<Raw, T>();");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "        public void CleanUpManagedData(object ManagedObj)");
+    fmt::println(stream.stream, "        {{");
+    fmt::println(stream.stream, "            throw new NotImplementedException();");
+    fmt::println(stream.stream, "        }}");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "        public void CleanUpNativeData(IntPtr pNativeData)");
+    fmt::println(stream.stream, "        {{");
+    fmt::println(stream.stream, "            if (pNativeData != IntPtr.Zero)");
+    fmt::println(stream.stream, "            {{");
+    fmt::println(stream.stream, "                Marshal.FreeHGlobal(pNativeData - IntPtr.Size);");
+    fmt::println(stream.stream, "            }}");
+    fmt::println(stream.stream, "        }}");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "        public int GetNativeDataSize()");
+    fmt::println(stream.stream, "        {{");
+    fmt::println(stream.stream, "            throw new NotImplementedException();");
+    fmt::println(stream.stream, "        }}");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "        public IntPtr MarshalManagedToNative(object ManagedObj)");
+    fmt::println(stream.stream, "        {{");
+    fmt::println(stream.stream, "            if (ManagedObj == null)");
+    fmt::println(stream.stream, "            {{");
+    fmt::println(stream.stream, "                return IntPtr.Zero;");
+    fmt::println(stream.stream, "            }}");
+    fmt::println(stream.stream, "            var enumerable = (T[])ManagedObj;");
+    fmt::println(stream.stream, "            var handle = GCHandle.Alloc(enumerable);");
+    fmt::println(
+        stream.stream,
+        "            var ptr = Marshal.AllocHGlobal(enumerable.Count() * Unsafe.SizeOf<Raw>() + IntPtr.Size);");
+    fmt::println(stream.stream, "            Unsafe.Write((void*)ptr, GCHandle.ToIntPtr(handle));");
+    fmt::println(stream.stream, "            return ptr + IntPtr.Size;");
+    fmt::println(stream.stream, "        }}");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "        public object MarshalNativeToManaged(IntPtr pNativeData)");
+    fmt::println(stream.stream, "        {{");
+    fmt::println(stream.stream, "            if (pNativeData == IntPtr.Zero)");
+    fmt::println(stream.stream, "            {{");
+    fmt::println(stream.stream, "                return null;");
+    fmt::println(stream.stream, "            }}");
+    fmt::println(stream.stream, "            var addr = Unsafe.Read<IntPtr>((void*)(pNativeData - IntPtr.Size));");
+    fmt::println(stream.stream, "            var handle = GCHandle.FromIntPtr(addr);");
+    fmt::println(stream.stream, "            var arr = (T[])handle.Target;");
+    fmt::println(stream.stream, "            handle.Free();");
+    fmt::println(stream.stream, "            if (arr.Length > 0) {{");
+    fmt::println(stream.stream,
+                 "                var marshaller = TypeMarshaller<Raw, T>.GetInstance("
+                 ");");
+    fmt::println(stream.stream, "                for (var i = 0; i < arr.Length; ++i)");
+    fmt::println(stream.stream, "                {{");
+    fmt::println(stream.stream, "                    arr[i] = (T) marshaller.MarshalNativeToManaged(pNativeData);");
+    fmt::println(stream.stream, "                    pNativeData += Unsafe.SizeOf<Raw>();");
+    fmt::println(stream.stream, "                }}");
+    fmt::println(stream.stream, "            }}");
+    fmt::println(stream.stream, "            return arr;");
+    fmt::println(stream.stream, "        }}");
+    fmt::println(stream.stream, "    }}");
     fmt::println(stream.stream, "}}");
     endStream(stream);
 }
@@ -925,17 +1035,30 @@ static void createNative(const Package& package,
     } else {
         dllName = csharpName(ctx.api());
     }
-    auto addMethod = [&stream, &dllName](ASTDecl* decl, const std::vector<ASTArg*>& args) {
+    auto addMethod = [&package, &stream, &dllName](ASTDecl* decl, const std::vector<ASTArg*>& args) {
         fmt::println(stream.stream,
                      "        [DllImport(\"{}\", EntryPoint = \"{}\", CallingConvention = "
                      "CallingConvention.Cdecl, CharSet = CharSet.Ansi)]",
                      dllName,
                      cName(decl));
-        auto m = marshaller(decl);
+        auto m = marshaller(decl, package.rootNamespace);
         if (m.length()) {
             fmt::println(stream.stream, "        [return: {}]", m);
         }
-        fmt::print(stream.stream, "        public static extern {} {}(", csharpType(decl), nativeFuncName(decl));
+        fmt::print(stream.stream,
+                   "        public static extern {} {}(",
+                   csharpType(decl, package.rootNamespace),
+                   nativeFuncName(decl));
+        for (size_t i = 0; i < args.size(); ++i) {
+            auto arg    = args[i];
+            auto isLast = i + 1 == args.size();
+            auto ma     = marshaller(arg, package.rootNamespace);
+            if (ma.length()) {
+                fmt::print(stream.stream, "{} ", ma);
+            }
+            fmt::print(
+                stream.stream, "{} {}{}", csharpType(arg, package.rootNamespace), csharpName(arg), isLast ? "" : ", ");
+        }
         fmt::println(stream.stream, ");");
         fmt::println(stream.stream, "");
     };

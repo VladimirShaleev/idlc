@@ -211,7 +211,7 @@ struct CSharpType : Visitor {
     }
 
     void visit(ASTStr* node) override {
-        str = "string";
+        str = "string" + addArr();
     }
 
     void visit(ASTBool* node) override {
@@ -271,7 +271,12 @@ struct CSharpType : Visitor {
     }
 
     void visit(ASTStruct* node) override {
-        str = addRef() + ns + '.' + csharpName(node) + addArr();
+        str = addRef() + ns + '.' + csharpName(node);
+        if (isArg && isArray) {
+            str = "IEnumerable<" + str + '>';
+        } else {
+            str += addArr();
+        }
     }
 
     void visit(ASTInterface* node) override {
@@ -294,6 +299,7 @@ struct CSharpType : Visitor {
         return isArray ? "[]" : "";
     }
 
+    bool isArg;
     bool isIn;
     bool isOut;
     bool isArray;
@@ -305,6 +311,7 @@ static std::string csharpType(ASTDecl* decl, const std::string& ns) {
     auto typeDecl = decl->findAttr<ASTAttrType>()->type->decl;
     CSharpType type{};
     type.ns      = ns;
+    type.isArg   = decl->is<ASTArg>();
     type.isArray = decl->findAttr<ASTAttrArray>() != nullptr;
     type.isIn    = decl->findAttr<ASTAttrIn>() != nullptr;
     type.isOut   = decl->findAttr<ASTAttrOut>() != nullptr || decl->findAttr<ASTAttrResult>() != nullptr;
@@ -323,6 +330,8 @@ struct Marshaller : Visitor {
     void visit(ASTStr* node) override {
         if (!isArg) {
             str = "MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(StringMarshaller))";
+        } else if (isOut && isArray) {
+            str = "[MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ArrStringMarshaller)), In, Out]";
         }
     }
 
@@ -363,14 +372,27 @@ struct Marshaller : Visitor {
     }
 
     void visit(ASTStruct* node) override {
+        const auto name = csharpName(node);
         if (isOut && isArray) {
-            const auto name = csharpName(node);
             str = "[MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ArrOutMarshaller<" + name + ", " +
                   ns + '.' + name + ">)), In, Out]";
+        } else if (isArg && isArray) {
+            str = "[MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ArrMarshaller<" + name + ", " +
+                  ns + '.' + name + ">))]";
+        } else {
+            str = "MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(TypeMarshaller<" + name + ", " +
+                  ns + '.' + name + ">))";
+            if (isArg) {
+                str = '[' + str + ']';
+            }
         }
     }
 
     void visit(ASTInterface* node) override {
+        if (isOut) {
+            str = "[MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(OpaqueTypeMarshaller<" +
+                  csharpName(node) + ">))]";
+        }
     }
 
     void visit(ASTCallback* node) override {
@@ -763,6 +785,176 @@ static void createDoc(std::ostream& stream, int indent, const ASTDoc* doc) {
     }
 }
 
+static void createNativeContext(const Package& package,
+                                idl::Context& ctx,
+                                const std::filesystem::path& out,
+                                idl_write_callback_t writer,
+                                idl_data_t writerData) {
+    auto stream = createStream(ctx, out, "NativeContext.cs", writer, writerData);
+    fmt::println(stream.stream, "using System;");
+    fmt::println(stream.stream, "using System.Collections.Generic;");
+    fmt::println(stream.stream, "using System.Runtime.CompilerServices;");
+    fmt::println(stream.stream, "using System.Runtime.InteropServices;");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "namespace {}", package.rootNamespace);
+    fmt::println(stream.stream, "{{");
+    fmt::println(stream.stream, "    internal unsafe class NativeContext : IDisposable");
+    fmt::println(stream.stream, "    {{");
+    fmt::println(stream.stream, "        private bool disposed = false;");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream,
+                 "        private readonly Dictionary<int, Action> deleters = new Dictionary<int, Action>();");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "        public char* AllocString(int key, string value)");
+    fmt::println(stream.stream, "        {{");
+    fmt::println(stream.stream, "            if (value == null)");
+    fmt::println(stream.stream, "            {{");
+    fmt::println(stream.stream, "                return null;");
+    fmt::println(stream.stream, "            }}");
+    fmt::println(stream.stream, "            var buffer = Marshal.StringToHGlobalAnsi(value);");
+    fmt::println(stream.stream, "            AddDeleter(key, () => Marshal.FreeHGlobal(buffer));");
+    fmt::println(stream.stream, "            return (char*)buffer;");
+    fmt::println(stream.stream, "        }}");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "        private void AddDeleter(int key, Action action)");
+    fmt::println(stream.stream, "        {{");
+    fmt::println(stream.stream, "            if (deleters.TryGetValue(key, out var value))");
+    fmt::println(stream.stream, "            {{");
+    fmt::println(stream.stream, "                value();");
+    fmt::println(stream.stream, "            }}");
+    fmt::println(stream.stream, "            deleters[key] = action;");
+    fmt::println(stream.stream, "        }}");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "        public void Dispose()");
+    fmt::println(stream.stream, "        {{");
+    fmt::println(stream.stream, "            Dispose(true);");
+    fmt::println(stream.stream, "            GC.SuppressFinalize(this);");
+    fmt::println(stream.stream, "        }}");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "        protected virtual void Dispose(bool disposing)");
+    fmt::println(stream.stream, "        {{");
+    fmt::println(stream.stream, "            if (!disposed)");
+    fmt::println(stream.stream, "            {{");
+    fmt::println(stream.stream, "                if (disposing)");
+    fmt::println(stream.stream, "                {{");
+    fmt::println(stream.stream, "                    foreach (var deleter in deleters)");
+    fmt::println(stream.stream, "                    {{");
+    fmt::println(stream.stream, "                        deleter.Value();");
+    fmt::println(stream.stream, "                    }}");
+    fmt::println(stream.stream, "                    deleters.Clear();");
+    fmt::println(stream.stream, "                }}");
+    fmt::println(stream.stream, "                disposed = true;");
+    fmt::println(stream.stream, "            }}");
+    fmt::println(stream.stream, "        }}");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "        ~NativeContext()");
+    fmt::println(stream.stream, "        {{");
+    fmt::println(stream.stream, "            Dispose(false);");
+    fmt::println(stream.stream, "        }}");
+    fmt::println(stream.stream, "    }}");
+    fmt::println(stream.stream, "}}");
+    endStream(stream);
+}
+
+static void createStructures(const Package& package,
+                             idl::Context& ctx,
+                             const std::filesystem::path& out,
+                             idl_write_callback_t writer,
+                             idl_data_t writerData) {
+    constexpr auto baseClass = R"(    public abstract unsafe class Base : CriticalHandle
+    {{
+        private readonly bool allocated;
+
+        private NativeContext context;
+
+        public Base(int size) : base(Marshal.AllocHGlobal(size))
+        {{
+            allocated = true;
+        }}
+
+        internal Base(NativeContext context, int size, void* ptr, bool owned) : base(owned ? Marshal.AllocHGlobal(size) : (IntPtr)ptr)
+        {{
+            Context = context;
+            if (owned)
+            {{
+                Unsafe.CopyBlock((void*)handle, ptr, (uint)size);
+                allocated = true;
+            }}
+        }}
+
+        public override bool IsInvalid => handle == IntPtr.Zero;
+
+        protected bool Allocated => allocated;
+
+        internal IntPtr Handle => handle;
+
+        internal NativeContext Context
+        {{
+            get
+            {{
+                if (context == null)
+                {{
+                    context = new NativeContext();
+                }}
+                return context;
+            }}
+            set
+            {{
+                context = value;
+            }}
+        }}
+
+        protected override bool ReleaseHandle()
+        {{
+            context?.Dispose();
+            if (allocated)
+            {{
+                Marshal.FreeHGlobal(handle);
+            }}
+            return true;
+        }}
+    }}
+)";
+
+    auto stream = createStream(ctx, out, "Structures.cs", writer, writerData);
+    fmt::println(stream.stream, "using System;");
+    fmt::println(stream.stream, "using System.Collections;");
+    fmt::println(stream.stream, "using System.Collections.Generic;");
+    fmt::println(stream.stream, "using System.Runtime.CompilerServices;");
+    fmt::println(stream.stream, "using System.Runtime.InteropServices;");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "namespace {}", package.rootNamespace);
+    fmt::println(stream.stream, "{{");
+    fmt::println(stream.stream, baseClass);
+    ctx.filter<ASTStruct>([&stream](ASTStruct* node) {
+        if (!node->findAttr<ASTAttrHandle>()) {
+            const auto name = csharpName(node);
+            fmt::println(stream.stream, "    public unsafe class {} : Base", name);
+            fmt::println(stream.stream, "    {{");
+            fmt::println(stream.stream, "        public {}() : base(Unsafe.SizeOf<NativeWrapper.{}>())", name, name);
+            fmt::println(stream.stream, "        {{");
+            fmt::println(stream.stream, "        }}");
+            fmt::println(stream.stream, "");
+            fmt::println(stream.stream,
+                         "        internal {}(NativeContext context, NativeWrapper.{}* ptr, bool owned = true) : "
+                         "base(context, Unsafe.SizeOf<NativeWrapper.{}>(), ptr, owned)",
+                         name,
+                         name,
+                         name);
+            fmt::println(stream.stream, "        {{");
+            fmt::println(stream.stream, "        }}");
+            fmt::println(stream.stream, "");
+            fmt::println(
+                stream.stream, "        internal NativeWrapper.{}* Ptr => (NativeWrapper.{}*)handle;", name, name);
+            fmt::println(stream.stream, "");
+            fmt::println(stream.stream, "    }}");
+            fmt::println(stream.stream, "");
+        }
+    });
+    fmt::println(stream.stream, "}}");
+    endStream(stream);
+}
+
 static void createMarshallers(const Package& package,
                               idl::Context& ctx,
                               const std::filesystem::path& out,
@@ -860,9 +1052,7 @@ static void createMarshallers(const Package& package,
     fmt::println(stream.stream, "            var arr = (T[])handle.Target;");
     fmt::println(stream.stream, "            handle.Free();");
     fmt::println(stream.stream, "            if (arr.Length > 0) {{");
-    fmt::println(stream.stream,
-                 "                var marshaller = TypeMarshaller<Raw, T>.GetInstance("
-                 ");");
+    fmt::println(stream.stream, "                var marshaller = TypeMarshaller<Raw, T>.GetInstance(\"\");");
     fmt::println(stream.stream, "                for (var i = 0; i < arr.Length; ++i)");
     fmt::println(stream.stream, "                {{");
     fmt::println(stream.stream, "                    arr[i] = (T) marshaller.MarshalNativeToManaged(pNativeData);");
@@ -870,6 +1060,198 @@ static void createMarshallers(const Package& package,
     fmt::println(stream.stream, "                }}");
     fmt::println(stream.stream, "            }}");
     fmt::println(stream.stream, "            return arr;");
+    fmt::println(stream.stream, "        }}");
+    fmt::println(stream.stream, "    }}");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "    internal unsafe class OpaqueTypeMarshaller<T> : ICustomMarshaler where T : class");
+    fmt::println(stream.stream, "    {{");
+    fmt::println(stream.stream,
+                 "        public static ICustomMarshaler GetInstance(string cookie) => new OpaqueTypeMarshaller<T>();");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "        public void CleanUpManagedData(object ManagedObj)");
+    fmt::println(stream.stream, "        {{");
+    fmt::println(stream.stream, "            throw new NotImplementedException();");
+    fmt::println(stream.stream, "        }}");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "        public void CleanUpNativeData(IntPtr pNativeData)");
+    fmt::println(stream.stream, "        {{");
+    fmt::println(stream.stream, "        }}");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "        public int GetNativeDataSize()");
+    fmt::println(stream.stream, "        {{");
+    fmt::println(stream.stream, "            throw new NotImplementedException();");
+    fmt::println(stream.stream, "        }}");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "        public IntPtr MarshalManagedToNative(object ManagedObj)");
+    fmt::println(stream.stream, "        {{");
+    fmt::println(stream.stream, "            throw new NotImplementedException();");
+    fmt::println(stream.stream, "        }}");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "        public object MarshalNativeToManaged(IntPtr pNativeData)");
+    fmt::println(stream.stream, "        {{");
+    fmt::println(stream.stream, "            var paramTypes = new Type[] {{ typeof(IntPtr) }};");
+    fmt::println(stream.stream, "            var paramValues = new object[] {{ pNativeData }};");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream,
+                 "            var ci = typeof(T).GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic, null, "
+                 "paramTypes, null);");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "            return ci.Invoke(paramValues);");
+    fmt::println(stream.stream, "        }}");
+    fmt::println(stream.stream, "    }}");
+    fmt::println(stream.stream, "    ");
+    fmt::println(stream.stream, "    internal unsafe class ArrStringMarshaller : ICustomMarshaler");
+    fmt::println(stream.stream, "    {{");
+    fmt::println(stream.stream,
+                 "        public static ICustomMarshaler GetInstance(string cookie) => new ArrStringMarshaller();");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "        public void CleanUpManagedData(object ManagedObj)");
+    fmt::println(stream.stream, "        {{");
+    fmt::println(stream.stream, "            throw new NotImplementedException();");
+    fmt::println(stream.stream, "        }}");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "        public void CleanUpNativeData(IntPtr pNativeData)");
+    fmt::println(stream.stream, "        {{");
+    fmt::println(stream.stream, "            if (pNativeData != IntPtr.Zero)");
+    fmt::println(stream.stream, "            {{");
+    fmt::println(stream.stream, "                Marshal.FreeHGlobal(pNativeData - IntPtr.Size);");
+    fmt::println(stream.stream, "            }}");
+    fmt::println(stream.stream, "        }}");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "        public int GetNativeDataSize()");
+    fmt::println(stream.stream, "        {{");
+    fmt::println(stream.stream, "            throw new NotImplementedException();");
+    fmt::println(stream.stream, "        }}");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "        public IntPtr MarshalManagedToNative(object ManagedObj)");
+    fmt::println(stream.stream, "        {{");
+    fmt::println(stream.stream, "            if (ManagedObj == null)");
+    fmt::println(stream.stream, "            {{");
+    fmt::println(stream.stream, "                return IntPtr.Zero;");
+    fmt::println(stream.stream, "            }}");
+    fmt::println(stream.stream, "            var strings = (string[])ManagedObj;");
+    fmt::println(stream.stream, "            var handle = GCHandle.Alloc(strings);");
+    fmt::println(stream.stream, "            var ptr = Marshal.AllocHGlobal((strings.Length + 1) * IntPtr.Size);");
+    fmt::println(stream.stream, "            Unsafe.Write((void*)ptr, GCHandle.ToIntPtr(handle));");
+    fmt::println(stream.stream, "            return ptr + IntPtr.Size;");
+    fmt::println(stream.stream, "        }}");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "        public object MarshalNativeToManaged(IntPtr pNativeData)");
+    fmt::println(stream.stream, "        {{");
+    fmt::println(stream.stream, "            if (pNativeData == IntPtr.Zero)");
+    fmt::println(stream.stream, "            {{");
+    fmt::println(stream.stream, "                return null;");
+    fmt::println(stream.stream, "            }}");
+    fmt::println(stream.stream, "            var addr = Unsafe.Read<IntPtr>((void*)(pNativeData - IntPtr.Size));");
+    fmt::println(stream.stream, "            var handle = GCHandle.FromIntPtr(addr);");
+    fmt::println(stream.stream, "            var arr = (string[])handle.Target;");
+    fmt::println(stream.stream, "            handle.Free();");
+    fmt::println(stream.stream, "            for (var i = 0; i < arr.Length; ++i)");
+    fmt::println(stream.stream, "            {{");
+    fmt::println(stream.stream, "                var item = Unsafe.Read<IntPtr>((void*)(pNativeData));");
+    fmt::println(stream.stream, "                arr[i] = Marshal.PtrToStringAnsi(item);");
+    fmt::println(stream.stream, "                pNativeData += IntPtr.Size;");
+    fmt::println(stream.stream, "            }}");
+    fmt::println(stream.stream, "            return arr;");
+    fmt::println(stream.stream, "        }}");
+    fmt::println(stream.stream, "    }}");
+    fmt::println(stream.stream, "");
+    fmt::println(
+        stream.stream,
+        "    internal unsafe class ArrMarshaller<Raw, T> : ICustomMarshaler where Raw : unmanaged where T : Base");
+    fmt::println(stream.stream, "    {{");
+    fmt::println(stream.stream,
+                 "        public static ICustomMarshaler GetInstance(string cookie) => new ArrMarshaller<Raw, T>();");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "        public void CleanUpManagedData(object ManagedObj)");
+    fmt::println(stream.stream, "        {{");
+    fmt::println(stream.stream, "            throw new NotImplementedException();");
+    fmt::println(stream.stream, "        }}");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "        public void CleanUpNativeData(IntPtr pNativeData)");
+    fmt::println(stream.stream, "        {{");
+    fmt::println(stream.stream, "            if (pNativeData != IntPtr.Zero)");
+    fmt::println(stream.stream, "            {{");
+    fmt::println(stream.stream, "                Marshal.FreeHGlobal(pNativeData);");
+    fmt::println(stream.stream, "            }}");
+    fmt::println(stream.stream, "        }}");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "        public int GetNativeDataSize()");
+    fmt::println(stream.stream, "        {{");
+    fmt::println(stream.stream, "            throw new NotImplementedException();");
+    fmt::println(stream.stream, "        }}");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "        public IntPtr MarshalManagedToNative(object ManagedObj)");
+    fmt::println(stream.stream, "        {{");
+    fmt::println(stream.stream, "            if (ManagedObj == null)");
+    fmt::println(stream.stream, "            {{");
+    fmt::println(stream.stream, "                return IntPtr.Zero;");
+    fmt::println(stream.stream, "            }}");
+    fmt::println(stream.stream, "            var enumerable = (IEnumerable<T>)ManagedObj;");
+    fmt::println(stream.stream, "            var size = Marshal.SizeOf<Raw>();");
+    fmt::println(stream.stream, "            var count = enumerable.Count();");
+    fmt::println(stream.stream, "            var buffer = Marshal.AllocHGlobal(size * count);");
+    fmt::println(stream.stream, "            var i = 0;");
+    fmt::println(stream.stream, "            foreach (var value in enumerable)");
+    fmt::println(stream.stream, "            {{");
+    fmt::println(stream.stream, "                if (value != null)");
+    fmt::println(stream.stream, "                {{");
+    fmt::println(stream.stream,
+                 "                    Unsafe.CopyBlock((void*)(buffer + i * size), (void*)value.Handle, "
+                 "(uint)Unsafe.SizeOf<Raw>());");
+    fmt::println(stream.stream, "                }}");
+    fmt::println(stream.stream, "                ++i;");
+    fmt::println(stream.stream, "            }}");
+    fmt::println(stream.stream, "            return buffer;");
+    fmt::println(stream.stream, "        }}");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "        public object MarshalNativeToManaged(IntPtr pNativeData)");
+    fmt::println(stream.stream, "        {{");
+    fmt::println(stream.stream, "            throw new NotImplementedException();");
+    fmt::println(stream.stream, "        }}");
+    fmt::println(stream.stream, "    }}");
+    fmt::println(stream.stream, "");
+    fmt::println(
+        stream.stream,
+        "    internal unsafe class TypeMarshaller<Raw, T> : ICustomMarshaler where Raw : unmanaged where T : Base");
+    fmt::println(stream.stream, "    {{");
+    fmt::println(stream.stream,
+                 "        public static ICustomMarshaler GetInstance(string cookie) => new TypeMarshaller<Raw, T>();");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "        public void CleanUpManagedData(object ManagedObj)");
+    fmt::println(stream.stream, "        {{");
+    fmt::println(stream.stream, "        }}");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "        public void CleanUpNativeData(IntPtr pNativeData)");
+    fmt::println(stream.stream, "        {{");
+    fmt::println(stream.stream, "        }}");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "        public int GetNativeDataSize()");
+    fmt::println(stream.stream, "        {{");
+    fmt::println(stream.stream, "            return Unsafe.SizeOf<Raw>();");
+    fmt::println(stream.stream, "        }}");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "        public IntPtr MarshalManagedToNative(object ManagedObj)");
+    fmt::println(stream.stream, "        {{");
+    fmt::println(stream.stream, "            return ManagedObj != null ? ((T)ManagedObj).Handle : IntPtr.Zero;");
+    fmt::println(stream.stream, "        }}");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "        public object MarshalNativeToManaged(IntPtr pNativeData)");
+    fmt::println(stream.stream, "        {{");
+    fmt::println(stream.stream, "            if (pNativeData != IntPtr.Zero)");
+    fmt::println(stream.stream, "            {{");
+    fmt::println(
+        stream.stream,
+        "                var paramTypes = new Type[] {{ typeof(NativeContext), typeof(Raw*), typeof(bool) }};");
+    fmt::println(stream.stream, "                var paramValues = new object[] {{ null, pNativeData, true }};");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream,
+                 "                var ci = typeof(T).GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic, "
+                 "null, paramTypes, null);");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "                return ci.Invoke(paramValues);");
+    fmt::println(stream.stream, "            }}");
+    fmt::println(stream.stream, "            return null;");
     fmt::println(stream.stream, "        }}");
     fmt::println(stream.stream, "    }}");
     fmt::println(stream.stream, "}}");
@@ -1035,18 +1417,25 @@ static void createNative(const Package& package,
     } else {
         dllName = csharpName(ctx.api());
     }
-    auto addMethod = [&package, &stream, &dllName](ASTDecl* decl, const std::vector<ASTArg*>& args) {
-        fmt::println(stream.stream,
-                     "        [DllImport(\"{}\", EntryPoint = \"{}\", CallingConvention = "
-                     "CallingConvention.Cdecl, CharSet = CharSet.Ansi)]",
-                     dllName,
-                     cName(decl));
+    auto addMethod =
+        [&package, &stream, &dllName](ASTDecl* decl, const std::vector<ASTArg*>& args, bool isDelegate = false) {
+        if (isDelegate) {
+            fmt::println(stream.stream,
+                         "        [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]");
+        } else {
+            fmt::println(stream.stream,
+                         "        [DllImport(\"{}\", EntryPoint = \"{}\", CallingConvention = "
+                         "CallingConvention.Cdecl, CharSet = CharSet.Ansi)]",
+                         dllName,
+                         cName(decl));
+        }
         auto m = marshaller(decl, package.rootNamespace);
         if (m.length()) {
             fmt::println(stream.stream, "        [return: {}]", m);
         }
         fmt::print(stream.stream,
-                   "        public static extern {} {}(",
+                   "        public {} {} {}(",
+                   isDelegate ? "delegate" : "static extern",
                    csharpType(decl, package.rootNamespace),
                    nativeFuncName(decl));
         for (size_t i = 0; i < args.size(); ++i) {
@@ -1062,6 +1451,9 @@ static void createNative(const Package& package,
         fmt::println(stream.stream, ");");
         fmt::println(stream.stream, "");
     };
+    ctx.filter<ASTCallback>([&addMethod](ASTCallback* node) {
+        addMethod(node, node->args, true);
+    });
     ctx.filter<ASTFunc>([&addMethod](ASTFunc* node) {
         addMethod(node, node->args);
     });
@@ -1071,6 +1463,59 @@ static void createNative(const Package& package,
     fmt::println(stream.stream, "    }}");
     fmt::println(stream.stream, "}}");
     endStream(stream);
+}
+
+static ASTMethod* findDtor(ASTInterface* iface) {
+    auto it = std::find_if(iface->methods.begin(), iface->methods.end(), [](ASTMethod* item) {
+        return item->findAttr<ASTAttrDestroy>() != nullptr;
+    });
+    return it != iface->methods.end() ? *it : nullptr;
+}
+
+static void createClass(const Package& package,
+                        idl::Context& ctx,
+                        const std::filesystem::path& out,
+                        ASTInterface* iface,
+                        idl_write_callback_t writer,
+                        idl_data_t writerData) {
+    const auto name = csharpName(iface);
+    auto dtor       = findDtor(iface);
+
+    auto stream = createStream(ctx, out, name + ".cs", writer, writerData);
+    fmt::println(stream.stream, "using System;");
+    fmt::println(stream.stream, "using System.Collections.Generic;");
+    fmt::println(stream.stream, "using System.Linq;");
+    fmt::println(stream.stream, "using System.Runtime.InteropServices;");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "namespace {}", package.rootNamespace);
+    fmt::println(stream.stream, "{{");
+    fmt::println(stream.stream, "    public unsafe partial class {} : CriticalHandle", name);
+    fmt::println(stream.stream, "    {{");
+    fmt::println(stream.stream, "        internal {}(IntPtr handle) : base(handle)", name);
+    fmt::println(stream.stream, "        {{");
+    fmt::println(stream.stream, "        }}");
+    fmt::println(stream.stream, "        public override bool IsInvalid => handle == IntPtr.Zero;");
+    fmt::println(stream.stream, "");
+    fmt::println(stream.stream, "        protected override bool ReleaseHandle()");
+    fmt::println(stream.stream, "        {{");
+    if (dtor) {
+        fmt::println(stream.stream, "            NativeWrapper.{}(this);", nativeFuncName(dtor));
+    }
+    fmt::println(stream.stream, "            return true;");
+    fmt::println(stream.stream, "        }}");
+    fmt::println(stream.stream, "    }}");
+    fmt::println(stream.stream, "}}");
+    endStream(stream);
+}
+
+static void createClasses(const Package& package,
+                          idl::Context& ctx,
+                          const std::filesystem::path& out,
+                          idl_write_callback_t writer,
+                          idl_data_t writerData) {
+    ctx.filter<ASTInterface>([&](ASTInterface* iface) {
+        createClass(package, ctx, out, iface, writer, writerData);
+    });
 }
 
 void generateCs(idl::Context& ctx,
@@ -1133,7 +1578,10 @@ void generateCs(idl::Context& ctx,
     createTargets(package, ctx, out, writer, writerData);
     createProj(package, ctx, out, writer, writerData);
     createSln(package, ctx, out, writer, writerData);
+    createNativeContext(package, ctx, out, writer, writerData);
+    createStructures(package, ctx, out, writer, writerData);
     createMarshallers(package, ctx, out, writer, writerData);
     createEnums(package, ctx, out, writer, writerData);
     createNative(package, ctx, out, writer, writerData);
+    createClasses(package, ctx, out, writer, writerData);
 }

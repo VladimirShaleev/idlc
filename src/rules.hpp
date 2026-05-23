@@ -399,8 +399,8 @@ struct AttrArgRules : Visitor {
     }
 
     void visit(ASTAttrBrief* node) override {
-        if (args.size() == 1 && args[0] && args[0]->as<ASTLiteralStr>()) {
-            // node->message = args[0]->as<ASTLiteralStr>()->value;
+        if (!args.empty()) {
+            node->message = std::move(args);
         } else {
             ctx.log<IDL_STATUS_E3014>(node->location);
         }

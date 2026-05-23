@@ -45,8 +45,11 @@ DOCCHAR ([^ \r\n\t\{\}[\]]|\\\{|\\\}|\\\[|\\\])
 <ATTRARGCTX>[a-zA-Z_][a-zA-Z0-9_]* { yylval->emplace<std::string>(YYText()); return token::INVALID_ARG; }
 <ATTRARGCTX>")"                    { BEGIN(ATTRCTX); return YYText()[0]; }
 
-"@" { BEGIN(DOCCTX); return YYText()[0]; }
-<DOCCTX>.*\[ { BEGIN(INITIAL); yyless(yyleng - 1); yylval->emplace<std::string>((trim(YYText()))); return token::STR;  }
+"@"                { BEGIN(DOCCTX); return YYText()[0]; }
+<DOCCTX>{DOCCHAR}+ { yylval->emplace<std::string>(unescape(trim(YYText()))); return token::STR; }
+<DOCCTX>[\{\}]     { return YYText()[0]; }
+<DOCCTX>\[         { BEGIN(INITIAL); yyless(yyleng - 1); }
+<DOCCTX>\r?\n      { yylloc->lines(); BEGIN(INITIAL); }
 
 "//".* ;
 

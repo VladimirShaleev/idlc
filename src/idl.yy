@@ -64,11 +64,13 @@
 %type <ASTDecl*> def
 %type <ASTDecl*> decl
 %type <ASTAttr*> doc
+%type <ASTNode*> doc_lit_or_ref
 
 %type <ASTAttr*> attr_item
 %type <ASTAttr*> attr_item_with_args
 %type <ASTNode*> arg_item
 
+%type <std::vector<ASTNode*>> doc_nodes
 %type <std::vector<ASTAttr*>> doc_list
 %type <std::vector<ASTAttr*>> attr_list
 %type <std::vector<ASTNode*>> arg_list
@@ -92,7 +94,18 @@ def
     ;
 
 doc
-    : '@' STR '[' attr_item ']' { $$ = $4; rule(AttrArg, $$, std::vector<ASTNode*>{add_literal(@2, $2)}); rule(AttrDocValidator, $4); }
+    : '@' doc_nodes { $$ = alloc_node(AttrBrief, @2); rule(AttrArg, $$, $2); rule(AttrDocValidator, $$); }
+    | '@' doc_nodes '[' attr_item ']' { $$ = $4; rule(AttrArg, $$, $2); rule(AttrDocValidator, $$); }
+    ;
+
+doc_lit_or_ref
+    : STR { $$ = add_literal(@1, $1); }
+    | '{' STR '}' { $$ = nullptr; }
+    ;
+
+doc_nodes
+    : doc_lit_or_ref { $$ = std::vector<ASTNode*>(); $$.push_back($1); }
+    | doc_nodes doc_lit_or_ref { $1.push_back($2); $$ = std::move($1); }
     ;
 
 doc_list

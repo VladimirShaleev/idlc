@@ -3,22 +3,22 @@
 #include "parser.hpp"
 #include "scanner.hpp"
 
-void generateC(idl::Context& ctx,
-               const std::filesystem::path& out,
-               idl_write_callback_t writer,
-               idl_data_t writerData,
-               std::span<idl_utf8_t> additions);
-
-void generateJs(idl::Context& ctx,
-                const std::filesystem::path& out,
-                idl_write_callback_t writer,
-                idl_data_t writerData);
-
-void generateCs(idl::Context& ctx,
-                const std::filesystem::path& out,
-                idl_write_callback_t writer,
-                idl_data_t writerData,
-                std::span<idl_utf8_t> additions);
+// void generateC(idl::Context& ctx,
+//                const std::filesystem::path& out,
+//                idl_write_callback_t writer,
+//                idl_data_t writerData,
+//                std::span<idl_utf8_t> additions);
+//
+// void generateJs(idl::Context& ctx,
+//                 const std::filesystem::path& out,
+//                 idl_write_callback_t writer,
+//                 idl_data_t writerData);
+//
+// void generateCs(idl::Context& ctx,
+//                 const std::filesystem::path& out,
+//                 idl_write_callback_t writer,
+//                 idl_data_t writerData,
+//                 std::span<idl_utf8_t> additions);
 
 struct _idl_compiler : public idl::Object {};
 
@@ -42,24 +42,24 @@ public:
 
             if (code != 0) {
                 if (result) {
-                    Exception exc(IDL_STATUS_E2011, "<input>", 0, 0, "unknown error");
-                    result->addMessage(exc);
+                    //Exception exc(IDL_STATUS_E2011, "<input>", 0, 0, "unknown error");
+                    //result->addMessage(exc);
                     return IDL_RESULT_SUCCESS;
                 } else {
                     return IDL_RESULT_ERROR_COMPILATION;
                 }
             }
 
-            context.prepareEnumConsts();
-            context.prepareStructs();
-            context.prepareCallbacks();
-            context.prepareFunctions();
-            context.prepareMethods();
-            context.prepareProperties();
-            context.prepareEvents();
-            context.prepareInterfaces();
-            context.prepareHandles();
-            context.prepareDocumentation();
+            // context.prepareEnumConsts();
+            // context.prepareStructs();
+            // context.prepareCallbacks();
+            // context.prepareFunctions();
+            // context.prepareMethods();
+            // context.prepareProperties();
+            // context.prepareEvents();
+            // context.prepareInterfaces();
+            // context.prepareHandles();
+            // context.prepareDocumentation();
 
             auto output = std::filesystem::current_path();
             idl_write_callback_t writer{};
@@ -73,24 +73,24 @@ public:
                 additions.resize(num);
                 options->getAdditions(num, additions.data());
                 if (auto version = options->getVersion()) {
-                    context.apiVersion(*version);
+                    // context.apiVersion(*version);
                 }
             }
 
             switch (generator) {
                 case IDL_GENERATOR_C:
-                    generateC(context, output, writer, writerData, std::span{ additions.data(), additions.size() });
+                    // generateC(context, output, writer, writerData, std::span{ additions.data(), additions.size() });
                     break;
                 case IDL_GENERATOR_JAVA_SCRIPT:
 #ifdef IDLC_SUPPORTED_JS
-                    generateJs(context, output, writer, writerData);
+                    // generateJs(context, output, writer, writerData);
                     break;
 #else
                     return IDL_RESULT_ERROR_NOT_SUPPORTED;
 #endif
                 case IDL_GENERATOR_CSHARP:
 #ifdef IDLC_SUPPORTED_CS
-                    generateCs(context, output, writer, writerData, std::span{ additions.data(), additions.size() });
+                    // generateCs(context, output, writer, writerData, std::span{ additions.data(), additions.size() });
                     break;
 #else
                     return IDL_RESULT_ERROR_NOT_SUPPORTED;
@@ -103,19 +103,23 @@ public:
             if (result) {
                 result->addMessage(exc);
             } else {
-                return exc.status() == IDL_STATUS_E2067 ? IDL_RESULT_ERROR_FILE_CREATE : IDL_RESULT_ERROR_COMPILATION;
+                // return exc.status() == IDL_STATUS_E2067 ? IDL_RESULT_ERROR_FILE_CREATE :
+                // IDL_RESULT_ERROR_COMPILATION;
+                return IDL_RESULT_ERROR_UNKNOWN;
             }
         } catch (const std::bad_alloc&) {
             if (result) {
-                Exception exc(IDL_STATUS_E2045, "<input>", 0, 0, "out of memory");
-                result->addMessage(exc);
+                // Exception exc(IDL_STATUS_E2045, "<input>", 0, 0, "out of memory");
+                // result->addMessage(exc);
+                return IDL_RESULT_ERROR_UNKNOWN;
             } else {
                 return IDL_RESULT_ERROR_OUT_OF_MEMORY;
             }
         } catch (...) {
             if (result) {
-                Exception exc(IDL_STATUS_E2011, "<input>", 0, 0, "unknown error");
-                result->addMessage(exc);
+                // Exception exc(IDL_STATUS_E2011, "<input>", 0, 0, "unknown error");
+                // result->addMessage(exc);
+                return IDL_RESULT_ERROR_UNKNOWN;
             } else {
                 return IDL_RESULT_ERROR_UNKNOWN;
             }

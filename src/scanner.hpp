@@ -57,7 +57,7 @@ public:
 
     void import(const idl::location& loc, const std::filesystem::path& file, bool isRelative = true) {
         if (isRelative && file.is_absolute()) {
-            err<IDL_STATUS_E2041>(loc, file.string());
+            // err<IDL_STATUS_E2041>(loc, file.string()); // TODO
         }
         const auto [path, source, needRelease] = findFile(loc, file);
         const auto filename = path.is_absolute() ? std::filesystem::relative(path, _basePath).string() : path.string();
@@ -96,7 +96,7 @@ public:
             import.stream = new std::ifstream(path);
             if (import.stream->fail()) {
                 delete import.stream;
-                err<IDL_STATUS_E2042>(loc, path.string());
+                // err<IDL_STATUS_E2042>(loc, path.string()); // TODO
                 return;
             }
         }
@@ -124,19 +124,19 @@ public:
         _imports.pop_back();
         _needUpdateLoc = true;
         if (_imports.size() > 0) {
-            _ctx.popFile();
+            // _ctx.popFile();
         }
         return !_imports.empty();
     }
 
     void action(idl::location& loc) {
-        if (!_needUpdateLoc) {
+        //if (!_needUpdateLoc) {
             loc.step();
             loc.columns(yyleng);
-        } else {
-            loc            = _imports.back()->location;
-            _needUpdateLoc = false;
-        }
+        //} else {
+        //    loc            = _imports.back()->location;
+        //    _needUpdateLoc = false;
+        //}
     }
 
     int lineIndent = -1;
@@ -197,7 +197,7 @@ private:
 
         if (file.is_absolute()) {
             if (!std::filesystem::exists(file) || !std::filesystem::is_regular_file(file)) {
-                err<IDL_STATUS_E2041>(loc, file.string());
+                // err<IDL_STATUS_E2041>(loc, file.string()); // TODO
             }
             return { file, nullptr, false };
         }
@@ -246,7 +246,7 @@ private:
             } catch (const std::filesystem::filesystem_error&) {
             }
         }
-        err<IDL_STATUS_E2041>(loc, file.string());
+        // err<IDL_STATUS_E2041>(loc, file.string()); TODO
     }
 
     std::string normalize(const std::filesystem::path& path) const {

@@ -63,12 +63,12 @@ if(IDLC_USE_IDLC)
             "${PROJECT_SOURCE_DIR}/specs/results.idl")
 endif()
 
-set(IDL_SOURCES src/compiler.cpp src/generator_c.cpp)
+set(IDL_SOURCES src/compiler.cpp)# src/generator_c.cpp)
 if(IDLC_SUPPORTED_JS)
-    list(APPEND IDL_SOURCES src/generator_js.cpp)
+#    list(APPEND IDL_SOURCES src/generator_js.cpp)
 endif()
 if(IDLC_SUPPORTED_CS)
-    list(APPEND IDL_SOURCES src/generator_cs.cpp)
+#    list(APPEND IDL_SOURCES src/generator_cs.cpp)
 endif()
 
 add_library(idl
@@ -106,6 +106,7 @@ else()
     target_compile_definitions(idl PUBLIC IDL_STATIC_BUILD)
 endif()
 if(MSVC)
+    target_compile_options(idl PRIVATE /Zc:preprocessor)
     if(IDLC_MSVC_DYNAMIC_RUNTIME)
         set_target_properties(idl PROPERTIES
             MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")

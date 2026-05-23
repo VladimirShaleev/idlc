@@ -125,8 +125,12 @@ int main(int argc, char* argv[]) {
             messages.resize(count);
             idl_compilation_result_get_messages(result, &count, messages.data());
             for (const auto& message : messages) {
-                std::cerr << (message.is_error ? "error" : "warning");
-                std::cerr << " [" << (message.status >= IDL_STATUS_E2001 ? 'E' : 'W');
+                std::cerr << (message.status >= IDL_STATUS_E3001
+                                  ? "error"
+                                  : (message.status >= IDL_STATUS_W2001 ? "warning" : "note"));
+                std::cerr << " ["
+                          << (message.status >= IDL_STATUS_E3001 ? 'E'
+                                                                 : (message.status >= IDL_STATUS_W2001 ? 'W' : 'N'));
                 std::cerr << (int) message.status << "]: " << message.message;
                 if (message.line > 0) {
                     std::cerr << " at " << message.filename << ':' << message.line << ':' << message.column << '.'

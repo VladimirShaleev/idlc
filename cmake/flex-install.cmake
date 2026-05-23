@@ -5,7 +5,7 @@ endif()
 if(NOT FLEX_FOUND)
     include(ExternalProject)
     if(CMAKE_HOST_WIN32 OR WIN32 OR DEFINED ENV{SystemRoot})
-        set(WINFLEXBISON_VERSION_INSTALL "2.5.24")
+        set(WINFLEXBISON_VERSION_INSTALL "2.5.25")
         message(STATUS "flex not found, try download flex from winflexbison ${WINFLEXBISON_VERSION_INSTALL}")
 
         set(WINFLEX_URL "https://github.com/lexxmark/winflexbison/releases/download/v${WINFLEXBISON_VERSION_INSTALL}/win_flex_bison-${WINFLEXBISON_VERSION_INSTALL}.zip")
@@ -16,7 +16,7 @@ if(NOT FLEX_FOUND)
         ExternalProject_Add(
             winflex
             URL ${WINFLEX_URL}
-            URL_HASH MD5=6b549d43e34ece0e8ed05af92daa31c4
+            URL_HASH MD5=720226b1befe7033fb3ecc98f5ffd425
             CONFIGURE_COMMAND ""
             BUILD_COMMAND ""
             INSTALL_COMMAND 

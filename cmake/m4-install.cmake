@@ -1,4 +1,4 @@
-set(M4_VERSION_REQUIRED "1.4.16")
+set(M4_VERSION_REQUIRED "1.4.19")
 find_program(M4_EXECUTABLE NAMES m4 gm4)
 
 if(M4_EXECUTABLE AND NOT M4_BUILDING)
@@ -14,10 +14,9 @@ if(M4_EXECUTABLE AND NOT M4_BUILDING)
 endif()
 
 if(NOT M4_EXECUTABLE)
-    set(M4_VERSION_INSTALL "1.4.19")
     message(STATUS "m4 not found, building from source")
     
-    set(M4_URL "https://ftp.gnu.org/gnu/m4/m4-${M4_VERSION_INSTALL}.tar.gz")
+    set(M4_URL "https://ftp.gnu.org/gnu/m4/m4-${M4_VERSION_REQUIRED}.tar.gz")
     set(M4_INSTALL_DIR "${CMAKE_BINARY_DIR}/m4_install")
     set(M4_EXECUTABLE "${M4_INSTALL_DIR}/bin/m4")
 

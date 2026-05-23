@@ -20,16 +20,19 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <ranges>
 #include <set>
 #include <span>
 #include <sstream>
 #include <string>
 #include <typeindex>
 #include <unordered_map>
+#include <variant>
 #include <vector>
 
 #include <fmt/base.h>
 #include <fmt/ostream.h>
+#include <fmt/ranges.h>
 #include <magic_enum/magic_enum.hpp>
 #include <xxhash.h>
 

@@ -14,12 +14,6 @@ struct ASTNode {
     virtual void accept(Visitor& visitor) = 0;
 
     template <typename Node>
-    bool is() noexcept {
-        static_assert(std::is_base_of<ASTNode, Node>::value, "Node must be inherited from ASTNode");
-        return dynamic_cast<Node*>(this) != nullptr;
-    }
-
-    template <typename Node>
     Node* as() noexcept {
         static_assert(std::is_base_of<ASTNode, Node>::value, "Node must be inherited from ASTNode");
         return dynamic_cast<Node*>(this);
@@ -43,10 +37,10 @@ struct ASTLiteralInt : ASTLiteral {
     int64_t value;
 };
 
-struct ASTLiteralConsts : ASTLiteral {
+struct ASTLiteralFloat : ASTLiteral {
     void accept(Visitor& visitor) override;
 
-    std::vector<struct ASTDeclRef*> decls;
+    double value;
 };
 
 struct ASTLiteralStr : ASTLiteral {
@@ -55,167 +49,11 @@ struct ASTLiteralStr : ASTLiteral {
     std::string value;
 };
 
-struct ASTDoc : ASTNode {
-    void accept(Visitor& visitor) override;
-
-    std::vector<ASTNode*> brief;
-    std::vector<ASTNode*> detail;
-    std::vector<ASTNode*> ret;
-    std::vector<ASTNode*> copyright;
-    std::vector<ASTNode*> license;
-    std::vector<std::vector<ASTNode*>> authors;
-    std::vector<std::vector<ASTNode*>> see;
-    std::vector<std::vector<ASTNode*>> note;
-    std::vector<std::vector<ASTNode*>> warn;
-};
-
 struct ASTAttr : ASTNode {};
-
-struct ASTAttrPlatform : ASTAttr {
-    enum Type {
-        Windows = 1,
-        Linux   = 2,
-        MacOS   = 4,
-        Web     = 8,
-        Android = 16,
-        iOS     = 32
-    };
-
-    void accept(Visitor& visitor) override;
-
-    Type platforms;
-};
-
-struct ASTAttrFlags : ASTAttr {
-    void accept(Visitor& visitor) override;
-};
-
-struct ASTAttrHex : ASTAttr {
-    void accept(Visitor& visitor) override;
-};
-
-struct ASTAttrValue : ASTAttr {
-    void accept(Visitor& visitor) override;
-
-    ASTLiteral* value;
-};
-
-struct ASTAttrType : ASTAttr {
-    void accept(Visitor& visitor) override;
-
-    struct ASTDeclRef* type;
-};
-
-struct ASTAttrStatic : ASTAttr {
-    void accept(Visitor& visitor) override;
-};
-
-struct ASTAttrCtor : ASTAttr {
-    void accept(Visitor& visitor) override;
-};
-
-struct ASTAttrThis : ASTAttr {
-    void accept(Visitor& visitor) override;
-};
-
-struct ASTAttrGet : ASTAttr {
-    void accept(Visitor& visitor) override;
-
-    struct ASTDeclRef* decl{};
-};
-
-struct ASTAttrSet : ASTAttr {
-    void accept(Visitor& visitor) override;
-
-    struct ASTDeclRef* decl{};
-};
-
-struct ASTAttrHandle : ASTAttr {
-    void accept(Visitor& visitor) override;
-};
-
-struct ASTAttrCName : ASTAttr {
-    void accept(Visitor& visitor) override;
-
-    std::string name;
-};
-
-struct ASTAttrArray : ASTAttr {
-    void accept(Visitor& visitor) override;
-
-    bool ref{};
-    int size{};
-    struct ASTDeclRef* decl{};
-};
-
-struct ASTAttrDataSize : ASTAttr {
-    void accept(Visitor& visitor) override;
-
-    struct ASTDeclRef* decl{};
-};
-
-struct ASTAttrConst : ASTAttr {
-    void accept(Visitor& visitor) override;
-};
-
-struct ASTAttrRef : ASTAttr {
-    void accept(Visitor& visitor) override;
-};
-
-struct ASTAttrRefInc : ASTAttr {
-    void accept(Visitor& visitor) override;
-};
-
-struct ASTAttrUserData : ASTAttr {
-    void accept(Visitor& visitor) override;
-};
-
-struct ASTAttrErrorCode : ASTAttr {
-    void accept(Visitor& visitor) override;
-};
-
-struct ASTAttrNoError : ASTAttr {
-    void accept(Visitor& visitor) override;
-};
-
-struct ASTAttrResult : ASTAttr {
-    void accept(Visitor& visitor) override;
-};
-
-struct ASTAttrDestroy : ASTAttr {
-    void accept(Visitor& visitor) override;
-};
-
-struct ASTAttrIn : ASTAttr {
-    void accept(Visitor& visitor) override;
-};
-
-struct ASTAttrOut : ASTAttr {
-    void accept(Visitor& visitor) override;
-};
-
-struct ASTAttrOptional : ASTAttr {
-    void accept(Visitor& visitor) override;
-};
-
-struct ASTAttrTokenizer : ASTAttr {
-    void accept(Visitor& visitor) override;
-
-    std::vector<int> nums;
-};
-
-struct ASTAttrVersion : ASTAttr {
-    void accept(Visitor& visitor) override;
-
-    int major{};
-    int minor{};
-    int micro{};
-};
 
 struct ASTDecl : ASTNode {
     std::string name;
     std::vector<ASTAttr*> attrs;
-    ASTDoc* doc{};
     struct ASTFile* file{};
 
     template <typename Attr>
@@ -229,13 +67,14 @@ struct ASTDecl : ASTNode {
 
     std::string fullname() const {
         assert(name.length() > 0);
-        std::string str{};
+        std::ostringstream ss;
         if (parent) {
             if (auto parentDecl = parent->as<ASTDecl>()) {
-                str = parentDecl->fullname() + '.';
+                ss << parentDecl->fullname() << '.';
             }
         }
-        return str + name;
+        ss << name;
+        return ss.str();
     }
 
     std::string fullnameLowecase() const {
@@ -247,203 +86,357 @@ struct ASTDecl : ASTNode {
     }
 };
 
-struct ASTDocDecl : ASTDecl {};
-
-struct ASTYear : ASTDocDecl {
-    void accept(Visitor& visitor) override;
-
-    int value{};
-};
-
-struct ASTMajor : ASTDocDecl {
-    void accept(Visitor& visitor) override;
-
-    int value{};
-};
-
-struct ASTMinor : ASTDocDecl {
-    void accept(Visitor& visitor) override;
-
-    int value{};
-};
-
-struct ASTMicro : ASTDocDecl {
-    void accept(Visitor& visitor) override;
-
-    int value{};
-};
-
-struct ASTDocBool : ASTDocDecl {
-    void accept(Visitor& visitor) override;
-
-    bool value{};
-};
-
-struct ASTDeclRef : ASTNode {
-    void accept(Visitor& visitor) override;
-
-    std::string name;
-    ASTDecl* decl{};
-};
-
 struct ASTType : ASTDecl {};
-
-struct ASTTrivialType : ASTType {};
-
-struct ASTBuiltinType : ASTTrivialType {};
-
-struct ASTIntegerType : ASTBuiltinType {};
-
-struct ASTFloatType : ASTBuiltinType {};
-
-struct ASTVoid : ASTBuiltinType {
-    void accept(Visitor& visitor) override;
-};
-
-struct ASTChar : ASTBuiltinType {
-    void accept(Visitor& visitor) override;
-};
-
-struct ASTStr : ASTBuiltinType {
-    void accept(Visitor& visitor) override;
-};
-
-struct ASTBool : ASTBuiltinType {
-    void accept(Visitor& visitor) override;
-};
-
-struct ASTInt8 : ASTIntegerType {
-    void accept(Visitor& visitor) override;
-};
-
-struct ASTUint8 : ASTIntegerType {
-    void accept(Visitor& visitor) override;
-};
-
-struct ASTInt16 : ASTIntegerType {
-    void accept(Visitor& visitor) override;
-};
-
-struct ASTUint16 : ASTIntegerType {
-    void accept(Visitor& visitor) override;
-};
-
-struct ASTInt32 : ASTIntegerType {
-    void accept(Visitor& visitor) override;
-};
-
-struct ASTUint32 : ASTIntegerType {
-    void accept(Visitor& visitor) override;
-};
-
-struct ASTInt64 : ASTIntegerType {
-    void accept(Visitor& visitor) override;
-};
-
-struct ASTUint64 : ASTIntegerType {
-    void accept(Visitor& visitor) override;
-};
-
-struct ASTFloat32 : ASTFloatType {
-    void accept(Visitor& visitor) override;
-};
-
-struct ASTFloat64 : ASTFloatType {
-    void accept(Visitor& visitor) override;
-};
-
-struct ASTData : ASTBuiltinType {
-    void accept(Visitor& visitor) override;
-};
-
-struct ASTConstData : ASTBuiltinType {
-    void accept(Visitor& visitor) override;
-};
-
-struct ASTEnumConst : ASTDecl {
-    void accept(Visitor& visitor) override;
-
-    bool evaluated{};
-    int32_t value{};
-};
 
 struct ASTEnum : ASTType {
     void accept(Visitor& visitor) override;
 
-    std::vector<ASTEnumConst*> consts;
-};
-
-struct ASTField : ASTDecl {
-    void accept(Visitor& visitor) override;
-};
-
-struct ASTStruct : ASTType {
-    void accept(Visitor& visitor) override;
-
-    std::vector<ASTField*> fields;
-};
-
-struct ASTArg : ASTDecl {
-    void accept(Visitor& visitor) override;
-};
-
-struct ASTMethod : ASTDecl {
-    void accept(Visitor& visitor) override;
-
-    std::vector<ASTArg*> args;
-};
-
-struct ASTProperty : ASTDecl {
-    void accept(Visitor& visitor) override;
-};
-
-struct ASTEvent : ASTDecl {
-    void accept(Visitor& visitor) override;
-};
-
-struct ASTInterface : ASTType {
-    void accept(Visitor& visitor) override;
-
-    std::vector<ASTMethod*> methods;
-    std::vector<ASTProperty*> props;
-    std::vector<ASTEvent*> events;
-};
-
-struct ASTHandle : ASTType {
-    void accept(Visitor& visitor) override;
-};
-
-struct ASTFunc : ASTDecl {
-    void accept(Visitor& visitor) override;
-
-    std::vector<ASTArg*> args;
-};
-
-struct ASTCallback : ASTType {
-    void accept(Visitor& visitor) override;
-
-    std::vector<ASTArg*> args;
-};
-
-struct ASTFile : ASTDecl {
-    void accept(Visitor& visitor) override;
-
-    std::vector<ASTDecl*> decls;
+    // std::vector<ASTEnumConst*> consts;
 };
 
 struct ASTApi : ASTDecl {
     void accept(Visitor& visitor) override;
 
     std::vector<ASTEnum*> enums;
-    std::vector<ASTStruct*> structs;
-    std::vector<ASTCallback*> callbacks;
-    std::vector<ASTFunc*> funcs;
-    std::vector<ASTInterface*> interfaces;
-    std::vector<ASTHandle*> handles;
-    std::vector<ASTFile*> files;
+    // std::vector<ASTStruct*> structs;
+    // std::vector<ASTCallback*> callbacks;
+    // std::vector<ASTFunc*> funcs;
+    // std::vector<ASTInterface*> interfaces;
+    // std::vector<ASTHandle*> handles;
+    // std::vector<ASTFile*> files;
 };
 
+// struct ASTAttrPlatform : ASTAttr {
+//     enum Type {
+//         Windows = 1,
+//         Linux   = 2,
+//         MacOS   = 4,
+//         Web     = 8,
+//         Android = 16,
+//         iOS     = 32
+//     };
+//
+//     void accept(Visitor& visitor) override;
+//
+//     Type platforms;
+// };
+
+struct ASTAttrFlags : ASTAttr {
+    void accept(Visitor& visitor) override;
+};
+
+struct ASTAttrHex : ASTAttr {
+    void accept(Visitor& visitor) override;
+};
+
+struct ASTAttrBrief : ASTAttr {
+    void accept(Visitor& visitor) override;
+
+    std::string message;
+};
+
+// struct ASTAttrValue : ASTAttr {
+//     void accept(Visitor& visitor) override;
+//
+//     ASTLiteral* value;
+// };
+//
+// struct ASTAttrType : ASTAttr {
+//     void accept(Visitor& visitor) override;
+//
+//     struct ASTDeclRef* type;
+// };
+//
+// struct ASTAttrStatic : ASTAttr {
+//     void accept(Visitor& visitor) override;
+// };
+//
+// struct ASTAttrCtor : ASTAttr {
+//     void accept(Visitor& visitor) override;
+// };
+//
+// struct ASTAttrThis : ASTAttr {
+//     void accept(Visitor& visitor) override;
+// };
+//
+// struct ASTAttrGet : ASTAttr {
+//     void accept(Visitor& visitor) override;
+//
+//     struct ASTDeclRef* decl{};
+// };
+//
+// struct ASTAttrSet : ASTAttr {
+//     void accept(Visitor& visitor) override;
+//
+//     struct ASTDeclRef* decl{};
+// };
+//
+// struct ASTAttrHandle : ASTAttr {
+//     void accept(Visitor& visitor) override;
+// };
+//
+// struct ASTAttrCName : ASTAttr {
+//     void accept(Visitor& visitor) override;
+//
+//     std::string name;
+// };
+//
+// struct ASTAttrArray : ASTAttr {
+//     void accept(Visitor& visitor) override;
+//
+//     bool ref{};
+//     int size{};
+//     struct ASTDeclRef* decl{};
+// };
+//
+// struct ASTAttrDataSize : ASTAttr {
+//     void accept(Visitor& visitor) override;
+//
+//     struct ASTDeclRef* decl{};
+// };
+//
+// struct ASTAttrConst : ASTAttr {
+//     void accept(Visitor& visitor) override;
+// };
+//
+// struct ASTAttrRef : ASTAttr {
+//     void accept(Visitor& visitor) override;
+// };
+//
+// struct ASTAttrRefInc : ASTAttr {
+//     void accept(Visitor& visitor) override;
+// };
+//
+// struct ASTAttrUserData : ASTAttr {
+//     void accept(Visitor& visitor) override;
+// };
+//
+// struct ASTAttrErrorCode : ASTAttr {
+//     void accept(Visitor& visitor) override;
+// };
+//
+// struct ASTAttrNoError : ASTAttr {
+//     void accept(Visitor& visitor) override;
+// };
+//
+// struct ASTAttrResult : ASTAttr {
+//     void accept(Visitor& visitor) override;
+// };
+//
+// struct ASTAttrDestroy : ASTAttr {
+//     void accept(Visitor& visitor) override;
+// };
+//
+// struct ASTAttrIn : ASTAttr {
+//     void accept(Visitor& visitor) override;
+// };
+//
+// struct ASTAttrOut : ASTAttr {
+//     void accept(Visitor& visitor) override;
+// };
+//
+// struct ASTAttrOptional : ASTAttr {
+//     void accept(Visitor& visitor) override;
+// };
+//
+// struct ASTAttrTokenizer : ASTAttr {
+//     void accept(Visitor& visitor) override;
+//
+//     std::vector<int> nums;
+// };
+//
+struct ASTAttrVersion : ASTAttr {
+    void accept(Visitor& visitor) override;
+
+    struct Semver {
+        uint8_t major{};
+        uint8_t minor{};
+        uint8_t micro{};
+    };
+
+    std::variant<Semver, std::string> version;
+};
+
+// struct ASTYear : ASTDocDecl {
+//     void accept(Visitor& visitor) override;
+//
+//     int value{};
+// };
+//
+// struct ASTMajor : ASTDocDecl {
+//     void accept(Visitor& visitor) override;
+//
+//     int value{};
+// };
+//
+// struct ASTMinor : ASTDocDecl {
+//     void accept(Visitor& visitor) override;
+//
+//     int value{};
+// };
+//
+// struct ASTMicro : ASTDocDecl {
+//     void accept(Visitor& visitor) override;
+//
+//     int value{};
+// };
+//
+// struct ASTDocBool : ASTDocDecl {
+//     void accept(Visitor& visitor) override;
+//
+//     bool value{};
+// };
+//
+// struct ASTDeclRef : ASTNode {
+//     void accept(Visitor& visitor) override;
+//
+//     std::string name;
+//     ASTDecl* decl{};
+// };
+
+// struct ASTTrivialType : ASTType {};
+//
+// struct ASTBuiltinType : ASTTrivialType {};
+//
+// struct ASTIntegerType : ASTBuiltinType {};
+//
+// struct ASTFloatType : ASTBuiltinType {};
+//
+// struct ASTVoid : ASTBuiltinType {
+//     void accept(Visitor& visitor) override;
+// };
+//
+// struct ASTChar : ASTBuiltinType {
+//     void accept(Visitor& visitor) override;
+// };
+//
+// struct ASTStr : ASTBuiltinType {
+//     void accept(Visitor& visitor) override;
+// };
+//
+// struct ASTBool : ASTBuiltinType {
+//     void accept(Visitor& visitor) override;
+// };
+//
+// struct ASTInt8 : ASTIntegerType {
+//     void accept(Visitor& visitor) override;
+// };
+//
+// struct ASTUint8 : ASTIntegerType {
+//     void accept(Visitor& visitor) override;
+// };
+//
+// struct ASTInt16 : ASTIntegerType {
+//     void accept(Visitor& visitor) override;
+// };
+//
+// struct ASTUint16 : ASTIntegerType {
+//     void accept(Visitor& visitor) override;
+// };
+//
+// struct ASTInt32 : ASTIntegerType {
+//     void accept(Visitor& visitor) override;
+// };
+//
+// struct ASTUint32 : ASTIntegerType {
+//     void accept(Visitor& visitor) override;
+// };
+//
+// struct ASTInt64 : ASTIntegerType {
+//     void accept(Visitor& visitor) override;
+// };
+//
+// struct ASTUint64 : ASTIntegerType {
+//     void accept(Visitor& visitor) override;
+// };
+//
+// struct ASTFloat32 : ASTFloatType {
+//     void accept(Visitor& visitor) override;
+// };
+//
+// struct ASTFloat64 : ASTFloatType {
+//     void accept(Visitor& visitor) override;
+// };
+//
+// struct ASTData : ASTBuiltinType {
+//     void accept(Visitor& visitor) override;
+// };
+//
+// struct ASTConstData : ASTBuiltinType {
+//     void accept(Visitor& visitor) override;
+// };
+//
+// struct ASTEnumConst : ASTDecl {
+//     void accept(Visitor& visitor) override;
+//
+//     bool evaluated{};
+//     int32_t value{};
+// };
+//
+
+//
+// struct ASTField : ASTDecl {
+//     void accept(Visitor& visitor) override;
+// };
+//
+// struct ASTStruct : ASTType {
+//     void accept(Visitor& visitor) override;
+//
+//     std::vector<ASTField*> fields;
+// };
+//
+// struct ASTArg : ASTDecl {
+//     void accept(Visitor& visitor) override;
+// };
+//
+// struct ASTMethod : ASTDecl {
+//     void accept(Visitor& visitor) override;
+//
+//     std::vector<ASTArg*> args;
+// };
+//
+// struct ASTProperty : ASTDecl {
+//     void accept(Visitor& visitor) override;
+// };
+//
+// struct ASTEvent : ASTDecl {
+//     void accept(Visitor& visitor) override;
+// };
+//
+// struct ASTInterface : ASTType {
+//     void accept(Visitor& visitor) override;
+//
+//     std::vector<ASTMethod*> methods;
+//     std::vector<ASTProperty*> props;
+//     std::vector<ASTEvent*> events;
+// };
+//
+// struct ASTHandle : ASTType {
+//     void accept(Visitor& visitor) override;
+// };
+//
+// struct ASTFunc : ASTDecl {
+//     void accept(Visitor& visitor) override;
+//
+//     std::vector<ASTArg*> args;
+// };
+//
+// struct ASTCallback : ASTType {
+//     void accept(Visitor& visitor) override;
+//
+//     std::vector<ASTArg*> args;
+// };
+//
+// struct ASTFile : ASTDecl {
+//     void accept(Visitor& visitor) override;
+//
+//     std::vector<ASTDecl*> decls;
+// };
+
 struct Visitor {
+    explicit Visitor(class Context& ctx) noexcept : ctx(ctx) {
+    }
+
     virtual ~Visitor() = default;
 
     virtual void visit(ASTLiteralStr* node) {
@@ -458,207 +451,7 @@ struct Visitor {
         discarded(node);
     }
 
-    virtual void visit(ASTLiteralConsts* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTYear* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTMajor* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTMinor* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTMicro* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTDocBool* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTDoc* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTAttrPlatform* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTAttrFlags* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTAttrHex* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTAttrValue* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTAttrType* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTAttrStatic* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTAttrCtor* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTAttrThis* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTAttrGet* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTAttrSet* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTAttrCName* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTAttrArray* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTAttrDataSize* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTAttrConst* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTAttrRef* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTAttrRefInc* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTAttrUserData* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTAttrErrorCode* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTAttrNoError* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTAttrResult* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTAttrDestroy* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTAttrIn* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTAttrOut* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTAttrOptional* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTAttrTokenizer* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTAttrVersion* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTAttrHandle* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTDeclRef* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTVoid* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTChar* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTStr* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTBool* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTInt8* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTUint8* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTInt16* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTUint16* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTInt32* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTUint32* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTInt64* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTUint64* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTFloat32* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTFloat64* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTData* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTConstData* node) {
+    virtual void visit(ASTLiteralFloat* node) {
         discarded(node);
     }
 
@@ -670,56 +463,27 @@ struct Visitor {
         discarded(node);
     }
 
-    virtual void visit(ASTEnumConst* node) {
+    virtual void visit(ASTAttrVersion* node) {
         discarded(node);
     }
 
-    virtual void visit(ASTStruct* node) {
+    virtual void visit(ASTAttrFlags* node) {
         discarded(node);
     }
 
-    virtual void visit(ASTField* node) {
+    virtual void visit(ASTAttrHex* node) {
         discarded(node);
     }
 
-    virtual void visit(ASTInterface* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTHandle* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTFunc* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTCallback* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTMethod* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTProperty* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTEvent* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTArg* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTFile* node) {
+    virtual void visit(ASTAttrBrief* node) {
         discarded(node);
     }
 
     virtual void discarded(ASTNode* node) {
+        assert(!"visit method not implemented for this node type");
     }
+
+    class Context& ctx;
 };
 
 inline void ASTLiteralStr::accept(Visitor& visitor) {
@@ -734,207 +498,7 @@ inline void ASTLiteralInt::accept(Visitor& visitor) {
     visitor.visit(this);
 }
 
-inline void ASTLiteralConsts::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTYear::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTMajor::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTMinor::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTMicro::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTDocBool::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTDoc::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTAttrPlatform::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTAttrFlags::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTAttrHex::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTAttrValue::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTAttrType::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTAttrStatic::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTAttrCtor::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTAttrThis::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTAttrGet::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTAttrSet::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTAttrCName::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTAttrArray::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTAttrDataSize::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTAttrConst::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTAttrRef::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTAttrRefInc::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTAttrUserData::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTAttrErrorCode::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTAttrNoError::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTAttrResult::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTAttrDestroy::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTAttrIn::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTAttrOut::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTAttrOptional::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTAttrTokenizer::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTAttrVersion::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTAttrHandle::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTDeclRef::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTVoid::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTChar::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTStr::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTBool::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTInt8::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTUint8::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTInt16::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTUint16::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTInt32::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTUint32::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTInt64::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTUint64::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTFloat32::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTFloat64::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTData::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTConstData::accept(Visitor& visitor) {
+inline void ASTLiteralFloat::accept(Visitor& visitor) {
     visitor.visit(this);
 }
 
@@ -946,51 +510,19 @@ inline void ASTEnum::accept(Visitor& visitor) {
     visitor.visit(this);
 }
 
-inline void ASTEnumConst::accept(Visitor& visitor) {
+inline void ASTAttrVersion::accept(Visitor& visitor) {
     visitor.visit(this);
 }
 
-inline void ASTStruct::accept(Visitor& visitor) {
+inline void ASTAttrFlags::accept(Visitor& visitor) {
     visitor.visit(this);
 }
 
-inline void ASTField::accept(Visitor& visitor) {
+inline void ASTAttrHex::accept(Visitor& visitor) {
     visitor.visit(this);
 }
 
-inline void ASTInterface::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTHandle::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTFunc::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTCallback::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTMethod::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTProperty::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTEvent::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTArg::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTFile::accept(Visitor& visitor) {
+inline void ASTAttrBrief::accept(Visitor& visitor) {
     visitor.visit(this);
 }
 

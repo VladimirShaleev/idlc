@@ -6,7 +6,8 @@
 #define YY_USER_ACTION action(*yylloc);
 using namespace std::string_literals;
 typedef idl::Parser::token token;
-std::string unescape(const char*);
+std::string trim(const std::string& str);
+std::string unescape(const std::string& str);
 %}
 
 %option c++
@@ -16,6 +17,7 @@ std::string unescape(const char*);
 
 %x ATTRCTX
 %x ATTRARGCTX
+%x DOCCTX
 
 DOCCHAR ([^ \r\n\t\{\}[\]]|\\\{|\\\}|\\\[|\\\])
 
@@ -43,6 +45,9 @@ DOCCHAR ([^ \r\n\t\{\}[\]]|\\\{|\\\}|\\\[|\\\])
 <ATTRARGCTX>[a-zA-Z_][a-zA-Z0-9_]* { yylval->emplace<std::string>(YYText()); return token::INVALID_ARG; }
 <ATTRARGCTX>")"                    { BEGIN(ATTRCTX); return YYText()[0]; }
 
+"@" { BEGIN(DOCCTX); return YYText()[0]; }
+<DOCCTX>.*\[ { BEGIN(INITIAL); yyless(yyleng - 1); yylval->emplace<std::string>((trim(YYText()))); return token::STR;  }
+
 "//".* ;
 
 <*>[A-Z][a-zA-Z0-9]*                     { yylval->emplace<std::string>(YYText()); return token::ID; }
@@ -62,4 +67,29 @@ DOCCHAR ([^ \r\n\t\{\}[\]]|\\\{|\\\}|\\\[|\\\])
 
 int yyFlexLexer::yylex() {
     throw std::runtime_error("Bad call to yyFlexLexer::yylex()");
+}
+
+std::string trim(const std::string& str) {
+    auto start = str.find_first_not_of(" \t\n\r");
+    if (start == std::string::npos) {
+        return "";
+    }
+    auto end = str.find_last_not_of(" \t\n\r");
+    return str.substr(start, end - start + 1);
+}
+
+std::string unescape(const std::string& str) {
+    auto cStr = str.c_str();
+    std::ostringstream ss;
+    char c;
+    while ((c = *cStr++) != '\0') {
+        char nc = *cStr;
+        if (c == '\\' && nc != '\0') {
+            if (nc == '{' || nc == '}' || nc == '[' || nc == ']') {
+                continue;
+            }
+        }
+        ss << c;
+    }
+    return ss.str();
 }

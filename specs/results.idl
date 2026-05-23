@@ -30,6 +30,8 @@ enum Status
     const E3012 : 3012 [tokenizer(0)] @ Symbol redefinition.
     const E3013 : 3013 [tokenizer(0)] @ Unknown attribute.
     const E3014 : 3014 [tokenizer(0)] @ The 'brief' attribute must contain one required string argument.
+    const E3015 : 3015 [tokenizer(0)] @ Unknown attribute in the documentation.
+    const E3016 : 3016 [tokenizer(0)] @ The documentation string cannot be empty.
 
 @ Compilation message.
 @ Detailed description of warning or compilation error. [detail]

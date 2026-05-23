@@ -129,10 +129,12 @@ struct ASTAttrHex : ASTAttr {
     void accept(Visitor& visitor) override;
 };
 
-struct ASTAttrBrief : ASTAttr {
-    void accept(Visitor& visitor) override;
+struct ASTDocAttr : ASTAttr {
+    std::vector<ASTNode*> message;
+};
 
-    std::string message;
+struct ASTAttrBrief : ASTDocAttr {
+    void accept(Visitor& visitor) override;
 };
 
 // struct ASTAttrValue : ASTAttr {

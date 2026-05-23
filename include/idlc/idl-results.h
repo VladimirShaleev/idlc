@@ -54,6 +54,8 @@ typedef enum
     IDL_STATUS_E3012    = 3012, /**< Symbol redefinition. */
     IDL_STATUS_E3013    = 3013, /**< Unknown attribute. */
     IDL_STATUS_E3014    = 3014, /**< The 'brief' attribute must contain one required string argument. */
+    IDL_STATUS_E3015    = 3015, /**< Unknown attribute in the documentation. */
+    IDL_STATUS_E3016    = 3016, /**< The documentation string cannot be empty. */
     IDL_STATUS_MAX_ENUM = 0x7FFFFFFF /**< Max value of enum (not used) */
 } idl_status_t;
 

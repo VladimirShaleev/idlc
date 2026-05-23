@@ -36,7 +36,7 @@ public:
             Scanner scanner{ context, options, sources, file ? file : "" };
             Parser parser{ scanner };
 #if YYDEBUG
-            parser.set_debug_level(options && options->getDebugMode() ? 1 : 0);
+            parser.set_debug_level(1);
 #endif
             auto code = parser.parse();
 

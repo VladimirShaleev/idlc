@@ -152,6 +152,12 @@ public:
             str = fmt::format("Unknown attribute '{}'", args...);
         } else if constexpr (Status == IDL_STATUS_E3014) {
             str = fmt::format("The 'brief' attribute must contain one required string argument");
+        } else if constexpr (Status == IDL_STATUS_E3015) {
+            str = fmt::format("Unknown attribute in the documentation '{}'", args...);
+        } else if constexpr (Status == IDL_STATUS_E3015) {
+            str = fmt::format("Unknown attribute in the documentation '{}'", args...);
+        } else if constexpr (Status == IDL_STATUS_E3016) {
+            str = fmt::format("The documentation string cannot be empty", args...);
         } else {
             assert(!"Unknown status code");
         }

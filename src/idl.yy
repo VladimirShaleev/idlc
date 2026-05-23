@@ -63,11 +63,13 @@
 %type <ASTDecl*> def_with_attrs
 %type <ASTDecl*> def
 %type <ASTDecl*> decl
+%type <ASTAttr*> doc
 
 %type <ASTAttr*> attr_item
 %type <ASTAttr*> attr_item_with_args
 %type <ASTNode*> arg_item
 
+%type <std::vector<ASTAttr*>> doc_list
 %type <std::vector<ASTAttr*>> attr_list
 %type <std::vector<ASTNode*>> arg_list
 
@@ -80,13 +82,22 @@ node
     | node def_with_attrs { rule(Hierarchy, $2); add_symbol($2); }
 
 def_with_attrs
-    : def { $$ = $1; }
-    | def '[' attr_list ']' { $$ = $1; $$->attrs = std::move($3); rule(AttrValidator, $$); }
+    : def { $$ = $1; rule(AttrValidator, $$); }
+    | def '[' attr_list ']' { $$ = $1; $$->attrs.insert($$->attrs.end(), $3.begin(), $3.end()); rule(AttrValidator, $$); }
     ;
 
 def
     : decl ID { $1->name = $2; $$ = $1; }
+    | doc_list decl ID { $2->name = $3; $$ = $2; $$->attrs.insert($$->attrs.end(), $1.begin(), $1.end()); }
     ;
+
+doc
+    : '@' STR '[' attr_item ']' { $$ = $4; rule(AttrArg, $$, std::vector<ASTNode*>{add_literal(@2, $2)}); rule(AttrDocValidator, $4); }
+    ;
+
+doc_list
+    : doc { $$ = std::vector<ASTAttr*>(); $$.push_back($1); }
+    | doc_list doc { $1.push_back($2); $$ = std::move($1); }
 
 decl
     : API { $$ = alloc_node(Api, @1); }

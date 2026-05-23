@@ -313,6 +313,27 @@ struct AttrValidatorRules : Visitor {
     }
 };
 
+struct AttrDocValidatorRules : Visitor {
+    explicit AttrDocValidatorRules(Context& ctx) noexcept : Visitor(ctx) {
+    }
+
+    void discarded(ASTNode* node) {
+        if (auto attr = node->as<ASTAttr>()) {
+            if (attr->as<ASTDocAttr>()) {
+                if (attr->as<ASTDocAttr>()->message.empty()) {
+                    AttrName name(ctx);
+                    attr->accept(name);
+                    ctx.log<IDL_STATUS_E3016>(attr->location);
+                }
+            } else {
+                AttrName name(ctx);
+                attr->accept(name);
+                ctx.log<IDL_STATUS_E3015>(attr->location, name.str);
+            }
+        }
+    }
+};
+
 struct ApiChildAdder : Visitor {
     explicit ApiChildAdder(Context& ctx, ASTApi* api) noexcept : Visitor(ctx), api(api) {
     }
@@ -379,7 +400,7 @@ struct AttrArgRules : Visitor {
 
     void visit(ASTAttrBrief* node) override {
         if (args.size() == 1 && args[0] && args[0]->as<ASTLiteralStr>()) {
-            node->message = args[0]->as<ASTLiteralStr>()->value;
+            // node->message = args[0]->as<ASTLiteralStr>()->value;
         } else {
             ctx.log<IDL_STATUS_E3014>(node->location);
         }

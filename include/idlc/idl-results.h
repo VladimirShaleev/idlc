@@ -42,7 +42,7 @@ typedef enum
     IDL_STATUS_W2001    = 2001, /**< Warn. */
     IDL_STATUS_E3001    = 3001, /**< Syntax error. */
     IDL_STATUS_E3002    = 3002, /**< Argument parsing error. */
-    IDL_STATUS_E3003    = 3003, /**< The version attribute must have three required integer parameters, such as version(1, 2, 3) or version("string"). */
+    IDL_STATUS_E3003    = 3003, /**< The [version] attribute must have three required integer parameters, such as version(1, 2, 3) or version("string"). */
     IDL_STATUS_E3004    = 3004, /**< Version values must be between 0 and 255. */
     IDL_STATUS_E3005    = 3005, /**< An invalid attribute was specified for the declaration. */
     IDL_STATUS_E3006    = 3006, /**< Attributes are not allowed for the declaration. */
@@ -53,9 +53,11 @@ typedef enum
     IDL_STATUS_E3011    = 3011, /**< The first declaration in the description should always begin with the 'api' declaration. */
     IDL_STATUS_E3012    = 3012, /**< Symbol redefinition. */
     IDL_STATUS_E3013    = 3013, /**< Unknown attribute. */
-    IDL_STATUS_E3014    = 3014, /**< The 'brief' attribute must contain one required string argument. */
+    IDL_STATUS_E3014    = 3014, /**< The [brief] attribute must contain one or more arguments. */
     IDL_STATUS_E3015    = 3015, /**< Unknown attribute in the documentation. */
     IDL_STATUS_E3016    = 3016, /**< The documentation string cannot be empty. */
+    IDL_STATUS_E3017    = 3017, /**< The [detail] attribute must contain one or more arguments. */
+    IDL_STATUS_E3018    = 3018, /**< Inline documentation only [detail] description is allowed. */
     IDL_STATUS_MAX_ENUM = 0x7FFFFFFF /**< Max value of enum (not used) */
 } idl_status_t;
 

@@ -178,6 +178,10 @@ struct AttrName : Visitor {
         str = "brief";
     }
 
+    void visit(ASTAttrDetail* node) override {
+        str = "detail";
+    }
+
     void discarded(ASTNode*) override {
         assert(!"attribute name is missing");
     }
@@ -242,14 +246,16 @@ struct AttrValidatorRules : Visitor {
     // }
 
     void visit(ASTApi* node) override {
-        static std::map<std::type_index, std::string> allowed = { add<ASTAttrVersion>(), add<ASTAttrBrief>() };
+        static std::map<std::type_index, std::string> allowed = { add<ASTAttrVersion>(),
+                                                                  add<ASTAttrBrief>(),
+                                                                  add<ASTAttrDetail>() };
         validate(node, allowed, node->attrs);
     }
 
     void visit(ASTEnum* node) override {
-        static std::map<std::type_index, std::string> allowed = { add<ASTAttrFlags>(),
-                                                                  add<ASTAttrHex>(),
-                                                                  add<ASTAttrBrief>() };
+        static std::map<std::type_index, std::string> allowed = {
+            add<ASTAttrFlags>(), add<ASTAttrHex>(), add<ASTAttrBrief>(), add<ASTAttrDetail>()
+        };
         validate(node, allowed, node->attrs);
     }
 
@@ -334,6 +340,20 @@ struct AttrDocValidatorRules : Visitor {
     }
 };
 
+struct AttrIDocValidatorRules : Visitor {
+    explicit AttrIDocValidatorRules(Context& ctx) noexcept : Visitor(ctx) {
+    }
+
+    void visit(ASTAttrDetail* node) override {
+    }
+
+    void discarded(ASTNode* node) {
+        if (auto attr = node->as<ASTAttr>()) {
+            ctx.log<IDL_STATUS_E3018>(attr->location);
+        }
+    }
+};
+
 struct ApiChildAdder : Visitor {
     explicit ApiChildAdder(Context& ctx, ASTApi* api) noexcept : Visitor(ctx), api(api) {
     }
@@ -403,6 +423,14 @@ struct AttrArgRules : Visitor {
             node->message = std::move(args);
         } else {
             ctx.log<IDL_STATUS_E3014>(node->location);
+        }
+    }
+
+    void visit(ASTAttrDetail* node) override {
+        if (!args.empty()) {
+            node->message = std::move(args);
+        } else {
+            ctx.log<IDL_STATUS_E3017>(node->location);
         }
     }
 

@@ -137,6 +137,10 @@ struct ASTAttrBrief : ASTDocAttr {
     void accept(Visitor& visitor) override;
 };
 
+struct ASTAttrDetail : ASTDocAttr {
+    void accept(Visitor& visitor) override;
+};
+
 // struct ASTAttrValue : ASTAttr {
 //     void accept(Visitor& visitor) override;
 //
@@ -289,12 +293,12 @@ struct ASTAttrVersion : ASTAttr {
 //     bool value{};
 // };
 //
-// struct ASTDeclRef : ASTNode {
-//     void accept(Visitor& visitor) override;
-//
-//     std::string name;
-//     ASTDecl* decl{};
-// };
+struct ASTDeclRef : ASTNode {
+    void accept(Visitor& visitor) override;
+
+    std::string name;
+    ASTDecl* decl{};
+};
 
 // struct ASTTrivialType : ASTType {};
 //
@@ -481,6 +485,14 @@ struct Visitor {
         discarded(node);
     }
 
+    virtual void visit(ASTAttrDetail* node) {
+        discarded(node);
+    }
+
+    virtual void visit(ASTDeclRef* node) {
+        discarded(node);
+    }
+
     virtual void discarded(ASTNode* node) {
         assert(!"visit method not implemented for this node type");
     }
@@ -525,6 +537,14 @@ inline void ASTAttrHex::accept(Visitor& visitor) {
 }
 
 inline void ASTAttrBrief::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+inline void ASTAttrDetail::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+inline void ASTDeclRef::accept(Visitor& visitor) {
     visitor.visit(this);
 }
 

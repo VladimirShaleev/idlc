@@ -47,11 +47,14 @@
 
 %token API
 %token ENUM
+%token DOC
+%token IDOC
 
 %token ATTRVERSION
 %token ATTRFLAGS;
 %token ATTRHEX;
 %token ATTRBRIEF;
+%token ATTRDETAIL;
 
 %token <std::string> ID
 %token <int64_t>     INT
@@ -60,11 +63,13 @@
 %token <std::string> INVALID_ARG
 %token <std::string> INVALID_ATTR
 
-%type <ASTDecl*> def_with_attrs
-%type <ASTDecl*> def
-%type <ASTDecl*> decl
-%type <ASTAttr*> doc
-%type <ASTNode*> doc_lit_or_ref
+%type <ASTDecl*>    def_with_attrs
+%type <ASTDecl*>    def
+%type <ASTDecl*>    decl
+%type <ASTAttr*>    doc
+%type <ASTAttr*>    idoc
+%type <ASTNode*>    doc_lit_or_ref
+%type <ASTDeclRef*> ref
 
 %type <ASTAttr*> attr_item
 %type <ASTAttr*> attr_item_with_args
@@ -75,17 +80,21 @@
 %type <std::vector<ASTAttr*>> attr_list
 %type <std::vector<ASTNode*>> arg_list
 
-%start node
+%start idl
 
 %%
 
-node
+idl : nodes { scanner.context().build(); }
+
+nodes
     : def_with_attrs { rule(Hierarchy, $1); add_symbol($1); }
-    | node def_with_attrs { rule(Hierarchy, $2); add_symbol($2); }
+    | nodes def_with_attrs { rule(Hierarchy, $2); add_symbol($2); }
 
 def_with_attrs
     : def { $$ = $1; rule(AttrValidator, $$); }
     | def '[' attr_list ']' { $$ = $1; $$->attrs.insert($$->attrs.end(), $3.begin(), $3.end()); rule(AttrValidator, $$); }
+    | def idoc { $$ = $1; $$->attrs.push_back($2); rule(AttrValidator, $$); }
+    | def '[' attr_list ']' idoc { $$ = $1; $$->attrs.insert($$->attrs.end(), $3.begin(), $3.end()); $$->attrs.push_back($5); rule(AttrValidator, $$); }
     ;
 
 def
@@ -94,13 +103,18 @@ def
     ;
 
 doc
-    : '@' doc_nodes { $$ = alloc_node(AttrBrief, @2); rule(AttrArg, $$, $2); rule(AttrDocValidator, $$); }
-    | '@' doc_nodes '[' attr_item ']' { $$ = $4; rule(AttrArg, $$, $2); rule(AttrDocValidator, $$); }
+    : DOC doc_nodes { $$ = alloc_node(AttrBrief, @2); rule(AttrArg, $$, $2); rule(AttrDocValidator, $$); }
+    | DOC doc_nodes '[' attr_item ']' { $$ = $4; rule(AttrArg, $$, $2); rule(AttrDocValidator, $$); }
+    ;
+
+idoc
+    : IDOC doc_nodes { $$ = alloc_node(AttrDetail, @2); rule(AttrArg, $$, $2); rule(AttrDocValidator, $$); rule(AttrIDocValidator, $$); }
+    | IDOC doc_nodes '[' attr_item ']' { $$ = $4; rule(AttrArg, $$, $2); rule(AttrDocValidator, $$); rule(AttrIDocValidator, $$); }
     ;
 
 doc_lit_or_ref
     : STR { $$ = add_literal(@1, $1); }
-    | '{' STR '}' { $$ = nullptr; }
+    | '{' ref '}' { $$ = $2; }
     ;
 
 doc_nodes
@@ -111,6 +125,10 @@ doc_nodes
 doc_list
     : doc { $$ = std::vector<ASTAttr*>(); $$.push_back($1); }
     | doc_list doc { $1.push_back($2); $$ = std::move($1); }
+
+ref
+    : ID { $$ = alloc_node(DeclRef, @1); $$->name = $1; }
+    ;
 
 decl
     : API { $$ = alloc_node(Api, @1); }
@@ -133,6 +151,7 @@ attr_item
     | ATTRFLAGS    { $$ = alloc_node(AttrFlags, @1); }
     | ATTRHEX      { $$ = alloc_node(AttrHex, @1); }
     | ATTRBRIEF    { $$ = alloc_node(AttrBrief, @1); }
+    | ATTRDETAIL   { $$ = alloc_node(AttrDetail, @1); }
     | INVALID_ATTR { $$ = nullptr; log(E3013, @1, $1); }
     ;
 
@@ -140,6 +159,7 @@ arg_item
     : INT   { $$ = add_literal(@1, $1); }
     | FLOAT { $$ = add_literal(@1, $1); }
     | STR   { $$ = add_literal(@1, $1); }
+    | ref   { $$ = $1; }
     | INVALID_ARG { $$ = nullptr; log(E3002, @1, $1); }
     ;
 

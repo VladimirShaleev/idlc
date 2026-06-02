@@ -18,6 +18,7 @@ std::string unescape(const std::string& str);
 %x ATTRCTX
 %x ATTRARGCTX
 %x DOCCTX
+%x REFCTX
 
 DOCCHAR ([^ \r\n\t\{\}[\]]|\\\{|\\\}|\\\[|\\\])
 
@@ -27,8 +28,8 @@ DOCCHAR ([^ \r\n\t\{\}[\]]|\\\{|\\\}|\\\[|\\\])
     yylloc->step();
 %}
 
-"api"  { return token::API; }
-"enum" { return token::ENUM; }
+"api"  { context().setDeclaring(); return token::API; }
+"enum" { context().setDeclaring(); return token::ENUM; }
 
 "["                    { BEGIN(ATTRCTX); return YYText()[0]; }
 <ATTRCTX>"("           { BEGIN(ATTRARGCTX); return YYText()[0]; }
@@ -36,20 +37,22 @@ DOCCHAR ([^ \r\n\t\{\}[\]]|\\\{|\\\}|\\\[|\\\])
 <ATTRCTX>"flags"       { return token::ATTRFLAGS; }
 <ATTRCTX>"hex"         { return token::ATTRHEX; }
 <ATTRCTX>"brief"       { return token::ATTRBRIEF; }
+<ATTRCTX>"detail"      { return token::ATTRDETAIL; }
 <ATTRCTX>","           { return YYText()[0]; }
 <ATTRCTX>[a-zA-Z0-9_]+ { yylval->emplace<std::string>(YYText()); return token::INVALID_ATTR; }
 <ATTRCTX>"]"           { BEGIN(INITIAL); return YYText()[0]; }
 
-<ATTRARGCTX>","                    { return YYText()[0]; }
-<ATTRARGCTX>" "                    { }
-<ATTRARGCTX>[a-zA-Z_][a-zA-Z0-9_]* { yylval->emplace<std::string>(YYText()); return token::INVALID_ARG; }
-<ATTRARGCTX>")"                    { BEGIN(ATTRCTX); return YYText()[0]; }
+<ATTRARGCTX>","                 { return YYText()[0]; }
+<ATTRARGCTX>" "                 { }
+<ATTRARGCTX>[a-z_][a-zA-Z0-9_]* { yylval->emplace<std::string>(YYText()); return token::INVALID_ARG; }
+<ATTRARGCTX>")"                 { BEGIN(ATTRCTX); return YYText()[0]; }
 
-"@"                { BEGIN(DOCCTX); return YYText()[0]; }
+"@"                { BEGIN(DOCCTX); return context().isDeclaring() ? token::IDOC : token::DOC; }
 <DOCCTX>{DOCCHAR}+ { yylval->emplace<std::string>(unescape(trim(YYText()))); return token::STR; }
-<DOCCTX>[\{\}]     { return YYText()[0]; }
+<DOCCTX>"{"        { BEGIN(REFCTX); return YYText()[0]; }
 <DOCCTX>\[         { BEGIN(INITIAL); yyless(yyleng - 1); }
 <DOCCTX>\r?\n      { yylloc->lines(); BEGIN(INITIAL); }
+<REFCTX>"}"        { BEGIN(DOCCTX); return YYText()[0]; }
 
 "//".* ;
 
@@ -59,8 +62,8 @@ DOCCHAR ([^ \r\n\t\{\}[\]]|\\\{|\\\}|\\\[|\\\])
 <*>[-+]?[0-9]*\.[0-9]+([eE][-+]?[0-9]+)? { yylval->emplace<double>(std::stof(YYText())); return token::FLOAT; }
 <*>[-+]?[0-9]+                           { yylval->emplace<int64_t>(std::stoll(YYText())); return token::INT; }
 
-<*><<EOF>>                { return token::YYEOF; }
-<*>\r?\n                  { yylloc->lines(); }
+<*><<EOF>>                { context().setDeclaring(false); return token::YYEOF; }
+<*>\r?\n                  { yylloc->lines(); context().setDeclaring(false); }
 <*>\t                     { /* err<IDL_STATUS_E2002>(*yylloc); */ }
 <*>" "                    { }
 <*>[A-Za-z0-9]+           { context().log<IDL_STATUS_E3001>(*yylloc, YYText()); }

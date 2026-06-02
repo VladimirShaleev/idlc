@@ -18,7 +18,7 @@ enum Status
 
     const E3001 : 3001 [tokenizer(0)] @ Syntax error.
     const E3002 : 3002 [tokenizer(0)] @ Argument parsing error.
-    const E3003 : 3003 [tokenizer(0)] @ The version attribute must have three required integer parameters, such as version(1, 2, 3) or version("string").
+    const E3003 : 3003 [tokenizer(0)] @ The \[version\] attribute must have three required integer parameters, such as version(1, 2, 3) or version("string").
     const E3004 : 3004 [tokenizer(0)] @ Version values must be between 0 and 255.
     const E3005 : 3005 [tokenizer(0)] @ An invalid attribute was specified for the declaration.
     const E3006 : 3006 [tokenizer(0)] @ Attributes are not allowed for the declaration.
@@ -29,9 +29,11 @@ enum Status
     const E3011 : 3011 [tokenizer(0)] @ The first declaration in the description should always begin with the 'api' declaration.
     const E3012 : 3012 [tokenizer(0)] @ Symbol redefinition.
     const E3013 : 3013 [tokenizer(0)] @ Unknown attribute.
-    const E3014 : 3014 [tokenizer(0)] @ The 'brief' attribute must contain one required string argument.
+    const E3014 : 3014 [tokenizer(0)] @ The \[brief\] attribute must contain one or more arguments.
     const E3015 : 3015 [tokenizer(0)] @ Unknown attribute in the documentation.
     const E3016 : 3016 [tokenizer(0)] @ The documentation string cannot be empty.
+    const E3017 : 3017 [tokenizer(0)] @ The \[detail\] attribute must contain one or more arguments.
+    const E3018 : 3018 [tokenizer(0)] @ Inline documentation only \[detail\] description is allowed.
 
 @ Compilation message.
 @ Detailed description of warning or compilation error. [detail]

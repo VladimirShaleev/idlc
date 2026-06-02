@@ -20,8 +20,23 @@ public:
         }
     }
 
+    void build() {
+        if (!_messages.empty()) {
+            return;
+        }
+        printf("Building AST...");
+    }
+
     ASTApi* api() noexcept {
         return _api;
+    }
+
+    void setDeclaring(bool active = true) noexcept {
+        _declaring = active;
+    }
+
+    [[nodiscard]] bool isDeclaring() const noexcept {
+        return _declaring;
     }
 
     template <typename Node>
@@ -127,7 +142,7 @@ public:
         } else if constexpr (Status == IDL_STATUS_E3002) {
             str = fmt::format("Argument parsing error '{}'", args...);
         } else if constexpr (Status == IDL_STATUS_E3003) {
-            str = fmt::format("The version attribute must have three required integer parameters, such as version(1, "
+            str = fmt::format("The [version] attribute must have three required integer parameters, such as version(1, "
                               "2, 3) or version(\"string\")");
         } else if constexpr (Status == IDL_STATUS_E3004) {
             str = fmt::format("Version values must be between 0 and 255, while the argument is {}", args...);
@@ -151,13 +166,15 @@ public:
         } else if constexpr (Status == IDL_STATUS_E3013) {
             str = fmt::format("Unknown attribute '{}'", args...);
         } else if constexpr (Status == IDL_STATUS_E3014) {
-            str = fmt::format("The 'brief' attribute must contain one required string argument");
-        } else if constexpr (Status == IDL_STATUS_E3015) {
-            str = fmt::format("Unknown attribute in the documentation '{}'", args...);
+            str = fmt::format("The [brief] attribute must contain one or more arguments");
         } else if constexpr (Status == IDL_STATUS_E3015) {
             str = fmt::format("Unknown attribute in the documentation '{}'", args...);
         } else if constexpr (Status == IDL_STATUS_E3016) {
             str = fmt::format("The documentation string cannot be empty", args...);
+        } else if constexpr (Status == IDL_STATUS_E3017) {
+            str = fmt::format("The [detail] attribute must contain one or more arguments");
+        } else if constexpr (Status == IDL_STATUS_E3018) {
+            str = fmt::format("Inline documentation only [detail] description is allowed");
         } else {
             assert(!"Unknown status code");
         }

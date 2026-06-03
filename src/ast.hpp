@@ -54,7 +54,6 @@ struct ASTAttr : ASTNode {};
 struct ASTDecl : ASTNode {
     std::string name;
     std::vector<ASTAttr*> attrs;
-    struct ASTFile* file{};
 
     template <typename Attr>
     Attr* findAttr() noexcept {
@@ -86,7 +85,9 @@ struct ASTDecl : ASTNode {
     }
 };
 
-struct ASTType : ASTDecl {};
+struct ASTType : ASTDecl {
+    struct ASTImport* import{};
+};
 
 struct ASTEnum : ASTType {
     void accept(Visitor& visitor) override;
@@ -97,13 +98,7 @@ struct ASTEnum : ASTType {
 struct ASTApi : ASTDecl {
     void accept(Visitor& visitor) override;
 
-    std::vector<ASTEnum*> enums;
-    // std::vector<ASTStruct*> structs;
-    // std::vector<ASTCallback*> callbacks;
-    // std::vector<ASTFunc*> funcs;
-    // std::vector<ASTInterface*> interfaces;
-    // std::vector<ASTHandle*> handles;
-    // std::vector<ASTFile*> files;
+    std::vector<ASTImport*> imports;
 };
 
 // struct ASTAttrPlatform : ASTAttr {
@@ -433,11 +428,18 @@ struct ASTDeclRef : ASTNode {
 //     std::vector<ASTArg*> args;
 // };
 //
-// struct ASTFile : ASTDecl {
-//     void accept(Visitor& visitor) override;
-//
-//     std::vector<ASTDecl*> decls;
-// };
+
+struct ASTImport : ASTDecl {
+    void accept(Visitor& visitor) override;
+
+    std::vector<ASTImport*> imports;
+    std::vector<ASTEnum*> enums;
+    // std::vector<ASTStruct*> structs;
+    // std::vector<ASTCallback*> callbacks;
+    // std::vector<ASTFunc*> funcs;
+    // std::vector<ASTInterface*> interfaces;
+    // std::vector<ASTHandle*> handles;
+};
 
 struct Visitor {
     explicit Visitor(class Context& ctx) noexcept : ctx(ctx) {
@@ -493,6 +495,10 @@ struct Visitor {
         discarded(node);
     }
 
+    virtual void visit(ASTImport* node) {
+        discarded(node);
+    }
+
     virtual void discarded(ASTNode* node) {
         assert(!"visit method not implemented for this node type");
     }
@@ -545,6 +551,10 @@ inline void ASTAttrDetail::accept(Visitor& visitor) {
 }
 
 inline void ASTDeclRef::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+inline void ASTImport::accept(Visitor& visitor) {
     visitor.visit(this);
 }
 

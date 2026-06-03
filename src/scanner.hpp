@@ -36,7 +36,10 @@ public:
             _basePath = path.parent_path();
         }
 
-        import(loc, path, false);
+        if (import(loc, path, false)) {
+            auto node = _ctx.allocNode<ASTImport>(loc);
+            _ctx.pushImport(node);
+        }
     }
 
     ~Scanner() {
@@ -55,15 +58,16 @@ public:
         return _imports.back()->filename;
     }
 
-    void import(const idl::location& loc, const std::filesystem::path& file, bool isRelative = true) {
+    bool import(const idl::location& loc, const std::filesystem::path& file, bool isRelative = true) {
         if (isRelative && file.is_absolute()) {
-            // err<IDL_STATUS_E2041>(loc, file.string()); // TODO
+            _ctx.log<IDL_STATUS_E3021>(loc, file.string());
+            return false;
         }
         const auto [path, source, needRelease] = findFile(loc, file);
         const auto filename = path.is_absolute() ? std::filesystem::relative(path, _basePath).string() : path.string();
 
         if (_allImports.contains(filename)) {
-            return;
+            return true;
         }
         _allImports[filename] = std::make_unique<std::string>(filename);
         auto filenamePtr      = _allImports[filename].get();
@@ -96,8 +100,8 @@ public:
             import.stream = new std::ifstream(path);
             if (import.stream->fail()) {
                 delete import.stream;
-                // err<IDL_STATUS_E2042>(loc, path.string()); // TODO
-                return;
+                _ctx.log<IDL_STATUS_E3022>(loc, file.string());
+                return false;
             }
         }
         import.buffer = yy_create_buffer(import.stream, 16384);
@@ -106,6 +110,7 @@ public:
         yylineno = 1;
 
         _needUpdateLoc = true;
+        return true;
     }
 
     bool popImport() {
@@ -130,13 +135,13 @@ public:
     }
 
     void action(idl::location& loc) {
-        //if (!_needUpdateLoc) {
+        if (!_needUpdateLoc) {
             loc.step();
             loc.columns(yyleng);
-        //} else {
-        //    loc            = _imports.back()->location;
-        //    _needUpdateLoc = false;
-        //}
+        } else {
+            loc            = _imports.back()->location;
+            _needUpdateLoc = false;
+        }
     }
 
     int lineIndent = -1;

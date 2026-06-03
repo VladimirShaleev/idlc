@@ -47,14 +47,15 @@
 
 %token API
 %token ENUM
+%token IMPORT
 %token DOC
 %token IDOC
 
 %token ATTRVERSION
-%token ATTRFLAGS;
-%token ATTRHEX;
-%token ATTRBRIEF;
-%token ATTRDETAIL;
+%token ATTRFLAGS
+%token ATTRHEX
+%token ATTRBRIEF
+%token ATTRDETAIL
 
 %token <std::string> ID
 %token <int64_t>     INT
@@ -133,6 +134,7 @@ ref
 decl
     : API { $$ = alloc_node(Api, @1); }
     | ENUM { $$ = alloc_node(Enum, @1); }
+    | IMPORT { $$ = alloc_node(Import, @1); }
     ;
 
 attr_list

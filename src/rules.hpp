@@ -47,6 +47,10 @@ struct DeclToken : Visitor {
         str = "enum";
     }
 
+    void visit(ASTImport* node) override {
+        str = "import";
+    }
+
     void discarded(ASTNode*) override {
         assert(!"Declaration name is missing");
     }
@@ -252,6 +256,13 @@ struct AttrValidatorRules : Visitor {
         validate(node, allowed, node->attrs);
     }
 
+    void visit(ASTImport* node) override {
+        static std::map<std::type_index, std::string> allowed = { add<ASTAttrVersion>(),
+                                                                  add<ASTAttrBrief>(),
+                                                                  add<ASTAttrDetail>() };
+        validate(node, allowed, node->attrs);
+    }
+
     void visit(ASTEnum* node) override {
         static std::map<std::type_index, std::string> allowed = {
             add<ASTAttrFlags>(), add<ASTAttrHex>(), add<ASTAttrBrief>(), add<ASTAttrDetail>()
@@ -354,37 +365,6 @@ struct AttrIDocValidatorRules : Visitor {
     }
 };
 
-struct ApiChildAdder : Visitor {
-    explicit ApiChildAdder(Context& ctx, ASTApi* api) noexcept : Visitor(ctx), api(api) {
-    }
-
-    void visit(ASTEnum* node) override {
-        api->enums.push_back(node);
-    }
-
-    void discarded(ASTNode* node) override {
-        assert(!"attempt to add an invalid node to the ASTApi");
-    }
-
-    ASTApi* api;
-};
-
-struct ChildAdder : Visitor {
-    explicit ChildAdder(Context& ctx, ASTNode* child) noexcept : Visitor(ctx), child(child) {
-    }
-
-    void visit(ASTApi* node) override {
-        ApiChildAdder adder(ctx, node);
-        child->accept(adder);
-    }
-
-    void discarded(ASTNode* node) override {
-        assert(!"attempt to add an invalid node to the ASTDecl");
-    }
-
-    ASTNode* child;
-};
-
 struct AttrArgRules : Visitor {
     AttrArgRules(Context& ctx, const std::vector<ASTNode*>& args) noexcept : Visitor(ctx), args(args) {
     }
@@ -454,13 +434,22 @@ struct HierarchyRules : Visitor {
             ctx.log<IDL_STATUS_E3010>(node->location, node->fullname());
         } else {
             ctx._api = node;
+            ctx._api->imports.push_back(ctx._nodes.front()->as<ASTImport>());
+            ctx._nodes.front()->as<ASTImport>()->name = ctx._api->name;
+        }
+    }
+
+    void visit(ASTImport* node) override {
+        if (checkApi()) {
+            node->parent = ctx.api();
+            ctx.api()->imports.push_back(node);
         }
     }
 
     void visit(ASTEnum* node) override {
         if (checkApi()) {
-            node->parent = ctx.api();
-            ctx.api()->enums.push_back(node);
+            node->parent = ctx._imports.back();
+            ctx._imports.back()->enums.push_back(node);
         }
     }
 

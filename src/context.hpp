@@ -102,6 +102,10 @@ public:
     }
 
     void addSymbol(ASTDecl* decl) {
+        if (auto import = decl->as<ASTImport>()) {
+            pushImport(import);
+            return;
+        }
         const auto fullname = decl->fullnameLowecase();
         if (_symbols.contains(fullname)) {
             log<IDL_STATUS_E3012>(decl->location, decl->fullname());
@@ -120,6 +124,14 @@ public:
             node->accept(visitor);
         }
         return visitor;
+    }
+
+    void pushImport(ASTImport* import) {
+        _imports.push_back(import);
+    }
+
+    void popImport() {
+        _imports.pop_back();
     }
 
     template <idl_status_t Status, typename... Args>
@@ -175,6 +187,14 @@ public:
             str = fmt::format("The [detail] attribute must contain one or more arguments");
         } else if constexpr (Status == IDL_STATUS_E3018) {
             str = fmt::format("Inline documentation only [detail] description is allowed");
+        } else if constexpr (Status == IDL_STATUS_E3019) {
+            str = fmt::format("Unexpected character '{}'", args...);
+        } else if constexpr (Status == IDL_STATUS_E3020) {
+            str = fmt::format("Tabs are not allowed");
+        } else if constexpr (Status == IDL_STATUS_E3021) {
+            str = fmt::format("could not find file '{}' for import", args...);
+        } else if constexpr (Status == IDL_STATUS_E3022) {
+            str = fmt::format("Failed to open file '{}'", args...);
         } else {
             assert(!"Unknown status code");
         }
@@ -192,7 +212,7 @@ public:
     std::unordered_map<std::string, struct ASTDecl*> _symbols{};
     std::unordered_map<std::string, struct ASTDocDecl*> _docSymbols{};
     std::unordered_map<std::string, ASTLiteral*> _literals{};
-    // std::vector<ASTFile*> _files{};
+    std::vector<ASTImport*> _imports{};
     bool _declaring{};
 };
 

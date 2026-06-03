@@ -19,6 +19,7 @@ std::string unescape(const std::string& str);
 %x ATTRARGCTX
 %x DOCCTX
 %x REFCTX
+%x IMPORTCTX
 
 DOCCHAR ([^ \r\n\t\{\}[\]]|\\\{|\\\}|\\\[|\\\])
 
@@ -51,8 +52,33 @@ DOCCHAR ([^ \r\n\t\{\}[\]]|\\\{|\\\}|\\\[|\\\])
 <DOCCTX>{DOCCHAR}+ { yylval->emplace<std::string>(unescape(trim(YYText()))); return token::STR; }
 <DOCCTX>"{"        { BEGIN(REFCTX); return YYText()[0]; }
 <DOCCTX>\[         { BEGIN(INITIAL); yyless(yyleng - 1); }
-<DOCCTX>\r?\n      { yylloc->lines(); BEGIN(INITIAL); }
+<DOCCTX>\r?\n      { yylloc->lines(); context().setDeclaring(false); BEGIN(INITIAL); }
 <REFCTX>"}"        { BEGIN(DOCCTX); return YYText()[0]; }
+
+"b166074c3cba4005a198513772597880" { context().setDeclaring(); return token::IMPORT; }
+import[ ]+ { BEGIN(IMPORTCTX); }
+<IMPORTCTX>[-\.a-zA-Z0-9_]+ {
+    std::string importName = YYText();
+    int c;
+    while ((c = yyinput()) && c != '\n') {
+        if (c != ' ' && c != '\r') {
+            context().log<IDL_STATUS_E3020>(*yylloc);
+        }
+    }
+    yylloc->lines();
+    import(*yylloc, yytext);
+    BEGIN(INITIAL);
+    unput('\n'), unput('\n');
+    for (auto it = importName.rbegin(); it != importName.rend(); ++it) {
+        unput(*it);
+    }
+    unput(' ');
+    unput('0'), unput('8'), unput('8'), unput('7'), unput('9'), unput('5'), unput('2'), unput('7');
+    unput('7'), unput('3'), unput('1'), unput('5'), unput('8'), unput('9'), unput('1'), unput('a');
+    unput('5'), unput('0'), unput('0'), unput('4'), unput('a'), unput('b'), unput('c'), unput('3');
+    unput('c'), unput('4'), unput('7'), unput('0'), unput('6'), unput('6'), unput('1'), unput('b');
+}
+<IMPORTCTX>.|\r?\n { context().log<IDL_STATUS_E3019>(*yylloc, YYText()); }
 
 "//".* ;
 
@@ -62,7 +88,7 @@ DOCCHAR ([^ \r\n\t\{\}[\]]|\\\{|\\\}|\\\[|\\\])
 <*>[-+]?[0-9]*\.[0-9]+([eE][-+]?[0-9]+)? { yylval->emplace<double>(std::stof(YYText())); return token::FLOAT; }
 <*>[-+]?[0-9]+                           { yylval->emplace<int64_t>(std::stoll(YYText())); return token::INT; }
 
-<*><<EOF>>                { context().setDeclaring(false); return token::YYEOF; }
+<*><<EOF>>                { context().setDeclaring(false); if (!popImport()) { return token::YYEOF; } }
 <*>\r?\n                  { yylloc->lines(); context().setDeclaring(false); }
 <*>\t                     { /* err<IDL_STATUS_E2002>(*yylloc); */ }
 <*>" "                    { }

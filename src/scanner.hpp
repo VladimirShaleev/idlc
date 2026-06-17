@@ -36,10 +36,7 @@ public:
             _basePath = path.parent_path();
         }
 
-        if (import(loc, path, false)) {
-            auto node = _ctx.allocNode<ASTImport>(loc);
-            _ctx.pushImport(node);
-        }
+        import(loc, path, false);
     }
 
     ~Scanner() {
@@ -58,16 +55,16 @@ public:
         return _imports.back()->filename;
     }
 
-    bool import(const idl::location& loc, const std::filesystem::path& file, bool isRelative = true) {
+    void import(const idl::location& loc, const std::filesystem::path& file, bool isRelative = true) {
         if (isRelative && file.is_absolute()) {
             _ctx.log<IDL_STATUS_E3021>(loc, file.string());
-            return false;
+            return;
         }
         const auto [path, source, needRelease] = findFile(loc, file);
         const auto filename = path.is_absolute() ? std::filesystem::relative(path, _basePath).string() : path.string();
 
         if (_allImports.contains(filename)) {
-            return true;
+            return;
         }
         _allImports[filename] = std::make_unique<std::string>(filename);
         auto filenamePtr      = _allImports[filename].get();
@@ -101,7 +98,7 @@ public:
             if (import.stream->fail()) {
                 delete import.stream;
                 _ctx.log<IDL_STATUS_E3022>(loc, file.string());
-                return false;
+                return;
             }
         }
         import.buffer = yy_create_buffer(import.stream, 16384);
@@ -110,7 +107,6 @@ public:
         yylineno = 1;
 
         _needUpdateLoc = true;
-        return true;
     }
 
     bool popImport() {
@@ -129,7 +125,7 @@ public:
         _imports.pop_back();
         _needUpdateLoc = true;
         if (_imports.size() > 0) {
-            // _ctx.popFile();
+            _ctx.popImport();
         }
         return !_imports.empty();
     }
@@ -276,12 +272,21 @@ private:
         return str;
     }
 
+    void setDeclaring(bool active = true) noexcept {
+        _declaring = active;
+    }
+
+    [[nodiscard]] bool isDeclaring() const noexcept {
+        return _declaring;
+    }
+
     Context& _ctx;
     const Options* _options;
     std::span<const idl_source_t> _sources;
     std::filesystem::path _basePath{};
     std::vector<std::unique_ptr<Import>> _imports{};
     std::map<std::string, std::unique_ptr<std::string>> _allImports{};
+    bool _declaring{};
     bool _needUpdateLoc{};
 };
 

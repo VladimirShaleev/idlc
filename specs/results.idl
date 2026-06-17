@@ -14,7 +14,7 @@ enum Result [errorcode]
 enum Status
     const N1001 : 1001 [tokenizer(0)] @ Unnecessary parentheses for a parameterless attribute.
 
-    const W2001 : 2001 [tokenizer(0)] @ Warn.
+    const W2001 : 2001 [tokenizer(0)] @ The declaration is missing an attribute..
 
     const E3001 : 3001 [tokenizer(0)] @ Syntax error.
     const E3002 : 3002 [tokenizer(0)] @ Argument parsing error.
@@ -38,6 +38,7 @@ enum Status
     const E3020 : 3020 [tokenizer(0)] @ Tabs are not allowed.
     const E3021 : 3021 [tokenizer(0)] @ Could not find file for import.
     const E3022 : 3022 [tokenizer(0)] @ Failed to open file.
+    const E3023 : 3023 [tokenizer(0)] @ A 'const' can be defined only for an 'enum'.
 
 @ Compilation message.
 @ Detailed description of warning or compilation error. [detail]

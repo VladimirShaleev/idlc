@@ -194,6 +194,11 @@ struct AttrName : Visitor {
 };
 
 struct AttrValidatorRules : Visitor {
+    struct AttrInfo {
+        std::string name;
+        bool recommended;
+    };
+
     explicit AttrValidatorRules(Context& ctx) noexcept : Visitor(ctx) {
     }
 
@@ -250,23 +255,22 @@ struct AttrValidatorRules : Visitor {
     // }
 
     void visit(ASTApi* node) override {
-        static std::map<std::type_index, std::string> allowed = { add<ASTAttrVersion>(),
-                                                                  add<ASTAttrBrief>(),
-                                                                  add<ASTAttrDetail>() };
+        static std::map allowed = { add<ASTAttrVersion>(true), add<ASTAttrBrief>(true), add<ASTAttrDetail>(true) };
         validate(node, allowed, node->attrs);
     }
 
     void visit(ASTImport* node) override {
-        static std::map<std::type_index, std::string> allowed = { add<ASTAttrVersion>(),
-                                                                  add<ASTAttrBrief>(),
-                                                                  add<ASTAttrDetail>() };
+        static std::map allowed = { add<ASTAttrBrief>(true), add<ASTAttrDetail>(true) };
         validate(node, allowed, node->attrs);
     }
 
     void visit(ASTEnum* node) override {
-        static std::map<std::type_index, std::string> allowed = {
-            add<ASTAttrFlags>(), add<ASTAttrHex>(), add<ASTAttrBrief>(), add<ASTAttrDetail>()
-        };
+        static std::map allowed = { add<ASTAttrFlags>(), add<ASTAttrHex>(), add<ASTAttrBrief>(true), add<ASTAttrDetail>(true) };
+        validate(node, allowed, node->attrs);
+    }
+
+    void visit(ASTConst* node) override {
+        static std::map allowed = { add<ASTAttrDetail>(true) };
         validate(node, allowed, node->attrs);
     }
 
@@ -291,9 +295,14 @@ struct AttrValidatorRules : Visitor {
     }
 
     void validate(ASTDecl* decl,
-                  const std::map<std::type_index, std::string>& allowed,
+                  const std::map<std::type_index, AttrInfo>& allowed,
                   const std::vector<ASTAttr*>& attrs) {
-        auto names = fmt::format("{}", fmt::join(std::views::values(allowed), ", "));
+        auto fieldNames =
+            allowed | std::views::values | std::views::transform([](const AttrInfo& info) -> const std::string& {
+            return info.name;
+        });
+
+        auto names = fmt::format("{}", fmt::join(fieldNames, ", "));
         std::set<std::type_index> uniqueAttrs;
         for (auto& attr : attrs) {
             if (!attr) {
@@ -314,11 +323,20 @@ struct AttrValidatorRules : Visitor {
                 ctx.log<IDL_STATUS_E3007>(attr->location, name.str, token.str, decl->fullname());
             }
         }
+        for (auto& [type, info] : allowed | std::views::filter([](const auto& attr) {
+            return attr.second.recommended;
+        })) {
+            if (!uniqueAttrs.contains(type)) {
+                ctx.log<IDL_STATUS_W2001>(decl->location, decl->fullname(), info.name);
+            }
+        }
     }
 
     template <typename Attr>
-    std::pair<std::type_index, std::string> add() {
-        return { typeid(Attr), getName<Attr>() };
+    std::pair<std::type_index, AttrInfo> add(bool recommended = false) {
+        return {
+            typeid(Attr), { getName<Attr>(), recommended }
+        };
     }
 
     template <typename Attr>
@@ -434,22 +452,31 @@ struct HierarchyRules : Visitor {
             ctx.log<IDL_STATUS_E3010>(node->location, node->fullname());
         } else {
             ctx._api = node;
-            ctx._api->imports.push_back(ctx._nodes.front()->as<ASTImport>());
-            ctx._nodes.front()->as<ASTImport>()->name = ctx._api->name;
         }
     }
 
     void visit(ASTImport* node) override {
         if (checkApi()) {
-            node->parent = ctx.api();
-            ctx.api()->imports.push_back(node);
+            auto [parent, childs] = apiOrImport();
+            node->parent          = parent;
+            childs->push_back(node);
         }
     }
 
     void visit(ASTEnum* node) override {
         if (checkApi()) {
-            node->parent = ctx._imports.back();
-            ctx._imports.back()->enums.push_back(node);
+            auto [parent, childs] = apiOrImport();
+            node->parent          = parent, childs;
+            childs->push_back(node);
+        }
+    }
+
+    void visit(ASTConst* node) override {
+        if (auto parent = ctx.prevDecl(); parent && parent->as<ASTEnum>()) {
+            node->parent = parent;
+            parent->as<ASTEnum>()->consts.push_back(node);
+        } else {
+            ctx.log<IDL_STATUS_E3023>(node->location, node->name);
         }
     }
 
@@ -464,6 +491,14 @@ struct HierarchyRules : Visitor {
     void addAttributes(ASTDecl* decl) noexcept {
         for (auto attr : decl->attrs) {
             attr->parent = decl;
+        }
+    }
+
+    std::pair<ASTNode*, std::vector<ASTDecl*>*> apiOrImport() noexcept {
+        if (auto import = ctx.topImport()) {
+            return { import, &import->decls };
+        } else {
+            return { ctx.api(), &ctx.api()->decls };
         }
     }
 };

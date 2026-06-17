@@ -47,6 +47,7 @@
 
 %token API
 %token ENUM
+%token CONST
 %token IMPORT
 %token DOC
 %token IDOC
@@ -134,6 +135,7 @@ ref
 decl
     : API { $$ = alloc_node(Api, @1); }
     | ENUM { $$ = alloc_node(Enum, @1); }
+    | CONST { $$ = alloc_node(Const, @1); }
     | IMPORT { $$ = alloc_node(Import, @1); }
     ;
 

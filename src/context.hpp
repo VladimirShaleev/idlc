@@ -24,19 +24,11 @@ public:
         if (!_messages.empty()) {
             return;
         }
-        printf("Building AST...");
+        printf("Building AST...\n");
     }
 
     ASTApi* api() noexcept {
         return _api;
-    }
-
-    void setDeclaring(bool active = true) noexcept {
-        _declaring = active;
-    }
-
-    [[nodiscard]] bool isDeclaring() const noexcept {
-        return _declaring;
     }
 
     template <typename Node>
@@ -102,8 +94,9 @@ public:
     }
 
     void addSymbol(ASTDecl* decl) {
+        decl->order = ++_lastOrder;
         if (auto import = decl->as<ASTImport>()) {
-            pushImport(import);
+            _imports.push_back(import);
             return;
         }
         const auto fullname = decl->fullnameLowecase();
@@ -126,12 +119,33 @@ public:
         return visitor;
     }
 
-    void pushImport(ASTImport* import) {
-        _imports.push_back(import);
-    }
-
     void popImport() {
         _imports.pop_back();
+        _nodes.push_back(nullptr);
+    }
+
+    ASTImport* topImport() const noexcept {
+        return _imports.empty() ? nullptr : _imports.back();
+    }
+
+    ASTDecl* prevDecl() const noexcept {
+        for (auto it = _nodes.rbegin(); it != _nodes.rend(); ++it) {
+            if (*it == nullptr) {
+                return nullptr;
+            }
+            if (auto decl = (*it)->as<ASTDecl>()) {
+                for (++it; it != _nodes.rend(); ++it) {
+                    if (*it == nullptr) {
+                        return nullptr;
+                    }
+                    if (auto decl = (*it)->as<ASTDecl>()) {
+                        return decl;
+                    }
+                }
+                return nullptr;
+            }
+        }
+        return nullptr;
     }
 
     template <idl_status_t Status, typename... Args>
@@ -144,7 +158,7 @@ public:
         if constexpr (Status == IDL_STATUS_N1001) {
             str = fmt::format("Unnecessary parentheses for a parameterless attribute '{}'", args...);
         } else if constexpr (Status == IDL_STATUS_W2001) {
-            str = fmt::format("Warn");
+            str = fmt::format("The declaration '{}' is missing an attribute [{}]", args...);
         } else if constexpr (Status == IDL_STATUS_E3001) {
             if constexpr (sizeof...(args) > 0) {
                 str = fmt::format("Syntax error '{}'", args...);
@@ -195,6 +209,8 @@ public:
             str = fmt::format("could not find file '{}' for import", args...);
         } else if constexpr (Status == IDL_STATUS_E3022) {
             str = fmt::format("Failed to open file '{}'", args...);
+        } else if constexpr (Status == IDL_STATUS_E3023) {
+            str = fmt::format("A 'const' '{}' can be defined only for an 'enum'", args...);
         } else {
             assert(!"Unknown status code");
         }
@@ -213,7 +229,7 @@ public:
     std::unordered_map<std::string, struct ASTDocDecl*> _docSymbols{};
     std::unordered_map<std::string, ASTLiteral*> _literals{};
     std::vector<ASTImport*> _imports{};
-    bool _declaring{};
+    uint32_t _lastOrder{};
 };
 
 } // namespace idl

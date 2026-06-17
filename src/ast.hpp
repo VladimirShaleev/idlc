@@ -53,6 +53,7 @@ struct ASTAttr : ASTNode {};
 
 struct ASTDecl : ASTNode {
     std::string name;
+    uint32_t order;
     std::vector<ASTAttr*> attrs;
 
     template <typename Attr>
@@ -89,16 +90,22 @@ struct ASTType : ASTDecl {
     struct ASTImport* import{};
 };
 
+struct ASTConst : ASTDecl {
+    void accept(Visitor& visitor) override;
+
+    int32_t value{};
+};
+
 struct ASTEnum : ASTType {
     void accept(Visitor& visitor) override;
 
-    // std::vector<ASTEnumConst*> consts;
+    std::vector<ASTConst*> consts;
 };
 
 struct ASTApi : ASTDecl {
     void accept(Visitor& visitor) override;
 
-    std::vector<ASTImport*> imports;
+    std::vector<ASTDecl*> decls;
 };
 
 // struct ASTAttrPlatform : ASTAttr {
@@ -432,8 +439,9 @@ struct ASTDeclRef : ASTNode {
 struct ASTImport : ASTDecl {
     void accept(Visitor& visitor) override;
 
-    std::vector<ASTImport*> imports;
-    std::vector<ASTEnum*> enums;
+    std::vector<ASTDecl*> decls;
+    // std::vector<ASTImport*> imports;
+    // std::vector<ASTEnum*> enums;
     // std::vector<ASTStruct*> structs;
     // std::vector<ASTCallback*> callbacks;
     // std::vector<ASTFunc*> funcs;
@@ -468,6 +476,10 @@ struct Visitor {
     }
 
     virtual void visit(ASTEnum* node) {
+        discarded(node);
+    }
+
+    virtual void visit(ASTConst* node) {
         discarded(node);
     }
 
@@ -527,6 +539,10 @@ inline void ASTApi::accept(Visitor& visitor) {
 }
 
 inline void ASTEnum::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+inline void ASTConst::accept(Visitor& visitor) {
     visitor.visit(this);
 }
 

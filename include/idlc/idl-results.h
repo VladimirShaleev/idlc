@@ -39,7 +39,7 @@ typedef enum
 typedef enum
 {
     IDL_STATUS_N1001    = 1001, /**< Unnecessary parentheses for a parameterless attribute. */
-    IDL_STATUS_W2001    = 2001, /**< Warn. */
+    IDL_STATUS_W2001    = 2001, /**< The declaration is missing an attribute.. */
     IDL_STATUS_E3001    = 3001, /**< Syntax error. */
     IDL_STATUS_E3002    = 3002, /**< Argument parsing error. */
     IDL_STATUS_E3003    = 3003, /**< The [version] attribute must have three required integer parameters, such as version(1, 2, 3) or version("string"). */
@@ -62,6 +62,7 @@ typedef enum
     IDL_STATUS_E3020    = 3020, /**< Tabs are not allowed. */
     IDL_STATUS_E3021    = 3021, /**< Could not find file for import. */
     IDL_STATUS_E3022    = 3022, /**< Failed to open file. */
+    IDL_STATUS_E3023    = 3023, /**< A 'const' can be defined only for an 'enum'. */
     IDL_STATUS_MAX_ENUM = 0x7FFFFFFF /**< Max value of enum (not used) */
 } idl_status_t;
 

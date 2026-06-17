@@ -159,6 +159,8 @@ public:
             str = fmt::format("Unnecessary parentheses for a parameterless attribute '{}'", args...);
         } else if constexpr (Status == IDL_STATUS_W2001) {
             str = fmt::format("The declaration '{}' is missing an attribute [{}]", args...);
+        } else if constexpr (Status == IDL_STATUS_W2002) {
+            str = fmt::format("Repeated import '{}'", args...);
         } else if constexpr (Status == IDL_STATUS_E3001) {
             if constexpr (sizeof...(args) > 0) {
                 str = fmt::format("Syntax error '{}'", args...);

@@ -14,7 +14,8 @@ enum Result [errorcode]
 enum Status
     const N1001 : 1001 [tokenizer(0)] @ Unnecessary parentheses for a parameterless attribute.
 
-    const W2001 : 2001 [tokenizer(0)] @ The declaration is missing an attribute..
+    const W2001 : 2001 [tokenizer(0)] @ The declaration is missing an attribute.
+    const W2002 : 2002 [tokenizer(0)] @ Repeated import.
 
     const E3001 : 3001 [tokenizer(0)] @ Syntax error.
     const E3002 : 3002 [tokenizer(0)] @ Argument parsing error.

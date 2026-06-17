@@ -64,6 +64,7 @@ public:
         const auto filename = path.is_absolute() ? std::filesystem::relative(path, _basePath).string() : path.string();
 
         if (_allImports.contains(filename)) {
+            _ctx.log<IDL_STATUS_W2002>(loc, filename);
             return;
         }
         _allImports[filename] = std::make_unique<std::string>(filename);

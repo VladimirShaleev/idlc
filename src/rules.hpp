@@ -479,6 +479,7 @@ struct HierarchyRules : Visitor {
             parent->as<ASTEnum>()->consts.push_back(node);
         } else {
             ctx.log<IDL_STATUS_E3023>(node->location, node->name);
+            node->parent = ctx.api();
         }
     }
 

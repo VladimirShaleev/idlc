@@ -89,7 +89,7 @@ import[ ]+ { BEGIN(IMPORTCTX); }
 <*>[-+]?[0-9]*\.[0-9]+([eE][-+]?[0-9]+)? { yylval->emplace<double>(std::stof(YYText())); return token::FLOAT; }
 <*>[-+]?[0-9]+                           { yylval->emplace<int64_t>(std::stoll(YYText())); return token::INT; }
 
-<*><<EOF>>                { setDeclaring(false); if (!popImport()) { return token::YYEOF; } }
+<*><<EOF>>                { setDeclaring(false); if (popImport()) { return token::POPIMPORT; } else { return token::YYEOF; } }
 <*>\r?\n                  { yylloc->lines(); setDeclaring(false); }
 <*>\t                     { context().log<IDL_STATUS_E3020>(*yylloc); }
 <*>" "                    { }

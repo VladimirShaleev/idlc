@@ -35,17 +35,9 @@ public:
     Node* allocNode(const idl::location& loc) {
         static_assert(std::is_base_of<ASTNode, Node>::value, "Node must be inherited from ASTNode");
         _nodes.push_back(nullptr);
-
         auto node      = new Node{};
         node->location = loc;
         _nodes.back()  = node;
-
-        // if constexpr (std::is_same<Node, ASTApi>::value) {
-        //     _api = node;
-        // } else if (node->parent) {
-        //     ChildAdder adder(node);
-        //     node->parent->accept(adder);
-        // }
         return node;
     }
 
@@ -95,8 +87,7 @@ public:
 
     void addSymbol(ASTDecl* decl) {
         decl->order = ++_lastOrder;
-        if (auto import = decl->as<ASTImport>()) {
-            _imports.push_back(import);
+        if (decl->as<ASTImport>()) {
             return;
         }
         const auto fullname = decl->fullnameLowecase();
@@ -104,10 +95,6 @@ public:
             log<IDL_STATUS_E3012>(decl->location, decl->fullname());
         }
         _symbols[fullname] = decl;
-        // if (!_files.empty()) {
-        //     decl->file = _files.back();
-        //     _files.back()->decls.push_back(decl);
-        // }
     }
 
     template <typename Visitor, typename... Args>
@@ -117,35 +104,6 @@ public:
             node->accept(visitor);
         }
         return visitor;
-    }
-
-    void popImport() {
-        _imports.pop_back();
-        _nodes.push_back(nullptr);
-    }
-
-    ASTImport* topImport() const noexcept {
-        return _imports.empty() ? nullptr : _imports.back();
-    }
-
-    ASTDecl* prevDecl() const noexcept {
-        for (auto it = _nodes.rbegin(); it != _nodes.rend(); ++it) {
-            if (*it == nullptr) {
-                return nullptr;
-            }
-            if (auto decl = (*it)->as<ASTDecl>()) {
-                for (++it; it != _nodes.rend(); ++it) {
-                    if (*it == nullptr) {
-                        return nullptr;
-                    }
-                    if (auto decl = (*it)->as<ASTDecl>()) {
-                        return decl;
-                    }
-                }
-                return nullptr;
-            }
-        }
-        return nullptr;
     }
 
     template <idl_status_t Status, typename... Args>
@@ -230,7 +188,6 @@ public:
     std::unordered_map<std::string, struct ASTDecl*> _symbols{};
     std::unordered_map<std::string, struct ASTDocDecl*> _docSymbols{};
     std::unordered_map<std::string, ASTLiteral*> _literals{};
-    std::vector<ASTImport*> _imports{};
     uint32_t _lastOrder{};
 };
 

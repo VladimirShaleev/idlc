@@ -265,7 +265,9 @@ struct AttrValidatorRules : Visitor {
     }
 
     void visit(ASTEnum* node) override {
-        static std::map allowed = { add<ASTAttrFlags>(), add<ASTAttrHex>(), add<ASTAttrBrief>(true), add<ASTAttrDetail>(true) };
+        static std::map allowed = {
+            add<ASTAttrFlags>(), add<ASTAttrHex>(), add<ASTAttrBrief>(true), add<ASTAttrDetail>(true)
+        };
         validate(node, allowed, node->attrs);
     }
 
@@ -444,7 +446,7 @@ struct AttrArgRules : Visitor {
 };
 
 struct HierarchyRules : Visitor {
-    HierarchyRules(Context& ctx) noexcept : Visitor(ctx) {
+    HierarchyRules(Context& ctx, ASTDecl* lastDecl) noexcept : Visitor(ctx), lastDecl(lastDecl) {
     }
 
     void visit(ASTApi* node) override {
@@ -457,7 +459,7 @@ struct HierarchyRules : Visitor {
 
     void visit(ASTImport* node) override {
         if (checkApi()) {
-            auto [parent, childs] = apiOrImport();
+            auto [parent, childs] = findRoot();
             node->parent          = parent;
             childs->push_back(node);
         }
@@ -465,14 +467,14 @@ struct HierarchyRules : Visitor {
 
     void visit(ASTEnum* node) override {
         if (checkApi()) {
-            auto [parent, childs] = apiOrImport();
-            node->parent          = parent, childs;
+            auto [parent, childs] = findRoot();
+            node->parent          = parent;
             childs->push_back(node);
         }
     }
 
     void visit(ASTConst* node) override {
-        if (auto parent = ctx.prevDecl(); parent && parent->as<ASTEnum>()) {
+        if (auto parent = findParent<ASTEnum>()) {
             node->parent = parent;
             parent->as<ASTEnum>()->consts.push_back(node);
         } else {
@@ -494,13 +496,31 @@ struct HierarchyRules : Visitor {
         }
     }
 
-    std::pair<ASTNode*, std::vector<ASTDecl*>*> apiOrImport() noexcept {
-        if (auto import = ctx.topImport()) {
-            return { import, &import->decls };
-        } else {
-            return { ctx.api(), &ctx.api()->decls };
+    template <typename... Node>
+    ASTDecl* findParent() noexcept {
+        auto node = lastDecl;
+        while (node) {
+            if ((node->as<Node>() || ...)) {
+                return node;
+            }
+            node = node->parent->as<ASTDecl>();
         }
+        return nullptr;
     }
+
+    std::pair<ASTDecl*, std::vector<ASTDecl*>*> findRoot() noexcept {
+        auto parent = findParent<ASTApi, ASTImport>();
+        if (parent) {
+            if (auto api = parent->as<ASTApi>()) {
+                return { api, &api->decls };
+            } else if (auto import = parent->as<ASTImport>()) {
+                return { import, &import->decls };
+            }
+        }
+        return {};
+    }
+
+    ASTDecl* lastDecl;
 };
 
 } // namespace idl

@@ -38,7 +38,7 @@
     #define add_symbol(decl) \
         scanner.context().addSymbol(decl)
     #define log(status, loc, ...) \
-        scanner.context().log<IDL_STATUS_##status>(loc __VA_OPT__(,) __VA_ARGS__)\
+        scanner.context().log<IDL_STATUS_##status>(loc __VA_OPT__(,) __VA_ARGS__)
 }
 
 %initial-action {
@@ -49,6 +49,7 @@
 %token ENUM
 %token CONST
 %token IMPORT
+%token POPIMPORT
 %token DOC
 %token IDOC
 
@@ -77,6 +78,7 @@
 %type <ASTAttr*> attr_item_with_args
 %type <ASTNode*> arg_item
 
+%type <std::vector<ASTDecl*>> stack_decls
 %type <std::vector<ASTNode*>> doc_nodes
 %type <std::vector<ASTAttr*>> doc_list
 %type <std::vector<ASTAttr*>> attr_list
@@ -86,11 +88,13 @@
 
 %%
 
-idl : nodes { scanner.context().build(); }
+idl : stack_decls { scanner.context().build(); }
 
-nodes
-    : def_with_attrs { rule(Hierarchy, $1); add_symbol($1); }
-    | nodes def_with_attrs { rule(Hierarchy, $2); add_symbol($2); }
+stack_decls
+    : def_with_attrs { rule(Hierarchy, $1, nullptr); add_symbol($1); $$.push_back($1); }
+    | stack_decls def_with_attrs { rule(Hierarchy, $2, $1.back()); add_symbol($2); if ($2->as<ASTImport>()) { $1.push_back($2); } else { $1.back() = $2; } $$ = std::move($1); }
+    | stack_decls POPIMPORT { $1.pop_back(); $$ = std::move($1); }
+    ;
 
 def_with_attrs
     : def { $$ = $1; rule(AttrValidator, $$); }

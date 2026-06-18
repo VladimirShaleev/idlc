@@ -86,9 +86,7 @@ struct ASTDecl : ASTNode {
     }
 };
 
-struct ASTType : ASTDecl {
-    struct ASTImport* import{};
-};
+struct ASTType : ASTDecl {};
 
 struct ASTConst : ASTDecl {
     void accept(Visitor& visitor) override;

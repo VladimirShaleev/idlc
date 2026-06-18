@@ -86,23 +86,17 @@ public:
                                                        nullptr));
         auto& import = *_imports.back();
         if (import.source) {
-            struct MemoryBuffer : public std::streambuf {
-            public:
-                MemoryBuffer(const char* data, size_t size) {
-                    setg(const_cast<char*>(data), const_cast<char*>(data), const_cast<char*>(data) + size);
-                }
-            };
-
-            import.stream = new std::istream(new MemoryBuffer(import.source->data, (size_t) import.source->size));
+            import.memBuffer = std::make_unique<MemoryBuffer>(import.source->data, (size_t) import.source->size);
+            import.stream    = std::make_unique<std::istream>(import.memBuffer.get());
         } else {
-            import.stream = new std::ifstream(path);
+            import.stream = std::make_unique<std::ifstream>(path);
             if (import.stream->fail()) {
-                delete import.stream;
+                import.stream.reset();
                 _ctx.log<IDL_STATUS_E3022>(loc, file.string());
                 return;
             }
         }
-        import.buffer = yy_create_buffer(import.stream, 16384);
+        import.buffer = yy_create_buffer(*import.stream.get(), 16384);
         yy_switch_to_buffer(import.buffer);
 
         yylineno = 1;
@@ -117,7 +111,7 @@ public:
             yylineno = import->line;
         }
         assert(!_imports.empty());
-        if (_imports.back()->releaseSource && _options) {
+        if (_imports.back()->memBuffer && _options) {
             idl_data_t data{};
             if (auto callback = _options->getReleaseImport(&data)) {
                 callback(const_cast<idl_source_t*>(_imports.back()->source), data);
@@ -125,9 +119,6 @@ public:
         }
         _imports.pop_back();
         _needUpdateLoc = true;
-        if (_imports.size() > 0) {
-            _ctx.popImport();
-        }
         return !_imports.empty();
     }
 
@@ -144,33 +135,29 @@ public:
     int lineIndent = -1;
 
 private:
+    struct MemoryBuffer : public std::streambuf {
+    public:
+        MemoryBuffer(const char* data, size_t size) {
+            setg(const_cast<char*>(data), const_cast<char*>(data), const_cast<char*>(data) + size);
+        }
+    };
+
     struct Import {
         ~Import() {
             scanner->yy_delete_buffer(buffer);
             buffer = nullptr;
-            if (stream) {
-                std::streambuf* buf{};
-                if (source) {
-                    buf = stream->rdbuf();
-                }
-                delete stream;
-                stream = nullptr;
-                if (buf) {
-                    delete buf;
-                    buf = nullptr;
-                }
-            }
         }
 
         Scanner* scanner{};
         const idl_source_t* source{};
-        bool releaseSource{};
+        bool needReleaseSource{};
         std::filesystem::path file;
         std::string* filename;
         idl::location location;
         int line{};
         yy_buffer_state* buffer{};
-        std::istream* stream{};
+        std::unique_ptr<MemoryBuffer> memBuffer{};
+        std::unique_ptr<std::istream> stream{};
     };
 
     std::tuple<std::filesystem::path, const idl_source_t*, bool> findFile(const idl::location& loc,

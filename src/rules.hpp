@@ -476,7 +476,7 @@ struct HierarchyRules : Visitor {
     void visit(ASTConst* node) override {
         if (auto parent = findParent<ASTEnum>()) {
             node->parent = parent;
-            parent->as<ASTEnum>()->consts.push_back(node);
+            parent->consts.push_back(node);
         } else {
             ctx.log<IDL_STATUS_E3023>(node->location, node->name);
             node->parent = ctx.api();
@@ -497,8 +497,20 @@ struct HierarchyRules : Visitor {
         }
     }
 
+    template <typename Node>
+    Node* findParent() noexcept {
+        auto node = lastDecl;
+        while (node) {
+            if (auto result = node->as<Node>()) {
+                return result;
+            }
+            node = node->parent->as<ASTDecl>();
+        }
+        return nullptr;
+    }
+
     template <typename... Node>
-    ASTDecl* findParent() noexcept {
+    ASTDecl* findAnyParent() noexcept {
         auto node = lastDecl;
         while (node) {
             if ((node->as<Node>() || ...)) {
@@ -510,7 +522,7 @@ struct HierarchyRules : Visitor {
     }
 
     std::pair<ASTDecl*, std::vector<ASTDecl*>*> findRoot() noexcept {
-        auto parent = findParent<ASTApi, ASTImport>();
+        auto parent = findAnyParent<ASTApi, ASTImport>();
         if (parent) {
             if (auto api = parent->as<ASTApi>()) {
                 return { api, &api->decls };

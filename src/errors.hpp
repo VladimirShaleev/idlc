@@ -6,56 +6,70 @@
 
 namespace idl {
 
-class Exception : public std::runtime_error {
-public:
-    Exception(
-        idl_status_t status, std::string filename, idl_uint32_t line, idl_uint32_t column, const std::string& message) :
-        std::runtime_error(message),
-        _filename(filename),
-        _line(line),
-        _column(column),
-        _status(status) {
-    }
-
-    const std::string& filename() const noexcept {
-        return _filename;
-    }
-
-    idl_uint32_t line() const noexcept {
-        return _line;
-    }
-
-    idl_uint32_t column() const noexcept {
-        return _column;
-    }
-
-    idl_status_t status() const noexcept {
-        return _status;
-    }
-
-private:
-    std::string _filename;
-    idl_uint32_t _line;
-    idl_uint32_t _column;
-    idl_status_t _status;
-};
-
 template <idl_status_t Status, typename... Args>
-[[noreturn]] inline void err(const idl::location& loc, Args&&... args) {
+[[noreturn]] inline std::string err(const idl::location& loc, Args&&... args) {
     std::string str;
     if constexpr (Status == IDL_STATUS_N1001) {
-        str = fmt::format("Note");
+        str = fmt::format("Unnecessary parentheses for a parameterless attribute '{}'", args...);
     } else if constexpr (Status == IDL_STATUS_W2001) {
-        str = fmt::format("Warn");
+        str = fmt::format("The declaration '{}' is missing an attribute [{}]", args...);
+    } else if constexpr (Status == IDL_STATUS_W2002) {
+        str = fmt::format("Repeated import '{}'", args...);
     } else if constexpr (Status == IDL_STATUS_E3001) {
-        str = fmt::format("Err");
+        if constexpr (sizeof...(args) > 0) {
+            str = fmt::format("Syntax error '{}'", args...);
+        } else {
+            str = fmt::format("Syntax error");
+        }
     } else if constexpr (Status == IDL_STATUS_E3002) {
-        str =
-            fmt::format("The version attribute must have three required integer parameters, such as version(1, 2, 3).");
+        str = fmt::format("Argument parsing error '{}'", args...);
+    } else if constexpr (Status == IDL_STATUS_E3003) {
+        str = fmt::format("The [version] attribute must have three required integer parameters, such as version(1, "
+                          "2, 3) or version(\"string\")");
+    } else if constexpr (Status == IDL_STATUS_E3004) {
+        str = fmt::format("Version values must be between 0 and 255, while the argument is {}", args...);
+    } else if constexpr (Status == IDL_STATUS_E3005) {
+        str = fmt::format("Invalid attribute '{}' for {} '{}' declaration, allowed attributes are {}", args...);
+    } else if constexpr (Status == IDL_STATUS_E3006) {
+        str = fmt::format("Attributes are not allowed for the {} '{}' declaration", args...);
+    } else if constexpr (Status == IDL_STATUS_E3007) {
+        str = fmt::format("Attribute duplication for attribute '{}' in {} '{}'", args...);
+    } else if constexpr (Status == IDL_STATUS_E3008) {
+        str = fmt::format("The attribute '{}' must not have arguments", args...);
+    } else if constexpr (Status == IDL_STATUS_E3009) {
+        str = fmt::format("String closing character not found in string \"{}\"", args...);
+    } else if constexpr (Status == IDL_STATUS_E3010) {
+        str = fmt::format("API Redeclaration '{}'", args...);
+    } else if constexpr (Status == IDL_STATUS_E3011) {
+        str = fmt::format("The first declaration in the description should always begin with the 'api' declaration");
+    } else if constexpr (Status == IDL_STATUS_E3012) {
+        str = fmt::format("Symbol redefinition '{}'", args...);
+    } else if constexpr (Status == IDL_STATUS_E3013) {
+        str = fmt::format("Unknown attribute '{}'", args...);
+    } else if constexpr (Status == IDL_STATUS_E3014) {
+        str = fmt::format("The [brief] attribute must contain one or more arguments");
+    } else if constexpr (Status == IDL_STATUS_E3015) {
+        str = fmt::format("Unknown attribute in the documentation '{}'", args...);
+    } else if constexpr (Status == IDL_STATUS_E3016) {
+        str = fmt::format("The documentation string cannot be empty", args...);
+    } else if constexpr (Status == IDL_STATUS_E3017) {
+        str = fmt::format("The [detail] attribute must contain one or more arguments");
+    } else if constexpr (Status == IDL_STATUS_E3018) {
+        str = fmt::format("Inline documentation only [detail] description is allowed");
+    } else if constexpr (Status == IDL_STATUS_E3019) {
+        str = fmt::format("Unexpected character '{}'", args...);
+    } else if constexpr (Status == IDL_STATUS_E3020) {
+        str = fmt::format("Tabs are not allowed");
+    } else if constexpr (Status == IDL_STATUS_E3021) {
+        str = fmt::format("could not find file '{}' for import", args...);
+    } else if constexpr (Status == IDL_STATUS_E3022) {
+        str = fmt::format("Failed to open file '{}'", args...);
+    } else if constexpr (Status == IDL_STATUS_E3023) {
+        str = fmt::format("A 'const' of '{}' can be defined only for an 'enum'", args...);
     } else {
-        assert(!"unknown status code");
+        assert(!"Unknown status code");
     }
-    throw Exception(Status, *loc.begin.filename, loc.begin.line, loc.begin.column, str);
+    return str;
 }
 
 } // namespace idl

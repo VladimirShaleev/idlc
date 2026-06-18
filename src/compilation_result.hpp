@@ -18,16 +18,20 @@ public:
         return _hasErrors;
     }
 
-    void addMessage(const Exception& exc, bool isError = true) {
+    void addMessage(idl_status_t status,
+                    const std::string& filename,
+                    idl_uint32_t line,
+                    idl_uint32_t column,
+                    const std::string& message) {
         _messages.push_back({});
-        auto& message    = _messages.back();
-        message.status   = exc.status();
-        message.is_error = isError ? 1 : 0;
-        message.message  = getStr(exc.what());
-        message.filename = getStr(exc.filename());
-        message.line     = exc.line();
-        message.column   = exc.column();
-        if (isError) {
+        auto& msg    = _messages.back();
+        msg.status   = status;
+        msg.is_error = status >= IDL_STATUS_E3001 ? 1 : 0;
+        msg.message  = getStr(message);
+        msg.filename = getStr(filename);
+        msg.line     = line;
+        msg.column   = column;
+        if (msg.is_error) {
             _hasErrors = true;
         } else {
             _hasWarnings = true;

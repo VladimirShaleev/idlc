@@ -42,8 +42,8 @@ public:
 
             if (code != 0) {
                 if (result) {
-                    //Exception exc(IDL_STATUS_E2011, "<input>", 0, 0, "unknown error");
-                    //result->addMessage(exc);
+                    // Exception exc(IDL_STATUS_E2011, "<input>", 0, 0, "unknown error");
+                    // result->addMessage(exc);
                     return IDL_RESULT_SUCCESS;
                 } else {
                     return IDL_RESULT_ERROR_COMPILATION;
@@ -98,14 +98,6 @@ public:
                 default:
                     assert(!"unreachable code");
                     break;
-            }
-        } catch (const Exception& exc) {
-            if (result) {
-                result->addMessage(exc);
-            } else {
-                // return exc.status() == IDL_STATUS_E2067 ? IDL_RESULT_ERROR_FILE_CREATE :
-                // IDL_RESULT_ERROR_COMPILATION;
-                return IDL_RESULT_ERROR_UNKNOWN;
             }
         } catch (const std::bad_alloc&) {
             if (result) {

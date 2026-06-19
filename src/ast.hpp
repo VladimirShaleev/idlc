@@ -115,12 +115,12 @@ struct ASTAttrValue : ASTAttr {
     std::vector<ASTNode*> values;
 };
 
-// struct ASTAttrType : ASTAttr {
-//     void accept(Visitor& visitor) override;
-//
-//     struct ASTDeclRef* type;
-// };
-//
+struct ASTAttrType : ASTAttr {
+    void accept(Visitor& visitor) override;
+
+    struct ASTDeclRef* type;
+};
+
 // struct ASTAttrStatic : ASTAttr {
 //     void accept(Visitor& visitor) override;
 // };
@@ -425,6 +425,7 @@ struct Visitor {
     virtual void visit(ASTAttrBrief* node);
     virtual void visit(ASTAttrDetail* node);
     virtual void visit(ASTAttrValue* node);
+    virtual void visit(ASTAttrType* node);
     virtual void visit(ASTDeclRef* node);
     virtual void visit(ASTImport* node);
     virtual void discarded(ASTNode* node);

@@ -79,6 +79,10 @@ void Visitor::visit(ASTAttrValue* node) {
     discarded(node);
 }
 
+void Visitor::visit(ASTAttrType* node) {
+    discarded(node);
+}
+
 void Visitor::visit(ASTDeclRef* node) {
     discarded(node);
 }
@@ -140,6 +144,10 @@ void ASTAttrDetail::accept(Visitor& visitor) {
 }
 
 void ASTAttrValue::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+void ASTAttrType::accept(Visitor& visitor) {
     visitor.visit(this);
 }
 

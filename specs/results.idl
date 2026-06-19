@@ -43,6 +43,7 @@ enum Status
     const E3024 : 3024 [tokenizer(0)] @ The \[value\] attribute must contain one or more arguments.
     const E3025 : 3025 [tokenizer(0)] @ Arguments for the \[value\] attribute must be literals or declaration reference.
     const E3026 : 3026 [tokenizer(0)] @ All literals in the \[value\] attribute must be of the same type.
+    const E3027 : 3027 [tokenizer(0)] @ The \[type\] attribute argument can only refer to symbols.
 
 @ Compilation message.
 @ Detailed description of warning or compilation error. [detail]

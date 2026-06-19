@@ -59,6 +59,7 @@
 %token ATTRBRIEF
 %token ATTRDETAIL
 %token ATTRVALUE
+%token ATTRTYPE
 
 %token <std::string> ID
 %token <int64_t>     INT
@@ -107,7 +108,18 @@ def_with_attrs
 
 def_with_ref
     : def { $$ = $1; }
-    | def ':' arg_list { $$ = $1; auto val = alloc_node(AttrValue, @3); rule(AttrArg, val, $3); $$->attrs.push_back(val); }
+    | def ':' arg_list 
+    { 
+        $$ = $1; 
+        ASTAttr* valOrType = nullptr;
+        if (rule(AttrValueOrType, $1).isValue) {
+            valOrType = alloc_node(AttrValue, @3); 
+        } else {
+            valOrType = alloc_node(AttrType, @3); 
+        }
+        rule(AttrArg, valOrType, $3);
+        $$->attrs.push_back(valOrType); 
+    }
     ;
 
 def
@@ -165,6 +177,7 @@ attr_item
     : ATTRVERSION  { $$ = alloc_node(AttrVersion, @1); }
     | ATTRFLAGS    { $$ = alloc_node(AttrFlags, @1); }
     | ATTRVALUE    { $$ = alloc_node(AttrValue, @1); }
+    | ATTRTYPE     { $$ = alloc_node(AttrType, @1); }
     | ATTRHEX      { $$ = alloc_node(AttrHex, @1); }
     | ATTRBRIEF    { $$ = alloc_node(AttrBrief, @1); }
     | ATTRDETAIL   { $$ = alloc_node(AttrDetail, @1); }

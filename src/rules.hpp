@@ -194,11 +194,29 @@ struct AttrName : Visitor {
         str = "value";
     }
 
+    void visit(ASTAttrType* node) override {
+        str = "type";
+    }
+
     void discarded(ASTNode*) override {
         assert(!"attribute name is missing");
     }
 
     std::string str;
+};
+
+struct AttrValueOrTypeRules : Visitor {
+    explicit AttrValueOrTypeRules(Context& ctx) noexcept : Visitor(ctx) {
+    }
+
+    void visit(ASTConst*) override {
+        isValue = true;
+    }
+
+    void discarded(ASTNode*) override {
+    }
+
+    bool isValue{};
 };
 
 struct AttrValidatorRules : Visitor {
@@ -294,7 +312,7 @@ struct AttrValidatorRules : Visitor {
     //                 add<ASTAttrRef>(),  add<ASTAttrConst>(),    add<ASTAttrOptional>() };
     // }
 
-    void discarded(ASTNode* node) {
+    void discarded(ASTNode* node) override {
         if (auto decl = node->as<ASTDecl>()) {
             DeclToken token(ctx);
             node->accept(token);
@@ -362,7 +380,7 @@ struct AttrDocValidatorRules : Visitor {
     explicit AttrDocValidatorRules(Context& ctx) noexcept : Visitor(ctx) {
     }
 
-    void discarded(ASTNode* node) {
+    void discarded(ASTNode* node) override {
         if (auto attr = node->as<ASTAttr>()) {
             if (attr->as<ASTDocAttr>()) {
                 if (attr->as<ASTDocAttr>()->message.empty()) {
@@ -459,6 +477,14 @@ struct AttrArgRules : Visitor {
             }
         } else {
             ctx.log<IDL_STATUS_E3024>(node->location);
+        }
+    }
+
+    void visit(ASTAttrType* node) override {
+        if (args.size() == 1 && args[0] && args[0]->as<ASTDeclRef>()) {
+            node->type = args[0]->as<ASTDeclRef>();
+        } else {
+            ctx.log<IDL_STATUS_E3027>(node->location);
         }
     }
 

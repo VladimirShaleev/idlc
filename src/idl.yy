@@ -58,6 +58,7 @@
 %token ATTRHEX
 %token ATTRBRIEF
 %token ATTRDETAIL
+%token ATTRVALUE
 
 %token <std::string> ID
 %token <int64_t>     INT
@@ -67,6 +68,7 @@
 %token <std::string> INVALID_ATTR
 
 %type <ASTDecl*>    def_with_attrs
+%type <ASTDecl*>    def_with_ref
 %type <ASTDecl*>    def
 %type <ASTDecl*>    decl
 %type <ASTAttr*>    doc
@@ -97,10 +99,15 @@ stack_decls
     ;
 
 def_with_attrs
-    : def { $$ = $1; rule(AttrValidator, $$); }
-    | def '[' attr_list ']' { $$ = $1; $$->attrs.insert($$->attrs.end(), $3.begin(), $3.end()); rule(AttrValidator, $$); }
-    | def idoc { $$ = $1; $$->attrs.push_back($2); rule(AttrValidator, $$); }
-    | def '[' attr_list ']' idoc { $$ = $1; $$->attrs.insert($$->attrs.end(), $3.begin(), $3.end()); $$->attrs.push_back($5); rule(AttrValidator, $$); }
+    : def_with_ref { $$ = $1; rule(AttrValidator, $$); }
+    | def_with_ref '[' attr_list ']' { $$ = $1; $$->attrs.insert($$->attrs.end(), $3.begin(), $3.end()); rule(AttrValidator, $$); }
+    | def_with_ref idoc { $$ = $1; $$->attrs.push_back($2); rule(AttrValidator, $$); }
+    | def_with_ref '[' attr_list ']' idoc { $$ = $1; $$->attrs.insert($$->attrs.end(), $3.begin(), $3.end()); $$->attrs.push_back($5); rule(AttrValidator, $$); }
+    ;
+
+def_with_ref
+    : def { $$ = $1; }
+    | def ':' arg_list { $$ = $1; auto val = alloc_node(AttrValue, @3); rule(AttrArg, val, $3); $$->attrs.push_back(val); }
     ;
 
 def
@@ -157,6 +164,7 @@ attr_item_with_args
 attr_item
     : ATTRVERSION  { $$ = alloc_node(AttrVersion, @1); }
     | ATTRFLAGS    { $$ = alloc_node(AttrFlags, @1); }
+    | ATTRVALUE    { $$ = alloc_node(AttrValue, @1); }
     | ATTRHEX      { $$ = alloc_node(AttrHex, @1); }
     | ATTRBRIEF    { $$ = alloc_node(AttrBrief, @1); }
     | ATTRDETAIL   { $$ = alloc_node(AttrDetail, @1); }

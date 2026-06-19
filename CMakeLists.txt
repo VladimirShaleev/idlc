@@ -63,7 +63,7 @@ if(IDLC_USE_IDLC)
             "${PROJECT_SOURCE_DIR}/specs/results.idl")
 endif()
 
-set(IDL_SOURCES src/compiler.cpp)# src/generator_c.cpp)
+set(IDL_SOURCES src/ast.cpp src/compiler.cpp)# src/generator_c.cpp)
 if(IDLC_SUPPORTED_JS)
 #    list(APPEND IDL_SOURCES src/generator_js.cpp)
 endif()

@@ -47,6 +47,10 @@ struct DeclToken : Visitor {
         str = "enum";
     }
 
+    void visit(ASTConst* node) override {
+        str = "const";
+    }
+
     void visit(ASTImport* node) override {
         str = "import";
     }
@@ -186,6 +190,10 @@ struct AttrName : Visitor {
         str = "detail";
     }
 
+    void visit(ASTAttrValue* node) override {
+        str = "value";
+    }
+
     void discarded(ASTNode*) override {
         assert(!"attribute name is missing");
     }
@@ -272,7 +280,7 @@ struct AttrValidatorRules : Visitor {
     }
 
     void visit(ASTConst* node) override {
-        static std::map allowed = { add<ASTAttrDetail>(true) };
+        static std::map allowed = { add<ASTAttrDetail>(true), add<ASTAttrValue>() };
         validate(node, allowed, node->attrs);
     }
 
@@ -431,6 +439,26 @@ struct AttrArgRules : Visitor {
             node->message = std::move(args);
         } else {
             ctx.log<IDL_STATUS_E3017>(node->location);
+        }
+    }
+
+    void visit(ASTAttrValue* node) override {
+        if (!args.empty()) {
+            std::type_index type = typeid(*args[0]);
+            for (auto arg : args) {
+                if (arg || arg->as<ASTLiteral>() || arg->as<ASTDeclRef>()) {
+                    if (typeid(*arg) != type) {
+                        ctx.log<IDL_STATUS_E3026>(node->location);
+                        break;
+                    }
+                    node->values.push_back(arg);
+                } else {
+                    ctx.log<IDL_STATUS_E3025>(node->location);
+                    break;
+                }
+            }
+        } else {
+            ctx.log<IDL_STATUS_E3024>(node->location);
         }
     }
 

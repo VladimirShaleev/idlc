@@ -65,25 +65,8 @@ struct ASTDecl : ASTNode {
         return it != attrs.end() ? (*it)->template as<Attr>() : nullptr;
     }
 
-    std::string fullname() const {
-        assert(name.length() > 0);
-        std::ostringstream ss;
-        if (parent) {
-            if (auto parentDecl = parent->as<ASTDecl>()) {
-                ss << parentDecl->fullname() << '.';
-            }
-        }
-        ss << name;
-        return ss.str();
-    }
-
-    std::string fullnameLowecase() const {
-        auto str = fullname();
-        std::transform(str.begin(), str.end(), str.begin(), [](auto c) {
-            return std::tolower(c);
-        });
-        return str;
-    }
+    std::string fullname() const;
+    std::string fullnameLowecase() const;
 };
 
 struct ASTType : ASTDecl {};
@@ -106,21 +89,6 @@ struct ASTApi : ASTDecl {
     std::vector<ASTDecl*> decls;
 };
 
-// struct ASTAttrPlatform : ASTAttr {
-//     enum Type {
-//         Windows = 1,
-//         Linux   = 2,
-//         MacOS   = 4,
-//         Web     = 8,
-//         Android = 16,
-//         iOS     = 32
-//     };
-//
-//     void accept(Visitor& visitor) override;
-//
-//     Type platforms;
-// };
-
 struct ASTAttrFlags : ASTAttr {
     void accept(Visitor& visitor) override;
 };
@@ -141,12 +109,12 @@ struct ASTAttrDetail : ASTDocAttr {
     void accept(Visitor& visitor) override;
 };
 
-// struct ASTAttrValue : ASTAttr {
-//     void accept(Visitor& visitor) override;
-//
-//     ASTLiteral* value;
-// };
-//
+struct ASTAttrValue : ASTAttr {
+    void accept(Visitor& visitor) override;
+
+    std::vector<ASTNode*> values;
+};
+
 // struct ASTAttrType : ASTAttr {
 //     void accept(Visitor& visitor) override;
 //
@@ -438,139 +406,31 @@ struct ASTImport : ASTDecl {
     void accept(Visitor& visitor) override;
 
     std::vector<ASTDecl*> decls;
-    // std::vector<ASTImport*> imports;
-    // std::vector<ASTEnum*> enums;
-    // std::vector<ASTStruct*> structs;
-    // std::vector<ASTCallback*> callbacks;
-    // std::vector<ASTFunc*> funcs;
-    // std::vector<ASTInterface*> interfaces;
-    // std::vector<ASTHandle*> handles;
 };
 
 struct Visitor {
-    explicit Visitor(class Context& ctx) noexcept : ctx(ctx) {
-    }
+    explicit Visitor(class Context& ctx) noexcept;
+    virtual ~Visitor();
 
-    virtual ~Visitor() = default;
-
-    virtual void visit(ASTLiteralStr* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTLiteralBool* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTLiteralInt* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTLiteralFloat* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTApi* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTEnum* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTConst* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTAttrVersion* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTAttrFlags* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTAttrHex* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTAttrBrief* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTAttrDetail* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTDeclRef* node) {
-        discarded(node);
-    }
-
-    virtual void visit(ASTImport* node) {
-        discarded(node);
-    }
-
-    virtual void discarded(ASTNode* node) {
-        assert(!"visit method not implemented for this node type");
-    }
+    virtual void visit(ASTLiteralStr* node);
+    virtual void visit(ASTLiteralBool* node);
+    virtual void visit(ASTLiteralInt* node);
+    virtual void visit(ASTLiteralFloat* node);
+    virtual void visit(ASTApi* node);
+    virtual void visit(ASTEnum* node);
+    virtual void visit(ASTConst* node);
+    virtual void visit(ASTAttrVersion* node);
+    virtual void visit(ASTAttrFlags* node);
+    virtual void visit(ASTAttrHex* node);
+    virtual void visit(ASTAttrBrief* node);
+    virtual void visit(ASTAttrDetail* node);
+    virtual void visit(ASTAttrValue* node);
+    virtual void visit(ASTDeclRef* node);
+    virtual void visit(ASTImport* node);
+    virtual void discarded(ASTNode* node);
 
     class Context& ctx;
 };
-
-inline void ASTLiteralStr::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTLiteralBool::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTLiteralInt::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTLiteralFloat::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTApi::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTEnum::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTConst::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTAttrVersion::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTAttrFlags::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTAttrHex::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTAttrBrief::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTAttrDetail::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTDeclRef::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
-
-inline void ASTImport::accept(Visitor& visitor) {
-    visitor.visit(this);
-}
 
 } // namespace idl
 

@@ -40,6 +40,9 @@ enum Status
     const E3021 : 3021 [tokenizer(0)] @ Could not find file for import.
     const E3022 : 3022 [tokenizer(0)] @ Failed to open file.
     const E3023 : 3023 [tokenizer(0)] @ A 'const' can be defined only for an 'enum'.
+    const E3024 : 3024 [tokenizer(0)] @ The \[value\] attribute must contain one or more arguments.
+    const E3025 : 3025 [tokenizer(0)] @ Arguments for the \[value\] attribute must be literals or declaration reference.
+    const E3026 : 3026 [tokenizer(0)] @ All literals in the \[value\] attribute must be of the same type.
 
 @ Compilation message.
 @ Detailed description of warning or compilation error. [detail]

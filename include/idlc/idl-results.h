@@ -64,6 +64,9 @@ typedef enum
     IDL_STATUS_E3021    = 3021, /**< Could not find file for import. */
     IDL_STATUS_E3022    = 3022, /**< Failed to open file. */
     IDL_STATUS_E3023    = 3023, /**< A 'const' can be defined only for an 'enum'. */
+    IDL_STATUS_E3024    = 3024, /**< The [value] attribute must contain one or more arguments. */
+    IDL_STATUS_E3025    = 3025, /**< Arguments for the [value] attribute must be literals or declaration reference. */
+    IDL_STATUS_E3026    = 3026, /**< All literals in the [value] attribute must be of the same type. */
     IDL_STATUS_MAX_ENUM = 0x7FFFFFFF /**< Max value of enum (not used) */
 } idl_status_t;
 

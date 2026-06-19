@@ -40,6 +40,7 @@ DOCCHAR ([^ \r\n\t\{\}[\]]|\\\{|\\\}|\\\[|\\\])
 <ATTRCTX>"hex"         { return token::ATTRHEX; }
 <ATTRCTX>"brief"       { return token::ATTRBRIEF; }
 <ATTRCTX>"detail"      { return token::ATTRDETAIL; }
+<ATTRCTX>"value"       { return token::ATTRVALUE; }
 <ATTRCTX>","           { return YYText()[0]; }
 <ATTRCTX>[a-zA-Z0-9_]+ { yylval->emplace<std::string>(YYText()); return token::INVALID_ATTR; }
 <ATTRCTX>"]"           { BEGIN(INITIAL); return YYText()[0]; }
@@ -82,6 +83,9 @@ import[ ]+ { BEGIN(IMPORTCTX); }
 <IMPORTCTX>.|\r?\n { context().log<IDL_STATUS_E3019>(*yylloc, YYText()); }
 
 "//".* ;
+
+":" { return YYText()[0]; }
+"," { return YYText()[0]; }
 
 <*>[A-Z][a-zA-Z0-9]*                     { yylval->emplace<std::string>(YYText()); return token::ID; }
 <*>\"(\\.|[^\\"\n])*\"                   { std::string str = YYText(); str = str.substr(1, str.length() - 2); yylval->emplace<std::string>(str); return token::STR; }

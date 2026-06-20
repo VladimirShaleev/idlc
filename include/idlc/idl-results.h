@@ -68,6 +68,8 @@ typedef enum
     IDL_STATUS_E3025    = 3025, /**< Arguments for the [value] attribute must be literals or declaration reference. */
     IDL_STATUS_E3026    = 3026, /**< All literals in the [value] attribute must be of the same type. */
     IDL_STATUS_E3027    = 3027, /**< The [type] attribute argument can only refer to symbols. */
+    IDL_STATUS_E3028    = 3028, /**< The [cname] attribute must contain a single string literal argument. */
+    IDL_STATUS_E3029    = 3029, /**< The [cname] attribute must specify a name without spaces. */
     IDL_STATUS_MAX_ENUM = 0x7FFFFFFF /**< Max value of enum (not used) */
 } idl_status_t;
 

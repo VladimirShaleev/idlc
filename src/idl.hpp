@@ -21,6 +21,7 @@
 #include <iostream>
 #include <map>
 #include <ranges>
+#include <regex>
 #include <set>
 #include <span>
 #include <sstream>

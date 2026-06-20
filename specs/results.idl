@@ -44,6 +44,8 @@ enum Status
     const E3025 : 3025 [tokenizer(0)] @ Arguments for the \[value\] attribute must be literals or declaration reference.
     const E3026 : 3026 [tokenizer(0)] @ All literals in the \[value\] attribute must be of the same type.
     const E3027 : 3027 [tokenizer(0)] @ The \[type\] attribute argument can only refer to symbols.
+    const E3028 : 3028 [tokenizer(0)] @ The \[cname\] attribute must contain a single string literal argument.
+    const E3029 : 3029 [tokenizer(0)] @ The \[cname\] attribute must specify a name without spaces.
 
 @ Compilation message.
 @ Detailed description of warning or compilation error. [detail]

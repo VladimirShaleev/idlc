@@ -60,6 +60,8 @@
 %token ATTRDETAIL
 %token ATTRVALUE
 %token ATTRTYPE
+%token ATTRCNAME
+%token ATTRTOKENIZER
 
 %token <std::string> ID
 %token <int64_t>     INT
@@ -174,14 +176,16 @@ attr_item_with_args
     ;
 
 attr_item
-    : ATTRVERSION  { $$ = alloc_node(AttrVersion, @1); }
-    | ATTRFLAGS    { $$ = alloc_node(AttrFlags, @1); }
-    | ATTRVALUE    { $$ = alloc_node(AttrValue, @1); }
-    | ATTRTYPE     { $$ = alloc_node(AttrType, @1); }
-    | ATTRHEX      { $$ = alloc_node(AttrHex, @1); }
-    | ATTRBRIEF    { $$ = alloc_node(AttrBrief, @1); }
-    | ATTRDETAIL   { $$ = alloc_node(AttrDetail, @1); }
-    | INVALID_ATTR { $$ = nullptr; log(E3013, @1, $1); }
+    : ATTRVERSION   { $$ = alloc_node(AttrVersion, @1); }
+    | ATTRFLAGS     { $$ = alloc_node(AttrFlags, @1); }
+    | ATTRVALUE     { $$ = alloc_node(AttrValue, @1); }
+    | ATTRTYPE      { $$ = alloc_node(AttrType, @1); }
+    | ATTRCNAME     { $$ = alloc_node(AttrCName, @1); }
+    | ATTRTOKENIZER { $$ = alloc_node(AttrTokenizer, @1); }
+    | ATTRHEX       { $$ = alloc_node(AttrHex, @1); }
+    | ATTRBRIEF     { $$ = alloc_node(AttrBrief, @1); }
+    | ATTRDETAIL    { $$ = alloc_node(AttrDetail, @1); }
+    | INVALID_ATTR  { $$ = nullptr; log(E3013, @1, $1); }
     ;
 
 arg_item

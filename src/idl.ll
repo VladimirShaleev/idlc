@@ -42,6 +42,8 @@ DOCCHAR ([^ \r\n\t\{\}[\]]|\\\{|\\\}|\\\[|\\\])
 <ATTRCTX>"detail"      { return token::ATTRDETAIL; }
 <ATTRCTX>"value"       { return token::ATTRVALUE; }
 <ATTRCTX>"type"        { return token::ATTRTYPE; }
+<ATTRCTX>"cname"       { return token::ATTRCNAME; }
+<ATTRCTX>"tokenizer"   { return token::ATTRTOKENIZER; }
 <ATTRCTX>","           { return YYText()[0]; }
 <ATTRCTX>[a-zA-Z0-9_]+ { yylval->emplace<std::string>(YYText()); return token::INVALID_ATTR; }
 <ATTRCTX>"]"           { BEGIN(INITIAL); return YYText()[0]; }

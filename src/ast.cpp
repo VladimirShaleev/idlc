@@ -55,6 +55,10 @@ void Visitor::visit(ASTConst* node) {
     discarded(node);
 }
 
+void Visitor::visit(ASTAttrTokenizer* node) {
+    discarded(node);
+}
+
 void Visitor::visit(ASTAttrVersion* node) {
     discarded(node);
 }
@@ -80,6 +84,10 @@ void Visitor::visit(ASTAttrValue* node) {
 }
 
 void Visitor::visit(ASTAttrType* node) {
+    discarded(node);
+}
+
+void Visitor::visit(ASTAttrCName* node) {
     discarded(node);
 }
 
@@ -123,6 +131,10 @@ void ASTConst::accept(Visitor& visitor) {
     visitor.visit(this);
 }
 
+void ASTAttrTokenizer::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
 void ASTAttrVersion::accept(Visitor& visitor) {
     visitor.visit(this);
 }
@@ -148,6 +160,10 @@ void ASTAttrValue::accept(Visitor& visitor) {
 }
 
 void ASTAttrType::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+void ASTAttrCName::accept(Visitor& visitor) {
     visitor.visit(this);
 }
 

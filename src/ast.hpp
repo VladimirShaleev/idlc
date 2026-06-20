@@ -148,13 +148,13 @@ struct ASTAttrType : ASTAttr {
 // struct ASTAttrHandle : ASTAttr {
 //     void accept(Visitor& visitor) override;
 // };
-//
-// struct ASTAttrCName : ASTAttr {
-//     void accept(Visitor& visitor) override;
-//
-//     std::string name;
-// };
-//
+
+struct ASTAttrCName : ASTAttr {
+    void accept(Visitor& visitor) override;
+
+    std::string name;
+};
+
 // struct ASTAttrArray : ASTAttr {
 //     void accept(Visitor& visitor) override;
 //
@@ -212,13 +212,13 @@ struct ASTAttrType : ASTAttr {
 // struct ASTAttrOptional : ASTAttr {
 //     void accept(Visitor& visitor) override;
 // };
-//
-// struct ASTAttrTokenizer : ASTAttr {
-//     void accept(Visitor& visitor) override;
-//
-//     std::vector<int> nums;
-// };
-//
+
+struct ASTAttrTokenizer : ASTAttr {
+    void accept(Visitor& visitor) override;
+
+    std::vector<int> nums;
+};
+
 struct ASTAttrVersion : ASTAttr {
     void accept(Visitor& visitor) override;
 
@@ -419,6 +419,7 @@ struct Visitor {
     virtual void visit(ASTApi* node);
     virtual void visit(ASTEnum* node);
     virtual void visit(ASTConst* node);
+    virtual void visit(ASTAttrTokenizer* node);
     virtual void visit(ASTAttrVersion* node);
     virtual void visit(ASTAttrFlags* node);
     virtual void visit(ASTAttrHex* node);
@@ -426,6 +427,7 @@ struct Visitor {
     virtual void visit(ASTAttrDetail* node);
     virtual void visit(ASTAttrValue* node);
     virtual void visit(ASTAttrType* node);
+    virtual void visit(ASTAttrCName* node);
     virtual void visit(ASTDeclRef* node);
     virtual void visit(ASTImport* node);
     virtual void discarded(ASTNode* node);

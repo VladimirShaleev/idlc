@@ -6,18 +6,32 @@
 namespace idl {
 
 struct CName : Visitor {
-    void discarded(ASTNode*) override {
-        assert(!"C name is missing");
+    explicit CName(Context& ctx) noexcept : Visitor(ctx) {
+    }
+
+    void visit(ASTEnum* node) override {
+        str = cname(node);
+        if (node->findAttr<ASTAttrFlags>()) {
+            str += "_flags";
+        }
+        str += "_t";
+    }
+
+    void visit(ASTConst* node) override {
+        str = cname(node, true);
+        if (node->parent->as<ASTDecl>()->findAttr<ASTAttrFlags>()) {
+            str += "_BIT";
+        }
     }
 
     static std::string cnameDecl(ASTDecl* decl, bool upper) {
-        // if (auto attr = decl->findAttr<ASTAttrCName>()) {
-        //     return attr->name;
-        // }
+        if (auto attr = decl->findAttr<ASTAttrCName>()) {
+            return attr->name;
+        }
         std::vector<int>* nums = nullptr;
-        // if (auto attr = decl->findAttr<ASTAttrTokenizer>()) {
-        //     nums = &attr->nums;
-        // }
+        if (auto attr = decl->findAttr<ASTAttrTokenizer>()) {
+            nums = &attr->nums;
+        }
         return convert(decl->name, upper ? Case::ScreamingSnakeCase : Case::SnakeCase, nums);
     }
 
@@ -166,9 +180,9 @@ struct AttrName : Visitor {
     //     str = "optional";
     // }
 
-    // void visit(ASTAttrTokenizer* node) override {
-    //     str = "tokenizer";
-    // }
+    void visit(ASTAttrTokenizer* node) override {
+        str = "tokenizer";
+    }
 
     void visit(ASTAttrVersion* node) override {
         str = "version";
@@ -196,6 +210,10 @@ struct AttrName : Visitor {
 
     void visit(ASTAttrType* node) override {
         str = "type";
+    }
+
+    void visit(ASTAttrCName* node) override {
+        str = "cname";
     }
 
     void discarded(ASTNode*) override {
@@ -281,7 +299,11 @@ struct AttrValidatorRules : Visitor {
     // }
 
     void visit(ASTApi* node) override {
-        static std::map allowed = { add<ASTAttrVersion>(true), add<ASTAttrBrief>(true), add<ASTAttrDetail>(true) };
+        static std::map allowed = { add<ASTAttrVersion>(true),
+                                    add<ASTAttrBrief>(true),
+                                    add<ASTAttrDetail>(true),
+                                    add<ASTAttrCName>(),
+                                    add<ASTAttrTokenizer>() };
         validate(node, allowed, node->attrs);
     }
 
@@ -291,14 +313,15 @@ struct AttrValidatorRules : Visitor {
     }
 
     void visit(ASTEnum* node) override {
-        static std::map allowed = {
-            add<ASTAttrFlags>(), add<ASTAttrHex>(), add<ASTAttrBrief>(true), add<ASTAttrDetail>(true)
-        };
+        static std::map allowed = { add<ASTAttrFlags>(),      add<ASTAttrHex>(),   add<ASTAttrBrief>(true),
+                                    add<ASTAttrDetail>(true), add<ASTAttrCName>(), add<ASTAttrTokenizer>() };
         validate(node, allowed, node->attrs);
     }
 
     void visit(ASTConst* node) override {
-        static std::map allowed = { add<ASTAttrDetail>(true), add<ASTAttrValue>() };
+        static std::map allowed = {
+            add<ASTAttrDetail>(true), add<ASTAttrValue>(), add<ASTAttrCName>(), add<ASTAttrTokenizer>()
+        };
         validate(node, allowed, node->attrs);
     }
 
@@ -485,6 +508,51 @@ struct AttrArgRules : Visitor {
             node->type = args[0]->as<ASTDeclRef>();
         } else {
             ctx.log<IDL_STATUS_E3027>(node->location);
+        }
+    }
+
+    void visit(ASTAttrCName* node) override {
+        if (args.size() == 1 && args[0] && args[0]->as<ASTLiteralStr>()) {
+            node->name = args[0]->as<ASTLiteralStr>()->value;
+            if (std::any_of(node->name.begin(), node->name.end(), [](auto ch) {
+                return std::isspace(ch);
+            })) {
+                ctx.log<IDL_STATUS_E3029>(node->location, node->name);
+            }
+        } else {
+            ctx.log<IDL_STATUS_E3028>(node->location);
+        }
+    }
+
+    void visit(ASTAttrTokenizer* node) override {
+        if (!args.empty()) {
+            auto isAllIntegers = std::all_of(args.begin(), args.end(), [](auto arg) {
+                return arg && arg->as<ASTLiteralInt>();
+            });
+            if (isAllIntegers) {
+                for (auto arg : args) {
+                    node->nums.push_back((int) arg->as<ASTLiteralInt>()->value);
+                }
+            } else if (args.size() == 1 && args[0] && args[0]->as<ASTLiteralStr>()) {
+                static std::regex pattern(R"(\^?\d+(-\^?\d+)*)");
+                if (std::regex_match(args[0]->as<ASTLiteralStr>()->value, pattern)) {
+                    std::stringstream ss(args[0]->as<ASTLiteralStr>()->value);
+                    std::string token;
+                    while (std::getline(ss, token, '-')) {
+                        if (token[0] == '^') {
+                            node->nums.push_back(-std::stoi(token.substr(1)));
+                        } else {
+                            node->nums.push_back(std::stoi(token));
+                        }
+                    }
+                } else {
+                    // ctx.log<IDL_STATUS_E3029>(node->location, args[0]->as<ASTLiteralStr>()->value);
+                }
+            } else {
+                // ctx.log<IDL_STATUS_E3028>(node->location);
+            }
+        } else {
+            // ctx.log<IDL_STATUS_E3028>(node->location);
         }
     }
 

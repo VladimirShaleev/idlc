@@ -74,6 +74,10 @@ template <idl_status_t Status, typename... Args>
         str = fmt::format("All literals in the [value] attribute must be of the same type");
     } else if constexpr (Status == IDL_STATUS_E3027) {
         str = fmt::format("The [type] attribute argument can only refer to symbols");
+    } else if constexpr (Status == IDL_STATUS_E3028) {
+        str = fmt::format("The [cname] attribute must contain a single string literal argument");
+    } else if constexpr (Status == IDL_STATUS_E3029) {
+        str = fmt::format("The [cname] attribute must specify a name (\"{}\") without spaces", args...);
     } else {
         assert(!"Unknown status code");
     }

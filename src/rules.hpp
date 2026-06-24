@@ -327,6 +327,7 @@ struct HierarchyRules : Visitor {
             ctx.log<IDL_STATUS_E3010>(node->location, node->fullname());
         } else {
             ctx._api = node;
+            ctx.initBuiltins();
         }
     }
 

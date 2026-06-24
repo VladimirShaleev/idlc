@@ -59,6 +59,10 @@ void Visitor::visit(ASTAttrTokenizer* node) {
     discarded(node);
 }
 
+void Visitor::visit(ASTAttrOrder* node) {
+    discarded(node);
+}
+
 void Visitor::visit(ASTAttrVersion* node) {
     discarded(node);
 }
@@ -132,6 +136,10 @@ void ASTConst::accept(Visitor& visitor) {
 }
 
 void ASTAttrTokenizer::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+void ASTAttrOrder::accept(Visitor& visitor) {
     visitor.visit(this);
 }
 

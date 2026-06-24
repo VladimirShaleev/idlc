@@ -219,6 +219,12 @@ struct ASTAttrTokenizer : ASTAttr {
     std::vector<int> nums;
 };
 
+struct ASTAttrOrder : ASTAttr {
+    void accept(Visitor& visitor) override;
+
+    bool autoOrder;
+};
+
 struct ASTAttrVersion : ASTAttr {
     void accept(Visitor& visitor) override;
 
@@ -420,6 +426,7 @@ struct Visitor {
     virtual void visit(ASTEnum* node);
     virtual void visit(ASTConst* node);
     virtual void visit(ASTAttrTokenizer* node);
+    virtual void visit(ASTAttrOrder* node);
     virtual void visit(ASTAttrVersion* node);
     virtual void visit(ASTAttrFlags* node);
     virtual void visit(ASTAttrHex* node);

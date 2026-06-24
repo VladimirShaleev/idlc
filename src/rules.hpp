@@ -184,6 +184,10 @@ struct AttrName : Visitor {
         str = "tokenizer";
     }
 
+    void visit(ASTAttrOrder* node) override {
+        str = "order";
+    }
+
     void visit(ASTAttrVersion* node) override {
         str = "version";
     }
@@ -299,11 +303,8 @@ struct AttrValidatorRules : Visitor {
     // }
 
     void visit(ASTApi* node) override {
-        static std::map allowed = { add<ASTAttrVersion>(true),
-                                    add<ASTAttrBrief>(true),
-                                    add<ASTAttrDetail>(true),
-                                    add<ASTAttrCName>(),
-                                    add<ASTAttrTokenizer>() };
+        static std::map allowed = { add<ASTAttrVersion>(true), add<ASTAttrBrief>(true), add<ASTAttrDetail>(true),
+                                    add<ASTAttrCName>(),       add<ASTAttrTokenizer>(), add<ASTAttrOrder>() };
         validate(node, allowed, node->attrs);
     }
 
@@ -566,6 +567,16 @@ struct AttrArgRules : Visitor {
             }
         } else {
             // ctx.log<IDL_STATUS_E3028>(node->location);
+        }
+    }
+
+    void visit(ASTAttrOrder* node) override {
+        if (args.size() == 1 && args[0] && args[0]->as<ASTLiteralBool>()) {
+            node->autoOrder = args[0]->as<ASTLiteralBool>()->value;
+        } else if (args.empty()) {
+            node->autoOrder = true;
+        } else {
+            ctx.log<IDL_STATUS_E3019>(node->location);
         }
     }
 

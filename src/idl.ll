@@ -49,6 +49,7 @@ SYMBOLS [a-zA-Z0-9_\-^\. ]
 <ATTRCTX>"value"       { attrArg(); return token::ATTRVALUE; }
 <ATTRCTX>"type"        { attrArg(); return token::ATTRTYPE; }
 <ATTRCTX>"cname"       { attrArg(ShortString); return token::ATTRCNAME; }
+<ATTRCTX>"order"       { attrArg(); return token::ATTRORDER; }
 <ATTRCTX>"tokenizer"   { attrArg(FallbackString); return token::ATTRTOKENIZER; }
 <ATTRCTX>","           { attrArg(); return YYText()[0]; }
 <ATTRCTX>[a-zA-Z0-9_]+ { yylval->emplace<std::string>(YYText()); return token::INVALID_ATTR; }
@@ -56,6 +57,7 @@ SYMBOLS [a-zA-Z0-9_\-^\. ]
 
 <ATTRARGCTX,ATTRSHORTARGCTX,ATTRFALLBACKARGCTX>","               { return YYText()[0]; }
 <ATTRARGCTX,ATTRFALLBACKARGCTX>" "                               { }
+<ATTRARGCTX,ATTRFALLBACKARGCTX>true|false                        { yylval->emplace<bool>(YYText()[0] == 't'); return token::BOOL; }
 <ATTRARGCTX>[a-z_]{SYMBOL}*                                      { yylval->emplace<std::string>(YYText()); return token::INVALID_ARG; }
 <ATTRFALLBACKARGCTX>{FLOAT}                                      { yylval->emplace<double>(std::stof(YYText())); return token::FLOAT; }
 <ATTRFALLBACKARGCTX>{INT}                                        { yylval->emplace<int64_t>(std::stoll(YYText())); return token::INT; }
@@ -104,6 +106,7 @@ import[ ]+ { BEGIN(IMPORTCTX); }
 <*>\"(\\.|[^\\"\n])*   { context().log<IDL_STATUS_E3009>(*yylloc, YYText()); }
 <*>{FLOAT}             { yylval->emplace<double>(std::stof(YYText())); return token::FLOAT; }
 <*>{INT}               { yylval->emplace<int64_t>(std::stoll(YYText())); return token::INT; }
+<*>true|false          { yylval->emplace<bool>(YYText()[0] == 't'); return token::BOOL; }
 
 <*><<EOF>>                { setDeclaring(false); if (popImport()) { return token::POPIMPORT; } else { return token::YYEOF; } }
 <*>\r?\n                  { yylloc->lines(); setDeclaring(false); }

@@ -57,7 +57,7 @@ template <idl_status_t Status, typename... Args>
     } else if constexpr (Status == IDL_STATUS_E3018) {
         str = fmt::format("Inline documentation only [detail] description is allowed");
     } else if constexpr (Status == IDL_STATUS_E3019) {
-        str = fmt::format("Unexpected character '{}'", args...);
+        str = fmt::format("The [order] attribute can contain one optional Boolean parameter");
     } else if constexpr (Status == IDL_STATUS_E3020) {
         str = fmt::format("Tabs are not allowed");
     } else if constexpr (Status == IDL_STATUS_E3021) {

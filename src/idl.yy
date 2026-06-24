@@ -62,10 +62,12 @@
 %token ATTRTYPE
 %token ATTRCNAME
 %token ATTRTOKENIZER
+%token ATTRORDER
 
 %token <std::string> ID
 %token <int64_t>     INT
 %token <double>      FLOAT
+%token <bool>        BOOL
 %token <std::string> STR
 %token <std::string> INVALID_ARG
 %token <std::string> INVALID_ATTR
@@ -182,6 +184,7 @@ attr_item
     | ATTRTYPE      { $$ = alloc_node(AttrType, @1); }
     | ATTRCNAME     { $$ = alloc_node(AttrCName, @1); }
     | ATTRTOKENIZER { $$ = alloc_node(AttrTokenizer, @1); }
+    | ATTRORDER     { $$ = alloc_node(AttrOrder, @1); }
     | ATTRHEX       { $$ = alloc_node(AttrHex, @1); }
     | ATTRBRIEF     { $$ = alloc_node(AttrBrief, @1); }
     | ATTRDETAIL    { $$ = alloc_node(AttrDetail, @1); }
@@ -191,6 +194,7 @@ attr_item
 arg_item
     : INT   { $$ = add_literal(@1, $1); }
     | FLOAT { $$ = add_literal(@1, $1); }
+    | BOOL  { $$ = add_literal(@1, $1); }
     | STR   { $$ = add_literal(@1, $1); }
     | ref   { $$ = $1; }
     | INVALID_ARG { $$ = nullptr; log(E3002, @1, $1); }

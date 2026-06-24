@@ -70,6 +70,10 @@ typedef enum
     IDL_STATUS_E3027    = 3027, /**< The [type] attribute argument can only refer to symbols. */
     IDL_STATUS_E3028    = 3028, /**< The [cname] attribute must contain a single string literal argument. */
     IDL_STATUS_E3029    = 3029, /**< The [cname] attribute must specify a name without spaces and punctuations. */
+    IDL_STATUS_E3030    = 3030, /**< The [single] attribute can contain one optional Boolean parameter. */
+    IDL_STATUS_E3031    = 3031, /**< Invalid tokenizer format string, a valid string looks like (2-^3-4). */
+    IDL_STATUS_E3032    = 3032, /**< Integer tokenization parameters or a tokenizer string must be passed to the attribute [tokenizer]. */
+    IDL_STATUS_E3033    = 3033, /**< The [tokeinzer] attribute must contain one or more arguments (integers: 2, -2, 4 or string "2-^3-4"). */
     IDL_STATUS_MAX_ENUM = 0x7FFFFFFF /**< Max value of enum (not used) */
 } idl_status_t;
 

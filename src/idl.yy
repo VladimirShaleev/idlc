@@ -63,6 +63,7 @@
 %token ATTRCNAME
 %token ATTRTOKENIZER
 %token ATTRORDER
+%token ATTRSINGLE
 
 %token <std::string> ID
 %token <int64_t>     INT
@@ -185,6 +186,7 @@ attr_item
     | ATTRCNAME     { $$ = alloc_node(AttrCName, @1); }
     | ATTRTOKENIZER { $$ = alloc_node(AttrTokenizer, @1); }
     | ATTRORDER     { $$ = alloc_node(AttrOrder, @1); }
+    | ATTRSINGLE    { $$ = alloc_node(AttrSingle, @1); }
     | ATTRHEX       { $$ = alloc_node(AttrHex, @1); }
     | ATTRBRIEF     { $$ = alloc_node(AttrBrief, @1); }
     | ATTRDETAIL    { $$ = alloc_node(AttrDetail, @1); }

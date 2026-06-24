@@ -225,6 +225,12 @@ struct ASTAttrOrder : ASTAttr {
     bool autoOrder;
 };
 
+struct ASTAttrSingle : ASTAttr {
+    void accept(Visitor& visitor) override;
+
+    bool singleOutput;
+};
+
 struct ASTAttrVersion : ASTAttr {
     void accept(Visitor& visitor) override;
 
@@ -427,6 +433,7 @@ struct Visitor {
     virtual void visit(ASTConst* node);
     virtual void visit(ASTAttrTokenizer* node);
     virtual void visit(ASTAttrOrder* node);
+    virtual void visit(ASTAttrSingle* node);
     virtual void visit(ASTAttrVersion* node);
     virtual void visit(ASTAttrFlags* node);
     virtual void visit(ASTAttrHex* node);

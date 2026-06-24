@@ -50,6 +50,7 @@ SYMBOLS [a-zA-Z0-9_\-^\. ]
 <ATTRCTX>"type"        { attrArg(); return token::ATTRTYPE; }
 <ATTRCTX>"cname"       { attrArg(ShortString); return token::ATTRCNAME; }
 <ATTRCTX>"order"       { attrArg(); return token::ATTRORDER; }
+<ATTRCTX>"single"      { attrArg(); return token::ATTRSINGLE; }
 <ATTRCTX>"tokenizer"   { attrArg(FallbackString); return token::ATTRTOKENIZER; }
 <ATTRCTX>","           { attrArg(); return YYText()[0]; }
 <ATTRCTX>[a-zA-Z0-9_]+ { yylval->emplace<std::string>(YYText()); return token::INVALID_ATTR; }

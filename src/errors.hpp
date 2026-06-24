@@ -77,7 +77,18 @@ template <idl_status_t Status, typename... Args>
     } else if constexpr (Status == IDL_STATUS_E3028) {
         str = fmt::format("The [cname] attribute must contain a single string literal argument");
     } else if constexpr (Status == IDL_STATUS_E3029) {
-        str = fmt::format("The [cname] attribute must specify a name (\"{}\") without spaces and punctuations", args...);
+        str =
+            fmt::format("The [cname] attribute must specify a name (\"{}\") without spaces and punctuations", args...);
+    } else if constexpr (Status == IDL_STATUS_E3030) {
+        str = fmt::format("The [single] attribute can contain one optional Boolean parameter");
+    } else if constexpr (Status == IDL_STATUS_E3031) {
+        str = fmt::format("Invalid tokenizer format string \"{}\", a valid string looks like (2-^3-4)", args...);
+    } else if constexpr (Status == IDL_STATUS_E3032) {
+        str = fmt::format(
+            "Integer tokenization parameters or a tokenizer string must be passed to the attribute [tokenizer]");
+    } else if constexpr (Status == IDL_STATUS_E3033) {
+        str = fmt::format(
+            "The [tokenizer] attribute must contain one or more arguments (integers: 2, -2, 4 or string \"2-^3-4\")");
     } else {
         assert(!"Unknown status code");
     }

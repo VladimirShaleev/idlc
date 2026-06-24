@@ -74,6 +74,7 @@ struct ASTType : ASTDecl {};
 struct ASTConst : ASTDecl {
     void accept(Visitor& visitor) override;
 
+    bool evaluated{};
     int32_t value{};
 };
 
@@ -280,78 +281,74 @@ struct ASTDeclRef : ASTNode {
     ASTDecl* decl{};
 };
 
-// struct ASTTrivialType : ASTType {};
-//
-// struct ASTBuiltinType : ASTTrivialType {};
-//
-// struct ASTIntegerType : ASTBuiltinType {};
-//
-// struct ASTFloatType : ASTBuiltinType {};
-//
-// struct ASTVoid : ASTBuiltinType {
-//     void accept(Visitor& visitor) override;
-// };
-//
-// struct ASTChar : ASTBuiltinType {
-//     void accept(Visitor& visitor) override;
-// };
-//
-// struct ASTStr : ASTBuiltinType {
-//     void accept(Visitor& visitor) override;
-// };
-//
-// struct ASTBool : ASTBuiltinType {
-//     void accept(Visitor& visitor) override;
-// };
-//
-// struct ASTInt8 : ASTIntegerType {
-//     void accept(Visitor& visitor) override;
-// };
-//
-// struct ASTUint8 : ASTIntegerType {
-//     void accept(Visitor& visitor) override;
-// };
-//
-// struct ASTInt16 : ASTIntegerType {
-//     void accept(Visitor& visitor) override;
-// };
-//
-// struct ASTUint16 : ASTIntegerType {
-//     void accept(Visitor& visitor) override;
-// };
-//
-// struct ASTInt32 : ASTIntegerType {
-//     void accept(Visitor& visitor) override;
-// };
-//
-// struct ASTUint32 : ASTIntegerType {
-//     void accept(Visitor& visitor) override;
-// };
-//
-// struct ASTInt64 : ASTIntegerType {
-//     void accept(Visitor& visitor) override;
-// };
-//
-// struct ASTUint64 : ASTIntegerType {
-//     void accept(Visitor& visitor) override;
-// };
-//
-// struct ASTFloat32 : ASTFloatType {
-//     void accept(Visitor& visitor) override;
-// };
-//
-// struct ASTFloat64 : ASTFloatType {
-//     void accept(Visitor& visitor) override;
-// };
-//
-// struct ASTData : ASTBuiltinType {
-//     void accept(Visitor& visitor) override;
-// };
-//
-// struct ASTConstData : ASTBuiltinType {
-//     void accept(Visitor& visitor) override;
-// };
-//
+struct ASTTrivialType : ASTType {};
+
+struct ASTBuiltinType : ASTTrivialType {};
+
+struct ASTIntegerType : ASTBuiltinType {};
+
+struct ASTFloatType : ASTBuiltinType {};
+
+struct ASTVoid : ASTBuiltinType {
+    void accept(Visitor& visitor) override;
+};
+
+struct ASTChar : ASTBuiltinType {
+    void accept(Visitor& visitor) override;
+};
+
+struct ASTStr : ASTBuiltinType {
+    void accept(Visitor& visitor) override;
+};
+
+struct ASTBool : ASTBuiltinType {
+    void accept(Visitor& visitor) override;
+};
+
+struct ASTInt8 : ASTIntegerType {
+    void accept(Visitor& visitor) override;
+};
+
+struct ASTUint8 : ASTIntegerType {
+    void accept(Visitor& visitor) override;
+};
+
+struct ASTInt16 : ASTIntegerType {
+    void accept(Visitor& visitor) override;
+};
+
+struct ASTUint16 : ASTIntegerType {
+    void accept(Visitor& visitor) override;
+};
+
+struct ASTInt32 : ASTIntegerType {
+    void accept(Visitor& visitor) override;
+};
+
+struct ASTUint32 : ASTIntegerType {
+    void accept(Visitor& visitor) override;
+};
+
+struct ASTInt64 : ASTIntegerType {
+    void accept(Visitor& visitor) override;
+};
+
+struct ASTUint64 : ASTIntegerType {
+    void accept(Visitor& visitor) override;
+};
+
+struct ASTFloat32 : ASTFloatType {
+    void accept(Visitor& visitor) override;
+};
+
+struct ASTFloat64 : ASTFloatType {
+    void accept(Visitor& visitor) override;
+};
+
+struct ASTData : ASTBuiltinType {
+    void accept(Visitor& visitor) override;
+};
+
 // struct ASTEnumConst : ASTDecl {
 //     void accept(Visitor& visitor) override;
 //
@@ -444,6 +441,21 @@ struct Visitor {
     virtual void visit(ASTAttrCName* node);
     virtual void visit(ASTDeclRef* node);
     virtual void visit(ASTImport* node);
+    virtual void visit(ASTVoid* node);
+    virtual void visit(ASTChar* node);
+    virtual void visit(ASTStr* node);
+    virtual void visit(ASTBool* node);
+    virtual void visit(ASTInt8* node);
+    virtual void visit(ASTUint8* node);
+    virtual void visit(ASTInt16* node);
+    virtual void visit(ASTUint16* node);
+    virtual void visit(ASTInt32* node);
+    virtual void visit(ASTUint32* node);
+    virtual void visit(ASTInt64* node);
+    virtual void visit(ASTUint64* node);
+    virtual void visit(ASTFloat32* node);
+    virtual void visit(ASTFloat64* node);
+    virtual void visit(ASTData* node);
     virtual void discarded(ASTNode* node);
 
     class Context& ctx;

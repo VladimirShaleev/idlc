@@ -107,6 +107,66 @@ void Visitor::visit(ASTImport* node) {
     discarded(node);
 }
 
+void Visitor::visit(ASTVoid* node) {
+    discarded(node);
+}
+
+void Visitor::visit(ASTChar* node) {
+    discarded(node);
+}
+
+void Visitor::visit(ASTStr* node) {
+    discarded(node);
+}
+
+void Visitor::visit(ASTBool* node) {
+    discarded(node);
+}
+
+void Visitor::visit(ASTInt8* node) {
+    discarded(node);
+}
+
+void Visitor::visit(ASTUint8* node) {
+    discarded(node);
+}
+
+void Visitor::visit(ASTInt16* node) {
+    discarded(node);
+}
+
+void Visitor::visit(ASTUint16* node) {
+    discarded(node);
+}
+
+void Visitor::visit(ASTInt32* node) {
+    discarded(node);
+}
+
+void Visitor::visit(ASTUint32* node) {
+    discarded(node);
+}
+
+void Visitor::visit(ASTInt64* node) {
+    discarded(node);
+}
+
+void Visitor::visit(ASTUint64* node) {
+    discarded(node);
+}
+
+void Visitor::visit(ASTFloat32* node) {
+    discarded(node);
+}
+
+void Visitor::visit(ASTFloat64* node) {
+    discarded(node);
+}
+
+void Visitor::visit(ASTData* node) {
+    discarded(node);
+}
+
 void Visitor::discarded(ASTNode* node) {
     assert(!"visit method not implemented for this node type");
 }
@@ -188,6 +248,66 @@ void ASTDeclRef::accept(Visitor& visitor) {
 }
 
 void ASTImport::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+void ASTVoid::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+void ASTChar::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+void ASTStr::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+void ASTBool::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+void ASTInt8::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+void ASTUint8::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+void ASTInt16::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+void ASTUint16::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+void ASTInt32::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+void ASTUint32::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+void ASTInt64::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+void ASTUint64::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+void ASTFloat32::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+void ASTFloat64::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+void ASTData::accept(Visitor& visitor) {
     visitor.visit(this);
 }
 

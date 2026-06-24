@@ -70,30 +70,29 @@ SYMBOLS [a-zA-Z0-9_\-^\. ]
 <DOCCTX>\r?\n      { yylloc->lines(); setDeclaring(false); BEGIN(INITIAL); }
 <REFCTX>"}"        { BEGIN(DOCCTX); return YYText()[0]; }
 
-"b166074c3cba4005a198513772597880" { setDeclaring(); return token::IMPORT; }
 import[ ]+ { BEGIN(IMPORTCTX); }
-<IMPORTCTX>[-\.a-zA-Z0-9_]+ {
+<IMPORTCTX>.*\r?\n {
     std::string importName = YYText();
-    int c;
-    while ((c = yyinput()) && c != '\n') {
-        if (c != ' ' && c != '\r') {
-            context().log<IDL_STATUS_E3020>(*yylloc);
-        }
+    std::string lastString = "";
+    if (auto firstSpace = importName.find_first_of(" @[:"); firstSpace != std::string::npos) {
+        lastString = importName.substr(firstSpace + 1);
+        importName = importName.substr(0, firstSpace);
     }
     yylloc->lines();
-    import(*yylloc, yytext);
+    import(*yylloc, importName);
     BEGIN(INITIAL);
-    unput('\n'), unput('\n');
-    for (auto it = importName.rbegin(); it != importName.rend(); ++it) {
+    unput('\n');
+    unput('\n');
+    for (auto it = lastString.rbegin(); it != lastString.rend(); ++it) {
         unput(*it);
     }
     unput(' ');
-    unput('0'), unput('8'), unput('8'), unput('7'), unput('9'), unput('5'), unput('2'), unput('7');
-    unput('7'), unput('3'), unput('1'), unput('5'), unput('8'), unput('9'), unput('1'), unput('a');
-    unput('5'), unput('0'), unput('0'), unput('4'), unput('a'), unput('b'), unput('c'), unput('3');
-    unput('c'), unput('4'), unput('7'), unput('0'), unput('6'), unput('6'), unput('1'), unput('b');
+    for (auto it = importName.rbegin(); it != importName.rend(); ++it) {
+        unput(*it);
+    }
+    setDeclaring();
+    return token::IMPORT;
 }
-<IMPORTCTX>.|\r?\n { context().log<IDL_STATUS_E3019>(*yylloc, YYText()); }
 
 "//".* ;
 

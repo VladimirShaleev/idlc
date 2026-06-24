@@ -135,6 +135,12 @@ public:
     int lineIndent = -1;
 
 private:
+    enum AttrArgType {
+        Default,
+        ShortString,
+        FallbackString
+    };
+
     struct MemoryBuffer : public std::streambuf {
     public:
         MemoryBuffer(const char* data, size_t size) {
@@ -268,6 +274,14 @@ private:
         return _declaring;
     }
 
+    void attrArg(AttrArgType type = Default) noexcept {
+        _attrArg = type;
+    }
+
+    [[nodiscard]] AttrArgType getAttrArg() const noexcept {
+        return _attrArg;
+    }
+
     Context& _ctx;
     const Options* _options;
     std::span<const idl_source_t> _sources;
@@ -275,6 +289,7 @@ private:
     std::vector<std::unique_ptr<Import>> _imports{};
     std::map<std::string, std::unique_ptr<std::string>> _allImports{};
     bool _declaring{};
+    AttrArgType _attrArg{};
     bool _needUpdateLoc{};
 };
 

@@ -17,11 +17,17 @@ std::string unescape(const std::string& str);
 
 %x ATTRCTX
 %x ATTRARGCTX
+%x ATTRSHORTARGCTX
+%x ATTRFALLBACKARGCTX
 %x DOCCTX
 %x REFCTX
 %x IMPORTCTX
 
 DOCCHAR ([^ \r\n\t\{\}[\]]|\\\{|\\\}|\\\[|\\\])
+FLOAT   [-+]?[0-9]*\.[0-9]+([eE][-+]?[0-9]+)?
+INT     [-+]?[0-9]+
+SYMBOL  [a-zA-Z0-9_\-^\.]
+SYMBOLS [a-zA-Z0-9_\-^\. ]
 
 %%
 
@@ -34,24 +40,28 @@ DOCCHAR ([^ \r\n\t\{\}[\]]|\\\{|\\\}|\\\[|\\\])
 "const" { setDeclaring(); return token::CONST; }
 
 "["                    { BEGIN(ATTRCTX); return YYText()[0]; }
-<ATTRCTX>"("           { BEGIN(ATTRARGCTX); return YYText()[0]; }
-<ATTRCTX>"version"     { return token::ATTRVERSION; }
-<ATTRCTX>"flags"       { return token::ATTRFLAGS; }
-<ATTRCTX>"hex"         { return token::ATTRHEX; }
-<ATTRCTX>"brief"       { return token::ATTRBRIEF; }
-<ATTRCTX>"detail"      { return token::ATTRDETAIL; }
-<ATTRCTX>"value"       { return token::ATTRVALUE; }
-<ATTRCTX>"type"        { return token::ATTRTYPE; }
-<ATTRCTX>"cname"       { return token::ATTRCNAME; }
-<ATTRCTX>"tokenizer"   { return token::ATTRTOKENIZER; }
-<ATTRCTX>","           { return YYText()[0]; }
+<ATTRCTX>"("           { getAttrArg() == Default ? BEGIN(ATTRARGCTX) : getAttrArg() == ShortString ? BEGIN(ATTRSHORTARGCTX) : BEGIN(ATTRFALLBACKARGCTX); return YYText()[0]; }
+<ATTRCTX>"version"     { attrArg(FallbackString); return token::ATTRVERSION; }
+<ATTRCTX>"flags"       { attrArg(); return token::ATTRFLAGS; }
+<ATTRCTX>"hex"         { attrArg(); return token::ATTRHEX; }
+<ATTRCTX>"brief"       { attrArg(); return token::ATTRBRIEF; }
+<ATTRCTX>"detail"      { attrArg(); return token::ATTRDETAIL; }
+<ATTRCTX>"value"       { attrArg(); return token::ATTRVALUE; }
+<ATTRCTX>"type"        { attrArg(); return token::ATTRTYPE; }
+<ATTRCTX>"cname"       { attrArg(ShortString); return token::ATTRCNAME; }
+<ATTRCTX>"tokenizer"   { attrArg(FallbackString); return token::ATTRTOKENIZER; }
+<ATTRCTX>","           { attrArg(); return YYText()[0]; }
 <ATTRCTX>[a-zA-Z0-9_]+ { yylval->emplace<std::string>(YYText()); return token::INVALID_ATTR; }
 <ATTRCTX>"]"           { BEGIN(INITIAL); return YYText()[0]; }
 
-<ATTRARGCTX>","                 { return YYText()[0]; }
-<ATTRARGCTX>" "                 { }
-<ATTRARGCTX>[a-z_][a-zA-Z0-9_]* { yylval->emplace<std::string>(YYText()); return token::INVALID_ARG; }
-<ATTRARGCTX>")"                 { BEGIN(ATTRCTX); return YYText()[0]; }
+<ATTRARGCTX,ATTRSHORTARGCTX,ATTRFALLBACKARGCTX>","               { return YYText()[0]; }
+<ATTRARGCTX,ATTRFALLBACKARGCTX>" "                               { }
+<ATTRARGCTX>[a-z_]{SYMBOL}*                                      { yylval->emplace<std::string>(YYText()); return token::INVALID_ARG; }
+<ATTRFALLBACKARGCTX>{FLOAT}                                      { yylval->emplace<double>(std::stof(YYText())); return token::FLOAT; }
+<ATTRFALLBACKARGCTX>{INT}                                        { yylval->emplace<int64_t>(std::stoll(YYText())); return token::INT; }
+<ATTRSHORTARGCTX,ATTRFALLBACKARGCTX>{SYMBOL}+                    { yylval->emplace<std::string>(YYText()); return token::STR; }
+<ATTRSHORTARGCTX,ATTRFALLBACKARGCTX>{SYMBOL}+{SYMBOLS}*{SYMBOL}+ { yylval->emplace<std::string>(YYText()); return token::INVALID_ARG; }
+<ATTRARGCTX,ATTRSHORTARGCTX,ATTRFALLBACKARGCTX>")"               { BEGIN(ATTRCTX); return YYText()[0]; }
 
 "@"                { BEGIN(DOCCTX); return isDeclaring() ? token::IDOC : token::DOC; }
 <DOCCTX>{DOCCHAR}+ { yylval->emplace<std::string>(unescape(trim(YYText()))); return token::STR; }
@@ -90,11 +100,11 @@ import[ ]+ { BEGIN(IMPORTCTX); }
 ":" { return YYText()[0]; }
 "," { return YYText()[0]; }
 
-<*>[A-Z][a-zA-Z0-9]*                     { yylval->emplace<std::string>(YYText()); return token::ID; }
-<*>\"(\\.|[^\\"\n])*\"                   { std::string str = YYText(); str = str.substr(1, str.length() - 2); yylval->emplace<std::string>(str); return token::STR; }
-<*>\"(\\.|[^\\"\n])*                     { context().log<IDL_STATUS_E3009>(*yylloc, YYText()); }
-<*>[-+]?[0-9]*\.[0-9]+([eE][-+]?[0-9]+)? { yylval->emplace<double>(std::stof(YYText())); return token::FLOAT; }
-<*>[-+]?[0-9]+                           { yylval->emplace<int64_t>(std::stoll(YYText())); return token::INT; }
+<*>[A-Z][a-zA-Z0-9]*   { yylval->emplace<std::string>(YYText()); return token::ID; }
+<*>\"(\\.|[^\\"\n])*\" { std::string str = YYText(); str = str.substr(1, str.length() - 2); yylval->emplace<std::string>(str); return token::STR; }
+<*>\"(\\.|[^\\"\n])*   { context().log<IDL_STATUS_E3009>(*yylloc, YYText()); }
+<*>{FLOAT}             { yylval->emplace<double>(std::stof(YYText())); return token::FLOAT; }
+<*>{INT}               { yylval->emplace<int64_t>(std::stoll(YYText())); return token::INT; }
 
 <*><<EOF>>                { setDeclaring(false); if (popImport()) { return token::POPIMPORT; } else { return token::YYEOF; } }
 <*>\r?\n                  { yylloc->lines(); setDeclaring(false); }

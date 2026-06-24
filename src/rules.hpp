@@ -461,6 +461,18 @@ struct AttrArgRules : Visitor {
                 node->version = ASTAttrVersion::Semver{ (uint8_t) major, (uint8_t) minor, (uint8_t) micro };
             }
         } else if (args.size() == 1 && args[0] && args[0]->as<ASTLiteralStr>()) {
+            static const std::regex semver_regex(R"((0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*))");
+            std::smatch matches;
+            // Compatibility with old version format: "1.2.3" instead of "version(1, 2, 3)"
+            if (std::regex_match(args[0]->as<ASTLiteralStr>()->value, matches, semver_regex)) {
+                const auto major = std::stoll(matches[1].str());
+                const auto minor = std::stoll(matches[2].str());
+                const auto micro = std::stoll(matches[3].str());
+                if (major <= 255 && minor <= 255 && micro <= 255) {
+                    node->version = ASTAttrVersion::Semver{ (uint8_t) major, (uint8_t) minor, (uint8_t) micro };
+                }
+                return;
+            }
             node->version = args[0]->as<ASTLiteralStr>()->value;
         } else {
             ctx.log<IDL_STATUS_E3003>(node->location);
@@ -515,7 +527,7 @@ struct AttrArgRules : Visitor {
         if (args.size() == 1 && args[0] && args[0]->as<ASTLiteralStr>()) {
             node->name = args[0]->as<ASTLiteralStr>()->value;
             if (std::any_of(node->name.begin(), node->name.end(), [](auto ch) {
-                return std::isspace(ch);
+                return !(std::isalpha(ch) || std::isdigit(ch) || ch == '_');
             })) {
                 ctx.log<IDL_STATUS_E3029>(node->location, node->name);
             }
@@ -535,6 +547,7 @@ struct AttrArgRules : Visitor {
                 }
             } else if (args.size() == 1 && args[0] && args[0]->as<ASTLiteralStr>()) {
                 static std::regex pattern(R"(\^?\d+(-\^?\d+)*)");
+                // Compatibility with old tokenizer format: "1-^2-3" instead of "tokenizer(1, -2, 3)"
                 if (std::regex_match(args[0]->as<ASTLiteralStr>()->value, pattern)) {
                     std::stringstream ss(args[0]->as<ASTLiteralStr>()->value);
                     std::string token;

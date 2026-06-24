@@ -9,6 +9,12 @@
 
 namespace idl {
 
+enum class BoolType {
+    Int32,
+    Int8,
+    StdBool
+};
+
 class Context final {
 public:
     Context(Options* options, CompilationResult* result) noexcept : _options(options), _result(result) {
@@ -29,6 +35,14 @@ public:
 
     ASTApi* api() noexcept {
         return _api;
+    }
+
+    bool useStdTypes() const noexcept {
+        return _useStdTypes;
+    }
+
+    BoolType boolType() const noexcept {
+        return _boolType;
     }
 
     template <typename Node>
@@ -112,35 +126,29 @@ public:
         const auto loc = idl::location(idl::position(&filename, 1, 1));
 
         auto addBuiltin =
-            [this, &loc]<typename Node>(std::string&& name, std::string&& cname, const std::string& detail, Node) {
+            [this, &loc]<typename Node>(std::string&& name, const std::string& detail, Node) {
             auto node    = allocNode<Node>(loc);
             node->name   = std::move(name);
             node->parent = _api;
-
-            auto attr    = allocNode<ASTAttrCName>(loc);
-            attr->name   = cname;
-            attr->parent = node;
-            node->attrs.push_back(attr);
-
             addSymbol(node);
             _api->decls.push_back(node);
         };
 
-        addBuiltin("Void", "void", "void type.", ASTVoid{});
-        addBuiltin("Char", "char", "symbol type.", ASTChar{});
-        addBuiltin("Bool", "bool", "boolean type.", ASTBool{});
-        addBuiltin("Int8", "sint8", "8 bit signed integer.", ASTInt8{});
-        addBuiltin("Uint8", "uint8", "8 bit unsigned integer.", ASTUint8{});
-        addBuiltin("Int16", "sint16", "16 bit signed integer.", ASTInt16{});
-        addBuiltin("Uint16", "uint16", "16 bit unsigned integer.", ASTUint16{});
-        addBuiltin("Int32", "sint32", "32 bit signed integer.", ASTInt32{});
-        addBuiltin("Uint32", "uint32", "32 bit unsigned integer.", ASTUint32{});
-        addBuiltin("Int64", "sint64", "64 bit signed integer.", ASTInt64{});
-        addBuiltin("Uint64", "uint64", "64 bit unsigned integer.", ASTUint64{});
-        addBuiltin("Float32", "float32", "32 bit float point.", ASTFloat32{});
-        addBuiltin("Float64", "float64", "64 bit float point.", ASTFloat64{});
-        addBuiltin("Str", "utf8", "utf8 string.", ASTStr{});
-        addBuiltin("Data", "data", "pointer to data.", ASTData{});
+        addBuiltin("Void", "void type.", ASTVoid{});
+        addBuiltin("Char", "symbol type.", ASTChar{});
+        addBuiltin("Bool", "boolean type.", ASTBool{});
+        addBuiltin("Int8", "8 bit signed integer.", ASTInt8{});
+        addBuiltin("Uint8", "8 bit unsigned integer.", ASTUint8{});
+        addBuiltin("Int16", "16 bit signed integer.", ASTInt16{});
+        addBuiltin("Uint16", "16 bit unsigned integer.", ASTUint16{});
+        addBuiltin("Int32", "32 bit signed integer.", ASTInt32{});
+        addBuiltin("Uint32", "32 bit unsigned integer.", ASTUint32{});
+        addBuiltin("Int64", "64 bit signed integer.", ASTInt64{});
+        addBuiltin("Uint64", "64 bit unsigned integer.", ASTUint64{});
+        addBuiltin("Float32", "32 bit float point.", ASTFloat32{});
+        addBuiltin("Float64", "64 bit float point.", ASTFloat64{});
+        addBuiltin("Str", "utf8 string.", ASTStr{});
+        addBuiltin("Data", "pointer to data.", ASTData{});
     }
 
     template <idl_status_t Status, typename... Args>
@@ -156,6 +164,8 @@ public:
     CompilationResult* _result;
     std::vector<idl_message_t> _messages{};
     std::optional<idl_api_version_t> _version{};
+    bool _useStdTypes{};
+    BoolType _boolType{};
     ASTApi* _api{};
     std::vector<ASTNode*> _nodes{};
     std::unordered_map<std::string, struct ASTDecl*> _symbols{};

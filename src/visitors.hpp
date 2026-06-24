@@ -24,6 +24,79 @@ struct CName : Visitor {
         }
     }
 
+    void visit(ASTVoid* node) override {
+        str = ctx.useStdTypes() ? "void" : cname(node) + "_t";
+    }
+
+    void visit(ASTChar* node) override {
+        str = ctx.useStdTypes() ? "char" : cname(node) + "_t";
+    }
+
+    void visit(ASTStr* node) override {
+        str = ctx.useStdTypes() ? "const char*" : cname(node) + "_t";
+    }
+
+    void visit(ASTBool* node) override {
+        switch (ctx.boolType()) {
+            case BoolType::Int32:
+                str = ctx.useStdTypes() ? "uint32_t" : cname(node) + "_t";
+                break;
+            case BoolType::Int8:
+                str = ctx.useStdTypes() ? "uint8_t" : cname(node) + "_t";
+                break;
+            case BoolType::StdBool:
+                str = ctx.useStdTypes() ? "bool" : cname(node) + "_t";
+                break;
+            default:
+                assert(!"unreachable code");
+                break;
+        }
+    }
+
+    void visit(ASTInt8* node) override {
+        str = ctx.useStdTypes() ? "int8_t" : cname(node) + "_t";
+    }
+
+    void visit(ASTUint8* node) override {
+        str = ctx.useStdTypes() ? "uint8_t" : cname(node) + "_t";
+    }
+
+    void visit(ASTInt16* node) override {
+        str = ctx.useStdTypes() ? "int16_t" : cname(node) + "_t";
+    }
+
+    void visit(ASTUint16* node) override {
+        str = ctx.useStdTypes() ? "uint16_t" : cname(node) + "_t";
+    }
+
+    void visit(ASTInt32* node) override {
+        str = ctx.useStdTypes() ? "int32_t" : cname(node) + "_t";
+    }
+
+    void visit(ASTUint32* node) override {
+        str = ctx.useStdTypes() ? "uint32_t" : cname(node) + "_t";
+    }
+
+    void visit(ASTInt64* node) override {
+        str = ctx.useStdTypes() ? "int64_t" : cname(node) + "_t";
+    }
+
+    void visit(ASTUint64* node) override {
+        str = ctx.useStdTypes() ? "uint64_t" : cname(node) + "_t";
+    }
+
+    void visit(ASTFloat32* node) override {
+        str = ctx.useStdTypes() ? "float" : cname(node) + "_t";
+    }
+
+    void visit(ASTFloat64* node) override {
+        str = ctx.useStdTypes() ? "double" : cname(node) + "_t";
+    }
+
+    void visit(ASTData* node) override {
+        str = ctx.useStdTypes() ? "void*" : cname(node) + "_t";
+    }
+
     static std::string cnameDecl(ASTDecl* decl, bool upper) {
         if (auto attr = decl->findAttr<ASTAttrCName>()) {
             return attr->name;

@@ -169,6 +169,18 @@ struct AttrName : Visitor {
         str = "version";
     }
 
+    void visit(ASTAttrAuthor* node) override {
+        str = "author";
+    }
+
+    void visit(ASTAttrCopyright* node) override {
+        str = "copyright";
+    }
+
+    void visit(ASTAttrLicense* node) override {
+        str = "license";
+    }
+
     void visit(ASTAttrFlags* node) override {
         str = "flags";
     }

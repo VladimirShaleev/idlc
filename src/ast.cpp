@@ -71,6 +71,18 @@ void Visitor::visit(ASTAttrVersion* node) {
     discarded(node);
 }
 
+void Visitor::visit(ASTAttrAuthor* node) {
+    discarded(node);
+}
+
+void Visitor::visit(ASTAttrCopyright* node) {
+    discarded(node);
+}
+
+void Visitor::visit(ASTAttrLicense* node) {
+    discarded(node);
+}
+
 void Visitor::visit(ASTAttrFlags* node) {
     discarded(node);
 }
@@ -212,6 +224,18 @@ void ASTAttrSingle::accept(Visitor& visitor) {
 }
 
 void ASTAttrVersion::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+void ASTAttrAuthor::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+void ASTAttrCopyright::accept(Visitor& visitor) {
+    visitor.visit(this);
+}
+
+void ASTAttrLicense::accept(Visitor& visitor) {
     visitor.visit(this);
 }
 

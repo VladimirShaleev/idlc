@@ -29,9 +29,10 @@ struct AttrValidatorRules : Visitor {
     }
 
     void visit(ASTApi* node) override {
-        static std::map allowed = { add<ASTAttrVersion>(true), add<ASTAttrBrief>(true), add<ASTAttrDetail>(true),
-                                    add<ASTAttrCName>(),       add<ASTAttrTokenizer>(), add<ASTAttrOrder>(),
-                                    add<ASTAttrSingle>() };
+        static std::map allowed = { add<ASTAttrVersion>(),    add<ASTAttrBrief>(true),  add<ASTAttrDetail>(true),
+                                    add<ASTAttrCName>(),      add<ASTAttrTokenizer>(),  add<ASTAttrOrder>(),
+                                    add<ASTAttrSingle>(),     add<ASTAttrAuthor>(true), add<ASTAttrCopyright>(true),
+                                    add<ASTAttrLicense>(true) };
         validate(node, allowed, node->attrs);
     }
 
@@ -195,6 +196,11 @@ struct AttrArgRules : Visitor {
         } else {
             ctx.log<IDL_STATUS_E3003>(node->location);
         }
+    }
+
+    void visit(ASTAttrAuthor* node) override {
+        static const std::regex email(R"([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})");
+        // TODO:
     }
 
     void visit(ASTAttrBrief* node) override {

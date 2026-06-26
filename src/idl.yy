@@ -54,6 +54,9 @@
 %token IDOC
 
 %token ATTRVERSION
+%token ATTRAUTHOR
+%token ATTRCOPYRIGHT
+%token ATTRLICENSE
 %token ATTRFLAGS
 %token ATTRHEX
 %token ATTRBRIEF
@@ -180,6 +183,9 @@ attr_item_with_args
 
 attr_item
     : ATTRVERSION   { $$ = alloc_node(AttrVersion, @1); }
+    | ATTRAUTHOR    { $$ = alloc_node(AttrAuthor, @1); }
+    | ATTRCOPYRIGHT { $$ = alloc_node(AttrCopyright, @1); }
+    | ATTRLICENSE   { $$ = alloc_node(AttrLicense, @1); }
     | ATTRFLAGS     { $$ = alloc_node(AttrFlags, @1); }
     | ATTRVALUE     { $$ = alloc_node(AttrValue, @1); }
     | ATTRTYPE      { $$ = alloc_node(AttrType, @1); }

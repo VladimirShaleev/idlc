@@ -26,8 +26,8 @@ std::string unescape(const std::string& str);
 DOCCHAR ([^ \r\n\t\{\}[\]]|\\\{|\\\}|\\\[|\\\])
 FLOAT   [-+]?[0-9]*\.[0-9]+([eE][-+]?[0-9]+)?
 INT     [-+]?[0-9]+
-SYMBOL  [a-zA-Z0-9_\-^\.]
-SYMBOLS [a-zA-Z0-9_\-^\. ]
+SYMBOL  [a-zA-Z0-9_\-^\.@]
+SYMBOLS [a-zA-Z0-9_\-^\.@ ]
 
 %%
 
@@ -42,6 +42,9 @@ SYMBOLS [a-zA-Z0-9_\-^\. ]
 "["                    { BEGIN(ATTRCTX); return YYText()[0]; }
 <ATTRCTX>"("           { getAttrArg() == Default ? BEGIN(ATTRARGCTX) : getAttrArg() == ShortString ? BEGIN(ATTRSHORTARGCTX) : BEGIN(ATTRFALLBACKARGCTX); return YYText()[0]; }
 <ATTRCTX>"version"     { attrArg(FallbackString); return token::ATTRVERSION; }
+<ATTRCTX>"author"      { attrArg(); return token::ATTRAUTHOR; }
+<ATTRCTX>"copyright"   { attrArg(); return token::ATTRCOPYRIGHT; }
+<ATTRCTX>"license"     { attrArg(); return token::ATTRLICENSE; }
 <ATTRCTX>"flags"       { attrArg(); return token::ATTRFLAGS; }
 <ATTRCTX>"hex"         { attrArg(); return token::ATTRHEX; }
 <ATTRCTX>"brief"       { attrArg(); return token::ATTRBRIEF; }

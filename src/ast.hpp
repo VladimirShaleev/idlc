@@ -244,6 +244,25 @@ struct ASTAttrVersion : ASTAttr {
     std::variant<Semver, std::string> version;
 };
 
+struct ASTAttrAuthor : ASTDocAttr {
+    void accept(Visitor& visitor) override;
+
+    struct Author {
+        std::vector<ASTNode*> name;
+        std::string email;
+    };
+
+    std::vector<Author> authors;
+};
+
+struct ASTAttrCopyright : ASTDocAttr {
+    void accept(Visitor& visitor) override;
+};
+
+struct ASTAttrLicense : ASTDocAttr {
+    void accept(Visitor& visitor) override;
+};
+
 // struct ASTYear : ASTDocDecl {
 //     void accept(Visitor& visitor) override;
 //
@@ -432,6 +451,9 @@ struct Visitor {
     virtual void visit(ASTAttrOrder* node);
     virtual void visit(ASTAttrSingle* node);
     virtual void visit(ASTAttrVersion* node);
+    virtual void visit(ASTAttrAuthor* node);
+    virtual void visit(ASTAttrCopyright* node);
+    virtual void visit(ASTAttrLicense* node);
     virtual void visit(ASTAttrFlags* node);
     virtual void visit(ASTAttrHex* node);
     virtual void visit(ASTAttrBrief* node);

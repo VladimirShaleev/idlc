@@ -3,8 +3,12 @@ cmake_minimum_required(VERSION 3.16)
 include(cmake/version.cmake)
 include(cmake/vcpkg.cmake)
 
+option(IDLC_BUILD_TESTS "Build tests" ON)
 option(IDLC_BUILD_TOOL "Build the idl compiler tool" ON)
 option(IDLC_USE_IDLC "Use idlc to rebuild .idl files" ON)
+if(IDLC_BUILD_TESTS)
+    list(APPEND VCPKG_MANIFEST_FEATURES "tests")
+endif()
 if(IDLC_BUILD_TOOL)
     list(APPEND VCPKG_MANIFEST_FEATURES "tool")
 endif()
@@ -29,7 +33,7 @@ option(IDLC_SUPPORTED_JS "Support JavaScript generator" ON)
 option(IDLC_SUPPORTED_CS "Support C# generator" ON)
 option(IDLC_MSVC_DYNAMIC_RUNTIME "Link dynamic runtime library instead of static" OFF)
 cmake_dependent_option(IDLC_BUILD_DOC "Build doc" ON
-  "CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR" OFF)
+    "CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR" OFF)
 cmake_dependent_option(IDLC_ENABLE_INSTALL "Enable installation" ON
     "CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR" OFF)
 cmake_dependent_option(IDLC_BUILD_PACKAGES "Build packages" ON
@@ -205,7 +209,12 @@ if(EMSCRIPTEN AND IDLC_USE_IDLC)
 endif()
 
 if(IDLC_BUILD_DOC)
-  add_subdirectory(doc)
+    add_subdirectory(doc)
+endif()
+
+if(IDLC_BUILD_TESTS)
+    include(CTest)
+    add_subdirectory(tests)
 endif()
 
 if(IDLC_ENABLE_INSTALL)

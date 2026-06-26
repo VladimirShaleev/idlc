@@ -5,20 +5,26 @@
   "dependencies": [
     "fmt",
     "magic-enum",
-    "xxhash",
-    "stduuid"
+    "stduuid",
+    "xxhash"
   ],
   "features": {
-    "tool": {
-      "description": "Build the idl compiler tool",
-      "dependencies": [
-        "argparse"
-      ]
-    },
     "idlc": {
       "description": "Use idlc to rebuild .idl files",
       "dependencies": [
         "idlc"
+      ]
+    },
+    "tests": {
+      "description": "Build tests",
+      "dependencies": [
+        "gtest"
+      ]
+    },
+    "tool": {
+      "description": "Build the idl compiler tool",
+      "dependencies": [
+        "argparse"
       ]
     }
   }

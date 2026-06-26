@@ -368,15 +368,6 @@ struct ASTData : ASTBuiltinType {
     void accept(Visitor& visitor) override;
 };
 
-// struct ASTEnumConst : ASTDecl {
-//     void accept(Visitor& visitor) override;
-//
-//     bool evaluated{};
-//     int32_t value{};
-// };
-//
-
-//
 // struct ASTField : ASTDecl {
 //     void accept(Visitor& visitor) override;
 // };

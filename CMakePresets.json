@@ -142,6 +142,42 @@
         }
     ],
     "testPresets": [
+        {
+            "name": "win64-release",
+            "description": "Test Windows x64 release",
+            "displayName": "Windows x64 (release)",
+            "configurePreset": "win64-release"
+        },
+        {
+            "name": "win64-debug",
+            "description": "Test Windows x64 debug",
+            "displayName": "Windows x64 (debug)",
+            "configurePreset": "win64-debug"
+        },
+        {
+            "name": "linux-release",
+            "description": "Test Linux release",
+            "displayName": "Linux (release)",
+            "configurePreset": "linux-release"
+        },
+        {
+            "name": "linux-debug",
+            "description": "Test Linux debug",
+            "displayName": "Linux (debug)",
+            "configurePreset": "linux-debug"
+        },
+        {
+            "name": "osx-release",
+            "description": "Test Mac OS release",
+            "displayName": "Mac OS (release)",
+            "configurePreset": "osx-release"
+        },
+        {
+            "name": "osx-debug",
+            "description": "Test Mac OS debug",
+            "displayName": "Mac OS (debug)",
+            "configurePreset": "osx-debug"
+        }
     ],
     "workflowPresets": [
         {

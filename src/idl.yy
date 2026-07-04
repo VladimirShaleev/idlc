@@ -69,6 +69,7 @@
 %token ATTRSINGLE
 
 %token <std::string> ID
+%token <std::string> REF
 %token <int64_t>     INT
 %token <double>      FLOAT
 %token <bool>        BOOL
@@ -99,7 +100,13 @@
 
 %%
 
-idl : stack_decls { scanner.context().build(); }
+idl : stack_decls { 
+    if (!scanner.context().hasErrors()) {
+        BuildRules rules(scanner.context());
+        ChildVisitor visitor(scanner.context(), rules, ChildVisitor::SkipLiterals | ChildVisitor::SkipTrivials);
+        scanner.context().api()->accept(visitor);
+    } 
+}
 
 stack_decls
     : def_with_attrs { rule(Hierarchy, $1, nullptr); add_symbol($1); $$.push_back($1); }
@@ -161,6 +168,7 @@ doc_list
 
 ref
     : ID { $$ = alloc_node(DeclRef, @1); $$->name = $1; }
+    | REF { $$ = alloc_node(DeclRef, @1); $$->name = $1; }
     ;
 
 decl

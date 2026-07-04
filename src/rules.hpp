@@ -219,6 +219,22 @@ struct AttrArgRules : Visitor {
         }
     }
 
+    void visit(ASTAttrCopyright* node) override {
+        if (!args.empty()) {
+            node->message = std::move(args);
+        } else {
+            ctx.log<IDL_STATUS_E3034>(node->location);
+        }
+    }
+
+    void visit(ASTAttrLicense* node) override {
+        if (!args.empty()) {
+            node->message = std::move(args);
+        } else {
+            ctx.log<IDL_STATUS_E3035>(node->location);
+        }
+    }
+
     void visit(ASTAttrValue* node) override {
         if (!args.empty()) {
             std::type_index type = typeid(*args[0]);
@@ -325,15 +341,15 @@ struct AttrArgRules : Visitor {
 };
 
 struct HierarchyRules : Visitor {
-    HierarchyRules(Context& ctx, ASTDecl* lastDecl) noexcept : Visitor(ctx), lastDecl(lastDecl) {
+    HierarchyRules(Context& ctx, ASTNode* lastNode) noexcept : Visitor(ctx), lastNode(lastNode) {
     }
 
     void visit(ASTApi* node) override {
-        if (ctx._api != nullptr) {
+        if (ctx.api() != nullptr) {
             ctx.log<IDL_STATUS_E3010>(node->location, node->fullname());
         } else {
-            ctx._api = node;
-            ctx.initBuiltins();
+            forEachAttributes(node);
+            ctx.initBuiltins(node);
         }
     }
 
@@ -342,6 +358,7 @@ struct HierarchyRules : Visitor {
             auto [parent, childs] = findRoot();
             node->parent          = parent;
             childs->push_back(node);
+            forEachAttributes(node);
         }
     }
 
@@ -350,6 +367,7 @@ struct HierarchyRules : Visitor {
             auto [parent, childs] = findRoot();
             node->parent          = parent;
             childs->push_back(node);
+            forEachAttributes(node);
         }
     }
 
@@ -357,10 +375,56 @@ struct HierarchyRules : Visitor {
         if (auto parent = findParent<ASTEnum>()) {
             node->parent = parent;
             parent->consts.push_back(node);
+            forEachAttributes(node);
         } else {
             ctx.log<IDL_STATUS_E3023>(node->location, node->name);
             node->parent = ctx.api();
         }
+    }
+
+    void visit(ASTAttrBrief* node) override {
+        forEachDocs(node);
+    }
+
+    void visit(ASTAttrDetail* node) override {
+        forEachDocs(node);
+    }
+
+    void visit(ASTAttrCopyright* node) override {
+        forEachDocs(node);
+    }
+
+    void visit(ASTAttrLicense* node) override {
+        forEachDocs(node);
+    }
+
+    void visit(ASTAttrVersion* node) override {
+        node->parent = lastNode;
+    }
+
+    void visit(ASTAttrCName* node) override {
+        node->parent = lastNode;
+    }
+
+    void visit(ASTAttrOrder* node) override {
+        node->parent = lastNode;
+    }
+
+    void visit(ASTAttrSingle* node) override {
+        node->parent = lastNode;
+    }
+
+    void visit(ASTAttrHex* node) override {
+        node->parent = lastNode;
+    }
+
+    void visit(ASTAttrValue* node) override {
+        node->parent = lastNode;
+        forEachChidls(node, node->values.begin(), node->values.end());
+    }
+
+    void visit(ASTDeclRef* node) override {
+        node->parent = lastNode;
     }
 
     bool checkApi() {
@@ -371,15 +435,27 @@ struct HierarchyRules : Visitor {
         return true;
     }
 
-    void addAttributes(ASTDecl* decl) noexcept {
-        for (auto attr : decl->attrs) {
-            attr->parent = decl;
+    template <typename It>
+    void forEachChidls(ASTNode* parent, It begin, It end) noexcept {
+        for (auto it = begin; it != end; ++it) {
+            if (!(*it)->as<ASTLiteral>()) {
+                ctx.visit<HierarchyRules>(*it, parent);
+            }
         }
+    }
+
+    void forEachAttributes(ASTDecl* parent) noexcept {
+        forEachChidls(parent, parent->attrs.begin(), parent->attrs.end());
+    }
+
+    void forEachDocs(ASTDocAttr* parent) noexcept {
+        parent->parent = lastNode;
+        forEachChidls(parent, parent->message.begin(), parent->message.end());
     }
 
     template <typename Node>
     Node* findParent() noexcept {
-        auto node = lastDecl;
+        auto node = lastNode;
         while (node) {
             if (auto result = node->as<Node>()) {
                 return result;
@@ -391,10 +467,10 @@ struct HierarchyRules : Visitor {
 
     template <typename... Node>
     ASTDecl* findAnyParent() noexcept {
-        auto node = lastDecl;
+        auto node = lastNode;
         while (node) {
             if ((node->as<Node>() || ...)) {
-                return node;
+                return node->as<ASTDecl>();
             }
             node = node->parent->as<ASTDecl>();
         }
@@ -413,7 +489,175 @@ struct HierarchyRules : Visitor {
         return {};
     }
 
-    ASTDecl* lastDecl;
+    ASTNode* lastNode;
+};
+
+// struct BuildRules : Visitor {
+//     explicit BuildRules(Context& ctx) noexcept : Visitor(ctx) {
+//     }
+//
+//     explicit BuildRules(Context& ctx, ASTConst* prevConst) noexcept : Visitor(ctx), prevConst(prevConst) {
+//     }
+//
+//     void visit(ASTApi* node) override {
+//         buildDoc(node);
+//         for (auto decl : node->decls) {
+//             ctx.visit<BuildRules>(decl);
+//         }
+//     }
+//
+//     void visit(ASTEnum* node) override {
+//         buildDoc(node);
+//         ASTConst* prev = nullptr;
+//         for (auto c : node->consts) {
+//             ctx.visit<BuildRules>(c, prev);
+//             prev = c;
+//         }
+//     }
+//
+//     void visit(ASTConst* node) override {
+//         auto attrValue = node->findAttr<ASTAttrValue>();
+//
+//         if (!attrValue) {
+//             attrValue         = ctx.allocNode<ASTAttrValue>(node->location);
+//             attrValue->parent = node;
+//             attrValue->values.push_back(ctx.addLiteral(node->location, prevConst ? prevConst->value + 1 : 0));
+//             node->attrs.push_back(attrValue);
+//         }
+//
+//         buildDoc(node);
+//
+//         int32_t evaluatedValue = 0;
+//         for (auto value : attrValue->values) {
+//             if (auto literal = value->as<ASTLiteralInt>()) {
+//                 evaluatedValue |= literal->value;
+//                 continue;
+//             }
+//
+//             auto ref = value->as<ASTDeclRef>();
+//             if (!ref) {
+//                 // ctx.log<IDL_STATUS_E3041>(value->location);
+//                 continue;
+//             }
+//
+//             auto decl = ctx.resolveRef(node->parent->as<ASTDecl>(), ref->location, ref);
+//             if (!decl) {
+//                 continue;
+//             }
+//
+//             auto refConst = decl->as<ASTConst>();
+//             if (!refConst) {
+//                 // ctx.log<IDL_STATUS_E3040>(ref->location, ref->name);
+//                 continue;
+//             }
+//
+//             if (!refConst->evaluated) {
+//                 // ctx.log<IDL_STATUS_E3039>(ref->location, ref->name);
+//                 continue;
+//             }
+//
+//             evaluatedValue |= refConst->value;
+//         }
+//         node->value     = evaluatedValue;
+//         node->evaluated = true;
+//     }
+//
+//     void discarded(ASTNode* node) override {
+//     }
+//
+//     void buildDoc(ASTDecl* decl) noexcept {
+//         auto scope = decl->parent->as<ASTDecl>();
+//         for (auto attr : decl->attrs) {
+//             if (auto doc = attr->as<ASTDocAttr>()) {
+//                 for (auto message : doc->message) {
+//                     if (auto ref = message->as<ASTDeclRef>()) {
+//                         ctx.resolveRef(scope, ref->location, ref);
+//                     }
+//                 }
+//             }
+//         }
+//     }
+//
+//     ASTConst* prevConst{};
+// };
+
+struct BuildRules : Visitor {
+    explicit BuildRules(Context& ctx) noexcept : Visitor(ctx) {
+    }
+
+    void discarded(ASTNode* node) override {
+    }
+
+    void visit(ASTEnum* node) override {
+    }
+
+    void visit(ASTConst* node) override {
+        if (prevConst && prevConst->parent != node->parent) {
+            prevConst = nullptr;
+        }
+
+        auto attrValue = node->findAttr<ASTAttrValue>();
+        if (!attrValue) {
+            attrValue         = ctx.allocNode<ASTAttrValue>(node->location);
+            attrValue->parent = node;
+            attrValue->values.push_back(ctx.addLiteral(node->location, prevConst ? prevConst->value + 1 : 0));
+            node->attrs.push_back(attrValue);
+        }
+
+        int32_t evaluatedValue = 0;
+        for (auto value : attrValue->values) {
+            if (auto literal = value->as<ASTLiteralInt>()) {
+                evaluatedValue |= literal->value;
+                continue;
+            }
+
+            auto ref = value->as<ASTDeclRef>();
+            if (!ref) {
+                // ctx.log<IDL_STATUS_E3041>(value->location);
+                continue;
+            }
+
+            auto decl = ctx.resolveRef(node->parent->as<ASTDecl>(), ref->location, ref);
+            if (!decl) {
+                continue;
+            }
+
+            auto refConst = decl->as<ASTConst>();
+            if (!refConst) {
+                // ctx.log<IDL_STATUS_E3040>(ref->location, ref->name);
+                continue;
+            }
+
+            if (!refConst->evaluated) {
+                // ctx.log<IDL_STATUS_E3039>(ref->location, ref->name);
+                continue;
+            }
+
+            evaluatedValue |= refConst->value;
+        }
+        node->value     = evaluatedValue;
+        node->evaluated = true;
+
+        prevConst = node;
+    }
+
+    void visit(ASTDeclRef* node) override {
+        auto parent     = findParent(node);
+        auto parentDecl = parent->parent ? parent->parent->as<ASTDecl>() : nullptr;
+        ctx.resolveRef(parentDecl, node->location, node);
+    }
+
+    ASTDecl* findParent(ASTNode* node) noexcept {
+        while (node) {
+            if (auto decl = node->as<ASTDecl>()) {
+                return decl;
+            }
+            node = node->parent;
+        }
+        return nullptr;
+    }
+
+    ASTConst* prevConst{};
 };
 
 } // namespace idl

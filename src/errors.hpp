@@ -89,6 +89,14 @@ template <idl_status_t Status, typename... Args>
     } else if constexpr (Status == IDL_STATUS_E3033) {
         str = fmt::format(
             "The [tokenizer] attribute must contain one or more arguments (integers: 2, -2, 4 or string \"2-^3-4\")");
+    } else if constexpr (Status == IDL_STATUS_E3034) {
+        str = fmt::format("The [detail] attribute must contain one or more arguments");
+    } else if constexpr (Status == IDL_STATUS_E3035) {
+        str = fmt::format("The [copyright] attribute must contain one or more arguments");
+    } else if constexpr (Status == IDL_STATUS_E3036) {
+        str = fmt::format("Identifiers are case sensitive, error in '{}', but expected '{}'", args...);
+    } else if constexpr (Status == IDL_STATUS_E3037) {
+        str = fmt::format("Symbol definition '{}' not found", args...);
     } else {
         assert(!"Unknown status code");
     }

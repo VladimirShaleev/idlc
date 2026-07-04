@@ -22,7 +22,8 @@ public:
                     const std::string& filename,
                     idl_uint32_t line,
                     idl_uint32_t column,
-                    const std::string& message) {
+                    const std::string& message,
+                    bool warnAsError) {
         _messages.push_back({});
         auto& msg    = _messages.back();
         msg.status   = status;
@@ -31,8 +32,11 @@ public:
         msg.filename = getStr(filename);
         msg.line     = line;
         msg.column   = column;
-        if (msg.is_error) {
+        if (msg.is_error || (warnAsError && msg.status >= IDL_STATUS_W2001 && msg.status < IDL_STATUS_E3001)) {
             _hasErrors = true;
+            if (!msg.is_error) {
+                _hasWarnings = true;
+            }
         } else {
             _hasWarnings = true;
         }

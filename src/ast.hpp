@@ -51,6 +51,10 @@ struct ASTLiteralStr : ASTLiteral {
 
 struct ASTAttr : ASTNode {};
 
+struct ASTDocAttr : ASTAttr {
+    std::vector<ASTNode*> message;
+};
+
 struct ASTDecl : ASTNode {
     std::string name;
     uint32_t order;
@@ -63,6 +67,13 @@ struct ASTDecl : ASTNode {
             return typeid(*attr) == typeid(Attr);
         });
         return it != attrs.end() ? (*it)->template as<Attr>() : nullptr;
+    }
+
+    template <typename DocAttr>
+    const std::vector<ASTNode*>& findDoc() noexcept {
+        static_assert(std::is_base_of<ASTDocAttr, DocAttr>::value, "DocAttr must be inherited from ASTDocAttr");
+        const auto attr = findAttr<DocAttr>();
+        return attr ? attr->message : std::vector<ASTNode*>{};
     }
 
     std::string fullname() const;
@@ -96,10 +107,6 @@ struct ASTAttrFlags : ASTAttr {
 
 struct ASTAttrHex : ASTAttr {
     void accept(Visitor& visitor) override;
-};
-
-struct ASTDocAttr : ASTAttr {
-    std::vector<ASTNode*> message;
 };
 
 struct ASTAttrBrief : ASTDocAttr {
@@ -375,6 +382,7 @@ struct ASTData : ASTBuiltinType {
 // struct ASTStruct : ASTType {
 //     void accept(Visitor& visitor) override;
 //
+//     bool needForwardDecl{};
 //     std::vector<ASTField*> fields;
 // };
 //

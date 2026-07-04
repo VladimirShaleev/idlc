@@ -216,6 +216,234 @@ struct AttrName : Visitor {
     std::string str;
 };
 
+struct ChildVisitor : Visitor {
+    enum Filter {
+        None         = 0,
+        SkipDocs     = 1 << 0,
+        SkipAttrs    = 1 << 1,
+        SkipDecls    = 1 << 2,
+        SkipImports  = 1 << 3,
+        SkipLiterals = 1 << 4,
+        SkipTrivials = 1 << 5,
+    };
+
+    ChildVisitor(Context& ctx, Visitor& visitor, int filters) noexcept :
+        Visitor(ctx),
+        visitor(visitor),
+        filters((Filter) filters) {
+    }
+
+    void visit(ASTLiteralStr* node) override {
+        visitNode(node);
+    }
+
+    void visit(ASTLiteralBool* node) override {
+        visitNode(node);
+    }
+
+    void visit(ASTLiteralInt* node) override {
+        visitNode(node);
+    }
+
+    void visit(ASTLiteralFloat* node) override {
+        visitNode(node);
+    }
+
+    void visit(ASTApi* node) override {
+        visitNode(node);
+        visitAttrs(node);
+        visitDecls(node->decls.begin(), node->decls.end());
+    }
+
+    void visit(ASTEnum* node) override {
+        visitNode(node);
+        visitAttrs(node);
+        visitDecls(node->consts.begin(), node->consts.end());
+    }
+
+    void visit(ASTConst* node) override {
+        visitNode(node);
+        visitAttrs(node);
+    }
+
+    void visit(ASTAttrTokenizer* node) override {
+        visitNode(node);
+    }
+
+    void visit(ASTAttrOrder* node) override {
+        visitNode(node);
+    }
+
+    void visit(ASTAttrSingle* node) override {
+        visitNode(node);
+    }
+
+    void visit(ASTAttrVersion* node) override {
+        visitNode(node);
+    }
+
+    void visit(ASTAttrAuthor* node) override {
+        visitNode(node);
+        visitDoc(node);
+    }
+
+    void visit(ASTAttrCopyright* node) override {
+        visitNode(node);
+        visitDoc(node);
+    }
+
+    void visit(ASTAttrLicense* node) override {
+        visitNode(node);
+        visitDoc(node);
+    }
+
+    void visit(ASTAttrFlags* node) override {
+        visitNode(node);
+    }
+
+    void visit(ASTAttrHex* node) override {
+        visitNode(node);
+    }
+
+    void visit(ASTAttrBrief* node) override {
+        visitNode(node);
+        visitDoc(node);
+    }
+
+    void visit(ASTAttrDetail* node) override {
+        visitNode(node);
+        visitDoc(node);
+    }
+
+    void visit(ASTAttrValue* node) override {
+        visitNode(node);
+    }
+
+    void visit(ASTAttrType* node) override {
+        visitNode(node);
+    }
+
+    void visit(ASTAttrCName* node) override {
+        visitNode(node);
+    }
+
+    void visit(ASTDeclRef* node) override {
+        visitNode(node);
+    }
+
+    void visit(ASTImport* node) override {
+        visitNode(node);
+        visitAttrs(node);
+        visitDecls(node->decls.begin(), node->decls.end());
+    }
+
+    void visit(ASTVoid* node) override {
+        visitNode(node);
+    }
+
+    void visit(ASTChar* node) override {
+        visitNode(node);
+    }
+
+    void visit(ASTStr* node) override {
+        visitNode(node);
+    }
+
+    void visit(ASTBool* node) override {
+        visitNode(node);
+    }
+
+    void visit(ASTInt8* node) override {
+        visitNode(node);
+    }
+
+    void visit(ASTUint8* node) override {
+        visitNode(node);
+    }
+
+    void visit(ASTInt16* node) override {
+        visitNode(node);
+    }
+
+    void visit(ASTUint16* node) override {
+        visitNode(node);
+    }
+
+    void visit(ASTInt32* node) override {
+        visitNode(node);
+    }
+
+    void visit(ASTUint32* node) override {
+        visitNode(node);
+    }
+
+    void visit(ASTInt64* node) override {
+        visitNode(node);
+    }
+
+    void visit(ASTUint64* node) override {
+        visitNode(node);
+    }
+
+    void visit(ASTFloat32* node) override {
+        visitNode(node);
+    }
+
+    void visit(ASTFloat64* node) override {
+        visitNode(node);
+    }
+
+    void visit(ASTData* node) override {
+        visitNode(node);
+    }
+
+    void visitNode(ASTNode* node) {
+        if (node) {
+            node->accept(visitor);
+        }
+    }
+
+    void visitAttrs(ASTDecl* decl) {
+        if (filters & SkipAttrs) {
+            return;
+        }
+        for (auto attr : decl->attrs) {
+            if ((filters & SkipDocs) == SkipDocs && attr->as<ASTDocAttr>()) {
+                continue;
+            }
+            attr->accept(*this);
+        }
+    }
+
+    template <typename It>
+    void visitDecls(It begin, It end) {
+        if (filters & SkipDecls) {
+            return;
+        }
+        for (auto it = begin; it != end; ++it) {
+            if ((filters & SkipImports) == SkipImports && (*it)->as<ASTImport>()) {
+                continue;
+            }
+            if ((filters & SkipTrivials) == SkipTrivials && (*it)->as<ASTBuiltinType>()) {
+                continue;
+            }
+            (*it)->accept(*this);
+        }
+    }
+
+    void visitDoc(ASTDocAttr* doc) {
+        if (filters & SkipDocs) {
+            return;
+        }
+        for (auto message : doc->message) {
+            message->accept(*this);
+        }
+    }
+
+    Visitor& visitor;
+    Filter filters;
+};
+
 } // namespace idl
 
 #endif

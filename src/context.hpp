@@ -26,13 +26,6 @@ public:
         }
     }
 
-    void build() {
-        if (!_messages.empty()) {
-            return;
-        }
-        printf("Building AST...\n");
-    }
-
     ASTApi* api() noexcept {
         return _api;
     }
@@ -111,6 +104,58 @@ public:
         _symbols[fullname] = decl;
     }
 
+    ASTDecl* findSymbol(ASTDecl* decl, const idl::location& loc, const std::string& name, bool onlyType = false) {
+        auto nameLower = name;
+        std::transform(nameLower.begin(), nameLower.end(), nameLower.begin(), [](auto c) {
+            return std::tolower(c);
+        });
+        while (decl) {
+            const auto fullname = decl->fullnameLowecase() + '.' + nameLower;
+            if (auto it = _symbols.find(fullname); it != _symbols.end()) {
+                const auto actualName   = decl->fullname() + '.' + name;
+                const auto expectedName = it->second->fullname();
+                if (actualName != expectedName) {
+                    log<IDL_STATUS_E3036>(loc, actualName, expectedName);
+                    return nullptr;
+                }
+                if (onlyType) {
+                    if (it->second->as<ASTType>()) {
+                        return it->second;
+                    }
+                } else {
+                    return it->second;
+                }
+            }
+            decl = decl->parent ? decl->parent->as<ASTDecl>() : nullptr;
+        }
+        if (auto it = _symbols.find(nameLower); it != _symbols.end()) {
+            const auto expectedName = it->second->fullname();
+            if (name != expectedName) {
+                log<IDL_STATUS_E3036>(loc, name, expectedName);
+                return nullptr;
+            }
+            if (onlyType) {
+                if (it->second->as<ASTType>()) {
+                    return it->second;
+                }
+            } else {
+                return it->second;
+            }
+        }
+        err<IDL_STATUS_E3037>(loc, name);
+        return nullptr;
+    }
+
+    ASTDecl* resolveRef(ASTDecl* decl, const idl::location& loc, ASTDeclRef* declRef, bool onlyType = false) {
+        if (!declRef->decl) {
+            if (auto symbol = findSymbol(decl, loc, declRef->name, onlyType)) {
+                declRef->decl = symbol;
+                return symbol;
+            }
+        }
+        return declRef->decl;
+    }
+
     template <typename Visitor, typename... Args>
     Visitor visit(ASTNode* node, Args&&... args) {
         Visitor visitor(*this, std::forward<Args>(args)...);
@@ -120,13 +165,14 @@ public:
         return visitor;
     }
 
-    void initBuiltins() {
+    void initBuiltins(ASTApi* api) {
+        _api = api;
+
         static const std::string filename = "<builtin>";
 
         const auto loc = idl::location(idl::position(&filename, 1, 1));
 
-        auto addBuiltin =
-            [this, &loc]<typename Node>(std::string&& name, const std::string& detail, Node) {
+        auto addBuiltin = [this, &loc]<typename Node>(std::string&& name, const std::string& detail, Node) {
             auto node    = allocNode<Node>(loc);
             node->name   = std::move(name);
             node->parent = _api;
@@ -156,10 +202,16 @@ public:
         if (!_result) {
             return;
         }
-        const auto message = err<Status>(loc, std::forward<Args>(args)...);
-        _result->addMessage(Status, *loc.begin.filename, loc.begin.line, loc.begin.column, message);
+        const auto message     = err<Status>(loc, std::forward<Args>(args)...);
+        const auto warnAsError = _options ? _options->getWarningsAsErrors() : false;
+        _result->addMessage(Status, *loc.begin.filename, loc.begin.line, loc.begin.column, message, warnAsError);
     }
 
+    bool hasErrors() const noexcept {
+        return _api ? _result->hasErrors() : true;
+    }
+
+private:
     Options* _options;
     CompilationResult* _result;
     std::vector<idl_message_t> _messages{};

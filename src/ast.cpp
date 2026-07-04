@@ -7,7 +7,12 @@ std::string ASTDecl::fullname() const {
     std::ostringstream ss;
     if (parent) {
         if (auto parentDecl = parent->as<ASTDecl>()) {
-            ss << parentDecl->fullname() << '.';
+            if (auto import = parentDecl->as<ASTImport>()) {
+                parentDecl = import->parent->as<ASTDecl>();
+            }
+            if (parentDecl) {
+                ss << parentDecl->fullname() << '.';
+            }
         }
     }
     ss << name;

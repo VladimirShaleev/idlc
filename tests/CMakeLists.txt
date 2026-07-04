@@ -6,7 +6,8 @@ file(GLOB IDLC_TEST_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
 )
 
-add_executable(${PROJECT_NAME}-tests ${IDLC_TEST_SOURCES})
+add_executable(${PROJECT_NAME}-tests ${IDLC_TEST_SOURCES} ${CMAKE_SOURCE_DIR}/src/string_pool.cpp)
+target_include_directories(${PROJECT_NAME}-tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_compile_features(${PROJECT_NAME}-tests PRIVATE cxx_std_20)
 set_target_properties(${PROJECT_NAME}-tests PROPERTIES
     CXX_STANDARD_REQUIRED ON

@@ -106,6 +106,7 @@ import[ ]+ { BEGIN(IMPORTCTX); }
 "," { return YYText()[0]; }
 
 <*>[A-Z][a-zA-Z0-9]*   { yylval->emplace<std::string>(YYText()); return token::ID; }
+<*>[A-Z][a-zA-Z0-9\.]* { yylval->emplace<std::string>(YYText()); return token::REF; }
 <*>\"(\\.|[^\\"\n])*\" { std::string str = YYText(); str = str.substr(1, str.length() - 2); yylval->emplace<std::string>(str); return token::STR; }
 <*>\"(\\.|[^\\"\n])*   { context().log<IDL_STATUS_E3009>(*yylloc, YYText()); }
 <*>{FLOAT}             { yylval->emplace<double>(std::stof(YYText())); return token::FLOAT; }

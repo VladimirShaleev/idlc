@@ -74,6 +74,10 @@ typedef enum
     IDL_STATUS_E3031    = 3031, /**< Invalid tokenizer format string, a valid string looks like (2-^3-4). */
     IDL_STATUS_E3032    = 3032, /**< Integer tokenization parameters or a tokenizer string must be passed to the attribute [tokenizer]. */
     IDL_STATUS_E3033    = 3033, /**< The [tokeinzer] attribute must contain one or more arguments (integers: 2, -2, 4 or string "2-^3-4"). */
+    IDL_STATUS_E3034    = 3034, /**< The [copyright] attribute must contain one or more arguments. */
+    IDL_STATUS_E3035    = 3035, /**< The [license] attribute must contain one or more arguments. */
+    IDL_STATUS_E3036    = 3036, /**< Identifiers are case sensitive. */
+    IDL_STATUS_E3037    = 3037, /**< Symbol definition not found. */
     IDL_STATUS_MAX_ENUM = 0x7FFFFFFF /**< Max value of enum (not used) */
 } idl_status_t;
 

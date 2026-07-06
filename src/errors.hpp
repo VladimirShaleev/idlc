@@ -51,7 +51,7 @@ template <idl_status_t Status, typename... Args>
     } else if constexpr (Status == IDL_STATUS_E3015) {
         str = fmt::format("Unknown attribute in the documentation '{}'", args...);
     } else if constexpr (Status == IDL_STATUS_E3016) {
-        str = fmt::format("The documentation string cannot be empty", args...);
+        str = fmt::format("The documentation string cannot be empty");
     } else if constexpr (Status == IDL_STATUS_E3017) {
         str = fmt::format("The [detail] attribute must contain one or more arguments");
     } else if constexpr (Status == IDL_STATUS_E3018) {

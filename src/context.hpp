@@ -112,10 +112,14 @@ public:
         if (parentNode->child == NodeHandleNone) {
             parentNode->child = child;
         } else {
-            auto childs    = getNodeChilds(parent);
-            auto lastChild = *std::end(childs);
-
-            getNode(lastChild)->sibling = child;
+            auto last = NodeHandleNone;
+            auto curr = parentNode->child;
+            while (curr != NodeHandleNone) {
+                auto node = getNode(curr);
+                last      = curr;
+                curr      = node->sibling;
+            }
+            getNode(last)->sibling = child;
         }
     }
 
@@ -135,14 +139,36 @@ public:
     }
 
     void addSymbol(ASTNodeHandle decl) {
-        // if (getNode(decl)->as<ASTImport>()) {
-        //     return;
-        // }
-        // const auto fullname = decl->fullnameLowecase();
-        // if (_symbols.contains(fullname)) {
-        //     log<IDL_STATUS_E3012>(decl->location, decl->fullname());
-        // }
-        // _symbols[fullname] = decl;
+        auto node = getNode(decl);
+        if (astNodeIs(node, ASTNodeType::Import)) {
+            return;
+        }
+        const auto fullname = declFullnameLowercase(node);
+        if (_symbols.contains(fullname)) {
+            log<IDL_STATUS_E3012>(node->location, declFullname(node));
+        }
+        _symbols[fullname] = decl;
+    }
+
+    std::string declFullname(ASTNode* node) {
+        assert(astNodeIs(node, ASTNodeType::Decl));
+        assert(getStr(node->valueStr).length() > 0);
+        std::string str{};
+        if (auto parent = getNode(node->parent)) {
+            if (astNodeIs(parent, ASTNodeType::Decl)) {
+                str = declFullname(parent) + '.';
+            }
+        }
+        auto name = getStr(node->valueStr);
+        return str + std::string(name.data(), name.length());
+    }
+
+    std::string declFullnameLowercase(ASTNode* node) {
+        auto str = declFullname(node);
+        std::transform(str.begin(), str.end(), str.begin(), [](auto c) {
+            return std::tolower(c);
+        });
+        return str;
     }
 
     // ASTDecl* findSymbol(ASTDecl* decl, const idl::location& loc, const std::string& name, bool onlyType = false) {
@@ -198,9 +224,8 @@ public:
     // }
 
     template <typename Visitor, typename... Args>
-    Visitor visit(ASTNodeHandle handle, Args&&... args) {
+    Visitor visit(ASTNode* node, Args&&... args) {
         Visitor visitor(*this, std::forward<Args>(args)...);
-        auto node = getNode(handle);
         if (node) {
             switch (node->type) {
                 case ASTNodeType::Api:
@@ -318,41 +343,66 @@ public:
                     visitor.visit(node, Tag<ASTNodeType::Float64>{});
                     break;
             }
-        }
+        } // namespace idl
+
         return visitor;
     }
 
-    // void initBuiltins(ASTApi* api) {
-    //     _api = api;
-    //
-    //     static const std::string filename = "<builtin>";
-    //
-    //     const auto loc = idl::location(idl::position(&filename, 1, 1));
-    //
-    //     auto addBuiltin = [this, &loc]<typename Node>(std::string&& name, const std::string& detail, Node) {
-    //         auto node    = allocNode<Node>(loc);
-    //         node->name   = std::move(name);
-    //         node->parent = _api;
-    //         addSymbol(node);
-    //         _api->childs.push_back(node);
-    //     };
-    //
-    //     addBuiltin("Void", "void type.", ASTVoid{});
-    //     addBuiltin("Char", "symbol type.", ASTChar{});
-    //     addBuiltin("Bool", "boolean type.", ASTBool{});
-    //     addBuiltin("Int8", "8 bit signed integer.", ASTInt8{});
-    //     addBuiltin("Uint8", "8 bit unsigned integer.", ASTUint8{});
-    //     addBuiltin("Int16", "16 bit signed integer.", ASTInt16{});
-    //     addBuiltin("Uint16", "16 bit unsigned integer.", ASTUint16{});
-    //     addBuiltin("Int32", "32 bit signed integer.", ASTInt32{});
-    //     addBuiltin("Uint32", "32 bit unsigned integer.", ASTUint32{});
-    //     addBuiltin("Int64", "64 bit signed integer.", ASTInt64{});
-    //     addBuiltin("Uint64", "64 bit unsigned integer.", ASTUint64{});
-    //     addBuiltin("Float32", "32 bit float point.", ASTFloat32{});
-    //     addBuiltin("Float64", "64 bit float point.", ASTFloat64{});
-    //     addBuiltin("Str", "utf8 string.", ASTStr{});
-    //     addBuiltin("Data", "pointer to data.", ASTData{});
-    // }
+    template <typename Visitor, typename... Args>
+    Visitor visit(ASTNodeHandle handle, Args&&... args) {
+        return visit<Visitor>(getNode(handle), std::forward<Args>(args)...);
+    }
+
+    void initBuiltins(ASTNodeHandle handle) {
+        _api = handle;
+
+        static const std::string filename = "<builtin>";
+
+        const auto loc     = idl::location(idl::position(&filename, 1, 1));
+        ASTNodeHandle last = NodeHandleNone;
+
+        auto addBuiltin =
+            [this, &loc, &last]<ASTNodeType Type>(std::string_view name, const std::string& detail, Tag<Type>) {
+            auto node               = allocNode(loc, Tag<Type>::type);
+            getNode(node)->valueStr = intern(name);
+            getNode(node)->parent   = _api;
+            addSymbol(node);
+
+            if (last == NodeHandleNone) {
+                if (getNode(_api)->child == NodeHandleNone) {
+                    getNode(_api)->child = node;
+                } else {
+                    auto lastChild = NodeHandleNone;
+                    auto currChild = getNode(_api)->child;
+                    while (currChild != NodeHandleNone) {
+                        auto nodeChild = getNode(currChild);
+                        lastChild      = currChild;
+                        currChild      = nodeChild->sibling;
+                    }
+                    getNode(lastChild)->sibling = node;
+                }
+            } else {
+                getNode(last)->sibling = node;
+            }
+            last = node;
+        };
+
+        addBuiltin("Void", "void type.", Tag<ASTNodeType::Void>{});
+        addBuiltin("Char", "symbol type.", Tag<ASTNodeType::Char>{});
+        addBuiltin("Bool", "boolean type.", Tag<ASTNodeType::Bool>{});
+        addBuiltin("Int8", "8 bit signed integer.", Tag<ASTNodeType::Int8>{});
+        addBuiltin("Uint8", "8 bit unsigned integer.", Tag<ASTNodeType::Uint8>{});
+        addBuiltin("Int16", "16 bit signed integer.", Tag<ASTNodeType::Int16>{});
+        addBuiltin("Uint16", "16 bit unsigned integer.", Tag<ASTNodeType::Uint16>{});
+        addBuiltin("Int32", "32 bit signed integer.", Tag<ASTNodeType::Int32>{});
+        addBuiltin("Uint32", "32 bit unsigned integer.", Tag<ASTNodeType::Uint32>{});
+        addBuiltin("Int64", "64 bit signed integer.", Tag<ASTNodeType::Int64>{});
+        addBuiltin("Uint64", "64 bit unsigned integer.", Tag<ASTNodeType::Uint64>{});
+        addBuiltin("Float32", "32 bit float point.", Tag<ASTNodeType::Float32>{});
+        addBuiltin("Float64", "64 bit float point.", Tag<ASTNodeType::Float64>{});
+        addBuiltin("Str", "utf8 string.", Tag<ASTNodeType::Str>{});
+        addBuiltin("Data", "pointer to data.", Tag<ASTNodeType::Data>{});
+    }
 
     template <idl_status_t Status, typename... Args>
     void log(const ASTLocation& loc, Args&&... args) {
@@ -361,7 +411,7 @@ public:
         }
         const auto message     = err<Status>(std::forward<Args>(args)...);
         const auto warnAsError = _options ? _options->getWarningsAsErrors() : false;
-        _result->addMessage(Status, _stringPool[loc.filename].data(), loc.line, loc.column, message, warnAsError);
+        _result->addMessage(Status, _stringPool[loc.filename], loc.line, loc.column, message, warnAsError);
     }
 
     bool hasErrors() const noexcept {

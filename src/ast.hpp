@@ -114,7 +114,8 @@ inline bool astNodeIs(const ASTNode* node, ASTNodeType type) noexcept {
         }
         switch (type) {
             case ASTNodeType::Decl:
-                return node->type >= ASTNodeType::Decl && node->type < ASTNodeType::DeclRef;
+                return (node->type >= ASTNodeType::Decl && node->type < ASTNodeType::DeclRef) ||
+                       node->type >= ASTNodeType::TrivialType;
             case ASTNodeType::Literal:
                 return node->type >= ASTNodeType::Literal && node->type < ASTNodeType::Attr;
             case ASTNodeType::Attr:

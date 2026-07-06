@@ -42,6 +42,8 @@
         scanner.context().allocNode(loc, ASTNodeType::type)
     #define node(handle) \
         scanner.context().getNode(handle)
+    #define add_child(parent, child) \
+        scanner.context().addChild(parent, child)
     #define intern(str) \
         scanner.context().intern({(str).c_str(), (str).length()})
     #define add_symbol(decl) \
@@ -128,47 +130,43 @@ idl : stack_decls {
 }
 
 stack_decls
-    : def_with_attrs { /* rule(Hierarchy, $1, nullptr); */ add_symbol($1); $$.push_back($1); }
-    | stack_decls def_with_attrs { /* rule(Hierarchy, $2, $1.back()); add_symbol($2); if ($2->as<ASTImport>()) { $1.push_back($2); } else { $1.back() = $2; } $$ = std::move($1);*/  }
+    : def_with_attrs { rule(Hierarchy, $1, NodeHandleNone, $1); add_symbol($1); $$.push_back($1); }
+    | stack_decls def_with_attrs { rule(Hierarchy, $2, $1.back(), $2); add_symbol($2); if (astNodeIs(node($2), ASTNodeType::Import)) { $1.push_back($2); } else { $1.back() = $2; } $$ = std::move($1); }
     | stack_decls POPIMPORT { $1.pop_back(); $$ = std::move($1); }
     ;
 
 def_with_attrs
-    : def_with_ref { $$ = $1; /* rule(AttrValidator, $$); */ }
-    | def_with_ref '[' attr_list ']' { /* $$ = $1; $$->childs.insert($$->childs.end(), $3.begin(), $3.end()); rule(AttrValidator, $$);*/ }
-    | def_with_ref idoc {/*  $$ = $1; $$->childs.push_back($2); rule(AttrValidator, $$);*/ }
-    | def_with_ref '[' attr_list ']' idoc { /* $$ = $1; $$->childs.insert($$->childs.end(), $3.begin(), $3.end()); $$->childs.push_back($5); rule(AttrValidator, $$);*/ }
+    : def_with_ref { $$ = $1; rule(AttrValidator, $$); }
+    | def_with_ref '[' attr_list ']' { $$ = $1; add_child($$, $3.first); rule(AttrValidator, $$); }
+    | def_with_ref idoc { $$ = $1; add_child($$, $2); rule(AttrValidator, $$); }
+    | def_with_ref '[' attr_list ']' idoc { $$ = $1; add_child($$, $3.first); add_child($$, $5); rule(AttrValidator, $$); }
     ;
 
 def_with_ref
     : def { $$ = $1; }
     | def ':' arg_list 
     { 
-        /*$$ = $1; 
-        ASTAttr* valOrType = nullptr;
-        if (rule(AttrValueOrType, $1).isValue) {
-            valOrType = alloc_node(AttrValue, @3); 
-        } else {
-            valOrType = alloc_node(AttrType, @3); 
-        }
-        rule(AttrArg, valOrType, $3);
-        $$->childs.push_back(valOrType); */
+        $$ = $1;
+        auto isValue = rule(AttrValueOrType, $1).isValue;
+        auto valOrType = isValue ? alloc_node(@3, AttrValue) :  alloc_node(@3, AttrType);
+        rule(AttrArg, valOrType, $3.first, $3.last, $3.count);
+        add_child($$, valOrType);
     }
     ;
 
 def
-    : decl ID { /* $1->name = $2; $$ = $1; */ }
-    | doc_list decl ID { /* $2->name = $3; $$ = $2; $$->childs.insert($$->childs.end(), $1.begin(), $1.end()); */ }
+    : decl ID { node($1)->valueStr = intern($2); $$ = $1; }
+    | doc_list decl ID { node($2)->valueStr = intern($3); $$ = $2; add_child($$, $1.first); }
     ;
 
 doc
-    : DOC doc_nodes { /* $$ = alloc_node(AttrBrief, @2); rule(AttrArg, $$, $2); rule(AttrDocValidator, $$); */}
-    | DOC doc_nodes '[' attr_item ']' { /* $$ = $4; rule(AttrArg, $$, $2); rule(AttrDocValidator, $$); */}
+    : DOC doc_nodes { $$ = alloc_node(@2, AttrDocBrief); rule(AttrArg, $$, $2.first, $2.last, $2.count); rule(AttrDocValidator, $$); }
+    | DOC doc_nodes '[' attr_item ']' { $$ = $4; rule(AttrArg, $$, $2.first, $2.last, $2.count); rule(AttrDocValidator, $$); }
     ;
 
 idoc
-    : IDOC doc_nodes { /* $$ = alloc_node(AttrDetail, @2); rule(AttrArg, $$, $2); rule(AttrDocValidator, $$); rule(AttrIDocValidator, $$); */}
-    | IDOC doc_nodes '[' attr_item ']' { /* $$ = $4; rule(AttrArg, $$, $2); rule(AttrDocValidator, $$); rule(AttrIDocValidator, $$); */}
+    : IDOC doc_nodes { $$ = alloc_node(@2, AttrDocDetail); rule(AttrArg, $$, $2.first, $2.last, $2.count); rule(AttrDocValidator, $$); rule(AttrIDocValidator, $$); }
+    | IDOC doc_nodes '[' attr_item ']' { $$ = $4; rule(AttrArg, $$, $2.first, $2.last, $2.count); rule(AttrDocValidator, $$); rule(AttrIDocValidator, $$); }
     ;
 
 doc_lit_or_ref

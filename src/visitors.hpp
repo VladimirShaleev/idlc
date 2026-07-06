@@ -131,32 +131,34 @@ struct CName {
     std::string str;
 };
 
-/*struct DeclToken : Visitor {
-    explicit DeclToken(Context& ctx) noexcept : Visitor(ctx) {
+struct DeclToken {
+    explicit DeclToken(Context& ctx) noexcept : ctx(ctx) {
     }
 
-    void visit(ASTApi* node) override {
+    void visit(ASTNode*, Tag<ASTNodeType::Api>) {
         str = "api";
     }
 
-    void visit(ASTEnum* node) override {
+    void visit(ASTNode*, Tag<ASTNodeType::Enum>) {
         str = "enum";
     }
 
-    void visit(ASTConst* node) override {
+    void visit(ASTNode*, Tag<ASTNodeType::Const>) {
         str = "const";
     }
 
-    void visit(ASTImport* node) override {
+    void visit(ASTNode*, Tag<ASTNodeType::Import>) {
         str = "import";
     }
 
-    void discarded(ASTNode*) override {
+    template <ASTNodeType Type>
+    void visit(ASTNode*, Tag<Type>) noexcept {
         assert(!"Declaration name is missing");
     }
 
+    Context& ctx;
     std::string str;
-};*/
+};
 
 struct AttrName {
     explicit AttrName(Context& ctx) noexcept : ctx(ctx) {

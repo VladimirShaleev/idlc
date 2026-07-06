@@ -11,7 +11,7 @@ struct String {
 
 class StringPool final {
 public:
-    explicit StringPool(size_t slotCapacity = 1024, size_t bufferCapacity = 65536);
+    explicit StringPool(size_t slotCapacity = 1024, size_t bufferCapacity = 65536, size_t hashTableCapacity = 4096);
     ~StringPool();
 
     std::string_view operator[](String str) const noexcept;

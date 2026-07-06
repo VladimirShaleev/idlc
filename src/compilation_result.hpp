@@ -19,7 +19,7 @@ public:
     }
 
     void addMessage(idl_status_t status,
-                    const std::string& filename,
+                    const char* filename,
                     idl_uint32_t line,
                     idl_uint32_t column,
                     const std::string& message,
@@ -29,7 +29,7 @@ public:
         msg.status   = status;
         msg.is_error = status >= IDL_STATUS_E3001 ? 1 : 0;
         msg.message  = getStr(message);
-        msg.filename = getStr(filename);
+        msg.filename = filename;
         msg.line     = line;
         msg.column   = column;
         if (msg.is_error || (warnAsError && msg.status >= IDL_STATUS_W2001 && msg.status < IDL_STATUS_E3001)) {

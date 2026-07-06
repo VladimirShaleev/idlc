@@ -5,7 +5,7 @@ namespace idl {
 struct StringPool::Impl {
     static constexpr uint32_t EmptySlot = std::numeric_limits<uint32_t>::max();
 
-    void init(size_t slotCapacity, size_t bufferCapacity) {
+    void init(size_t slotCapacity, size_t bufferCapacity, size_t hashTableCapacity) {
         buffer.resize(bufferCapacity);
         buffer[0]  = '\0';
         bufferSize = 1;
@@ -14,7 +14,7 @@ struct StringPool::Impl {
         slotCount = 1;
         slots[0]  = { 0, 0 };
 
-        hashTable.resize(4096, EmptySlot);
+        hashTable.resize(hashTableCapacity, EmptySlot);
     }
 
     void resize(size_t newCapacity) {
@@ -54,7 +54,7 @@ struct StringPool::Impl {
 
         const auto newOffset = bufferSize;
         if (newOffset + str.length() + 1 > buffer.size()) {
-            resize(buffer.size() * 2);
+            resize(std::max(buffer.size() * 2, newOffset + str.length() + 1));
         }
         memcpy(&buffer[newOffset], str.data(), str.length());
         buffer[newOffset + str.length()] = '\0';
@@ -112,8 +112,9 @@ struct StringPool::Impl {
     std::vector<uint32_t> hashTable;
 };
 
-StringPool::StringPool(size_t slotCapacity, size_t bufferCapacity) : _impl(std::make_shared<Impl>()) {
-    _impl->init(slotCapacity, bufferCapacity);
+StringPool::StringPool(size_t slotCapacity, size_t bufferCapacity, size_t hashTableCapacity) :
+    _impl(std::make_shared<Impl>()) {
+    _impl->init(slotCapacity, bufferCapacity, hashTableCapacity);
 }
 
 StringPool::~StringPool() = default;

@@ -23,8 +23,9 @@ public:
         _ctx(ctx),
         _options(options),
         _sources(sources) {
-        const std::string str = "<input>";
-        const auto loc        = idl::location(idl::position(&str, 1, 1));
+        static const std::string str = "<input>";
+
+        const auto loc = idl::location(idl::position(&str, 1, 1));
 
         if (_basePath.empty()) {
             _basePath = std::filesystem::current_path();
@@ -56,15 +57,19 @@ public:
     }
 
     void import(const idl::location& loc, const std::filesystem::path& file, bool isRelative = true) {
+        const std::string& locFile = *loc.begin.filename;
+        ASTLocation astLoc{ _ctx.intern({ locFile.c_str(), locFile.length() }),
+                            uint16_t(loc.begin.line),
+                            uint16_t(loc.end.column) };
         if (isRelative && file.is_absolute()) {
-            _ctx.log<IDL_STATUS_E3021>(loc, file.string());
+            _ctx.log<IDL_STATUS_E3021>(astLoc, file.string());
             return;
         }
         const auto [path, source, needRelease] = findFile(loc, file);
         const auto filename = path.is_absolute() ? std::filesystem::relative(path, _basePath).string() : path.string();
 
         if (_allImports.contains(filename)) {
-            _ctx.log<IDL_STATUS_W2002>(loc, filename);
+            _ctx.log<IDL_STATUS_W2002>(astLoc, filename);
             return;
         }
         _allImports[filename] = std::make_unique<std::string>(filename);
@@ -92,7 +97,7 @@ public:
             import.stream = std::make_unique<std::ifstream>(path);
             if (import.stream->fail()) {
                 import.stream.reset();
-                _ctx.log<IDL_STATUS_E3022>(loc, file.string());
+                _ctx.log<IDL_STATUS_E3022>(astLoc, file.string());
                 return;
             }
         }
@@ -127,7 +132,8 @@ public:
             loc.step();
             loc.columns(yyleng);
         } else {
-            loc            = _imports.back()->location;
+            loc = _imports.back()->location;
+
             _needUpdateLoc = false;
         }
     }

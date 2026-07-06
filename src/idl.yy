@@ -19,6 +19,13 @@
     #include "ast.hpp"
     namespace idl {
         class Scanner;
+        struct ASTNodeHandleList {
+            ASTNodeHandle first;
+            ASTNodeHandle last;
+            size_t count;
+            static ASTNodeHandleList init(ASTNodeHandle node) noexcept;
+            ASTNodeHandleList add(Scanner& scanner, ASTNodeHandle node) noexcept;
+        };
     }
 }
 
@@ -31,14 +38,25 @@
         scanner.context().visit<type##Rules>(node __VA_OPT__(,) __VA_ARGS__)
     #define visit(type, node, result, ...) \
         scanner.context().visit<type>(node __VA_OPT__(,) __VA_ARGS__).result
-    #define alloc_node(ast, loc) \
-        scanner.context().allocNode<AST##ast>(loc)
-    #define add_literal(loc, value) \
-        scanner.context().addLiteral(loc, value)
+    #define alloc_node(loc, type) \
+        scanner.context().allocNode(loc, ASTNodeType::type)
+    #define node(handle) \
+        scanner.context().getNode(handle)
+    #define intern(str) \
+        scanner.context().intern({(str).c_str(), (str).length()})
     #define add_symbol(decl) \
         scanner.context().addSymbol(decl)
     #define log(status, loc, ...) \
-        scanner.context().log<IDL_STATUS_##status>(loc __VA_OPT__(,) __VA_ARGS__)
+        scanner.context().log<IDL_STATUS_##status>({ \
+            intern(*loc.begin.filename), \
+            uint16_t(loc.begin.line), \
+            uint16_t(loc.begin.column) } __VA_OPT__(,) __VA_ARGS__)
+    idl::ASTNodeHandleList idl::ASTNodeHandleList::init(ASTNodeHandle node) noexcept { return { node, node, 1u }; }
+    idl::ASTNodeHandleList idl::ASTNodeHandleList::add(Scanner& scanner, ASTNodeHandle node) noexcept { 
+        scanner.context().getNode(last)->sibling = node; return { first, node, count + 1 };
+    }
+    #define list_init(node) ASTNodeHandleList::init(node)
+    #define list_add(list, node) list.add(scanner, node)
 }
 
 %initial-action {
@@ -77,24 +95,25 @@
 %token <std::string> INVALID_ARG
 %token <std::string> INVALID_ATTR
 
-%type <ASTDecl*>    def_with_attrs
-%type <ASTDecl*>    def_with_ref
-%type <ASTDecl*>    def
-%type <ASTDecl*>    decl
-%type <ASTAttr*>    doc
-%type <ASTAttr*>    idoc
-%type <ASTNode*>    doc_lit_or_ref
-%type <ASTDeclRef*> ref
+%type <ASTNodeHandle> def_with_attrs
+%type <ASTNodeHandle> def_with_ref
+%type <ASTNodeHandle> def
+%type <ASTNodeHandle> decl
+%type <ASTNodeHandle> doc
+%type <ASTNodeHandle> idoc
+%type <ASTNodeHandle> doc_lit_or_ref
+%type <ASTNodeHandle> ref
 
-%type <ASTAttr*> attr_item
-%type <ASTAttr*> attr_item_with_args
-%type <ASTNode*> arg_item
+%type <ASTNodeHandle> attr_item
+%type <ASTNodeHandle> attr_item_with_args
+%type <ASTNodeHandle> arg_item
 
-%type <std::vector<ASTDecl*>> stack_decls
-%type <std::vector<ASTNode*>> doc_nodes
-%type <std::vector<ASTAttr*>> doc_list
-%type <std::vector<ASTAttr*>> attr_list
-%type <std::vector<ASTNode*>> arg_list
+%type <ASTNodeHandleList> doc_nodes
+%type <ASTNodeHandleList> doc_list
+%type <ASTNodeHandleList> attr_list
+%type <ASTNodeHandleList> arg_list
+
+%type <std::vector<ASTNodeHandle>> stack_decls
 
 %start idl
 
@@ -102,30 +121,30 @@
 
 idl : stack_decls { 
     if (!scanner.context().hasErrors()) {
-        BuildRules rules(scanner.context());
-        ChildVisitor visitor(scanner.context(), rules, ChildVisitor::SkipLiterals | ChildVisitor::SkipTrivials);
-        scanner.context().api()->accept(visitor);
+        // BuildRules rules(scanner.context());
+        // ChildVisitor visitor(scanner.context(), rules, ChildVisitor::SkipLiterals | ChildVisitor::SkipTrivials);
+        // scanner.context().api()->accept(visitor);
     } 
 }
 
 stack_decls
-    : def_with_attrs { rule(Hierarchy, $1, nullptr); add_symbol($1); $$.push_back($1); }
-    | stack_decls def_with_attrs { rule(Hierarchy, $2, $1.back()); add_symbol($2); if ($2->as<ASTImport>()) { $1.push_back($2); } else { $1.back() = $2; } $$ = std::move($1); }
+    : def_with_attrs { /* rule(Hierarchy, $1, nullptr); */ add_symbol($1); $$.push_back($1); }
+    | stack_decls def_with_attrs { /* rule(Hierarchy, $2, $1.back()); add_symbol($2); if ($2->as<ASTImport>()) { $1.push_back($2); } else { $1.back() = $2; } $$ = std::move($1);*/  }
     | stack_decls POPIMPORT { $1.pop_back(); $$ = std::move($1); }
     ;
 
 def_with_attrs
-    : def_with_ref { $$ = $1; rule(AttrValidator, $$); }
-    | def_with_ref '[' attr_list ']' { $$ = $1; $$->attrs.insert($$->attrs.end(), $3.begin(), $3.end()); rule(AttrValidator, $$); }
-    | def_with_ref idoc { $$ = $1; $$->attrs.push_back($2); rule(AttrValidator, $$); }
-    | def_with_ref '[' attr_list ']' idoc { $$ = $1; $$->attrs.insert($$->attrs.end(), $3.begin(), $3.end()); $$->attrs.push_back($5); rule(AttrValidator, $$); }
+    : def_with_ref { $$ = $1; /* rule(AttrValidator, $$); */ }
+    | def_with_ref '[' attr_list ']' { /* $$ = $1; $$->childs.insert($$->childs.end(), $3.begin(), $3.end()); rule(AttrValidator, $$);*/ }
+    | def_with_ref idoc {/*  $$ = $1; $$->childs.push_back($2); rule(AttrValidator, $$);*/ }
+    | def_with_ref '[' attr_list ']' idoc { /* $$ = $1; $$->childs.insert($$->childs.end(), $3.begin(), $3.end()); $$->childs.push_back($5); rule(AttrValidator, $$);*/ }
     ;
 
 def_with_ref
     : def { $$ = $1; }
     | def ':' arg_list 
     { 
-        $$ = $1; 
+        /*$$ = $1; 
         ASTAttr* valOrType = nullptr;
         if (rule(AttrValueOrType, $1).isValue) {
             valOrType = alloc_node(AttrValue, @3); 
@@ -133,92 +152,92 @@ def_with_ref
             valOrType = alloc_node(AttrType, @3); 
         }
         rule(AttrArg, valOrType, $3);
-        $$->attrs.push_back(valOrType); 
+        $$->childs.push_back(valOrType); */
     }
     ;
 
 def
-    : decl ID { $1->name = $2; $$ = $1; }
-    | doc_list decl ID { $2->name = $3; $$ = $2; $$->attrs.insert($$->attrs.end(), $1.begin(), $1.end()); }
+    : decl ID { /* $1->name = $2; $$ = $1; */ }
+    | doc_list decl ID { /* $2->name = $3; $$ = $2; $$->childs.insert($$->childs.end(), $1.begin(), $1.end()); */ }
     ;
 
 doc
-    : DOC doc_nodes { $$ = alloc_node(AttrBrief, @2); rule(AttrArg, $$, $2); rule(AttrDocValidator, $$); }
-    | DOC doc_nodes '[' attr_item ']' { $$ = $4; rule(AttrArg, $$, $2); rule(AttrDocValidator, $$); }
+    : DOC doc_nodes { /* $$ = alloc_node(AttrBrief, @2); rule(AttrArg, $$, $2); rule(AttrDocValidator, $$); */}
+    | DOC doc_nodes '[' attr_item ']' { /* $$ = $4; rule(AttrArg, $$, $2); rule(AttrDocValidator, $$); */}
     ;
 
 idoc
-    : IDOC doc_nodes { $$ = alloc_node(AttrDetail, @2); rule(AttrArg, $$, $2); rule(AttrDocValidator, $$); rule(AttrIDocValidator, $$); }
-    | IDOC doc_nodes '[' attr_item ']' { $$ = $4; rule(AttrArg, $$, $2); rule(AttrDocValidator, $$); rule(AttrIDocValidator, $$); }
+    : IDOC doc_nodes { /* $$ = alloc_node(AttrDetail, @2); rule(AttrArg, $$, $2); rule(AttrDocValidator, $$); rule(AttrIDocValidator, $$); */}
+    | IDOC doc_nodes '[' attr_item ']' { /* $$ = $4; rule(AttrArg, $$, $2); rule(AttrDocValidator, $$); rule(AttrIDocValidator, $$); */}
     ;
 
 doc_lit_or_ref
-    : STR { $$ = add_literal(@1, $1); }
+    : STR { $$ = alloc_node(@1, LiteralStr); node($$)->valueStr = intern($1); }
     | '{' ref '}' { $$ = $2; }
     ;
 
 doc_nodes
-    : doc_lit_or_ref { $$ = std::vector<ASTNode*>(); $$.push_back($1); }
-    | doc_nodes doc_lit_or_ref { $1.push_back($2); $$ = std::move($1); }
+    : doc_lit_or_ref { $$ = list_init($1); }
+    | doc_nodes doc_lit_or_ref { $$ = list_add($1, $2); }
     ;
 
 doc_list
-    : doc { $$ = std::vector<ASTAttr*>(); $$.push_back($1); }
-    | doc_list doc { $1.push_back($2); $$ = std::move($1); }
+    : doc { $$ = list_init($1); }
+    | doc_list doc { $$ = list_add($1, $2); }
 
 ref
-    : ID { $$ = alloc_node(DeclRef, @1); $$->name = $1; }
-    | REF { $$ = alloc_node(DeclRef, @1); $$->name = $1; }
+    : ID { $$ = alloc_node(@1, DeclRef); node($$)->valueStr = intern($1); }
+    | REF { $$ = alloc_node(@1, DeclRef); node($$)->valueStr = intern($1); }
     ;
 
 decl
-    : API { $$ = alloc_node(Api, @1); }
-    | ENUM { $$ = alloc_node(Enum, @1); }
-    | CONST { $$ = alloc_node(Const, @1); }
-    | IMPORT { $$ = alloc_node(Import, @1); }
+    : API { $$ = alloc_node(@1, Api); }
+    | ENUM { $$ = alloc_node(@1, Enum); }
+    | CONST { $$ = alloc_node(@1, Const); }
+    | IMPORT { $$ = alloc_node(@1, Import); }
     ;
 
 attr_list
-    : attr_item_with_args { $$ = std::vector<ASTAttr*>(); $$.push_back($1); }
-    | attr_list ',' attr_item_with_args { $1.push_back($3); $$ = std::move($1); }
+    : attr_item_with_args { $$ = list_init($1); }
+    | attr_list ',' attr_item_with_args { $$ = list_add($1, $3); }
     ;
 
 attr_item_with_args
-    : attr_item { $$ = $1; rule(AttrArg, $$, std::vector<ASTNode*>{}); }
-    | attr_item '(' ')' { $$ = $1; rule(AttrArg, $$, std::vector<ASTNode*>{}); log(N1001, @1, visit(AttrName, $$, str)); }
-    | attr_item '(' arg_list ')' { $$ = $1; rule(AttrArg, $$, $3); }
+    : attr_item { $$ = $1; rule(AttrArg, $$, NodeHandleNone, NodeHandleNone, 0); }
+    | attr_item '(' ')' { $$ = $1; rule(AttrArg, $$, NodeHandleNone, NodeHandleNone, 0); log(N1001, @1, visit(AttrName, $$, str)); }
+    | attr_item '(' arg_list ')' { $$ = $1; rule(AttrArg, $$, $3.first, $3.last, $3.count); }
     ;
 
 attr_item
-    : ATTRVERSION   { $$ = alloc_node(AttrVersion, @1); }
-    | ATTRAUTHOR    { $$ = alloc_node(AttrAuthor, @1); }
-    | ATTRCOPYRIGHT { $$ = alloc_node(AttrCopyright, @1); }
-    | ATTRLICENSE   { $$ = alloc_node(AttrLicense, @1); }
-    | ATTRFLAGS     { $$ = alloc_node(AttrFlags, @1); }
-    | ATTRVALUE     { $$ = alloc_node(AttrValue, @1); }
-    | ATTRTYPE      { $$ = alloc_node(AttrType, @1); }
-    | ATTRCNAME     { $$ = alloc_node(AttrCName, @1); }
-    | ATTRTOKENIZER { $$ = alloc_node(AttrTokenizer, @1); }
-    | ATTRORDER     { $$ = alloc_node(AttrOrder, @1); }
-    | ATTRSINGLE    { $$ = alloc_node(AttrSingle, @1); }
-    | ATTRHEX       { $$ = alloc_node(AttrHex, @1); }
-    | ATTRBRIEF     { $$ = alloc_node(AttrBrief, @1); }
-    | ATTRDETAIL    { $$ = alloc_node(AttrDetail, @1); }
-    | INVALID_ATTR  { $$ = nullptr; log(E3013, @1, $1); }
+    : ATTRVERSION   { $$ = alloc_node(@1, AttrVersion); }
+    | ATTRAUTHOR    { $$ = alloc_node(@1, AttrDocAuthor); }
+    | ATTRCOPYRIGHT { $$ = alloc_node(@1, AttrDocCopyright); }
+    | ATTRLICENSE   { $$ = alloc_node(@1, AttrDocLicense); }
+    | ATTRFLAGS     { $$ = alloc_node(@1, AttrFlags); }
+    | ATTRVALUE     { $$ = alloc_node(@1, AttrValue); }
+    | ATTRTYPE      { $$ = alloc_node(@1, AttrType); }
+    | ATTRCNAME     { $$ = alloc_node(@1, AttrCName); }
+    | ATTRTOKENIZER { $$ = alloc_node(@1, AttrTokenizer); }
+    | ATTRORDER     { $$ = alloc_node(@1, AttrOrder); }
+    | ATTRSINGLE    { $$ = alloc_node(@1, AttrSingle); }
+    | ATTRHEX       { $$ = alloc_node(@1, AttrHex); }
+    | ATTRBRIEF     { $$ = alloc_node(@1, AttrDocBrief); }
+    | ATTRDETAIL    { $$ = alloc_node(@1, AttrDocDetail); }
+    | INVALID_ATTR  { $$ = NodeHandleNone; log(E3013, @1, $1); }
     ;
 
 arg_item
-    : INT   { $$ = add_literal(@1, $1); }
-    | FLOAT { $$ = add_literal(@1, $1); }
-    | BOOL  { $$ = add_literal(@1, $1); }
-    | STR   { $$ = add_literal(@1, $1); }
+    : INT   { $$ = alloc_node(@1, LiteralInt); node($$)->valueInt = $1; }
+    | FLOAT { $$ = alloc_node(@1, LiteralFloat); node($$)->valueFloat = $1; }
+    | BOOL  { $$ = alloc_node(@1, LiteralBool); node($$)->valueBool = $1; }
+    | STR   { $$ = alloc_node(@1, LiteralStr); node($$)->valueStr = intern($1); }
     | ref   { $$ = $1; }
-    | INVALID_ARG { $$ = nullptr; log(E3002, @1, $1); }
+    | INVALID_ARG { $$ = NodeHandleNone; log(E3002, @1, $1); }
     ;
 
 arg_list
-    : arg_item { $$ = std::vector<ASTNode*>(); $$.push_back($1); }
-    | arg_list ',' arg_item { $1.push_back($3); $$ = std::move($1); }
+    : arg_item { $$ = list_init($1); }
+    | arg_list ',' arg_item { $$ = list_add($1, $3); }
     ;
 
 %%

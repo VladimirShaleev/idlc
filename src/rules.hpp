@@ -14,7 +14,7 @@ struct AttrValueOrTypeRules {
     }
 
     template <ASTNodeType Type>
-    void visit(ASTNode* node, Tag<Type>) noexcept {
+    void visit(ASTNode*, Tag<Type>) noexcept {
     }
 
     Context& ctx;
@@ -171,8 +171,8 @@ struct AttrArgRules {
         auto arg0 = ctx.getNode(argFrist);
         auto arg1 = arg0 ? ctx.getNode(arg0->sibling) : nullptr;
         auto arg2 = arg1 ? ctx.getNode(arg1->sibling) : nullptr;
-        if (argCount == 3 && arg0 && arg1 && arg2 && astNodeIs(arg0, ASTNodeType::LiteralInt) &&
-            astNodeIs(arg1, ASTNodeType::LiteralInt) && astNodeIs(arg2, ASTNodeType::LiteralInt)) {
+        if (argCount == 3 && astNodeIs(arg0, ASTNodeType::LiteralInt) && astNodeIs(arg1, ASTNodeType::LiteralInt) &&
+            astNodeIs(arg2, ASTNodeType::LiteralInt)) {
             const auto major = arg0->valueInt;
             const auto minor = arg1->valueInt;
             const auto micro = arg2->valueInt;
@@ -190,10 +190,9 @@ struct AttrArgRules {
                 fail = true;
             }
             if (!fail) {
-                // node->version.isSemver = true;
-                // node->version.semver   = ASTVersion::Semver{ (uint8_t) major, (uint8_t) minor, (uint8_t) micro };
+                node->child = argFrist;
             }
-        } else if (argCount == 1 && arg0 && astNodeIs(arg0, ASTNodeType::LiteralStr)) {
+        } else if (argCount == 1 && astNodeIs(arg0, ASTNodeType::LiteralStr)) {
             static const std::regex semverRegex(R"((0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*))");
             std::smatch matches;
             // Compatibility with old version format: "1.2.3" instead of "version(1, 2, 3)"
@@ -204,13 +203,25 @@ struct AttrArgRules {
                 const auto minor = std::stoll(matches[2].str());
                 const auto micro = std::stoll(matches[3].str());
                 if (major <= 255 && minor <= 255 && micro <= 255) {
-                    // node->version.isSemver = true;
-                    // node->version.semver   = ASTVersion::Semver{ (uint8_t) major, (uint8_t) minor, (uint8_t) micro };
+                    static const std::string filename = "<runtime>";
+
+                    const auto loc = location(position(&filename, 1, 1));
+                    auto nodeMajor = ctx.allocNode(loc, ASTNodeType::LiteralInt);
+                    auto nodeMinor = ctx.allocNode(loc, ASTNodeType::LiteralInt);
+                    auto nodeMicro = ctx.allocNode(loc, ASTNodeType::LiteralInt);
+
+                    ctx.getNode(nodeMajor)->valueInt = major;
+                    ctx.getNode(nodeMinor)->valueInt = minor;
+                    ctx.getNode(nodeMicro)->valueInt = micro;
+                    ctx.getNode(nodeMajor)->sibling  = nodeMinor;
+                    ctx.getNode(nodeMinor)->sibling  = nodeMicro;
+
+                    node->child = nodeMajor;
+                    arg0->type  = ASTNodeType::Tombstone;
+                    return;
                 }
-                return;
             }
-            // node->version.isSemver = false;
-            // node->version.ver      = arg0->valueStr;
+            node->child = argFrist;
         } else {
             ctx.log<IDL_STATUS_E3003>(node->location);
         }
@@ -277,82 +288,125 @@ struct AttrArgRules {
     }
 
     void visit(ASTNode* node, Tag<ASTNodeType::AttrType>) {
-        // if (args.size() == 1 && args[0] && args[0]->as<ASTDeclRef>()) {
-        //     // node->type = args[0]->as<ASTDeclRef>();
-        // } else {
-        //     ctx.log<IDL_STATUS_E3027>(node->location);
-        // }
+        auto arg0 = ctx.getNode(argFrist);
+        if (argCount == 1 && arg0 && astNodeIs(arg0, ASTNodeType::DeclRef)) {
+            // node->type = args[0]->as<ASTDeclRef>();
+        } else {
+            ctx.log<IDL_STATUS_E3027>(node->location);
+        }
     }
 
     void visit(ASTNode* node, Tag<ASTNodeType::AttrCName>) {
-        // if (args.size() == 1 && args[0] && args[0]->as<ASTLiteralStr>()) {
-        //     node->name = args[0]->as<ASTLiteralStr>()->value;
-        //     if (std::any_of(node->name.begin(), node->name.end(), [](auto ch) {
-        //         return !(std::isalpha(ch) || std::isdigit(ch) || ch == '_');
-        //     })) {
-        //         ctx.log<IDL_STATUS_E3029>(node->location, node->name);
-        //     }
-        // } else {
-        //     ctx.log<IDL_STATUS_E3028>(node->location);
-        // }
+        auto arg0 = ctx.getNode(argFrist);
+        if (argCount == 1 && astNodeIs(arg0, ASTNodeType::LiteralStr)) {
+            auto name = ctx.getStr(arg0->valueStr);
+            if (std::any_of(name.begin(), name.end(), [](auto ch) {
+                return !(std::isalpha(ch) || std::isdigit(ch) || ch == '_');
+            })) {
+                ctx.log<IDL_STATUS_E3029>(node->location, name);
+            } else {
+                node->child = argFrist;
+            }
+        } else {
+            ctx.log<IDL_STATUS_E3028>(node->location);
+        }
     }
 
     void visit(ASTNode* node, Tag<ASTNodeType::AttrTokenizer>) {
-        /* if (!args.empty()) {
-             auto isAllIntegers = std::all_of(args.begin(), args.end(), [](auto arg) {
-                 return arg && arg->as<ASTLiteralInt>();
-             });
-             if (isAllIntegers) {
-                 for (auto arg : args) {
-                     node->nums.push_back((int) arg->as<ASTLiteralInt>()->value);
-                 }
-             } else if (args.size() == 1 && args[0] && args[0]->as<ASTLiteralStr>()) {
-                 static std::regex pattern(R"(\^?\d+(-\^?\d+)*)");
-                 // Compatibility with old tokenizer format: "1-^2-3" instead of "tokenizer(1, -2, 3)"
-                 if (std::regex_match(args[0]->as<ASTLiteralStr>()->value, pattern)) {
-                     std::stringstream ss(args[0]->as<ASTLiteralStr>()->value);
-                     std::string token;
-                     while (std::getline(ss, token, '-')) {
-                         if (token[0] == '^') {
-                             node->nums.push_back(-std::stoi(token.substr(1)));
-                         } else {
-                             node->nums.push_back(std::stoi(token));
-                         }
-                     }
-                 } else {
-                     ctx.log<IDL_STATUS_E3031>(node->location, args[0]->as<ASTLiteralStr>()->value);
-                 }
-             } else {
-                 ctx.log<IDL_STATUS_E3032>(node->location);
-             }
-         } else {
-             ctx.log<IDL_STATUS_E3033>(node->location);
-         }*/
+        if (argCount > 0) {
+            node->child        = argFrist;
+            auto args          = ctx.getNodeChilds(node);
+            auto isAllIntegers = std::all_of(args.begin(), args.end(), [this](auto arg) {
+                return astNodeIs(ctx.getNode(arg), ASTNodeType::LiteralInt);
+            });
+            if (!isAllIntegers) {
+                auto arg0 = ctx.getNode(argFrist);
+                if (argCount == 1 && astNodeIs(arg0, ASTNodeType::LiteralStr)) {
+                    static std::regex pattern(R"(\^?\d+(-\^?\d+)*)");
+                    auto strView = ctx.getStr(arg0->valueStr);
+                    auto str     = std::string(strView.data(), strView.length());
+                    // Compatibility with old tokenizer format: "1-^2-3" instead of "tokenizer(1, -2, 3)"
+                    if (std::regex_match(str, pattern)) {
+                        std::stringstream ss(str);
+                        std::string token;
+                        ASTNode* lastNum = nullptr;
+                        while (std::getline(ss, token, '-')) {
+                            static const std::string filename = "<runtime>";
+
+                            const auto loc = location(position(&filename, 1, 1));
+
+                            auto num = ctx.allocNode(loc, ASTNodeType::LiteralInt);
+                            if (token[0] == '^') {
+                                ctx.getNode(num)->valueInt = -std::stoi(token.substr(1));
+                            } else {
+                                ctx.getNode(num)->valueInt = std::stoi(token);
+                            }
+                            if (!lastNum) {
+                                node->child = num;
+                            } else {
+                                lastNum->sibling = num;
+                            }
+                            lastNum = ctx.getNode(num);
+                        }
+                    } else {
+                        ctx.log<IDL_STATUS_E3031>(node->location, str);
+                        node->child = NodeHandleNone;
+                    }
+                } else {
+                    ctx.log<IDL_STATUS_E3032>(node->location);
+                    node->child = NodeHandleNone;
+                }
+                if (arg0) {
+                    arg0->type = ASTNodeType::Tombstone;
+                }
+            }
+        } else {
+            ctx.log<IDL_STATUS_E3033>(node->location);
+        }
     }
 
     void visit(ASTNode* node, Tag<ASTNodeType::AttrOrder>) {
-        // if (args.size() == 1 && args[0] && args[0]->as<ASTLiteralBool>()) {
-        //     node->autoOrder = args[0]->as<ASTLiteralBool>()->value;
-        // } else if (args.empty()) {
-        //     node->autoOrder = true;
-        // } else {
-        //     ctx.log<IDL_STATUS_E3019>(node->location);
-        // }
+        auto arg0 = ctx.getNode(argFrist);
+        if (argCount == 1 && astNodeIs(arg0, ASTNodeType::LiteralBool)) {
+            node->child = argFrist;
+        } else if (argCount == 0) {
+            static const std::string filename = "<runtime>";
+
+            const auto loc = location(position(&filename, 1, 1));
+            auto valueBool = ctx.allocNode(loc, ASTNodeType::LiteralBool);
+
+            ctx.getNode(valueBool)->valueBool = true;
+
+            node->child = valueBool;
+        } else {
+            ctx.log<IDL_STATUS_E3019>(node->location);
+        }
     }
 
     void visit(ASTNode* node, Tag<ASTNodeType::AttrSingle>) {
-        // if (args.size() == 1 && args[0] && args[0]->as<ASTLiteralBool>()) {
-        //     node->singleOutput = args[0]->as<ASTLiteralBool>()->value;
-        // } else if (args.empty()) {
-        //     node->singleOutput = true;
-        // } else {
-        //     ctx.log<IDL_STATUS_E3030>(node->location);
-        // }
+        auto arg0 = ctx.getNode(argFrist);
+        if (argCount == 1 && astNodeIs(arg0, ASTNodeType::LiteralBool)) {
+            node->child = argFrist;
+        } else if (argCount == 0) {
+            static const std::string filename = "<runtime>";
+
+            const auto loc = location(position(&filename, 1, 1));
+            auto valueBool = ctx.allocNode(loc, ASTNodeType::LiteralBool);
+
+            ctx.getNode(valueBool)->valueBool = true;
+
+            node->child = valueBool;
+        } else {
+            ctx.log<IDL_STATUS_E3030>(node->location);
+        }
     }
 
     template <ASTNodeType Type>
     void visit(ASTNode* node, Tag<Type>) noexcept {
-        int i = 5;
+        if (argCount > 0) {
+            const auto name = ctx.visit<AttrName>(node).str;
+            ctx.log<IDL_STATUS_E3008>(node->location, name);
+        }
     }
 
     Context& ctx;
@@ -372,7 +426,6 @@ struct HierarchyRules {
         if (ctx.api() != NodeHandleNone) {
             ctx.log<IDL_STATUS_E3010>(node->location, ctx.declFullname(node));
         } else {
-            // forEachAttributes(nodePtr);
             ctx.initBuiltins(currNode);
         }
     }
@@ -390,7 +443,6 @@ struct HierarchyRules {
             auto parent  = findRoot();
             node->parent = parent;
             ctx.addChild(parent, currNode);
-            // forEachAttributes(node);
         }
     }
 
@@ -398,63 +450,15 @@ struct HierarchyRules {
         if (auto parent = findParent<ASTNodeType::Enum>(); parent != NodeHandleNone) {
             node->parent = parent;
             ctx.addChild(parent, currNode);
-            // forEachAttributes(node);
         } else {
             ctx.log<IDL_STATUS_E3023>(node->location, ctx.declFullname(node));
             node->parent = ctx.api();
         }
     }
 
-    /*
-        void visit(ASTAttrBrief* node) override {
-            forEachDocs(node);
-        }
-
-        void visit(ASTAttrDetail* node) override {
-            forEachDocs(node);
-        }
-
-        void visit(ASTAttrCopyright* node) override {
-            forEachDocs(node);
-        }
-
-        void visit(ASTAttrLicense* node) override {
-            forEachDocs(node);
-        }
-
-        void visit(ASTAttrVersion* node) override {
-            node->parent = lastNode;
-        }
-
-        void visit(ASTAttrCName* node) override {
-            node->parent = lastNode;
-        }
-
-        void visit(ASTAttrOrder* node) override {
-            node->parent = lastNode;
-        }
-
-        void visit(ASTAttrSingle* node) override {
-            node->parent = lastNode;
-        }
-
-        void visit(ASTAttrHex* node) override {
-            node->parent = lastNode;
-        }
-
-        void visit(ASTAttrValue* node) override {
-            node->parent = lastNode;
-            forEachChidls(node, node->values.begin(), node->values.end());
-        }
-
-        void visit(ASTDeclRef* node) override {
-            node->parent = lastNode;
-        }
-    */
-
     template <ASTNodeType Type>
     void visit(ASTNode* node, Tag<Type>) noexcept {
-        int i = 5;
+        assert(!"no hierarchy rule is defined for this node type.");
     }
 
     bool checkApi() {
@@ -465,25 +469,6 @@ struct HierarchyRules {
         return true;
     }
 
-    /*
-        template <typename It>
-        void forEachChidls(ASTNode* parent, It begin, It end) noexcept {
-            for (auto it = begin; it != end; ++it) {
-                if (!(*it)->as<ASTLiteral>()) {
-                    ctx.visit<HierarchyRules>(*it, parent);
-                }
-            }
-        }
-
-        void forEachAttributes(ASTDecl* parent) noexcept {
-            // forEachChidls(parent, parent->attrs.begin(), parent->attrs.end());
-        }
-
-        void forEachDocs(ASTDocAttr* parent) noexcept {
-            parent->parent = lastNode;
-            // forEachChidls(parent, parent->message.begin(), parent->message.end());
-        }
-    */
     template <ASTNodeType... Types>
     ASTNodeHandle findParent() noexcept {
         auto curr = lastNode;

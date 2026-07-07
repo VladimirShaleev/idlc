@@ -148,7 +148,7 @@ def_with_ref
     { 
         $$ = $1;
         auto isValue = rule(AttrValueOrType, $1).isValue;
-        auto valOrType = isValue ? alloc_node(@3, AttrValue) :  alloc_node(@3, AttrType);
+        auto valOrType = isValue ? alloc_node(@3, AttrValue) : alloc_node(@3, AttrType);
         rule(AttrArg, valOrType, $3.first, $3.last, $3.count);
         add_child($$, valOrType);
     }

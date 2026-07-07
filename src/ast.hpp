@@ -7,6 +7,8 @@
 namespace idl {
 
 enum class ASTNodeType : uint8_t {
+    Tombstone,
+    
     Decl,
     Api,
     Import,

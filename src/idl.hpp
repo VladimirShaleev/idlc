@@ -20,6 +20,7 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <queue>
 #include <ranges>
 #include <regex>
 #include <set>

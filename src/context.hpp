@@ -139,6 +139,19 @@ public:
     }
 
     void addSymbol(ASTNodeHandle decl) {
+        std::queue<std::pair<ASTNodeHandle, ASTNodeHandle>> queue;
+        queue.emplace(NodeHandleNone, decl);
+        while (!queue.empty()) {
+            auto [parent, curr] = queue.front();
+            queue.pop();
+            if (parent != NodeHandleNone) {
+                getNode(curr)->parent = parent;
+            }
+            for (auto child : getNodeChilds(curr)) {
+                queue.emplace(curr, child);
+            }
+        }
+
         auto node = getNode(decl);
         if (astNodeIs(node, ASTNodeType::Import)) {
             return;
@@ -343,7 +356,7 @@ public:
                     visitor.visit(node, Tag<ASTNodeType::Float64>{});
                     break;
             }
-        } // namespace idl
+        }
 
         return visitor;
     }
@@ -351,6 +364,23 @@ public:
     template <typename Visitor, typename... Args>
     Visitor visit(ASTNodeHandle handle, Args&&... args) {
         return visit<Visitor>(getNode(handle), std::forward<Args>(args)...);
+    }
+
+    template <typename Visitor, typename... Args>
+    void visitRecursive(ASTNodeHandle handle, Args&&... args) {
+        std::queue<ASTNodeHandle> queue;
+        queue.push(handle);
+
+        while (!queue.empty()) {
+            auto curr = queue.front();
+            queue.pop();
+
+            visit<Visitor>(curr, std::forward<Args>(args)...);
+
+            for (auto child : getNodeChilds(curr)) {
+                queue.push(child);
+            }
+        }
     }
 
     void initBuiltins(ASTNodeHandle handle) {

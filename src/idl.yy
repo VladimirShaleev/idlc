@@ -130,16 +130,16 @@ idl : stack_decls {
 }
 
 stack_decls
-    : def_with_attrs { rule(Hierarchy, $1, NodeHandleNone, $1); add_symbol($1); $$.push_back($1); }
-    | stack_decls def_with_attrs { rule(Hierarchy, $2, $1.back(), $2); add_symbol($2); if (astNodeIs(node($2), ASTNodeType::Import)) { $1.push_back($2); } else { $1.back() = $2; } $$ = std::move($1); }
+    : def_with_attrs { rule(Hierarchy, $1, NodeHandleNone); add_symbol($1); $$.push_back($1); }
+    | stack_decls def_with_attrs { rule(Hierarchy, $2, $1.back()); add_symbol($2); if (astNodeIs(node($2), ASTNodeType::Import)) { $1.push_back($2); } else { $1.back() = $2; } $$ = std::move($1); }
     | stack_decls POPIMPORT { $1.pop_back(); $$ = std::move($1); }
     ;
 
 def_with_attrs
-    : def_with_ref { $$ = $1; rule(AttrValidator, $$); }
-    | def_with_ref '[' attr_list ']' { $$ = $1; add_child($$, $3.first); rule(AttrValidator, $$); }
-    | def_with_ref idoc { $$ = $1; add_child($$, $2); rule(AttrValidator, $$); }
-    | def_with_ref '[' attr_list ']' idoc { $$ = $1; add_child($$, $3.first); add_child($$, $5); rule(AttrValidator, $$); }
+    : def_with_ref { $$ = $1; rule(AttrValidator, $$, scanner.context()); }
+    | def_with_ref '[' attr_list ']' { $$ = $1; add_child($$, $3.first); rule(AttrValidator, $$, scanner.context()); }
+    | def_with_ref idoc { $$ = $1; add_child($$, $2); rule(AttrValidator, $$, scanner.context()); }
+    | def_with_ref '[' attr_list ']' idoc { $$ = $1; add_child($$, $3.first); add_child($$, $5); rule(AttrValidator, $$, scanner.context()); }
     ;
 
 def_with_ref

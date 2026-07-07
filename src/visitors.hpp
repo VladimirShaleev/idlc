@@ -9,7 +9,7 @@ struct CName {
     explicit CName(Context& ctx) noexcept : ctx(ctx) {
     }
 
-    /*void visit(ASTNode* node, Tag<ASTNodeType::Enum>) {
+    /*void visit(ASTNodeRef& node, Tag<ASTNodeType::Enum>) {
         str = cname(node);
         if (ctx.findChild<ASTNodeType::AttrFlags>(node)) {
             str += "_flags";
@@ -17,26 +17,26 @@ struct CName {
         str += "_t";
     }
 
-    void visit(ASTNode* node, Tag<ASTNodeType::Const>) {
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::Const>) {
         str = cname(node, true);
         if (ctx.findChild<ASTNodeType::AttrFlags>(node->parent)) {
             str += "_BIT";
         }
     }
 
-    void visit(ASTNode* node, Tag<ASTNodeType::Void>) {
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::Void>) {
         str = ctx.useStdTypes() ? "void" : cname(node) + "_t";
     }
 
-    void visit(ASTNode* node, Tag<ASTNodeType::Char>) {
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::Char>) {
         str = ctx.useStdTypes() ? "char" : cname(node) + "_t";
     }
 
-    void visit(ASTNode* node, Tag<ASTNodeType::Str>) {
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::Str>) {
         str = ctx.useStdTypes() ? "const char*" : cname(node) + "_t";
     }
 
-    void visit(ASTNode* node, Tag<ASTNodeType::Bool>) {
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::Bool>) {
         switch (ctx.boolType()) {
             case BoolType::Int32:
                 str = ctx.useStdTypes() ? "uint32_t" : cname(node) + "_t";
@@ -53,47 +53,47 @@ struct CName {
         }
     }
 
-    void visit(ASTNode* node, Tag<ASTNodeType::Int8>) {
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::Int8>) {
         str = ctx.useStdTypes() ? "int8_t" : cname(node) + "_t";
     }
 
-    void visit(ASTNode* node, Tag<ASTNodeType::Uint8>) {
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::Uint8>) {
         str = ctx.useStdTypes() ? "uint8_t" : cname(node) + "_t";
     }
 
-    void visit(ASTNode* node, Tag<ASTNodeType::Int16>) {
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::Int16>) {
         str = ctx.useStdTypes() ? "int16_t" : cname(node) + "_t";
     }
 
-    void visit(ASTNode* node, Tag<ASTNodeType::Uint16>) {
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::Uint16>) {
         str = ctx.useStdTypes() ? "uint16_t" : cname(node) + "_t";
     }
 
-    void visit(ASTNode* node, Tag<ASTNodeType::Int32>) {
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::Int32>) {
         str = ctx.useStdTypes() ? "int32_t" : cname(node) + "_t";
     }
 
-    void visit(ASTNode* node, Tag<ASTNodeType::Uint32>) {
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::Uint32>) {
         str = ctx.useStdTypes() ? "uint32_t" : cname(node) + "_t";
     }
 
-    void visit(ASTNode* node, Tag<ASTNodeType::Int64>) {
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::Int64>) {
         str = ctx.useStdTypes() ? "int64_t" : cname(node) + "_t";
     }
 
-    void visit(ASTNode* node, Tag<ASTNodeType::Uint64>) {
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::Uint64>) {
         str = ctx.useStdTypes() ? "uint64_t" : cname(node) + "_t";
     }
 
-    void visit(ASTNode* node, Tag<ASTNodeType::Float32 {
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::Float32 {
         str = ctx.useStdTypes() ? "float" : cname(node) + "_t";
     }
 
-    void visit(ASTNode* node, Tag<ASTNodeType::Float64>) {
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::Float64>) {
         str = ctx.useStdTypes() ? "double" : cname(node) + "_t";
     }
 
-    void visit(ASTNode* node, Tag<ASTNodeType::Data>) {
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::Data>) {
         str = ctx.useStdTypes() ? "void*" : cname(node) + "_t";
     }*/
 
@@ -132,100 +132,92 @@ struct CName {
 };
 
 struct DeclToken {
-    explicit DeclToken(Context& ctx) noexcept : ctx(ctx) {
-    }
-
-    void visit(ASTNode*, Tag<ASTNodeType::Api>) {
+    void visit(ASTNodeRef&, Tag<ASTNodeType::Api>) {
         str = "api";
     }
 
-    void visit(ASTNode*, Tag<ASTNodeType::Enum>) {
+    void visit(ASTNodeRef&, Tag<ASTNodeType::Enum>) {
         str = "enum";
     }
 
-    void visit(ASTNode*, Tag<ASTNodeType::Const>) {
+    void visit(ASTNodeRef&, Tag<ASTNodeType::Const>) {
         str = "const";
     }
 
-    void visit(ASTNode*, Tag<ASTNodeType::Import>) {
+    void visit(ASTNodeRef&, Tag<ASTNodeType::Import>) {
         str = "import";
     }
 
     template <ASTNodeType Type>
-    void visit(ASTNode*, Tag<Type>) noexcept {
+    void visit(ASTNodeRef&, Tag<Type>) noexcept {
         assert(!"declaration name is missing");
     }
 
-    Context& ctx;
     std::string str;
 };
 
 struct AttrName {
-    explicit AttrName(Context& ctx) noexcept : ctx(ctx) {
-    }
-
-    void visit(ASTNode*, Tag<ASTNodeType::AttrTokenizer>) {
+    void visit(ASTNodeRef&, Tag<ASTNodeType::AttrTokenizer>) {
         str = "tokenizer";
     }
 
-    void visit(ASTNode*, Tag<ASTNodeType::AttrOrder>) {
+    void visit(ASTNodeRef&, Tag<ASTNodeType::AttrOrder>) {
         str = "order";
     }
 
-    void visit(ASTNode*, Tag<ASTNodeType::AttrSingle>) {
+    void visit(ASTNodeRef&, Tag<ASTNodeType::AttrSingle>) {
         str = "single";
     }
 
-    void visit(ASTNode*, Tag<ASTNodeType::AttrVersion>) {
+    void visit(ASTNodeRef&, Tag<ASTNodeType::AttrVersion>) {
         str = "version";
     }
 
-    void visit(ASTNode*, Tag<ASTNodeType::AttrDocAuthor>) {
+    void visit(ASTNodeRef&, Tag<ASTNodeType::AttrDocAuthor>) {
         str = "author";
     }
 
-    void visit(ASTNode*, Tag<ASTNodeType::AttrDocCopyright>) {
+    void visit(ASTNodeRef&, Tag<ASTNodeType::AttrDocCopyright>) {
         str = "copyright";
     }
 
-    void visit(ASTNode*, Tag<ASTNodeType::AttrDocLicense>) {
+    void visit(ASTNodeRef&, Tag<ASTNodeType::AttrDocLicense>) {
         str = "license";
     }
 
-    void visit(ASTNode*, Tag<ASTNodeType::AttrFlags>) {
+    void visit(ASTNodeRef&, Tag<ASTNodeType::AttrFlags>) {
         str = "flags";
     }
 
-    void visit(ASTNode*, Tag<ASTNodeType::AttrHex>) {
+    void visit(ASTNodeRef&, Tag<ASTNodeType::AttrHex>) {
         str = "hex";
     }
 
-    void visit(ASTNode*, Tag<ASTNodeType::AttrDocBrief>) {
+    void visit(ASTNodeRef&, Tag<ASTNodeType::AttrDocBrief>) {
         str = "brief";
     }
 
-    void visit(ASTNode*, Tag<ASTNodeType::AttrDocDetail>) {
+    void visit(ASTNodeRef&, Tag<ASTNodeType::AttrDocDetail>) {
         str = "detail";
     }
 
-    void visit(ASTNode*, Tag<ASTNodeType::AttrValue>) {
+    void visit(ASTNodeRef&, Tag<ASTNodeType::AttrValue>) {
         str = "value";
     }
 
-    void visit(ASTNode*, Tag<ASTNodeType::AttrType>) {
+    void visit(ASTNodeRef&, Tag<ASTNodeType::AttrType>) {
         str = "type";
     }
 
-    void visit(ASTNode*, Tag<ASTNodeType::AttrCName>) {
+    void visit(ASTNodeRef&, Tag<ASTNodeType::AttrCName>) {
         str = "cname";
     }
 
     template <ASTNodeType Type>
-    void visit(ASTNode*, Tag<Type>) noexcept {
+    void visit(ASTNodeRef&, Tag<Type>) noexcept {
         assert(!"attribute name is missing");
     }
 
-    Context& ctx;
     std::string str;
 };
 

@@ -6,18 +6,14 @@
 namespace idl {
 
 struct AttrValueOrTypeRules {
-    explicit AttrValueOrTypeRules(Context& ctx) noexcept : ctx(ctx) {
-    }
-
-    void visit(ASTNode*, Tag<ASTNodeType::Const>) noexcept {
+    void visit(ASTNodeRef&, Tag<ASTNodeType::Const>) noexcept {
         isValue = true;
     }
 
     template <ASTNodeType Type>
-    void visit(ASTNode*, Tag<Type>) noexcept {
+    void visit(ASTNodeRef&, Tag<Type>) noexcept {
     }
 
-    Context& ctx;
     bool isValue{};
 };
 
@@ -27,10 +23,10 @@ struct AttrValidatorRules {
         bool recommended;
     };
 
-    explicit AttrValidatorRules(Context& ctx) noexcept : ctx(ctx) {
+    AttrValidatorRules(Context& ctx) noexcept : ctx(ctx) {
     }
 
-    void visit(ASTNode* node, Tag<ASTNodeType::Api>) noexcept {
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::Api>) noexcept {
         static std::map allowed = { add<ASTNodeType::AttrVersion>(),          add<ASTNodeType::AttrDocBrief>(true),
                                     add<ASTNodeType::AttrDocDetail>(true),    add<ASTNodeType::AttrCName>(),
                                     add<ASTNodeType::AttrTokenizer>(),        add<ASTNodeType::AttrOrder>(),
@@ -39,19 +35,19 @@ struct AttrValidatorRules {
         validate(node, allowed);
     }
 
-    void visit(ASTNode* node, Tag<ASTNodeType::Import>) noexcept {
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::Import>) noexcept {
         static std::map allowed = { add<ASTNodeType::AttrDocBrief>(true), add<ASTNodeType::AttrDocDetail>(true) };
         validate(node, allowed);
     }
 
-    void visit(ASTNode* node, Tag<ASTNodeType::Enum>) noexcept {
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::Enum>) noexcept {
         static std::map allowed = { add<ASTNodeType::AttrFlags>(),        add<ASTNodeType::AttrHex>(),
                                     add<ASTNodeType::AttrDocBrief>(true), add<ASTNodeType::AttrDocDetail>(true),
                                     add<ASTNodeType::AttrCName>(),        add<ASTNodeType::AttrTokenizer>() };
         validate(node, allowed);
     }
 
-    void visit(ASTNode* node, Tag<ASTNodeType::Const>) noexcept {
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::Const>) noexcept {
         static std::map allowed = { add<ASTNodeType::AttrDocDetail>(true),
                                     add<ASTNodeType::AttrValue>(),
                                     add<ASTNodeType::AttrCName>(),
@@ -60,16 +56,16 @@ struct AttrValidatorRules {
     }
 
     template <ASTNodeType Type>
-    void visit(ASTNode* node, Tag<Type>) noexcept {
-        if (astNodeIs(node, ASTNodeType::Decl)) {
-            const auto token = ctx.visit<DeclToken>(node).str;
-            ctx.log<IDL_STATUS_E3006>(node->location, token, ctx.declFullname(node));
+    void visit(ASTNodeRef& node, Tag<Type>) noexcept {
+        if (node.is<ASTNodeType::Decl>()) {
+            const auto token = node.accept<DeclToken>().str;
+            node.ctx().log<IDL_STATUS_E3006>(node->location, token, node.fullname());
         } else {
             assert(!"attempt to validate attributes for a non-declaration node");
         }
     }
 
-    void validate(ASTNode* node, const std::map<ASTNodeType, AttrInfo>& allowed) {
+    void validate(ASTNodeRef& node, const std::map<ASTNodeType, AttrInfo>& allowed) {
         auto fieldNames =
             allowed | std::views::values | std::views::transform([](const AttrInfo& info) -> const std::string& {
             return info.name;
@@ -77,29 +73,26 @@ struct AttrValidatorRules {
 
         auto names = fmt::format("{}", fmt::join(fieldNames, ", "));
         std::set<ASTNodeType> uniqueAttrs;
-        auto curr = node->child;
-        while (curr != NodeHandleNone) {
-            auto attr = ctx.getNode(curr);
-            curr      = attr->sibling;
-            if (!astNodeIs(attr, ASTNodeType::Attr)) {
+        for (auto child : node) {
+            if (!child.is<ASTNodeType::Attr>()) {
                 continue;
             }
-            if (!allowed.contains(attr->type)) {
-                const auto name  = ctx.visit<AttrName>(attr).str;
-                const auto token = ctx.visit<DeclToken>(node).str;
-                ctx.log<IDL_STATUS_E3005>(attr->location, name, token, ctx.declFullname(node), names);
+            if (!allowed.contains(child->type)) {
+                const auto name  = child.accept<AttrName>().str;
+                const auto token = node.accept<DeclToken>().str;
+                child.ctx().log<IDL_STATUS_E3005>(child->location, name, token, node.fullname(), names);
             }
-            if (!uniqueAttrs.insert(attr->type).second) {
-                const auto name  = ctx.visit<AttrName>(attr).str;
-                const auto token = ctx.visit<DeclToken>(node).str;
-                ctx.log<IDL_STATUS_E3007>(attr->location, name, token, ctx.declFullname(node));
+            if (!uniqueAttrs.insert(child->type).second) {
+                const auto name  = child.accept<AttrName>().str;
+                const auto token = node.accept<DeclToken>().str;
+                child.ctx().log<IDL_STATUS_E3007>(child->location, name, token, node.fullname());
             }
         }
         for (auto& [type, info] : allowed | std::views::filter([](const auto& attr) {
             return attr.second.recommended;
         })) {
             if (!uniqueAttrs.contains(type)) {
-                ctx.log<IDL_STATUS_W2001>(node->location, ctx.declFullname(node), info.name);
+                node.ctx().log<IDL_STATUS_W2001>(node->location, node.fullname(), info.name);
             }
         }
     }
@@ -113,66 +106,54 @@ struct AttrValidatorRules {
 
     template <ASTNodeType Type>
     std::string getName() {
-        ASTNode node{};
-        node.type = Type;
-        return ctx.visit<AttrName>(&node).str;
+        return ASTNodeRef::byType<Type>(ctx).accept<AttrName>().str;
     }
 
     Context& ctx;
 };
 
 struct AttrDocValidatorRules {
-    explicit AttrDocValidatorRules(Context& ctx) noexcept : ctx(ctx) {
-    }
-
     template <ASTNodeType Type>
-    void visit(ASTNode* node, Tag<Type>) noexcept {
-        if (astNodeIs(node, ASTNodeType::Attr)) {
-            if (astNodeIs(node, ASTNodeType::AttrDoc)) {
-                if (node->child == NodeHandleNone) {
-                    ctx.log<IDL_STATUS_E3016>(node->location);
+    void visit(ASTNodeRef& node, Tag<Type>) noexcept {
+        if (node.is<ASTNodeType::Attr>()) {
+            if (node.is<ASTNodeType::AttrDoc>()) {
+                if (!node.hasChilds()) {
+                    node.ctx().log<IDL_STATUS_E3016>(node->location);
                 }
             } else {
-                const auto name = ctx.visit<AttrName>(node).str;
-                ctx.log<IDL_STATUS_E3015>(node->location, name);
+                const auto name = node.accept<AttrName>().str;
+                node.ctx().log<IDL_STATUS_E3015>(node->location, name);
             }
         }
     }
-
-    Context& ctx;
 };
 
 struct AttrIDocValidatorRules {
-    explicit AttrIDocValidatorRules(Context& ctx) noexcept : ctx(ctx) {
-    }
-
-    void visit(ASTNode*, Tag<ASTNodeType::AttrDocDetail>) noexcept {
+    void visit(ASTNodeRef&, Tag<ASTNodeType::AttrDocDetail>) noexcept {
     }
 
     template <ASTNodeType Type>
-    void visit(ASTNode* node, Tag<Type>) noexcept {
-        if (astNodeIs(node, ASTNodeType::Attr)) {
-            ctx.log<IDL_STATUS_E3018>(node->location);
+    void visit(ASTNodeRef& node, Tag<Type>) noexcept {
+        if (node.is<ASTNodeType::Attr>()) {
+            node.ctx().log<IDL_STATUS_E3018>(node->location);
         }
     }
-
-    Context& ctx;
 };
 
 struct AttrArgRules {
-    AttrArgRules(Context& ctx, ASTNodeHandle argFrist, ASTNodeHandle argLast, size_t argCount) noexcept :
-        ctx(ctx),
+    AttrArgRules(ASTNodeHandle argFrist, ASTNodeHandle argLast, size_t argCount) noexcept :
         argFrist(argFrist),
         argLast(argLast),
         argCount(argCount) {
     }
 
-    void visit(ASTNode* node, Tag<ASTNodeType::AttrVersion>) {
-        auto arg0 = ctx.getNode(argFrist);
-        auto arg1 = arg0 ? ctx.getNode(arg0->sibling) : nullptr;
-        auto arg2 = arg1 ? ctx.getNode(arg1->sibling) : nullptr;
-        if (argCount == 3 && astNodeIs(arg0, ASTNodeType::LiteralInt) && astNodeIs(arg1, ASTNodeType::LiteralInt) &&
-            astNodeIs(arg2, ASTNodeType::LiteralInt)) {
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::AttrVersion>) {
+        auto& ctx = node.ctx();
+        auto arg0 = ctx.getNodeRef(argFrist);
+        auto arg1 = arg0 ? ctx.getNodeRef(arg0->sibling) : ASTNodeRef(ctx);
+        auto arg2 = arg1 ? ctx.getNodeRef(arg1->sibling) : ASTNodeRef(ctx);
+        if (argCount == 3 && arg0.is<ASTNodeType::LiteralInt>() && arg1.is<ASTNodeType::LiteralInt>() &&
+            arg2.is<ASTNodeType::LiteralInt>()) {
             const auto major = arg0->valueInt;
             const auto minor = arg1->valueInt;
             const auto micro = arg2->valueInt;
@@ -192,7 +173,7 @@ struct AttrArgRules {
             if (!fail) {
                 node->child = argFrist;
             }
-        } else if (argCount == 1 && astNodeIs(arg0, ASTNodeType::LiteralStr)) {
+        } else if (argCount == 1 && arg0.is<ASTNodeType::LiteralStr>()) {
             static const std::regex semverRegex(R"((0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*))");
             std::smatch matches;
             // Compatibility with old version format: "1.2.3" instead of "version(1, 2, 3)"
@@ -227,79 +208,80 @@ struct AttrArgRules {
         }
     }
 
-    void visit(ASTNode* node, Tag<ASTNodeType::AttrDocAuthor>) {
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::AttrDocAuthor>) {
         static const std::regex email(R"([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})");
         // TODO:
     }
 
-    void visit(ASTNode* node, Tag<ASTNodeType::AttrDocBrief>) {
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::AttrDocBrief>) {
         if (argCount > 0) {
             node->child = argFrist;
         } else {
-            ctx.log<IDL_STATUS_E3014>(node->location);
+            node.ctx().log<IDL_STATUS_E3014>(node->location);
         }
     }
 
-    void visit(ASTNode* node, Tag<ASTNodeType::AttrDocDetail>) {
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::AttrDocDetail>) {
         if (argCount > 0) {
             node->child = argFrist;
         } else {
-            ctx.log<IDL_STATUS_E3017>(node->location);
+            node.ctx().log<IDL_STATUS_E3017>(node->location);
         }
     }
 
-    void visit(ASTNode* node, Tag<ASTNodeType::AttrDocCopyright>) {
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::AttrDocCopyright>) {
         if (argCount > 0) {
             node->child = argFrist;
         } else {
-            ctx.log<IDL_STATUS_E3034>(node->location);
+            node.ctx().log<IDL_STATUS_E3034>(node->location);
         }
     }
 
-    void visit(ASTNode* node, Tag<ASTNodeType::AttrDocLicense>) {
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::AttrDocLicense>) {
         if (argCount > 0) {
             node->child = argFrist;
         } else {
-            ctx.log<IDL_STATUS_E3035>(node->location);
+            node.ctx().log<IDL_STATUS_E3035>(node->location);
         }
     }
 
-    void visit(ASTNode* node, Tag<ASTNodeType::AttrValue>) {
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::AttrValue>) {
         if (argCount > 0) {
-            const auto type = ctx.getNode(argFrist)->type;
+            auto arg0       = node.ctx().getNodeRef(argFrist);
+            const auto type = arg0 ? arg0->type : ASTNodeType::Tombstone;
             node->child     = argFrist;
-            for (auto arg : ctx.getNodeChilds(node)) {
-                if (arg != NodeHandleNone || astNodeIs(node, ASTNodeType::Literal) ||
-                    astNodeIs(node, ASTNodeType::DeclRef)) {
-                    if (ctx.getNode(arg)->type != type) {
-                        ctx.log<IDL_STATUS_E3026>(node->location);
+            for (auto child : node) {
+                if (child.is<ASTNodeType::Literal, ASTNodeType::DeclRef>()) {
+                    if (child->type != type) {
+                        node.ctx().log<IDL_STATUS_E3026>(node->location);
                         node->child = NodeHandleNone;
                         break;
                     }
                 } else {
-                    ctx.log<IDL_STATUS_E3025>(node->location);
+                    node.ctx().log<IDL_STATUS_E3025>(node->location);
                     node->child = NodeHandleNone;
                     break;
                 }
             }
         } else {
-            ctx.log<IDL_STATUS_E3024>(node->location);
+            node.ctx().log<IDL_STATUS_E3024>(node->location);
         }
     }
 
-    void visit(ASTNode* node, Tag<ASTNodeType::AttrType>) {
-        auto arg0 = ctx.getNode(argFrist);
-        if (argCount == 1 && arg0 && astNodeIs(arg0, ASTNodeType::DeclRef)) {
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::AttrType>) {
+        auto arg0 = node.ctx().getNodeRef(argFrist);
+        if (argCount == 1 && arg0.is<ASTNodeType::DeclRef>()) {
             // node->type = args[0]->as<ASTDeclRef>();
         } else {
-            ctx.log<IDL_STATUS_E3027>(node->location);
+            node.ctx().log<IDL_STATUS_E3027>(node->location);
         }
     }
 
-    void visit(ASTNode* node, Tag<ASTNodeType::AttrCName>) {
-        auto arg0 = ctx.getNode(argFrist);
-        if (argCount == 1 && astNodeIs(arg0, ASTNodeType::LiteralStr)) {
-            auto name = ctx.getStr(arg0->valueStr);
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::AttrCName>) {
+        auto& ctx = node.ctx();
+        auto arg0 = ctx.getNodeRef(argFrist);
+        if (argCount == 1 && arg0.is<ASTNodeType::LiteralStr>()) {
+            auto name = arg0.valueStr();
             if (std::any_of(name.begin(), name.end(), [](auto ch) {
                 return !(std::isalpha(ch) || std::isdigit(ch) || ch == '_');
             })) {
@@ -312,18 +294,19 @@ struct AttrArgRules {
         }
     }
 
-    void visit(ASTNode* node, Tag<ASTNodeType::AttrTokenizer>) {
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::AttrTokenizer>) {
+        auto& ctx = node.ctx();
         if (argCount > 0) {
-            node->child        = argFrist;
-            auto args          = ctx.getNodeChilds(node);
-            auto isAllIntegers = std::all_of(args.begin(), args.end(), [this](auto arg) {
-                return astNodeIs(ctx.getNode(arg), ASTNodeType::LiteralInt);
+            node->child = argFrist;
+
+            auto isAllIntegers = std::all_of(node.begin(), node.end(), [this](auto arg) {
+                return arg.is<ASTNodeType::LiteralInt>();
             });
             if (!isAllIntegers) {
-                auto arg0 = ctx.getNode(argFrist);
-                if (argCount == 1 && astNodeIs(arg0, ASTNodeType::LiteralStr)) {
+                auto arg0 = ctx.getNodeRef(argFrist);
+                if (argCount == 1 && arg0.is<ASTNodeType::LiteralStr>()) {
                     static std::regex pattern(R"(\^?\d+(-\^?\d+)*)");
-                    auto strView = ctx.getStr(arg0->valueStr);
+                    auto strView = arg0.valueStr();
                     auto str     = std::string(strView.data(), strView.length());
                     // Compatibility with old tokenizer format: "1-^2-3" instead of "tokenizer(1, -2, 3)"
                     if (std::regex_match(str, pattern)) {
@@ -365,9 +348,10 @@ struct AttrArgRules {
         }
     }
 
-    void visit(ASTNode* node, Tag<ASTNodeType::AttrOrder>) {
-        auto arg0 = ctx.getNode(argFrist);
-        if (argCount == 1 && astNodeIs(arg0, ASTNodeType::LiteralBool)) {
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::AttrOrder>) {
+        auto& ctx = node.ctx();
+        auto arg0 = ctx.getNodeRef(argFrist);
+        if (argCount == 1 && arg0.is<ASTNodeType::LiteralBool>()) {
             node->child = argFrist;
         } else if (argCount == 0) {
             static const std::string filename = "<runtime>";
@@ -383,9 +367,10 @@ struct AttrArgRules {
         }
     }
 
-    void visit(ASTNode* node, Tag<ASTNodeType::AttrSingle>) {
-        auto arg0 = ctx.getNode(argFrist);
-        if (argCount == 1 && astNodeIs(arg0, ASTNodeType::LiteralBool)) {
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::AttrSingle>) {
+        auto& ctx = node.ctx();
+        auto arg0 = ctx.getNodeRef(argFrist);
+        if (argCount == 1 && arg0.is<ASTNodeType::LiteralBool>()) {
             node->child = argFrist;
         } else if (argCount == 0) {
             static const std::string filename = "<runtime>";
@@ -397,72 +382,69 @@ struct AttrArgRules {
 
             node->child = valueBool;
         } else {
-            ctx.log<IDL_STATUS_E3030>(node->location);
+            node.ctx().log<IDL_STATUS_E3030>(node->location);
         }
     }
 
     template <ASTNodeType Type>
-    void visit(ASTNode* node, Tag<Type>) noexcept {
+    void visit(ASTNodeRef& node, Tag<Type>) noexcept {
         if (argCount > 0) {
-            const auto name = ctx.visit<AttrName>(node).str;
-            ctx.log<IDL_STATUS_E3008>(node->location, name);
+            const auto name = node.accept<AttrName>().str;
+            node.ctx().log<IDL_STATUS_E3008>(node->location, name);
         }
     }
 
-    Context& ctx;
     ASTNodeHandle argFrist;
     ASTNodeHandle argLast;
     size_t argCount;
 };
 
 struct HierarchyRules {
-    HierarchyRules(Context& ctx, ASTNodeHandle lastNode, ASTNodeHandle currNode) noexcept :
-        ctx(ctx),
-        lastNode(lastNode),
-        currNode(currNode) {
+    HierarchyRules(ASTNodeHandle lastNode) noexcept : lastNode(lastNode) {
     }
 
-    void visit(ASTNode* node, Tag<ASTNodeType::Api>) {
-        if (ctx.api() != NodeHandleNone) {
-            ctx.log<IDL_STATUS_E3010>(node->location, ctx.declFullname(node));
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::Api>) {
+        auto& ctx = node.ctx();
+        if (ctx.api()) {
+            ctx.log<IDL_STATUS_E3010>(node->location, node.fullname());
         } else {
-            ctx.initBuiltins(currNode);
+            ctx.initBuiltins(node);
         }
     }
 
-    void visit(ASTNode* node, Tag<ASTNodeType::Import>) {
-        if (checkApi()) {
-            auto parent  = findRoot();
-            node->parent = parent;
-            ctx.addChild(parent, currNode);
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::Import>) {
+        if (checkApi(node.ctx())) {
+            auto parent  = findRoot(node.ctx());
+            node->parent = parent.handle();
+            parent.addChild(node);
         }
     }
 
-    void visit(ASTNode* node, Tag<ASTNodeType::Enum>) {
-        if (checkApi()) {
-            auto parent  = findRoot();
-            node->parent = parent;
-            ctx.addChild(parent, currNode);
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::Enum>) {
+        if (checkApi(node.ctx())) {
+            auto parent  = findRoot(node.ctx());
+            node->parent = parent.handle();
+            parent.addChild(node);
         }
     }
 
-    void visit(ASTNode* node, Tag<ASTNodeType::Const>) {
-        if (auto parent = findParent<ASTNodeType::Enum>(); parent != NodeHandleNone) {
-            node->parent = parent;
-            ctx.addChild(parent, currNode);
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::Const>) {
+        if (auto parent = findParent<ASTNodeType::Enum>(node.ctx())) {
+            node->parent = parent.handle();
+            parent.addChild(node);
         } else {
-            ctx.log<IDL_STATUS_E3023>(node->location, ctx.declFullname(node));
-            node->parent = ctx.api();
+            node.ctx().log<IDL_STATUS_E3023>(node->location, node.fullname());
+            node->parent = node.ctx().api().handle();
         }
     }
 
     template <ASTNodeType Type>
-    void visit(ASTNode* node, Tag<Type>) noexcept {
+    void visit(ASTNodeRef& node, Tag<Type>) noexcept {
         assert(!"no hierarchy rule is defined for this node type.");
     }
 
-    bool checkApi() {
-        if (ctx.api() == NodeHandleNone) {
+    static bool checkApi(Context& ctx) {
+        if (!ctx.api()) {
             ctx.log<IDL_STATUS_E3011>(ASTLocation());
             return false;
         }
@@ -470,26 +452,22 @@ struct HierarchyRules {
     }
 
     template <ASTNodeType... Types>
-    ASTNodeHandle findParent() noexcept {
-        auto curr = lastNode;
-        auto node = ctx.getNode(curr);
-        while (astNodeIs(node, ASTNodeType::Decl)) {
-            if ((astNodeIs(node, Types) || ...)) {
+    ASTNodeRef findParent(Context& ctx) noexcept {
+        auto curr = ctx.getNodeRef(lastNode);
+        while (curr.is<ASTNodeType::Decl>()) {
+            if (curr.is<Types...>()) {
                 return curr;
             }
-            curr = node->parent;
-            node = ctx.getNode(curr);
+            curr = curr.parent();
         }
-        return NodeHandleNone;
+        return ASTNodeRef(ctx);
     }
 
-    ASTNodeHandle findRoot() noexcept {
-        return findParent<ASTNodeType::Api, ASTNodeType::Import>();
+    ASTNodeRef findRoot(Context& ctx) noexcept {
+        return findParent<ASTNodeType::Api, ASTNodeType::Import>(ctx);
     }
 
-    Context& ctx;
     ASTNodeHandle lastNode;
-    ASTNodeHandle currNode;
 };
 
 //// struct BuildRules : Visitor {

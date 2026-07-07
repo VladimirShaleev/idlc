@@ -42,89 +42,6 @@ public:
 
     auto getNodeRef(ASTNodeHandle handle) noexcept;
 
-    auto getNodeChilds(ASTNode* node) noexcept {
-        struct SiblingIterator {
-            ASTNodeHandle current;
-            Context* context;
-
-            auto operator*() const noexcept {
-                return current;
-            }
-
-            SiblingIterator& operator++() noexcept {
-                if (current != NodeHandleNone) {
-                    auto node = context->getNode(current);
-                    current   = node ? node->sibling : NodeHandleNone;
-                }
-                return *this;
-            }
-
-            bool operator!=(const SiblingIterator& other) const noexcept {
-                return current != other.current;
-            }
-        };
-
-        struct SiblingRange {
-            SiblingIterator beginIt;
-            SiblingIterator endIt;
-
-            SiblingIterator begin() noexcept {
-                return beginIt;
-            }
-
-            SiblingIterator end() noexcept {
-                return endIt;
-            }
-
-            bool empty() const noexcept {
-                return beginIt.current == endIt.current;
-            }
-        };
-
-        return SiblingRange{
-            { node ? node->child : NodeHandleNone, this },
-            { NodeHandleNone,                      this }
-        };
-    }
-
-    auto getNodeChilds(ASTNodeHandle node) noexcept {
-        return getNodeChilds(getNode(node));
-    }
-
-    template <ASTNodeType Type>
-    ASTNode* findChild(ASTNode* node) noexcept {
-        auto curr = node->child;
-        while (curr != NodeHandleNone) {
-            auto node = getNode(curr);
-            if (node->type == Type) {
-                return node;
-            }
-            curr = node->sibling;
-        }
-        return nullptr;
-    }
-
-    template <ASTNodeType Type>
-    ASTNode* findChild(ASTNodeHandle node) noexcept {
-        return getNodeChilds(getNode(node));
-    }
-
-    void addChild(ASTNodeHandle parent, ASTNodeHandle child) noexcept {
-        auto parentNode = getNode(parent);
-        if (parentNode->child == NodeHandleNone) {
-            parentNode->child = child;
-        } else {
-            auto last = NodeHandleNone;
-            auto curr = parentNode->child;
-            while (curr != NodeHandleNone) {
-                auto node = getNode(curr);
-                last      = curr;
-                curr      = node->sibling;
-            }
-            getNode(last)->sibling = child;
-        }
-    }
-
     ASTNodeHandle allocNode(const idl::location& loc, ASTNodeType type) {
         auto index = _nodes.size();
         auto& node = _nodes.emplace_back();
@@ -140,51 +57,9 @@ public:
         return { uint16_t(index) };
     }
 
-    void addSymbol(ASTNodeHandle decl) {
-        std::queue<std::pair<ASTNodeHandle, ASTNodeHandle>> queue;
-        queue.emplace(NodeHandleNone, decl);
-        while (!queue.empty()) {
-            auto [parent, curr] = queue.front();
-            queue.pop();
-            if (parent != NodeHandleNone) {
-                getNode(curr)->parent = parent;
-            }
-            for (auto child : getNodeChilds(curr)) {
-                queue.emplace(curr, child);
-            }
-        }
+    void addChild(ASTNodeHandle parent, ASTNodeHandle child) noexcept;
 
-        auto node = getNode(decl);
-        if (astNodeIs(node, ASTNodeType::Import)) {
-            return;
-        }
-        const auto fullname = declFullnameLowercase(node);
-        if (_symbols.contains(fullname)) {
-            log<IDL_STATUS_E3012>(node->location, declFullname(node));
-        }
-        _symbols[fullname] = decl;
-    }
-
-    std::string declFullname(ASTNode* node) {
-        assert(astNodeIs(node, ASTNodeType::Decl));
-        assert(getStr(node->valueStr).length() > 0);
-        std::string str{};
-        if (auto parent = getNode(node->parent)) {
-            if (astNodeIs(parent, ASTNodeType::Decl)) {
-                str = declFullname(parent) + '.';
-            }
-        }
-        auto name = getStr(node->valueStr);
-        return str + std::string(name.data(), name.length());
-    }
-
-    std::string declFullnameLowercase(ASTNode* node) {
-        auto str = declFullname(node);
-        std::transform(str.begin(), str.end(), str.begin(), [](auto c) {
-            return std::tolower(c);
-        });
-        return str;
-    }
+    void addSymbol(ASTNodeHandle decl);
 
     // ASTDecl* findSymbol(ASTDecl* decl, const idl::location& loc, const std::string& name, bool onlyType = false) {
     //     auto nameLower = name;
@@ -239,30 +114,27 @@ public:
     // }
 
     template <typename Visitor, typename... Args>
-    Visitor visit(ASTNodeRef& node, Args&&... args);
-
-    template <typename Visitor, typename... Args>
     Visitor visit(ASTNodeHandle node, Args&&... args) {
         auto nodeRef = ASTNodeRef(*this, node);
-        return visit<Visitor>(nodeRef, std::forward<Args>(args)...);
+        return nodeRef.template accept<Visitor>(std::forward<Args>(args)...);
     }
 
-    template <typename Visitor, typename... Args>
-    void visitRecursive(ASTNodeHandle handle, Args&&... args) {
-        std::queue<ASTNodeHandle> queue;
-        queue.push(handle);
+    // template <typename Visitor, typename... Args>
+    // void visitRecursive(ASTNodeHandle handle, Args&&... args) {
+    //     std::queue<ASTNodeHandle> queue;
+    //     queue.push(handle);
 
-        while (!queue.empty()) {
-            auto curr = queue.front();
-            queue.pop();
+    //     while (!queue.empty()) {
+    //         auto curr = queue.front();
+    //         queue.pop();
 
-            visit<Visitor>(curr, std::forward<Args>(args)...);
+    //         visit<Visitor>(curr, std::forward<Args>(args)...);
 
-            for (auto child : getNodeChilds(curr)) {
-                queue.push(child);
-            }
-        }
-    }
+    //         for (auto child : getNodeChilds(curr)) {
+    //             queue.push(child);
+    //         }
+    //     }
+    // }
 
     void initBuiltins(ASTNodeRef node);
 
@@ -311,20 +183,16 @@ public:
     using value_type        = NodeRef;
     using difference_type   = ptrdiff_t;
     using pointer           = value_type*;
-    using reference         = value_type&;
+    using reference         = value_type;
     using const_pointer     = const value_type*;
-    using const_reference   = const value_type*;
+    using const_reference   = const value_type;
 
     ASTNodeRefInterator() noexcept = default;
 
-    explicit ASTNodeRefInterator(value_type&& nodeRef) noexcept : _current(nodeRef) {
+    explicit ASTNodeRefInterator(value_type nodeRef) noexcept : _current(nodeRef) {
     }
 
-    [[nodiscard]] reference operator*() noexcept {
-        return _current;
-    }
-
-    [[nodiscard]] const_reference operator*() const noexcept {
+    [[nodiscard]] reference operator*() const noexcept {
         return _current;
     }
 
@@ -372,10 +240,10 @@ public:
     using iterator       = ASTNodeRefInterator<ASTNodeRef>;
     using const_iterator = ASTNodeRefInterator<ASTNodeRef>;
 
-    explicit ASTNodeRef(Context& ctx) noexcept : _ctx(ctx) {
+    explicit ASTNodeRef(Context& ctx) noexcept : _ctx(&ctx) {
     }
 
-    ASTNodeRef(Context& ctx, ASTNodeHandle handle) noexcept : _ctx(ctx), _handle(handle), _node(ctx.getNode(_handle)) {
+    ASTNodeRef(Context& ctx, ASTNodeHandle handle) noexcept : _ctx(&ctx), _handle(handle), _node(ctx.getNode(_handle)) {
     }
 
     ASTNodeRef(const ASTNodeRef& node) noexcept : _ctx(node._ctx), _handle(node._handle), _node(node._node) {
@@ -431,19 +299,27 @@ public:
     }
 
     [[nodiscard]] iterator begin() noexcept {
-        return iterator(ASTNodeRef(_ctx, _node ? _node->child : NodeHandleNone));
+        return iterator(ASTNodeRef(*_ctx, _node ? _node->child : NodeHandleNone));
     }
 
     [[nodiscard]] iterator end() noexcept {
-        return iterator(ASTNodeRef(_ctx, NodeHandleNone));
+        return iterator(ASTNodeRef(*_ctx, NodeHandleNone));
+    }
+
+    [[nodiscard]] const_iterator begin() const noexcept {
+        return const_iterator(ASTNodeRef(*_ctx, _node ? _node->child : NodeHandleNone));
+    }
+
+    [[nodiscard]] const_iterator end() const noexcept {
+        return const_iterator(ASTNodeRef(*_ctx, NodeHandleNone));
     }
 
     [[nodiscard]] const_iterator cbegin() const noexcept {
-        return const_iterator(ASTNodeRef(_ctx, _node ? _node->child : NodeHandleNone));
+        return const_iterator(ASTNodeRef(*_ctx, _node ? _node->child : NodeHandleNone));
     }
 
     [[nodiscard]] const_iterator cend() const noexcept {
-        return const_iterator(ASTNodeRef(_ctx, NodeHandleNone));
+        return const_iterator(ASTNodeRef(*_ctx, NodeHandleNone));
     }
 
     template <ASTNodeType... Types>
@@ -452,11 +328,11 @@ public:
     }
 
     [[nodiscard]] Context& ctx() noexcept {
-        return _ctx;
+        return *_ctx;
     }
 
     [[nodiscard]] ASTNodeRef parent() const noexcept {
-        return ASTNodeRef(_ctx, _node ? _node->parent : NodeHandleNone);
+        return ASTNodeRef(*_ctx, _node ? _node->parent : NodeHandleNone);
     }
 
     [[nodiscard]] ASTNodeHandle handle() const noexcept {
@@ -467,7 +343,7 @@ public:
         return _node ? _node->child != NodeHandleNone : false;
     }
 
-    void addChild(ASTNodeRef& node) noexcept {
+    void addChild(const ASTNodeRef& node) noexcept {
         if (!hasChilds()) {
             _node->child = node.handle();
         } else {
@@ -479,17 +355,158 @@ public:
         }
     }
 
+    template <ASTNodeType Type>
+    [[nodiscard]] ASTNodeRef findChild() const noexcept {
+    }
+
     template <typename Visitor, typename... Args>
     Visitor accept(Args&&... args) {
-        return _ctx.visit<Visitor>(*this, std::forward<Args>(args)...);
+        Visitor visitor(std::forward<Args>(args)...);
+        auto& node = *this;
+        if (node) {
+            switch (node->type) {
+                case ASTNodeType::Api:
+                    visitor.visit(node, Tag<ASTNodeType::Api>{});
+                    break;
+                case ASTNodeType::Import:
+                    visitor.visit(node, Tag<ASTNodeType::Import>{});
+                    break;
+                case ASTNodeType::Enum:
+                    visitor.visit(node, Tag<ASTNodeType::Enum>{});
+                    break;
+                case ASTNodeType::Const:
+                    visitor.visit(node, Tag<ASTNodeType::Const>{});
+                    break;
+                case ASTNodeType::DeclRef:
+                    visitor.visit(node, Tag<ASTNodeType::DeclRef>{});
+                    break;
+                case ASTNodeType::LiteralStr:
+                    visitor.visit(node, Tag<ASTNodeType::LiteralStr>{});
+                    break;
+                case ASTNodeType::LiteralInt:
+                    visitor.visit(node, Tag<ASTNodeType::LiteralInt>{});
+                    break;
+                case ASTNodeType::LiteralBool:
+                    visitor.visit(node, Tag<ASTNodeType::LiteralBool>{});
+                    break;
+                case ASTNodeType::LiteralFloat:
+                    visitor.visit(node, Tag<ASTNodeType::LiteralFloat>{});
+                    break;
+                case ASTNodeType::AttrFlags:
+                    visitor.visit(node, Tag<ASTNodeType::AttrFlags>{});
+                    break;
+                case ASTNodeType::AttrHex:
+                    visitor.visit(node, Tag<ASTNodeType::AttrHex>{});
+                    break;
+                case ASTNodeType::AttrValue:
+                    visitor.visit(node, Tag<ASTNodeType::AttrValue>{});
+                    break;
+                case ASTNodeType::AttrType:
+                    visitor.visit(node, Tag<ASTNodeType::AttrType>{});
+                    break;
+                case ASTNodeType::AttrCName:
+                    visitor.visit(node, Tag<ASTNodeType::AttrCName>{});
+                    break;
+                case ASTNodeType::AttrTokenizer:
+                    visitor.visit(node, Tag<ASTNodeType::AttrTokenizer>{});
+                    break;
+                case ASTNodeType::AttrOrder:
+                    visitor.visit(node, Tag<ASTNodeType::AttrOrder>{});
+                    break;
+                case ASTNodeType::AttrSingle:
+                    visitor.visit(node, Tag<ASTNodeType::AttrSingle>{});
+                    break;
+                case ASTNodeType::AttrVersion:
+                    visitor.visit(node, Tag<ASTNodeType::AttrVersion>{});
+                    break;
+                case ASTNodeType::AttrDocBrief:
+                    visitor.visit(node, Tag<ASTNodeType::AttrDocBrief>{});
+                    break;
+                case ASTNodeType::AttrDocDetail:
+                    visitor.visit(node, Tag<ASTNodeType::AttrDocDetail>{});
+                    break;
+                case ASTNodeType::AttrDocAuthor:
+                    visitor.visit(node, Tag<ASTNodeType::AttrDocAuthor>{});
+                    break;
+                case ASTNodeType::AttrDocCopyright:
+                    visitor.visit(node, Tag<ASTNodeType::AttrDocCopyright>{});
+                    break;
+                case ASTNodeType::AttrDocLicense:
+                    visitor.visit(node, Tag<ASTNodeType::AttrDocLicense>{});
+                    break;
+                case ASTNodeType::Void:
+                    visitor.visit(node, Tag<ASTNodeType::Void>{});
+                    break;
+                case ASTNodeType::Data:
+                    visitor.visit(node, Tag<ASTNodeType::Data>{});
+                    break;
+                case ASTNodeType::Char:
+                    visitor.visit(node, Tag<ASTNodeType::Char>{});
+                    break;
+                case ASTNodeType::Str:
+                    visitor.visit(node, Tag<ASTNodeType::Str>{});
+                    break;
+                case ASTNodeType::Bool:
+                    visitor.visit(node, Tag<ASTNodeType::Bool>{});
+                    break;
+                case ASTNodeType::Int8:
+                    visitor.visit(node, Tag<ASTNodeType::Int8>{});
+                    break;
+                case ASTNodeType::Uint8:
+                    visitor.visit(node, Tag<ASTNodeType::Uint8>{});
+                    break;
+                case ASTNodeType::Int16:
+                    visitor.visit(node, Tag<ASTNodeType::Int16>{});
+                    break;
+                case ASTNodeType::Uint16:
+                    visitor.visit(node, Tag<ASTNodeType::Uint16>{});
+                    break;
+                case ASTNodeType::Int32:
+                    visitor.visit(node, Tag<ASTNodeType::Int32>{});
+                    break;
+                case ASTNodeType::Uint32:
+                    visitor.visit(node, Tag<ASTNodeType::Uint32>{});
+                    break;
+                case ASTNodeType::Int64:
+                    visitor.visit(node, Tag<ASTNodeType::Int64>{});
+                    break;
+                case ASTNodeType::Uint64:
+                    visitor.visit(node, Tag<ASTNodeType::Uint64>{});
+                    break;
+                case ASTNodeType::Float32:
+                    visitor.visit(node, Tag<ASTNodeType::Float32>{});
+                    break;
+                case ASTNodeType::Float64:
+                    visitor.visit(node, Tag<ASTNodeType::Float64>{});
+                    break;
+            }
+        }
+        return visitor;
     }
 
     [[nodiscard]] std::string_view valueStr() const noexcept {
-        return _ctx.getStr(_node->valueStr);
+        return _ctx->getStr(_node->valueStr);
     }
 
     [[nodiscard]] std::string fullname() const {
-        return _ctx.declFullname(_node);
+        assert(is<ASTNodeType::Decl>());
+        assert(valueStr().length() > 0);
+        std::string str{};
+        if (auto prnt = parent()) {
+            if (prnt.is<ASTNodeType::Decl>()) {
+                str = prnt.fullname() + '.';
+            }
+        }
+        auto name = valueStr();
+        return str + std::string(name.data(), name.length());
+    }
+
+    [[nodiscard]] std::string fullnameLowercase() const {
+        auto str = fullname();
+        std::transform(str.begin(), str.end(), str.begin(), [](auto c) {
+            return std::tolower(c);
+        });
+        return str;
     }
 
     template <ASTNodeType Type>
@@ -506,7 +523,7 @@ public:
     }
 
 private:
-    Context& _ctx;
+    Context* _ctx{};
     ASTNodeHandle _handle{ NodeHandleNone };
     ASTNode* _node{};
 };
@@ -519,129 +536,33 @@ inline auto Context::api() noexcept {
     return getNodeRef(_api);
 }
 
-template <typename Visitor, typename... Args>
-inline Visitor Context::visit(ASTNodeRef& node, Args&&... args) {
-    Visitor visitor(std::forward<Args>(args)...);
-    if (node) {
-        switch (node->type) {
-            case ASTNodeType::Api:
-                visitor.visit(node, Tag<ASTNodeType::Api>{});
-                break;
-            case ASTNodeType::Import:
-                visitor.visit(node, Tag<ASTNodeType::Import>{});
-                break;
-            case ASTNodeType::Enum:
-                visitor.visit(node, Tag<ASTNodeType::Enum>{});
-                break;
-            case ASTNodeType::Const:
-                visitor.visit(node, Tag<ASTNodeType::Const>{});
-                break;
-            case ASTNodeType::DeclRef:
-                visitor.visit(node, Tag<ASTNodeType::DeclRef>{});
-                break;
-            case ASTNodeType::LiteralStr:
-                visitor.visit(node, Tag<ASTNodeType::LiteralStr>{});
-                break;
-            case ASTNodeType::LiteralInt:
-                visitor.visit(node, Tag<ASTNodeType::LiteralInt>{});
-                break;
-            case ASTNodeType::LiteralBool:
-                visitor.visit(node, Tag<ASTNodeType::LiteralBool>{});
-                break;
-            case ASTNodeType::LiteralFloat:
-                visitor.visit(node, Tag<ASTNodeType::LiteralFloat>{});
-                break;
-            case ASTNodeType::AttrFlags:
-                visitor.visit(node, Tag<ASTNodeType::AttrFlags>{});
-                break;
-            case ASTNodeType::AttrHex:
-                visitor.visit(node, Tag<ASTNodeType::AttrHex>{});
-                break;
-            case ASTNodeType::AttrValue:
-                visitor.visit(node, Tag<ASTNodeType::AttrValue>{});
-                break;
-            case ASTNodeType::AttrType:
-                visitor.visit(node, Tag<ASTNodeType::AttrType>{});
-                break;
-            case ASTNodeType::AttrCName:
-                visitor.visit(node, Tag<ASTNodeType::AttrCName>{});
-                break;
-            case ASTNodeType::AttrTokenizer:
-                visitor.visit(node, Tag<ASTNodeType::AttrTokenizer>{});
-                break;
-            case ASTNodeType::AttrOrder:
-                visitor.visit(node, Tag<ASTNodeType::AttrOrder>{});
-                break;
-            case ASTNodeType::AttrSingle:
-                visitor.visit(node, Tag<ASTNodeType::AttrSingle>{});
-                break;
-            case ASTNodeType::AttrVersion:
-                visitor.visit(node, Tag<ASTNodeType::AttrVersion>{});
-                break;
-            case ASTNodeType::AttrDocBrief:
-                visitor.visit(node, Tag<ASTNodeType::AttrDocBrief>{});
-                break;
-            case ASTNodeType::AttrDocDetail:
-                visitor.visit(node, Tag<ASTNodeType::AttrDocDetail>{});
-                break;
-            case ASTNodeType::AttrDocAuthor:
-                visitor.visit(node, Tag<ASTNodeType::AttrDocAuthor>{});
-                break;
-            case ASTNodeType::AttrDocCopyright:
-                visitor.visit(node, Tag<ASTNodeType::AttrDocCopyright>{});
-                break;
-            case ASTNodeType::AttrDocLicense:
-                visitor.visit(node, Tag<ASTNodeType::AttrDocLicense>{});
-                break;
-            case ASTNodeType::Void:
-                visitor.visit(node, Tag<ASTNodeType::Void>{});
-                break;
-            case ASTNodeType::Data:
-                visitor.visit(node, Tag<ASTNodeType::Data>{});
-                break;
-            case ASTNodeType::Char:
-                visitor.visit(node, Tag<ASTNodeType::Char>{});
-                break;
-            case ASTNodeType::Str:
-                visitor.visit(node, Tag<ASTNodeType::Str>{});
-                break;
-            case ASTNodeType::Bool:
-                visitor.visit(node, Tag<ASTNodeType::Bool>{});
-                break;
-            case ASTNodeType::Int8:
-                visitor.visit(node, Tag<ASTNodeType::Int8>{});
-                break;
-            case ASTNodeType::Uint8:
-                visitor.visit(node, Tag<ASTNodeType::Uint8>{});
-                break;
-            case ASTNodeType::Int16:
-                visitor.visit(node, Tag<ASTNodeType::Int16>{});
-                break;
-            case ASTNodeType::Uint16:
-                visitor.visit(node, Tag<ASTNodeType::Uint16>{});
-                break;
-            case ASTNodeType::Int32:
-                visitor.visit(node, Tag<ASTNodeType::Int32>{});
-                break;
-            case ASTNodeType::Uint32:
-                visitor.visit(node, Tag<ASTNodeType::Uint32>{});
-                break;
-            case ASTNodeType::Int64:
-                visitor.visit(node, Tag<ASTNodeType::Int64>{});
-                break;
-            case ASTNodeType::Uint64:
-                visitor.visit(node, Tag<ASTNodeType::Uint64>{});
-                break;
-            case ASTNodeType::Float32:
-                visitor.visit(node, Tag<ASTNodeType::Float32>{});
-                break;
-            case ASTNodeType::Float64:
-                visitor.visit(node, Tag<ASTNodeType::Float64>{});
-                break;
+inline void Context::addChild(ASTNodeHandle parent, ASTNodeHandle child) noexcept {
+    getNodeRef(parent).addChild(getNodeRef(child));
+}
+
+inline void Context::addSymbol(ASTNodeHandle decl) {
+    std::queue<std::pair<ASTNodeRef, ASTNodeRef>> queue;
+    queue.emplace(ASTNodeRef(*this), getNodeRef(decl));
+    while (!queue.empty()) {
+        auto [parent, curr] = queue.front();
+        queue.pop();
+        if (parent) {
+            curr->parent = parent.handle();
+        }
+        for (auto child : curr) {
+            queue.emplace(curr, child);
         }
     }
 
-    return visitor;
+    auto node = getNodeRef(decl);
+    if (node.is<ASTNodeType::Import>()) {
+        return;
+    }
+    const auto fullname = node.fullnameLowercase();
+    if (_symbols.contains(fullname)) {
+        log<IDL_STATUS_E3012>(node->location, node.fullname());
+    }
+    _symbols[fullname] = decl;
 }
 
 inline void Context::initBuiltins(ASTNodeRef node) {

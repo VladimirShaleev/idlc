@@ -6,9 +6,6 @@
 namespace idl {
 
 struct CName {
-    explicit CName(Context& ctx) noexcept : ctx(ctx) {
-    }
-
     /*void visit(ASTNodeRef& node, Tag<ASTNodeType::Enum>) {
         str = cname(node);
         if (ctx.findChild<ASTNodeType::AttrFlags>(node)) {
@@ -97,37 +94,33 @@ struct CName {
         str = ctx.useStdTypes() ? "void*" : cname(node) + "_t";
     }*/
 
-    std::string cnameDecl(ASTNode* decl, bool upper) {
-        assert(astNodeIs(decl, ASTNodeType::Decl));
-        if (auto attr = ctx.findChild<ASTNodeType::AttrCName>(decl)) {
-            auto str = ctx.getStr(attr->valueStr);
+    std::string cnameDecl(ASTNodeRef& decl, bool upper) {
+        assert(decl.is<ASTNodeType::Decl>());
+        if (auto attr = decl.findChild<ASTNodeType::AttrCName>()) {
+            auto str = attr.valueStr();
             return { str.data(), str.length() };
         }
         std::vector<int> nums{};
-        if (auto attr = ctx.findChild<ASTNodeType::AttrTokenizer>(decl)) {
-            auto curr = attr->child;
-            while (curr != NodeHandleNone) {
-                auto node = ctx.getNode(curr);
-                nums.push_back(int(node->valueInt));
-                curr = node->sibling;
-            }
+        if (auto attr = decl.findChild<ASTNodeType::AttrTokenizer>()) {
+            auto view = attr | std::views::transform([](const auto& arg) {
+                return int(arg->valueInt);
+            });
+            nums.assign(view.begin(), view.end());
         }
-        auto str = ctx.getStr(decl->valueStr);
+        auto str = decl.valueStr();
         return convert({ str.data(), str.length() },
                        upper ? Case::ScreamingSnakeCase : Case::SnakeCase,
                        nums.empty() ? nullptr : &nums);
     }
 
-    std::string cname(ASTNode* decl, bool upper = false) {
-        assert(astNodeIs(decl, ASTNodeType::Decl));
+    std::string cname(ASTNodeRef& decl, bool upper = false) {
         auto name = cnameDecl(decl, upper);
-        if (auto parent = ctx.getNode(decl->parent); parent && astNodeIs(parent, ASTNodeType::Decl)) {
+        if (auto parent = decl.parent(); parent.is<ASTNodeType::Decl>()) {
             return cname(parent, upper) + '_' + name;
         }
         return name;
     }
 
-    Context& ctx;
     std::string str;
 };
 

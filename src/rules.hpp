@@ -73,19 +73,16 @@ struct AttrValidatorRules {
 
         auto names = fmt::format("{}", fmt::join(fieldNames, ", "));
         std::set<ASTNodeType> uniqueAttrs;
-        for (auto child : node) {
-            if (!child.is<ASTNodeType::Attr>()) {
-                continue;
-            }
-            if (!allowed.contains(child->type)) {
-                const auto name  = child.accept<AttrName>().str;
+        for (auto attr : node.attrs()) {
+            if (!allowed.contains(attr->type)) {
+                const auto name  = attr.accept<AttrName>().str;
                 const auto token = node.accept<DeclToken>().str;
-                child.ctx().log<IDL_STATUS_E3005>(child->location, name, token, node.fullname(), names);
+                attr.ctx().log<IDL_STATUS_E3005>(attr->location, name, token, node.fullname(), names);
             }
-            if (!uniqueAttrs.insert(child->type).second) {
-                const auto name  = child.accept<AttrName>().str;
+            if (!uniqueAttrs.insert(attr->type).second) {
+                const auto name  = attr.accept<AttrName>().str;
                 const auto token = node.accept<DeclToken>().str;
-                child.ctx().log<IDL_STATUS_E3007>(child->location, name, token, node.fullname());
+                attr.ctx().log<IDL_STATUS_E3007>(attr->location, name, token, node.fullname());
             }
         }
         for (auto& [type, info] : allowed | std::views::filter([](const auto& attr) {

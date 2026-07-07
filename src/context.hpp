@@ -240,6 +240,8 @@ public:
     using iterator       = ASTNodeRefInterator<ASTNodeRef>;
     using const_iterator = ASTNodeRefInterator<ASTNodeRef>;
 
+    explicit ASTNodeRef() noexcept = default;
+
     explicit ASTNodeRef(Context& ctx) noexcept : _ctx(&ctx) {
     }
 
@@ -357,6 +359,19 @@ public:
 
     template <ASTNodeType Type>
     [[nodiscard]] ASTNodeRef findChild() const noexcept {
+        auto view = *this | std::views::all;
+
+        auto it = std::ranges::find_if(view, [](const auto& child) {
+            return child.is<Type>();
+        });
+
+        return it != view.end() ? *it : ASTNodeRef(*_ctx);
+    }
+
+    [[nodiscard]] auto attrs() const noexcept {
+        return *this | std::views::filter([](const auto& child) {
+            return child.is<ASTNodeType::Attr>();
+        });
     }
 
     template <typename Visitor, typename... Args>

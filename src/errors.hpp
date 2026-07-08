@@ -106,7 +106,7 @@ template <idl_status_t Status, typename... Args>
     } else if constexpr (Status == IDL_STATUS_E3040) {
         str = fmt::format("Enumeration constants can only be specified as integers or enum consts");
     } else if constexpr (Status == IDL_STATUS_E3041) {
-        str = fmt::format("TODO:");
+        str = fmt::format("Failed to calculate the constant '{}'", args...);
     } else if constexpr (Status == IDL_STATUS_E3042) {
         str = fmt::format("Cyclic dependence of constant '{}'", args...);
     } else {

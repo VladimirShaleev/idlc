@@ -93,7 +93,8 @@ inline bool operator!=(const ASTNodeHandle& lhs, const ASTNodeHandle& rhs) noexc
 
 enum ASTNodeFlags {
     ASTNODE_EVAULATED    = 1,
-    ASTNODE_FORWARD_DECL = 2
+    ASTNODE_BUILD_ERROR  = 2,
+    ASTNODE_FORWARD_DECL = 4
 };
 
 struct ASTNode {

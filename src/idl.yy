@@ -124,7 +124,11 @@
 idl : stack_decls { 
     if (!scanner.context().hasErrors()) {
         ASTNodeRef prevConst(scanner.context());
-        scanner.context().api().acceptRecursive<BuildRules>(ASTNodeRef::SkipLiterals | ASTNodeRef::SkipTrivials, std::ref(prevConst));
+        bool prevE3041 = false;
+        scanner.context().api().acceptRecursive<BuildRules>(
+            ASTNodeRef::SkipLiterals | ASTNodeRef::SkipTrivials, 
+            std::ref(prevConst),
+            std::ref(prevE3041));
     } 
 }
 

@@ -82,7 +82,7 @@ typedef enum
     IDL_STATUS_E3038    = 3038, /**< Constants can only refer to other constants when evaluated. */
     IDL_STATUS_E3039    = 3039, /**< A constant cannot refer to itself when evaluated. */
     IDL_STATUS_E3040    = 3040, /**< Enumeration constants can only be specified as integers or enum consts. */
-    IDL_STATUS_E3041    = 3041, /**< TODO: */
+    IDL_STATUS_E3041    = 3041, /**< Failed to calculate the constant. */
     IDL_STATUS_E3042    = 3042, /**< Cyclic dependence of constant. */
     IDL_STATUS_MAX_ENUM = 0x7FFFFFFF /**< Max value of enum (not used) */
 } idl_status_t;

@@ -58,7 +58,7 @@ enum Status
     const E3038 : 3038 [tokenizer(0)] @ Constants can only refer to other constants when evaluated.
     const E3039 : 3039 [tokenizer(0)] @ A constant cannot refer to itself when evaluated.
     const E3040 : 3040 [tokenizer(0)] @ Enumeration constants can only be specified as integers or enum consts.
-    const E3041 : 3041 [tokenizer(0)] @ TODO:
+    const E3041 : 3041 [tokenizer(0)] @ Failed to calculate the constant.
     const E3042 : 3042 [tokenizer(0)] @ Cyclic dependence of constant.
 
 @ Compilation message.

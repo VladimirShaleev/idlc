@@ -489,6 +489,10 @@ public:
         return _node ? (_node->flags & ASTNODE_EVAULATED) == ASTNODE_EVAULATED : false;
     }
 
+    [[nodiscard]] bool buildError() const noexcept {
+        return _node ? (_node->flags & ASTNODE_BUILD_ERROR) == ASTNODE_BUILD_ERROR : true;
+    }
+
     [[nodiscard]] bool forwardDecl() const noexcept {
         return _node ? (_node->flags & ASTNODE_FORWARD_DECL) == ASTNODE_FORWARD_DECL : false;
     }

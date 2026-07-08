@@ -468,13 +468,14 @@ struct HierarchyRules {
 };
 
 struct BuildRules {
-    BuildRules(ASTNodeRef& prevConst) noexcept : prevConst(prevConst) {
+    BuildRules(ASTNodeRef& prevConst, bool& prevE3041) noexcept : prevConst(prevConst), prevE3041(prevE3041) {
     }
 
     void visit(ASTNodeRef& node, Tag<ASTNodeType::Const>) {
         auto& ctx = node.ctx();
         if (prevConst && prevConst.parent() != node.parent()) {
             prevConst = ASTNodeRef(ctx);
+            prevE3041 = false;
         }
 
         auto attrValue = node.findChild<ASTNodeType::AttrValue>();
@@ -487,21 +488,34 @@ struct BuildRules {
 
                 if (!value.is<ASTNodeType::DeclRef>()) {
                     ctx.log<IDL_STATUS_E3040>(value->location);
+                    node->flags |= ASTNODE_BUILD_ERROR;
                     continue;
                 }
 
                 auto decl = value.resolveRef(node.parent());
                 if (!decl) {
+                    node->flags |= ASTNODE_BUILD_ERROR;
                     continue;
                 }
 
                 if (!decl.is<ASTNodeType::Const>()) {
                     ctx.log<IDL_STATUS_E3038>(node->location);
+                    node->flags |= ASTNODE_BUILD_ERROR;
                     continue;
                 }
 
                 if (decl == node) {
                     ctx.log<IDL_STATUS_E3039>(node->location, decl.fullname());
+                    node->flags |= ASTNODE_BUILD_ERROR;
+                    continue;
+                }
+
+                if (decl.buildError()) {
+                    if (!prevE3041) {
+                        prevE3041 = true;
+                        ctx.log<IDL_STATUS_E3041>(node->location, node.fullname());
+                    }
+                    node->flags |= ASTNODE_BUILD_ERROR;
                     continue;
                 }
 
@@ -509,6 +523,7 @@ struct BuildRules {
                     const auto [hasCyclic, deps] = findCyclicRelationshipConsts(node, decl);
                     if (hasCyclic) {
                         ctx.log<IDL_STATUS_E3042>(node->location, deps);
+                        node->flags |= ASTNODE_BUILD_ERROR;
                     } else {
                         ctx.log<IDL_STATUS_W2003>(node->location, node.fullname(), decl.fullname());
                         node->flags |= ASTNODE_FORWARD_DECL;
@@ -526,8 +541,25 @@ struct BuildRules {
             attrValue->parent = node.handle();
             attrValue->child  = ctx.allocNode(loc, ASTNodeType::LiteralInt);
 
-            ctx.getNode(attrValue->child)->valueInt = prevConst ? prevConst->valueInt + 1 : 0;
+            if (prevConst) {
+                if (prevConst.buildError()) {
+                    if (!prevE3041) {
+                        prevE3041 = true;
+                        ctx.log<IDL_STATUS_E3041>(node->location, node.fullname());
+                    }
+                    ctx.getNode(attrValue->child)->valueInt = 0;
+                    node->flags |= ASTNODE_BUILD_ERROR;
+                } else {
+                    ctx.getNode(attrValue->child)->valueInt = calcConstDeps(prevConst) + 1;
+                }
+            } else {
+                ctx.getNode(attrValue->child)->valueInt = 0;
+            }
             node.addChild(attrValue);
+        }
+
+        if (!node.buildError()) {
+            prevE3041 = false;
         }
 
         node->flags |= ASTNODE_EVAULATED;
@@ -543,6 +575,27 @@ struct BuildRules {
 
     template <ASTNodeType Type>
     void visit(ASTNodeRef&, Tag<Type>) noexcept {
+    }
+
+    uint64_t calcConstDeps(ASTNodeRef node) {
+        if (!node.evaulated() || node.buildError()) {
+            return 0;
+        }
+        uint64_t evaulated = 0;
+        for (auto val : node.findChild<ASTNodeType::AttrValue>()) {
+            if (val.is<ASTNodeType::LiteralInt>()) {
+                evaulated |= val->valueInt;
+            } else if (val.is<ASTNodeType::DeclRef>()) {
+                auto decl = val.resolveRef(val.parent());
+                if (!decl.is<ASTNodeType::Const>()) {
+                    return 0;
+                }
+                evaulated |= calcConstDeps(decl);
+            } else {
+                return 0;
+            }
+        }
+        return evaulated;
     }
 
     std::pair<bool, std::string> findCyclicRelationshipConsts(ASTNodeRef& target, ASTNodeRef next) {
@@ -608,6 +661,7 @@ struct BuildRules {
     }
 
     ASTNodeRef& prevConst;
+    bool& prevE3041;
 };
 
 } // namespace idl

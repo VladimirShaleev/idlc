@@ -468,14 +468,19 @@ struct HierarchyRules {
 };
 
 struct BuildRules {
-    BuildRules(ASTNodeRef& prevConst, bool& prevE3041) noexcept : prevConst(prevConst), prevE3041(prevE3041) {
+    struct State {
+        ASTNodeRef prevConst;
+        bool prevE3041;
+    };
+
+    BuildRules(State& state) noexcept : state(state) {
     }
 
     void visit(ASTNodeRef& node, Tag<ASTNodeType::Const>) {
         auto& ctx = node.ctx();
-        if (prevConst && prevConst.parent() != node.parent()) {
-            prevConst = ASTNodeRef(ctx);
-            prevE3041 = false;
+        if (state.prevConst && state.prevConst.parent() != node.parent()) {
+            state.prevConst = ASTNodeRef(ctx);
+            state.prevE3041 = false;
         }
 
         auto attrValue = node.findChild<ASTNodeType::AttrValue>();
@@ -511,8 +516,8 @@ struct BuildRules {
                 }
 
                 if (decl.buildError()) {
-                    if (!prevE3041) {
-                        prevE3041 = true;
+                    if (!state.prevE3041) {
+                        state.prevE3041 = true;
                         ctx.log<IDL_STATUS_E3041>(node->location, node.fullname());
                     }
                     node->flags |= ASTNODE_BUILD_ERROR;
@@ -541,16 +546,16 @@ struct BuildRules {
             attrValue->parent = node.handle();
             attrValue->child  = ctx.allocNode(loc, ASTNodeType::LiteralInt);
 
-            if (prevConst) {
-                if (prevConst.buildError()) {
-                    if (!prevE3041) {
-                        prevE3041 = true;
+            if (state.prevConst) {
+                if (state.prevConst.buildError()) {
+                    if (!state.prevE3041) {
+                        state.prevE3041 = true;
                         ctx.log<IDL_STATUS_E3041>(node->location, node.fullname());
                     }
                     ctx.getNode(attrValue->child)->valueInt = 0;
                     node->flags |= ASTNODE_BUILD_ERROR;
                 } else {
-                    ctx.getNode(attrValue->child)->valueInt = calcConstDeps(prevConst) + 1;
+                    ctx.getNode(attrValue->child)->valueInt = calcConstDeps(state.prevConst) + 1;
                 }
             } else {
                 ctx.getNode(attrValue->child)->valueInt = 0;
@@ -559,12 +564,12 @@ struct BuildRules {
         }
 
         if (!node.buildError()) {
-            prevE3041 = false;
+            state.prevE3041 = false;
         }
 
         node->flags |= ASTNODE_EVAULATED;
 
-        prevConst = node;
+        state.prevConst = node;
     }
 
     void visit(ASTNodeRef& node, Tag<ASTNodeType::DeclRef>) {
@@ -660,8 +665,7 @@ struct BuildRules {
         return ASTNodeRef(node.ctx());
     }
 
-    ASTNodeRef& prevConst;
-    bool& prevE3041;
+    State& state;
 };
 
 } // namespace idl

@@ -26,6 +26,7 @@
 #include <set>
 #include <span>
 #include <sstream>
+#include <stack>
 #include <string>
 #include <typeindex>
 #include <unordered_map>

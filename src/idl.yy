@@ -123,9 +123,8 @@
 
 idl : stack_decls { 
     if (!scanner.context().hasErrors()) {
-        // BuildRules rules(scanner.context());
-        // ChildVisitor visitor(scanner.context(), rules, ChildVisitor::SkipLiterals | ChildVisitor::SkipTrivials);
-        // scanner.context().api()->accept(visitor);
+        ASTNodeRef prevConst(scanner.context());
+        scanner.context().api().acceptRecursive<BuildRules>(ASTNodeRef::SkipLiterals | ASTNodeRef::SkipTrivials, std::ref(prevConst));
     } 
 }
 

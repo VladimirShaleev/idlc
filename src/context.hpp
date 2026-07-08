@@ -50,6 +50,7 @@ public:
         node.location.line     = loc.begin.line;
         node.location.column   = loc.begin.column;
         node.type              = type;
+        node.evaulated         = false;
         node.parent            = NodeHandleNone;
         node.sibling           = NodeHandleNone;
         node.child             = NodeHandleNone;
@@ -61,80 +62,13 @@ public:
 
     void addSymbol(ASTNodeHandle decl);
 
-    // ASTDecl* findSymbol(ASTDecl* decl, const idl::location& loc, const std::string& name, bool onlyType = false) {
-    //     auto nameLower = name;
-    //     std::transform(nameLower.begin(), nameLower.end(), nameLower.begin(), [](auto c) {
-    //         return std::tolower(c);
-    //     });
-    //     while (decl) {
-    //         const auto fullname = decl->fullnameLowecase() + '.' + nameLower;
-    //         if (auto it = _symbols.find(fullname); it != _symbols.end()) {
-    //             const auto actualName   = decl->fullname() + '.' + name;
-    //             const auto expectedName = it->second->fullname();
-    //             if (actualName != expectedName) {
-    //                 log<IDL_STATUS_E3036>(loc, actualName, expectedName);
-    //                 return nullptr;
-    //             }
-    //             if (onlyType) {
-    //                 if (it->second->as<ASTType>()) {
-    //                     return it->second;
-    //                 }
-    //             } else {
-    //                 return it->second;
-    //             }
-    //         }
-    //         decl = decl->parent ? decl->parent->as<ASTDecl>() : nullptr;
-    //     }
-    //     if (auto it = _symbols.find(nameLower); it != _symbols.end()) {
-    //         const auto expectedName = it->second->fullname();
-    //         if (name != expectedName) {
-    //             log<IDL_STATUS_E3036>(loc, name, expectedName);
-    //             return nullptr;
-    //         }
-    //         if (onlyType) {
-    //             if (it->second->as<ASTType>()) {
-    //                 return it->second;
-    //             }
-    //         } else {
-    //             return it->second;
-    //         }
-    //     }
-    //     err<IDL_STATUS_E3037>(loc, name);
-    //     return nullptr;
-    // }
-    //
-    // ASTDecl* resolveRef(ASTDecl* decl, const idl::location& loc, ASTDeclRef* declRef, bool onlyType = false) {
-    //     if (!declRef->decl) {
-    //         if (auto symbol = findSymbol(decl, loc, declRef->name, onlyType)) {
-    //             declRef->decl = symbol;
-    //             return symbol;
-    //         }
-    //     }
-    //     return declRef->decl;
-    // }
+    auto findSymbol(ASTNodeRef& decl, const ASTLocation& loc, const std::string& name, bool onlyType = false);
 
     template <typename Visitor, typename... Args>
     Visitor visit(ASTNodeHandle node, Args&&... args) {
         auto nodeRef = ASTNodeRef(*this, node);
         return nodeRef.template accept<Visitor>(std::forward<Args>(args)...);
     }
-
-    // template <typename Visitor, typename... Args>
-    // void visitRecursive(ASTNodeHandle handle, Args&&... args) {
-    //     std::queue<ASTNodeHandle> queue;
-    //     queue.push(handle);
-
-    //     while (!queue.empty()) {
-    //         auto curr = queue.front();
-    //         queue.pop();
-
-    //         visit<Visitor>(curr, std::forward<Args>(args)...);
-
-    //         for (auto child : getNodeChilds(curr)) {
-    //             queue.push(child);
-    //         }
-    //     }
-    // }
 
     void initBuiltins(ASTNodeRef node);
 
@@ -374,6 +308,8 @@ public:
         });
     }
 
+    ASTNodeRef resolveRef(ASTNodeRef decl, bool onlyType = false);
+
     template <typename Visitor, typename... Args>
     Visitor accept(Args&&... args) {
         Visitor visitor(std::forward<Args>(args)...);
@@ -499,8 +435,62 @@ public:
         return visitor;
     }
 
+    enum Filter {
+        None         = 0,
+        SkipDocs     = 1 << 0,
+        SkipAttrs    = 1 << 1,
+        SkipDecls    = 1 << 2,
+        SkipImports  = 1 << 3,
+        SkipLiterals = 1 << 4,
+        SkipTrivials = 1 << 5,
+    };
+
+    template <typename Visitor, typename... Args>
+    void acceptRecursive(int filters, Args&&... args) {
+        std::stack<ASTNodeRef> stack;
+        stack.push(*this);
+
+        std::vector<ASTNodeRef> buffer;
+        buffer.reserve(50);
+
+        while (!stack.empty()) {
+            auto node = stack.top();
+            stack.pop();
+
+            if ((filters & SkipAttrs) == SkipAttrs && node.is<ASTNodeType::Attr>()) {
+                continue;
+            }
+            if ((filters & SkipDocs) == SkipDocs && node.is<ASTNodeType::AttrDoc>()) {
+                continue;
+            }
+            if ((filters & SkipDecls) == SkipDecls && node.is<ASTNodeType::Decl>()) {
+                continue;
+            }
+            if ((filters & SkipImports) == SkipImports && node.is<ASTNodeType::Import>()) {
+                continue;
+            }
+            if ((filters & SkipLiterals) == SkipLiterals && node.is<ASTNodeType::Literal>()) {
+                continue;
+            }
+            if ((filters & SkipTrivials) == SkipTrivials && node.is<ASTNodeType::TrivialType>()) {
+                continue;
+            }
+
+            node.accept<Visitor>(std::forward<Args>(args)...);
+
+            buffer.assign(node.begin(), node.end());
+            for (auto it = buffer.rbegin(); it != buffer.rend(); ++it) {
+                stack.push(*it);
+            }
+        }
+    }
+
     [[nodiscard]] std::string_view valueStr() const noexcept {
         return _ctx->getStr(_node->valueStr);
+    }
+
+    [[nodiscard]] ASTNodeRef valueNode() const noexcept {
+        return ASTNodeRef(*_ctx, _node ? _node->valueHandle : NodeHandleNone);
     }
 
     [[nodiscard]] std::string fullname() const {
@@ -512,8 +502,12 @@ public:
                 str = prnt.fullname() + '.';
             }
         }
-        auto name = valueStr();
-        return str + std::string(name.data(), name.length());
+        if (is<ASTNodeType::Import>()) {
+            return str.substr(0, str.length() - 1);
+        } else {
+            auto name = valueStr();
+            return str + std::string(name.data(), name.length());
+        }
     }
 
     [[nodiscard]] std::string fullnameLowercase() const {
@@ -527,11 +521,12 @@ public:
     template <ASTNodeType Type>
     [[nodiscard]] static ASTNodeRef byType(Context& ctx) noexcept {
         static ASTNode node{};
-        node.location = {};
-        node.type     = Type;
-        node.parent   = NodeHandleNone;
-        node.sibling  = NodeHandleNone;
-        node.child    = NodeHandleNone;
+        node.location  = {};
+        node.type      = Type;
+        node.evaulated = false;
+        node.parent    = NodeHandleNone;
+        node.sibling   = NodeHandleNone;
+        node.child     = NodeHandleNone;
         ASTNodeRef ref(ctx);
         ref._node = &node;
         return ref;
@@ -578,6 +573,56 @@ inline void Context::addSymbol(ASTNodeHandle decl) {
         log<IDL_STATUS_E3012>(node->location, node.fullname());
     }
     _symbols[fullname] = decl;
+}
+
+inline auto Context::findSymbol(ASTNodeRef& decl, const ASTLocation& loc, const std::string& name, bool onlyType) {
+    auto nameLower = name;
+    std::transform(nameLower.begin(), nameLower.end(), nameLower.begin(), [](auto c) {
+        return std::tolower(c);
+    });
+    auto curr = decl;
+    while (curr) {
+        const auto fullname = curr.fullnameLowercase() + '.' + nameLower;
+        if (auto it = _symbols.find(fullname); it != _symbols.end()) {
+            auto symbol = getNodeRef(it->second);
+
+            const auto actualName   = curr.fullname() + '.' + name;
+            const auto expectedName = symbol.fullname();
+            if (actualName != expectedName) {
+                log<IDL_STATUS_E3036>(loc, actualName, expectedName);
+                return ASTNodeRef(*this);
+            }
+            if (onlyType) {
+                // if (symbol.is<ASTNodeType::Type>()) {
+                //     return it->second;
+                //  }
+            } else {
+                return symbol;
+            }
+        }
+        curr = curr.parent() ? curr.parent() : ASTNodeRef(*this);
+        if (!curr.is<ASTNodeType::Decl>()) {
+            curr = ASTNodeRef(*this);
+        }
+    }
+    if (auto it = _symbols.find(nameLower); it != _symbols.end()) {
+        auto symbol = getNodeRef(it->second);
+
+        const auto expectedName = symbol.fullname();
+        if (name != expectedName) {
+            log<IDL_STATUS_E3036>(loc, name, expectedName);
+            return ASTNodeRef(*this);
+        }
+        if (onlyType) {
+            // if (it->second->as<ASTType>()) {
+            //     return it->second;
+            // }
+        } else {
+            return symbol;
+        }
+    }
+    // err<IDL_STATUS_E3037>(loc, name);
+    return ASTNodeRef(*this);
 }
 
 inline void Context::initBuiltins(ASTNodeRef node) {
@@ -629,6 +674,21 @@ inline void Context::initBuiltins(ASTNodeRef node) {
     addBuiltin("Float64", "64 bit float point.", Tag<ASTNodeType::Float64>{});
     addBuiltin("Str", "utf8 string.", Tag<ASTNodeType::Str>{});
     addBuiltin("Data", "pointer to data.", Tag<ASTNodeType::Data>{});
+}
+
+inline ASTNodeRef ASTNodeRef::resolveRef(ASTNodeRef decl, bool onlyType) {
+    if (!(*this)->evaulated) {
+        (*this)->evaulated = true;
+        auto view          = valueStr();
+        std::string name(view.data(), view.length());
+        if (auto symbol = _ctx->findSymbol(decl, (*this)->location, name, onlyType)) {
+            (*this)->valueHandle = symbol.handle();
+            return symbol;
+        } else {
+            (*this)->valueHandle = NodeHandleNone;
+        }
+    }
+    return ASTNodeRef(*_ctx, (*this)->valueHandle);
 }
 
 } // namespace idl

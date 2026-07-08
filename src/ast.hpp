@@ -8,7 +8,7 @@ namespace idl {
 
 enum class ASTNodeType : uint8_t {
     Tombstone,
-    
+
     Decl,
     Api,
     Import,
@@ -94,6 +94,7 @@ inline bool operator!=(const ASTNodeHandle& lhs, const ASTNodeHandle& rhs) noexc
 struct ASTNode {
     ASTLocation location;
     ASTNodeType type;
+    bool evaulated;
     ASTNodeHandle parent;
     ASTNodeHandle sibling;
     ASTNodeHandle child;
@@ -103,6 +104,7 @@ struct ASTNode {
         uint64_t valueInt;
         double valueFloat;
         bool valueBool;
+        ASTNodeHandle valueHandle;
     };
 
     ASTNode() noexcept : valueStr{} {

@@ -480,8 +480,26 @@ struct BuildRules {
     }
 
     void visit(ASTNodeRef& node, Tag<ASTNodeType::Enum>) {
-        auto& ctx      = node.ctx();
-        auto attrValue = node.findChild<ASTNodeType::AttrType>();
+        auto& ctx = node.ctx();
+        if (auto type = node.declType()) {
+            if (!type.is<ASTNodeType::IntegerType>()) {
+            }
+        } else {
+            static const std::string filename = "<runtime>";
+
+            const auto loc = location(position(&filename, 1, 1));
+
+            auto handle      = ctx.allocNode(loc, ASTNodeType::AttrType);
+            auto attrType    = ASTNodeRef(ctx, handle);
+            attrType->parent = node.handle();
+            attrType->child  = ctx.allocNode(loc, ASTNodeType::DeclRef);
+
+            auto declRef      = ASTNodeRef(ctx, attrType->child);
+            declRef->parent   = handle;
+            declRef->valueStr = ctx.intern("Int32");
+
+            node.addChild(attrType);
+        }
     }
 
     void visit(ASTNodeRef& node, Tag<ASTNodeType::Const>) {
@@ -554,6 +572,7 @@ struct BuildRules {
             attrValue->parent = node.handle();
             attrValue->child  = ctx.allocNode(loc, ASTNodeType::LiteralInt);
 
+            ctx.getNode(attrValue->child)->parent = handle;
             if (state.prevConst) {
                 if (auto evaulated = calcConstDeps(state.prevConst)) {
                     ctx.getNode(attrValue->child)->valueInt = evaulated.value() + 1;

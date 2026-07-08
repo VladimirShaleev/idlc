@@ -542,6 +542,17 @@ public:
         return str;
     }
 
+    [[nodiscard]] ASTNodeRef declType() const noexcept {
+        if (auto attrType = findChild<ASTNodeType::AttrType>()) {
+            if (auto declRef = ASTNodeRef(*_ctx, attrType->child)) {
+                if (auto type = declRef.resolveRef(parent(), true)) {
+                    return type;
+                }
+            }
+        }
+        return ASTNodeRef(*_ctx);
+    }
+
     template <ASTNodeType Type>
     [[nodiscard]] static ASTNodeRef byType(Context& ctx) noexcept {
         static ASTNode node{};

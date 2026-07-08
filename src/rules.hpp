@@ -483,6 +483,7 @@ struct BuildRules {
         auto& ctx = node.ctx();
         if (auto type = node.declType()) {
             if (!type.is<ASTNodeType::IntegerType>()) {
+                // log.error
             }
         } else {
             static const std::string filename = "<runtime>";
@@ -494,9 +495,9 @@ struct BuildRules {
             attrType->parent = node.handle();
             attrType->child  = ctx.allocNode(loc, ASTNodeType::DeclRef);
 
-            auto declRef      = ASTNodeRef(ctx, attrType->child);
-            declRef->parent   = handle;
-            declRef->valueStr = ctx.intern("Int32");
+            auto declRef                 = ASTNodeRef(ctx, attrType->child);
+            declRef->parent              = handle;
+            declRef->valueDeclRef.symbol = ctx.intern("Int32");
 
             node.addChild(attrType);
         }
@@ -508,6 +509,7 @@ struct BuildRules {
             state.prevConst = ASTNodeRef(ctx);
             state.prevE3041 = false;
         }
+        auto type = node.parent().declType();
 
         auto attrValue = node.findChild<ASTNodeType::AttrValue>();
         if (attrValue) {

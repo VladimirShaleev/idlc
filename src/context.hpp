@@ -513,10 +513,6 @@ public:
         return _ctx->getStr(_node->valueStr);
     }
 
-    [[nodiscard]] ASTNodeRef valueNode() const noexcept {
-        return ASTNodeRef(*_ctx, _node ? _node->valueHandle : NodeHandleNone);
-    }
-
     [[nodiscard]] std::string fullname() const {
         assert(is<ASTNodeType::Decl>());
         assert(valueStr().length() > 0);
@@ -718,16 +714,16 @@ inline void Context::initBuiltins(ASTNodeRef node) {
 inline ASTNodeRef ASTNodeRef::resolveRef(ASTNodeRef decl, bool onlyType) {
     if (!evaulated()) {
         (*this)->flags |= ASTNODE_EVAULATED;
-        auto view = valueStr();
+        auto view = _ctx->getStr((*this)->valueDeclRef.symbol);
         std::string name(view.data(), view.length());
         if (auto symbol = _ctx->findSymbol(decl, (*this)->location, name, onlyType)) {
-            (*this)->valueHandle = symbol.handle();
+            (*this)->valueDeclRef.handle = symbol.handle();
             return symbol;
         } else {
-            (*this)->valueHandle = NodeHandleNone;
+            (*this)->valueDeclRef.handle = NodeHandleNone;
         }
     }
-    return ASTNodeRef(*_ctx, (*this)->valueHandle);
+    return ASTNodeRef(*_ctx, (*this)->valueDeclRef.handle);
 }
 
 } // namespace idl

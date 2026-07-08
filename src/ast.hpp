@@ -80,6 +80,11 @@ struct ASTNodeHandle {
     uint16_t handle;
 };
 
+struct ASTDeclRef {
+    String symbol;
+    ASTNodeHandle handle;
+};
+
 static constexpr ASTNodeHandle NodeHandleNone{ 0xFFFF };
 
 inline bool operator==(const ASTNodeHandle& lhs, const ASTNodeHandle& rhs) noexcept {
@@ -111,7 +116,7 @@ struct ASTNode {
         uint64_t valueInt;
         double valueFloat;
         bool valueBool;
-        ASTNodeHandle valueHandle;
+        ASTDeclRef valueDeclRef;
     };
 
     ASTNode() noexcept : valueStr{} {

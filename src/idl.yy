@@ -182,8 +182,8 @@ doc_list
     | doc_list doc { $$ = list_add($1, $2); }
 
 ref
-    : ID { $$ = alloc_node(@1, DeclRef); node($$)->valueStr = intern($1); }
-    | REF { $$ = alloc_node(@1, DeclRef); node($$)->valueStr = intern($1); }
+    : ID { $$ = alloc_node(@1, DeclRef); node($$)->valueDeclRef.symbol = intern($1); }
+    | REF { $$ = alloc_node(@1, DeclRef); node($$)->valueDeclRef.symbol = intern($1); }
     ;
 
 decl

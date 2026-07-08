@@ -50,7 +50,7 @@ public:
         node.location.line     = loc.begin.line;
         node.location.column   = loc.begin.column;
         node.type              = type;
-        node.evaulated         = false;
+        node.flags             = 0;
         node.parent            = NodeHandleNone;
         node.sibling           = NodeHandleNone;
         node.child             = NodeHandleNone;
@@ -485,6 +485,14 @@ public:
         }
     }
 
+    [[nodiscard]] bool evaulated() const noexcept {
+        return _node ? (_node->flags & ASTNODE_EVAULATED) == ASTNODE_EVAULATED : false;
+    }
+
+    [[nodiscard]] bool forwardDecl() const noexcept {
+        return _node ? (_node->flags & ASTNODE_FORWARD_DECL) == ASTNODE_FORWARD_DECL : false;
+    }
+
     [[nodiscard]] std::string_view valueStr() const noexcept {
         return _ctx->getStr(_node->valueStr);
     }
@@ -521,12 +529,12 @@ public:
     template <ASTNodeType Type>
     [[nodiscard]] static ASTNodeRef byType(Context& ctx) noexcept {
         static ASTNode node{};
-        node.location  = {};
-        node.type      = Type;
-        node.evaulated = false;
-        node.parent    = NodeHandleNone;
-        node.sibling   = NodeHandleNone;
-        node.child     = NodeHandleNone;
+        node.location = {};
+        node.type     = Type;
+        node.flags    = 0;
+        node.parent   = NodeHandleNone;
+        node.sibling  = NodeHandleNone;
+        node.child    = NodeHandleNone;
         ASTNodeRef ref(ctx);
         ref._node = &node;
         return ref;
@@ -677,9 +685,9 @@ inline void Context::initBuiltins(ASTNodeRef node) {
 }
 
 inline ASTNodeRef ASTNodeRef::resolveRef(ASTNodeRef decl, bool onlyType) {
-    if (!(*this)->evaulated) {
-        (*this)->evaulated = true;
-        auto view          = valueStr();
+    if (!evaulated()) {
+        (*this)->flags |= ASTNODE_EVAULATED;
+        auto view = valueStr();
         std::string name(view.data(), view.length());
         if (auto symbol = _ctx->findSymbol(decl, (*this)->location, name, onlyType)) {
             (*this)->valueHandle = symbol.handle();

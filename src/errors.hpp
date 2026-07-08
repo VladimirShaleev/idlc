@@ -15,6 +15,8 @@ template <idl_status_t Status, typename... Args>
         str = fmt::format("The declaration '{}' is missing an attribute [{}]", args...);
     } else if constexpr (Status == IDL_STATUS_W2002) {
         str = fmt::format("Repeated import '{}'", args...);
+    } else if constexpr (Status == IDL_STATUS_W2003) {
+        str = fmt::format("The constant '{}' refers to a constant declared below '{}'", args...);
     } else if constexpr (Status == IDL_STATUS_E3001) {
         if constexpr (sizeof...(args) > 0) {
             str = fmt::format("Syntax error '{}'", args...);
@@ -97,6 +99,16 @@ template <idl_status_t Status, typename... Args>
         str = fmt::format("Identifiers are case sensitive, error in '{}', but expected '{}'", args...);
     } else if constexpr (Status == IDL_STATUS_E3037) {
         str = fmt::format("Symbol definition '{}' not found", args...);
+    } else if constexpr (Status == IDL_STATUS_E3038) {
+        str = fmt::format("Constants can only refer to other constants when evaluated");
+    } else if constexpr (Status == IDL_STATUS_E3039) {
+        str = fmt::format("A constant '{}' cannot refer to itself when evaluated", args...);
+    } else if constexpr (Status == IDL_STATUS_E3040) {
+        str = fmt::format("Enumeration constants can only be specified as integers or enum consts");
+    } else if constexpr (Status == IDL_STATUS_E3041) {
+        str = fmt::format("TODO:");
+    } else if constexpr (Status == IDL_STATUS_E3042) {
+        str = fmt::format("Cyclic dependence of constant '{}'", args...);
     } else {
         assert(!"Unknown status code");
     }

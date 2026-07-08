@@ -41,6 +41,7 @@ typedef enum
     IDL_STATUS_N1001    = 1001, /**< Unnecessary parentheses for a parameterless attribute. */
     IDL_STATUS_W2001    = 2001, /**< The declaration is missing an attribute. */
     IDL_STATUS_W2002    = 2002, /**< Repeated import. */
+    IDL_STATUS_W2003    = 2003, /**< The constant refers to a constant declared below. */
     IDL_STATUS_E3001    = 3001, /**< Syntax error. */
     IDL_STATUS_E3002    = 3002, /**< Argument parsing error. */
     IDL_STATUS_E3003    = 3003, /**< The [version] attribute must have three required integer parameters, such as version(1, 2, 3) or version("string"). */
@@ -78,6 +79,11 @@ typedef enum
     IDL_STATUS_E3035    = 3035, /**< The [license] attribute must contain one or more arguments. */
     IDL_STATUS_E3036    = 3036, /**< Identifiers are case sensitive. */
     IDL_STATUS_E3037    = 3037, /**< Symbol definition not found. */
+    IDL_STATUS_E3038    = 3038, /**< Constants can only refer to other constants when evaluated. */
+    IDL_STATUS_E3039    = 3039, /**< A constant cannot refer to itself when evaluated. */
+    IDL_STATUS_E3040    = 3040, /**< Enumeration constants can only be specified as integers or enum consts. */
+    IDL_STATUS_E3041    = 3041, /**< TODO: */
+    IDL_STATUS_E3042    = 3042, /**< Cyclic dependence of constant. */
     IDL_STATUS_MAX_ENUM = 0x7FFFFFFF /**< Max value of enum (not used) */
 } idl_status_t;
 

@@ -481,11 +481,12 @@ struct BuildRules {
         if (attrValue) {
             for (auto value : attrValue) {
                 if (value.is<ASTNodeType::LiteralInt>()) {
+                    // add check range
                     continue;
                 }
 
                 if (!value.is<ASTNodeType::DeclRef>()) {
-                    // ctx.log<IDL_STATUS_E3041>(value->location);
+                    ctx.log<IDL_STATUS_E3040>(value->location);
                     continue;
                 }
 
@@ -495,12 +496,23 @@ struct BuildRules {
                 }
 
                 if (!decl.is<ASTNodeType::Const>()) {
-                    // ctx.log<IDL_STATUS_E3040>(ref->location, ref->name);
+                    ctx.log<IDL_STATUS_E3038>(node->location);
                     continue;
                 }
 
-                if (!decl->evaulated) {
-                    // ctx.log<IDL_STATUS_E3039>(ref->location, ref->name);
+                if (decl == node) {
+                    ctx.log<IDL_STATUS_E3039>(node->location, decl.fullname());
+                    continue;
+                }
+
+                if (!decl.evaulated()) {
+                    const auto [hasCyclic, deps] = findCyclicRelationshipConsts(node, decl);
+                    if (hasCyclic) {
+                        ctx.log<IDL_STATUS_E3042>(node->location, deps);
+                    } else {
+                        ctx.log<IDL_STATUS_W2003>(node->location, node.fullname(), decl.fullname());
+                        node->flags |= ASTNODE_FORWARD_DECL;
+                    }
                     continue;
                 }
             }
@@ -518,7 +530,7 @@ struct BuildRules {
             node.addChild(attrValue);
         }
 
-        node->evaulated = true;
+        node->flags |= ASTNODE_EVAULATED;
 
         prevConst = node;
     }
@@ -531,6 +543,57 @@ struct BuildRules {
 
     template <ASTNodeType Type>
     void visit(ASTNodeRef&, Tag<Type>) noexcept {
+    }
+
+    std::pair<bool, std::string> findCyclicRelationshipConsts(ASTNodeRef& target, ASTNodeRef next) {
+        std::stack<ASTNodeRef> consts;
+        consts.push(next);
+        std::vector<ASTNodeRef> buffer;
+        buffer.reserve(50);
+        std::unordered_map<uint16_t, ASTNodeRef> cameFrom;
+        cameFrom[next.handle().handle] = target;
+        while (!consts.empty()) {
+            auto top = consts.top();
+            consts.pop();
+
+            if (top == target) {
+                buffer.clear();
+                ASTNodeRef curr = target;
+                do {
+                    buffer.push_back(curr);
+                    curr = cameFrom[curr.handle().handle];
+                } while (curr != target);
+                buffer.push_back(target);
+
+                std::ostringstream ss;
+                for (auto dep = buffer.rbegin(); dep != buffer.rend(); ++dep) {
+                    if (dep != buffer.rbegin()) {
+                        ss << " -> ";
+                    }
+                    ss << dep->fullname();
+                }
+                return { true, ss.str() };
+            }
+
+            auto declRefs = top.findChild<ASTNodeType::AttrValue>() | std::views::filter([this](const auto& value) {
+                return value.is<ASTNodeType::DeclRef>();
+            });
+            buffer.clear();
+            for (auto ref : declRefs) {
+                if (auto decl = ref.resolveRef(findParent(ref)); decl.is<ASTNodeType::Const>()) {
+                    if (!cameFrom.contains(decl.handle().handle)) {
+                        cameFrom[decl.handle().handle] = top;
+                    } else if (decl == target) {
+                        cameFrom[decl.handle().handle] = top;
+                    }
+                    buffer.push_back(decl);
+                }
+            }
+            for (auto it = buffer.rbegin(); it != buffer.rend(); ++it) {
+                consts.push(*it);
+            }
+        }
+        return { false, "" };
     }
 
     ASTNodeRef findParent(ASTNodeRef node) noexcept {

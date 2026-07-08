@@ -91,10 +91,15 @@ inline bool operator!=(const ASTNodeHandle& lhs, const ASTNodeHandle& rhs) noexc
     return lhs.handle != rhs.handle;
 }
 
+enum ASTNodeFlags {
+    ASTNODE_EVAULATED    = 1,
+    ASTNODE_FORWARD_DECL = 2
+};
+
 struct ASTNode {
     ASTLocation location;
     ASTNodeType type;
-    bool evaulated;
+    uint8_t flags;
     ASTNodeHandle parent;
     ASTNodeHandle sibling;
     ASTNodeHandle child;

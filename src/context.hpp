@@ -633,7 +633,7 @@ inline auto Context::findSymbol(ASTNodeRef& decl, const ASTLocation& loc, const 
             return symbol;
         }
     }
-    // err<IDL_STATUS_E3037>(loc, name);
+    log<IDL_STATUS_E3037>(loc, name);
     return ASTNodeRef(*this);
 }
 

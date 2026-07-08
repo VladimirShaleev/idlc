@@ -244,17 +244,31 @@ struct AttrArgRules {
 
     void visit(ASTNodeRef& node, Tag<ASTNodeType::AttrValue>) {
         if (argCount > 0) {
-            auto arg0       = node.ctx().getNodeRef(argFrist);
-            const auto type = arg0 ? arg0->type : ASTNodeType::Tombstone;
-            node->child     = argFrist;
+            auto arg0   = node.ctx().getNodeRef(argFrist);
+            node->child = argFrist;
+            auto view   = node | std::views::all;
+            auto it     = std::ranges::find_if(view, [](const auto& val) {
+                return val.is<ASTNodeType::Literal>();
+            });
+            ASTNodeType type;
+            if (it == view.end()) {
+                if (!arg0.is<ASTNodeType::DeclRef>()) {
+                    node.ctx().log<IDL_STATUS_E3025>(node->location);
+                    node->child = NodeHandleNone;
+                    return;
+                }
+                type = ASTNodeType::DeclRef;
+            } else {
+                type = (*it)->type;
+            }
             for (auto child : node) {
-                if (child.is<ASTNodeType::Literal, ASTNodeType::DeclRef>()) {
+                if (child.is<ASTNodeType::Literal>()) {
                     if (child->type != type) {
                         node.ctx().log<IDL_STATUS_E3026>(node->location);
                         node->child = NodeHandleNone;
                         break;
                     }
-                } else {
+                } else if (!child.is<ASTNodeType::DeclRef>()) {
                     node.ctx().log<IDL_STATUS_E3025>(node->location);
                     node->child = NodeHandleNone;
                     break;
@@ -547,15 +561,15 @@ struct BuildRules {
             attrValue->child  = ctx.allocNode(loc, ASTNodeType::LiteralInt);
 
             if (state.prevConst) {
-                if (state.prevConst.buildError()) {
+                if (auto evaulated = calcConstDeps(state.prevConst)) {
+                    ctx.getNode(attrValue->child)->valueInt = evaulated.value() + 1;
+                } else {
                     if (!state.prevE3041) {
                         state.prevE3041 = true;
                         ctx.log<IDL_STATUS_E3041>(node->location, node.fullname());
                     }
                     ctx.getNode(attrValue->child)->valueInt = 0;
                     node->flags |= ASTNODE_BUILD_ERROR;
-                } else {
-                    ctx.getNode(attrValue->child)->valueInt = calcConstDeps(state.prevConst) + 1;
                 }
             } else {
                 ctx.getNode(attrValue->child)->valueInt = 0;
@@ -582,25 +596,43 @@ struct BuildRules {
     void visit(ASTNodeRef&, Tag<Type>) noexcept {
     }
 
-    uint64_t calcConstDeps(ASTNodeRef node) {
-        if (!node.evaulated() || node.buildError()) {
-            return 0;
+    std::optional<uint64_t> calcConstDeps(ASTNodeRef cnst) {
+        if (cnst.buildError()) {
+            return std::nullopt;
         }
         uint64_t evaulated = 0;
-        for (auto val : node.findChild<ASTNodeType::AttrValue>()) {
-            if (val.is<ASTNodeType::LiteralInt>()) {
-                evaulated |= val->valueInt;
-            } else if (val.is<ASTNodeType::DeclRef>()) {
-                auto decl = val.resolveRef(val.parent());
-                if (!decl.is<ASTNodeType::Const>()) {
-                    return 0;
+
+        auto attrValue = cnst.findChild<ASTNodeType::AttrValue>();
+        std::stack<std::pair<ASTNodeRef, ASTNodeHandle>> stack;
+        stack.emplace(cnst, attrValue->child);
+
+        while (!stack.empty()) {
+            auto& [node, value] = stack.top();
+            if (node.buildError()) {
+                return std::nullopt;
+            }
+
+            if (value != NodeHandleNone) {
+                auto ref = cnst.ctx().getNodeRef(value);
+                if (ref.is<ASTNodeType::LiteralInt>()) {
+                    evaulated |= ref->valueInt;
+                } else if (ref.is<ASTNodeType::DeclRef>()) {
+                    auto decl = ref.resolveRef(ref.parent());
+                    if (!decl.is<ASTNodeType::Const>() || decl.buildError()) {
+                        return std::nullopt;
+                    };
+                    attrValue = decl.findChild<ASTNodeType::AttrValue>();
+                    stack.emplace(decl, attrValue->child);
+                } else {
+                    return std::nullopt;
                 }
-                evaulated |= calcConstDeps(decl);
+                value = ref->sibling;
             } else {
-                return 0;
+                stack.pop();
             }
         }
-        return evaulated;
+
+        return std::make_optional(evaulated);
     }
 
     std::pair<bool, std::string> findCyclicRelationshipConsts(ASTNodeRef& target, ASTNodeRef next) {

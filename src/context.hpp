@@ -42,7 +42,7 @@ public:
 
     auto getNodeRef(ASTNodeHandle handle) noexcept;
 
-    ASTNodeHandle allocNode(const idl::location& loc, ASTNodeType type) {
+    ASTNodeHandle allocNode(const idl::location& loc, ASTNodeType type, bool addedByCompiler = true) {
         auto index = _nodes.size();
         auto& node = _nodes.emplace_back();
 
@@ -50,7 +50,7 @@ public:
         node.location.line     = loc.begin.line;
         node.location.column   = loc.begin.column;
         node.type              = type;
-        node.flags             = 0;
+        node.flags             = addedByCompiler ? ASTNODE_ADDED_BY_COMPILER : 0;
         node.parent            = NodeHandleNone;
         node.sibling           = NodeHandleNone;
         node.child             = NodeHandleNone;
@@ -443,6 +443,7 @@ public:
         SkipImports  = 1 << 3,
         SkipLiterals = 1 << 4,
         SkipTrivials = 1 << 5,
+        OriginalIdl  = 1 << 6
     };
 
     template <typename Visitor, typename... Args>
@@ -474,6 +475,17 @@ public:
             }
             if ((filters & SkipTrivials) == SkipTrivials && node.is<ASTNodeType::TrivialType>()) {
                 continue;
+            }
+            if (node->flags & (ASTNODE_ADDED_BY_COMPILER | ASTNODE_REPLACED_BY_COMPILER)) {
+                if ((filters & OriginalIdl) == OriginalIdl) {
+                    if (node->flags & ASTNODE_ADDED_BY_COMPILER) {
+                        continue;
+                    }
+                } else {
+                    if (node->flags & ASTNODE_REPLACED_BY_COMPILER) {
+                        continue;
+                    }
+                }
             }
 
             node.accept<Visitor>(std::forward<Args>(args)...);
@@ -592,7 +604,7 @@ inline auto Context::findSymbol(ASTNodeRef& decl, const ASTLocation& loc, const 
     std::transform(nameLower.begin(), nameLower.end(), nameLower.begin(), [](auto c) {
         return std::tolower(c);
     });
-    auto curr   = decl;
+    auto curr = decl;
     while (curr) {
         const auto fullname = curr.fullnameLowercase() + '.' + nameLower;
         if (auto it = _symbols.find(fullname); it != _symbols.end()) {

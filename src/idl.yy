@@ -39,7 +39,7 @@
     #define visit(type, node, result, ...) \
         scanner.context().visit<type>(node __VA_OPT__(,) __VA_ARGS__).result
     #define alloc_node(loc, type) \
-        scanner.context().allocNode(loc, ASTNodeType::type)
+        scanner.context().allocNode(loc, ASTNodeType::type, false)
     #define node(handle) \
         scanner.context().getNode(handle)
     #define add_child(parent, child) \

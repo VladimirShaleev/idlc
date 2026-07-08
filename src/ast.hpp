@@ -7,8 +7,6 @@
 namespace idl {
 
 enum class ASTNodeType : uint8_t {
-    Tombstone,
-
     Decl,
     Api,
     Import,
@@ -93,9 +91,11 @@ inline bool operator!=(const ASTNodeHandle& lhs, const ASTNodeHandle& rhs) noexc
 }
 
 enum ASTNodeFlags {
-    ASTNODE_EVAULATED    = 1,
-    ASTNODE_BUILD_ERROR  = 2,
-    ASTNODE_FORWARD_DECL = 4
+    ASTNODE_EVAULATED            = 1,
+    ASTNODE_BUILD_ERROR          = 2,
+    ASTNODE_FORWARD_DECL         = 4,
+    ASTNODE_ADDED_BY_COMPILER    = 8,
+    ASTNODE_REPLACED_BY_COMPILER = 16
 };
 
 struct ASTNode {

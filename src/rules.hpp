@@ -182,9 +182,10 @@ struct AttrArgRules {
                     ctx.getNode(nodeMicro)->valueInt = micro;
                     ctx.getNode(nodeMajor)->sibling  = nodeMinor;
                     ctx.getNode(nodeMinor)->sibling  = nodeMicro;
+                    ctx.getNode(nodeMicro)->sibling  = argFrist;
+                    arg0->flags |= ASTNODE_REPLACED_BY_COMPILER;
 
                     node->child = nodeMajor;
-                    arg0->type  = ASTNodeType::Tombstone;
                     return;
                 }
             }
@@ -331,6 +332,8 @@ struct AttrArgRules {
                             }
                             lastNum = ctx.getNode(num);
                         }
+                        lastNum->sibling = argFrist;
+                        arg0->flags |= ASTNODE_REPLACED_BY_COMPILER;
                     } else {
                         ctx.log<IDL_STATUS_E3031>(node->location, str);
                         node->child = NodeHandleNone;
@@ -338,9 +341,6 @@ struct AttrArgRules {
                 } else {
                     ctx.log<IDL_STATUS_E3032>(node->location);
                     node->child = NodeHandleNone;
-                }
-                if (arg0) {
-                    arg0->type = ASTNodeType::Tombstone;
                 }
             }
         } else {
@@ -477,6 +477,11 @@ struct BuildRules {
     };
 
     BuildRules(State& state) noexcept : state(state) {
+    }
+
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::Enum>) {
+        auto& ctx      = node.ctx();
+        auto attrValue = node.findChild<ASTNodeType::AttrType>();
     }
 
     void visit(ASTNodeRef& node, Tag<ASTNodeType::Const>) {

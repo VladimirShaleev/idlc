@@ -98,7 +98,8 @@
 %token <std::string> INVALID_ATTR
 
 %type <ASTNodeHandle> def_with_attrs
-%type <ASTNodeHandle> def_with_ref
+%type <ASTNodeHandle> def_with_type
+%type <ASTNodeHandle> def_with_value
 %type <ASTNodeHandle> def
 %type <ASTNodeHandle> decl
 %type <ASTNodeHandle> doc
@@ -135,22 +136,20 @@ stack_decls
     ;
 
 def_with_attrs
-    : def_with_ref { $$ = $1; rule(AttrValidator, $$, scanner.context()); }
-    | def_with_ref '[' attr_list ']' { $$ = $1; add_child($$, $3.first); rule(AttrValidator, $$, scanner.context()); }
-    | def_with_ref idoc { $$ = $1; add_child($$, $2); rule(AttrValidator, $$, scanner.context()); }
-    | def_with_ref '[' attr_list ']' idoc { $$ = $1; add_child($$, $3.first); add_child($$, $5); rule(AttrValidator, $$, scanner.context()); }
+    : def_with_type { $$ = $1; rule(AttrValidator, $$, scanner.context()); }
+    | def_with_type '[' attr_list ']' { $$ = $1; add_child($$, $3.first); rule(AttrValidator, $$, scanner.context()); }
+    | def_with_type idoc { $$ = $1; add_child($$, $2); rule(AttrValidator, $$, scanner.context()); }
+    | def_with_type '[' attr_list ']' idoc { $$ = $1; add_child($$, $3.first); add_child($$, $5); rule(AttrValidator, $$, scanner.context()); }
     ;
 
-def_with_ref
+def_with_type
+    : def_with_value { $$ = $1; }
+    | def_with_value '{' arg_item '}' { $$ = $1; auto type = alloc_node(@3, AttrType); rule(AttrArg, type, $3, $3, 1); add_child($$, type);}
+    ;
+
+def_with_value
     : def { $$ = $1; }
-    | def ':' arg_list 
-    { 
-        $$ = $1;
-        auto isValue = rule(AttrValueOrType, $1).isValue;
-        auto valOrType = isValue ? alloc_node(@3, AttrValue) : alloc_node(@3, AttrType);
-        rule(AttrArg, valOrType, $3.first, $3.last, $3.count);
-        add_child($$, valOrType);
-    }
+    | def ':' arg_list { $$ = $1; auto val = alloc_node(@3, AttrValue); rule(AttrArg, val, $3.first, $3.last, $3.count); add_child($$, val); }
     ;
 
 def

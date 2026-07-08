@@ -60,6 +60,7 @@ enum Status
     const E3040 : 3040 [tokenizer(0)] @ Enumeration constants can only be specified as integers or enum consts.
     const E3041 : 3041 [tokenizer(0)] @ Failed to calculate the constant.
     const E3042 : 3042 [tokenizer(0)] @ Cyclic dependence of constant.
+    const E3043 : 3043 [tokenizer(0)] @ The \[type\] attribute must contain only one type.
 
 @ Compilation message.
 @ Detailed description of warning or compilation error. [detail]

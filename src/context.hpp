@@ -592,7 +592,7 @@ inline auto Context::findSymbol(ASTNodeRef& decl, const ASTLocation& loc, const 
     std::transform(nameLower.begin(), nameLower.end(), nameLower.begin(), [](auto c) {
         return std::tolower(c);
     });
-    auto curr = decl;
+    auto curr   = decl;
     while (curr) {
         const auto fullname = curr.fullnameLowercase() + '.' + nameLower;
         if (auto it = _symbols.find(fullname); it != _symbols.end()) {
@@ -605,9 +605,9 @@ inline auto Context::findSymbol(ASTNodeRef& decl, const ASTLocation& loc, const 
                 return ASTNodeRef(*this);
             }
             if (onlyType) {
-                // if (symbol.is<ASTNodeType::Type>()) {
-                //     return it->second;
-                //  }
+                if (symbol.is<ASTNodeType::Type>()) {
+                    return symbol;
+                }
             } else {
                 return symbol;
             }
@@ -626,14 +626,18 @@ inline auto Context::findSymbol(ASTNodeRef& decl, const ASTLocation& loc, const 
             return ASTNodeRef(*this);
         }
         if (onlyType) {
-            // if (it->second->as<ASTType>()) {
-            //     return it->second;
-            // }
+            if (symbol.is<ASTNodeType::Type>()) {
+                return symbol;
+            }
         } else {
             return symbol;
         }
     }
-    log<IDL_STATUS_E3037>(loc, name);
+    if (onlyType) {
+        log<IDL_STATUS_E3043>(loc, name);
+    } else {
+        log<IDL_STATUS_E3037>(loc, name);
+    }
     return ASTNodeRef(*this);
 }
 

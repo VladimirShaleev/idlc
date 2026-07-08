@@ -84,6 +84,7 @@ typedef enum
     IDL_STATUS_E3040    = 3040, /**< Enumeration constants can only be specified as integers or enum consts. */
     IDL_STATUS_E3041    = 3041, /**< Failed to calculate the constant. */
     IDL_STATUS_E3042    = 3042, /**< Cyclic dependence of constant. */
+    IDL_STATUS_E3043    = 3043, /**< The [type] attribute must contain only one type. */
     IDL_STATUS_MAX_ENUM = 0x7FFFFFFF /**< Max value of enum (not used) */
 } idl_status_t;
 

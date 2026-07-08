@@ -5,18 +5,6 @@
 
 namespace idl {
 
-struct AttrValueOrTypeRules {
-    void visit(ASTNodeRef&, Tag<ASTNodeType::Const>) noexcept {
-        isValue = true;
-    }
-
-    template <ASTNodeType Type>
-    void visit(ASTNodeRef&, Tag<Type>) noexcept {
-    }
-
-    bool isValue{};
-};
-
 struct AttrValidatorRules {
     struct AttrInfo {
         std::string name;
@@ -43,7 +31,8 @@ struct AttrValidatorRules {
     void visit(ASTNodeRef& node, Tag<ASTNodeType::Enum>) noexcept {
         static std::map allowed = { add<ASTNodeType::AttrFlags>(),        add<ASTNodeType::AttrHex>(),
                                     add<ASTNodeType::AttrDocBrief>(true), add<ASTNodeType::AttrDocDetail>(true),
-                                    add<ASTNodeType::AttrCName>(),        add<ASTNodeType::AttrTokenizer>() };
+                                    add<ASTNodeType::AttrCName>(),        add<ASTNodeType::AttrTokenizer>(),
+                                    add<ASTNodeType::AttrType>() };
         validate(node, allowed);
     }
 
@@ -282,7 +271,7 @@ struct AttrArgRules {
     void visit(ASTNodeRef& node, Tag<ASTNodeType::AttrType>) {
         auto arg0 = node.ctx().getNodeRef(argFrist);
         if (argCount == 1 && arg0.is<ASTNodeType::DeclRef>()) {
-            // node->type = args[0]->as<ASTDeclRef>();
+            node->child = argFrist;
         } else {
             node.ctx().log<IDL_STATUS_E3027>(node->location);
         }
@@ -590,6 +579,12 @@ struct BuildRules {
         auto parent       = findParent(node);
         auto parentParent = parent.parent();
         node.resolveRef(parentParent);
+    }
+
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::AttrType>) {
+        auto declRef = node.ctx().getNodeRef(node->child);
+        auto parent  = findParent(node);
+        declRef.resolveRef(parent, true);
     }
 
     template <ASTNodeType Type>

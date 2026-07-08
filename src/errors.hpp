@@ -109,6 +109,8 @@ template <idl_status_t Status, typename... Args>
         str = fmt::format("Failed to calculate the constant '{}'", args...);
     } else if constexpr (Status == IDL_STATUS_E3042) {
         str = fmt::format("Cyclic dependence of constant '{}'", args...);
+    } else if constexpr (Status == IDL_STATUS_E3043) {
+        str = fmt::format("The [type] attribute must contain only one type");
     } else {
         assert(!"Unknown status code");
     }

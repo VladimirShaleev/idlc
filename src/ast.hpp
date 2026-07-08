@@ -41,6 +41,7 @@ enum class ASTNodeType : uint8_t {
     AttrDocCopyright,
     AttrDocLicense,
 
+    Type,
     TrivialType,
     Void,
     Data,
@@ -125,13 +126,15 @@ inline bool astNodeIs(const ASTNode* node, ASTNodeType type) noexcept {
         switch (type) {
             case ASTNodeType::Decl:
                 return (node->type >= ASTNodeType::Decl && node->type < ASTNodeType::DeclRef) ||
-                       node->type >= ASTNodeType::TrivialType;
+                       node->type >= ASTNodeType::Type;
             case ASTNodeType::Literal:
                 return node->type >= ASTNodeType::Literal && node->type < ASTNodeType::Attr;
             case ASTNodeType::Attr:
-                return node->type >= ASTNodeType::Attr && node->type < ASTNodeType::TrivialType;
+                return node->type >= ASTNodeType::Attr && node->type < ASTNodeType::Type;
             case ASTNodeType::AttrDoc:
-                return node->type >= ASTNodeType::AttrDoc && node->type < ASTNodeType::TrivialType;
+                return node->type >= ASTNodeType::AttrDoc && node->type < ASTNodeType::Type;
+            case ASTNodeType::Type:
+                return node->type >= ASTNodeType::Type || node->type == ASTNodeType::Enum;
             case ASTNodeType::TrivialType:
                 return node->type >= ASTNodeType::TrivialType;
             case ASTNodeType::IntegerType:

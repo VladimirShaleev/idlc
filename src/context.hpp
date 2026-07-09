@@ -511,9 +511,13 @@ public:
         return _ctx->getStr(_node->valueStr);
     }
 
+    [[nodiscard]] std::string_view name() const noexcept {
+        return valueStr();
+    }
+
     [[nodiscard]] std::string fullname() const {
         assert(is<ASTNodeType::Decl>());
-        assert(valueStr().length() > 0);
+        assert(name().length() > 0);
         std::string str{};
         if (auto prnt = parent()) {
             if (prnt.is<ASTNodeType::Decl>()) {
@@ -523,8 +527,8 @@ public:
         if (is<ASTNodeType::Import>()) {
             return str.substr(0, str.length() - 1);
         } else {
-            auto name = valueStr();
-            return str + std::string(name.data(), name.length());
+            auto nameView = name();
+            return str + std::string(nameView.data(), nameView.length());
         }
     }
 

@@ -62,6 +62,8 @@ enum Status
     const E3041 : 3041 [tokenizer(0)] @ Failed to calculate the constant.
     const E3042 : 3042 [tokenizer(0)] @ Cyclic dependence of constant.
     const E3043 : 3043 [tokenizer(0)] @ The \[type\] attribute must contain only one type.
+    const E3044 : 3044 [tokenizer(0)] @ Enumeration can only of integers type.
+    const E3045 : 3045 [tokenizer(0)] @ Enumeration must contain at least one constant.
 
 @ Compilation message.
 @ Detailed description of warning or compilation error. [detail]

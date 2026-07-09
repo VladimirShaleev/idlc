@@ -515,11 +515,8 @@ struct IntegerCastRules {
             }
         }
         if (!success) {
-            node.ctx().log<IDL_STATUS_W2004>(value->location,
-                                             node.ctx().getStr(node->valueStr),
-                                             valueStr,
-                                             std::numeric_limits<T>::min(),
-                                             std::numeric_limits<T>::max());
+            node.ctx().log<IDL_STATUS_W2004>(
+                value->location, node.name(), valueStr, std::numeric_limits<T>::min(), std::numeric_limits<T>::max());
         }
     }
 
@@ -540,7 +537,7 @@ struct BuildRules {
         auto& ctx = node.ctx();
         if (auto type = node.declType()) {
             if (!type.is<ASTNodeType::IntegerType>()) {
-                // log.error
+                ctx.log<IDL_STATUS_E3044>(node->location);
             }
         } else {
             auto handle      = ctx.allocNode(node->location, ASTNodeType::AttrType);
@@ -554,6 +551,10 @@ struct BuildRules {
 
             node.addChild(attrType);
         }
+
+        if (!node.findChild<ASTNodeType::Const>()) {
+            ctx.log<IDL_STATUS_E3045>(node->location, node.fullname());
+        }
     }
 
     void visit(ASTNodeRef& node, Tag<ASTNodeType::Const>) {
@@ -563,6 +564,10 @@ struct BuildRules {
             state.prevE3041 = false;
         }
         auto type = node.parent().declType();
+        if (!type.is<ASTNodeType::IntegerType>()) {
+            node->flags |= ASTNODE_BUILD_ERROR;
+            return;
+        }
 
         auto attrValue = node.findChild<ASTNodeType::AttrValue>();
         if (attrValue) {

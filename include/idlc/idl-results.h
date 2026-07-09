@@ -21,14 +21,15 @@ IDL_BEGIN
  */
 typedef enum
 {
-    IDL_RESULT_SUCCESS             = 0, /**< Indicates success (this is not an error). */
-    IDL_RESULT_ERROR_UNKNOWN       = 1, /**< Unknown error. */
-    IDL_RESULT_ERROR_OUT_OF_MEMORY = 2, /**< Out of memory. */
-    IDL_RESULT_ERROR_INVALID_ARG   = 3, /**< Invalid argument. */
-    IDL_RESULT_ERROR_FILE_CREATE   = 4, /**< Failed to create file. */
-    IDL_RESULT_ERROR_COMPILATION   = 5, /**< Compilation failed. */
-    IDL_RESULT_ERROR_NOT_SUPPORTED = 6, /**< Not supporeted. */
-    IDL_RESULT_MAX_ENUM            = 0x7FFFFFFF /**< Max value of enum (not used) */
+    IDL_RESULT_SUCCESS                = 0, /**< Indicates success (this is not an error). */
+    IDL_RESULT_ERROR_UNKNOWN          = 1, /**< Unknown error. */
+    IDL_RESULT_ERROR_OUT_OF_MEMORY    = 2, /**< Out of memory. */
+    IDL_RESULT_ERROR_INVALID_ARG      = 3, /**< Invalid argument. */
+    IDL_RESULT_ERROR_FILE_CREATE      = 4, /**< Failed to create file. */
+    IDL_RESULT_ERROR_COMPILATION      = 5, /**< Compilation failed. */
+    IDL_RESULT_ERROR_NOT_SUPPORTED    = 6, /**< Not supporeted. */
+    IDL_RESULT_ERROR_SOURCE_NOT_FOUND = 7, /**< Source not found. */
+    IDL_RESULT_MAX_ENUM               = 0x7FFFFFFF /**< Max value of enum (not used) */
 } idl_result_t;
 
 /**

@@ -14,7 +14,7 @@ struct AttrValidatorRules {
     AttrValidatorRules(Context& ctx) noexcept : ctx(ctx) {
     }
 
-    void visit(ASTNodeRef& node, Tag<ASTNodeType::Api>) noexcept {
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::Api>) {
         static std::map allowed = { add<ASTNodeType::AttrVersion>(),          add<ASTNodeType::AttrDocBrief>(true),
                                     add<ASTNodeType::AttrDocDetail>(true),    add<ASTNodeType::AttrCName>(),
                                     add<ASTNodeType::AttrTokenizer>(),        add<ASTNodeType::AttrOrder>(),
@@ -23,12 +23,12 @@ struct AttrValidatorRules {
         validate(node, allowed);
     }
 
-    void visit(ASTNodeRef& node, Tag<ASTNodeType::Import>) noexcept {
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::Import>) {
         static std::map allowed = { add<ASTNodeType::AttrDocBrief>(true), add<ASTNodeType::AttrDocDetail>(true) };
         validate(node, allowed);
     }
 
-    void visit(ASTNodeRef& node, Tag<ASTNodeType::Enum>) noexcept {
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::Enum>) {
         static std::map allowed = { add<ASTNodeType::AttrFlags>(),        add<ASTNodeType::AttrHex>(),
                                     add<ASTNodeType::AttrDocBrief>(true), add<ASTNodeType::AttrDocDetail>(true),
                                     add<ASTNodeType::AttrCName>(),        add<ASTNodeType::AttrTokenizer>(),
@@ -36,7 +36,7 @@ struct AttrValidatorRules {
         validate(node, allowed);
     }
 
-    void visit(ASTNodeRef& node, Tag<ASTNodeType::Const>) noexcept {
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::Const>) {
         static std::map allowed = { add<ASTNodeType::AttrDocDetail>(true),
                                     add<ASTNodeType::AttrValue>(),
                                     add<ASTNodeType::AttrCName>(),
@@ -100,7 +100,7 @@ struct AttrValidatorRules {
 
 struct AttrDocValidatorRules {
     template <ASTNodeType Type>
-    void visit(ASTNodeRef& node, Tag<Type>) noexcept {
+    void visit(ASTNodeRef& node, Tag<Type>) {
         if (node.is<ASTNodeType::Attr>()) {
             if (node.is<ASTNodeType::AttrDoc>()) {
                 if (!node.hasChilds()) {
@@ -119,7 +119,7 @@ struct AttrIDocValidatorRules {
     }
 
     template <ASTNodeType Type>
-    void visit(ASTNodeRef& node, Tag<Type>) noexcept {
+    void visit(ASTNodeRef& node, Tag<Type>) {
         if (node.is<ASTNodeType::Attr>()) {
             node.ctx().log<IDL_STATUS_E3018>(node->location);
         }
@@ -374,7 +374,7 @@ struct AttrArgRules {
     }
 
     template <ASTNodeType Type>
-    void visit(ASTNodeRef& node, Tag<Type>) noexcept {
+    void visit(ASTNodeRef& node, Tag<Type>) {
         if (argCount > 0) {
             const auto name = node.accept<AttrName>().str;
             node.ctx().log<IDL_STATUS_E3008>(node->location, name);

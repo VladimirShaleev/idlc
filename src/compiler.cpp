@@ -35,6 +35,10 @@ public:
             Context context{ options, result };
             Scanner scanner{ context, options, sources, file ? file : "" };
             Parser parser{ scanner };
+
+            if (scanner.filename() == nullptr) {
+                return IDL_RESULT_ERROR_SOURCE_NOT_FOUND;
+            }
 #if YYDEBUG
             parser.set_debug_level(0);
 #endif

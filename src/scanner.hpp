@@ -52,8 +52,8 @@ public:
         return _ctx;
     }
 
-    const std::string* filename() const noexcept {
-        return _imports.back()->filename;
+    const std::string* filename() const {
+        return _imports.empty() ? nullptr : _imports.back()->filename;
     }
 
     void import(const idl::location& loc, const std::filesystem::path& file, bool isRelative = true) {

@@ -8,6 +8,7 @@ enum Result [errorcode]
     const ErrorFileCreate @ Failed to create file.
     const ErrorCompilation @ Compilation failed.
     const ErrorNotSupported @ Not supporeted.
+    const ErrorSourceNotFound @ Source not found.
 
 @ Compilation statuses.
 @ This enumeration contains warnings and errors that may occur during compilation. [detail]

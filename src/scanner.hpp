@@ -58,14 +58,18 @@ public:
 
     void import(const idl::location& loc, const std::filesystem::path& file, bool isRelative = true) {
         const std::string& locFile = *loc.begin.filename;
-        ASTLocation astLoc{ _ctx.intern({ locFile.c_str(), locFile.length() }),
-                            uint16_t(loc.begin.line),
-                            uint16_t(loc.end.column) };
+        ASTLocation astLoc{ _ctx.intern({ locFile.c_str(), locFile.length() }), 1, uint16_t(loc.end.line - 1) };
         if (isRelative && file.is_absolute()) {
             _ctx.log<IDL_STATUS_E3021>(astLoc, file.string());
             return;
         }
-        const auto [path, source, needRelease] = findFile(loc, file);
+
+        const auto [path, source, needRelease] = findFile(file);
+        if (path.empty()) {
+            _ctx.log<IDL_STATUS_E3046>(astLoc, file.string());
+            return;
+        }
+
         const auto filename = path.is_absolute() ? std::filesystem::relative(path, _basePath).string() : path.string();
 
         if (_allImports.contains(filename)) {
@@ -172,8 +176,7 @@ private:
         std::unique_ptr<std::istream> stream{};
     };
 
-    std::tuple<std::filesystem::path, const idl_source_t*, bool> findFile(const idl::location& loc,
-                                                                          const std::filesystem::path& file) const {
+    std::tuple<std::filesystem::path, const idl_source_t*, bool> findFile(const std::filesystem::path& file) const {
         if (file.empty() && !_sources.empty()) {
             auto& source = _sources.front();
             return { source.name, &source, false };
@@ -198,7 +201,7 @@ private:
 
         if (file.is_absolute()) {
             if (!std::filesystem::exists(file) || !std::filesystem::is_regular_file(file)) {
-                // err<IDL_STATUS_E2041>(loc, file.string()); // TODO
+                return { {}, nullptr, false };
             }
             return { file, nullptr, false };
         }
@@ -247,7 +250,7 @@ private:
             } catch (const std::filesystem::filesystem_error&) {
             }
         }
-        // err<IDL_STATUS_E2041>(loc, file.string()); TODO
+        return { {}, nullptr, false };
     }
 
     std::string normalize(const std::filesystem::path& path) const {

@@ -17,6 +17,7 @@ enum Status
     const W2001 : 2001 [tokenizer(0)] @ The declaration is missing an attribute.
     const W2002 : 2002 [tokenizer(0)] @ Repeated import.
     const W2003 : 2003 [tokenizer(0)] @ The constant refers to a constant declared below.
+    const W2004 : 2004 [tokenizer(0)] @ Integer out of range.
 
     const E3001 : 3001 [tokenizer(0)] @ Syntax error.
     const E3002 : 3002 [tokenizer(0)] @ Argument parsing error.

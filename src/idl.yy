@@ -38,21 +38,25 @@
         scanner.context().visit<type##Rules>(node __VA_OPT__(,) __VA_ARGS__)
     #define visit(type, node, result, ...) \
         scanner.context().visit<type>(node __VA_OPT__(,) __VA_ARGS__).result
+    #define intern(str) \
+        scanner.context().intern({(str).c_str(), (str).length()})
     #define alloc_node(loc, type) \
-        scanner.context().allocNode(loc, ASTNodeType::type, false)
+        scanner.context().allocNode(ASTLocation { \
+            intern(*loc.begin.filename), \
+            uint16_t(loc.begin.column), \
+            uint16_t(loc.begin.line) \
+        }, ASTNodeType::type, false)
     #define node(handle) \
         scanner.context().getNode(handle)
     #define add_child(parent, child) \
         scanner.context().addChild(parent, child)
-    #define intern(str) \
-        scanner.context().intern({(str).c_str(), (str).length()})
     #define add_symbol(decl) \
         scanner.context().addSymbol(decl)
     #define log(status, loc, ...) \
         scanner.context().log<IDL_STATUS_##status>({ \
             intern(*loc.begin.filename), \
-            uint16_t(loc.begin.line), \
-            uint16_t(loc.begin.column) } __VA_OPT__(,) __VA_ARGS__)
+            uint16_t(loc.begin.column), \
+            uint16_t(loc.begin.line) } __VA_OPT__(,) __VA_ARGS__)
     idl::ASTNodeHandleList idl::ASTNodeHandleList::init(ASTNodeHandle node) noexcept { return { node, node, 1u }; }
     idl::ASTNodeHandleList idl::ASTNodeHandleList::add(Scanner& scanner, ASTNodeHandle node) noexcept { 
         scanner.context().getNode(last)->sibling = node; return { first, node, count + 1 };

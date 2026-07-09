@@ -170,12 +170,9 @@ struct AttrArgRules {
                 const auto minor = std::stoll(matches[2].str());
                 const auto micro = std::stoll(matches[3].str());
                 if (major <= 255 && minor <= 255 && micro <= 255) {
-                    static const std::string filename = "<runtime>";
-
-                    const auto loc = location(position(&filename, 1, 1));
-                    auto nodeMajor = ctx.allocNode(loc, ASTNodeType::LiteralInt);
-                    auto nodeMinor = ctx.allocNode(loc, ASTNodeType::LiteralInt);
-                    auto nodeMicro = ctx.allocNode(loc, ASTNodeType::LiteralInt);
+                    auto nodeMajor = ctx.allocNode(node->location, ASTNodeType::LiteralInt);
+                    auto nodeMinor = ctx.allocNode(node->location, ASTNodeType::LiteralInt);
+                    auto nodeMicro = ctx.allocNode(node->location, ASTNodeType::LiteralInt);
 
                     ctx.getNode(nodeMajor)->valueInt = major;
                     ctx.getNode(nodeMinor)->valueInt = minor;
@@ -315,11 +312,7 @@ struct AttrArgRules {
                         std::string token;
                         ASTNode* lastNum = nullptr;
                         while (std::getline(ss, token, '-')) {
-                            static const std::string filename = "<runtime>";
-
-                            const auto loc = location(position(&filename, 1, 1));
-
-                            auto num = ctx.allocNode(loc, ASTNodeType::LiteralInt);
+                            auto num = ctx.allocNode(node->location, ASTNodeType::LiteralInt);
                             if (token[0] == '^') {
                                 ctx.getNode(num)->valueInt = -std::stoi(token.substr(1));
                             } else {
@@ -354,10 +347,7 @@ struct AttrArgRules {
         if (argCount == 1 && arg0.is<ASTNodeType::LiteralBool>()) {
             node->child = argFrist;
         } else if (argCount == 0) {
-            static const std::string filename = "<runtime>";
-
-            const auto loc = location(position(&filename, 1, 1));
-            auto valueBool = ctx.allocNode(loc, ASTNodeType::LiteralBool);
+            auto valueBool = ctx.allocNode(node->location, ASTNodeType::LiteralBool);
 
             ctx.getNode(valueBool)->valueBool = true;
 
@@ -373,10 +363,7 @@ struct AttrArgRules {
         if (argCount == 1 && arg0.is<ASTNodeType::LiteralBool>()) {
             node->child = argFrist;
         } else if (argCount == 0) {
-            static const std::string filename = "<runtime>";
-
-            const auto loc = location(position(&filename, 1, 1));
-            auto valueBool = ctx.allocNode(loc, ASTNodeType::LiteralBool);
+            auto valueBool = ctx.allocNode(node->location, ASTNodeType::LiteralBool);
 
             ctx.getNode(valueBool)->valueBool = true;
 
@@ -470,6 +457,76 @@ struct HierarchyRules {
     ASTNodeHandle lastNode;
 };
 
+struct IntegerCastRules {
+    explicit IntegerCastRules(ASTNodeRef& value) noexcept : value(value) {
+    }
+
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::Int8>) {
+        cast<int8_t>(node);
+    }
+
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::Uint8>) {
+        cast<uint8_t>(node);
+    }
+
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::Int16>) {
+        cast<int16_t>(node);
+    }
+
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::Uint16>) {
+        cast<uint16_t>(node);
+    }
+
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::Int32>) {
+        cast<int32_t>(node);
+    }
+
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::Uint32>) {
+        cast<uint32_t>(node);
+    }
+
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::Int64>) {
+        cast<int64_t>(node);
+    }
+
+    void visit(ASTNodeRef& node, Tag<ASTNodeType::Uint64>) {
+        cast<uint64_t>(node);
+    }
+
+    template <ASTNodeType Type>
+    void visit(ASTNodeRef&, Tag<Type>) noexcept {
+        assert(!"only integer types");
+    }
+
+    template <typename T>
+    void cast(ASTNodeRef& node) {
+        std::string valueStr;
+        if constexpr (std::numeric_limits<T>::is_signed) {
+            const auto valueInt = int64_t(value->valueInt);
+            success = valueInt >= std::numeric_limits<T>::min() && valueInt <= std::numeric_limits<T>::max();
+            if (!success) {
+                valueStr = std::to_string(valueInt);
+            }
+        } else {
+            const auto valueInt = value->valueInt;
+            success = valueInt >= std::numeric_limits<T>::min() && valueInt <= std::numeric_limits<T>::max();
+            if (!success) {
+                valueStr = std::to_string(valueInt);
+            }
+        }
+        if (!success) {
+            node.ctx().log<IDL_STATUS_W2004>(value->location,
+                                             node.ctx().getStr(node->valueStr),
+                                             valueStr,
+                                             std::numeric_limits<T>::min(),
+                                             std::numeric_limits<T>::max());
+        }
+    }
+
+    ASTNodeRef& value;
+    bool success{ true };
+};
+
 struct BuildRules {
     struct State {
         ASTNodeRef prevConst;
@@ -486,14 +543,10 @@ struct BuildRules {
                 // log.error
             }
         } else {
-            static const std::string filename = "<runtime>";
-
-            const auto loc = location(position(&filename, 1, 1));
-
-            auto handle      = ctx.allocNode(loc, ASTNodeType::AttrType);
+            auto handle      = ctx.allocNode(node->location, ASTNodeType::AttrType);
             auto attrType    = ASTNodeRef(ctx, handle);
             attrType->parent = node.handle();
-            attrType->child  = ctx.allocNode(loc, ASTNodeType::DeclRef);
+            attrType->child  = ctx.allocNode(node->location, ASTNodeType::DeclRef);
 
             auto declRef                 = ASTNodeRef(ctx, attrType->child);
             declRef->parent              = handle;
@@ -515,7 +568,9 @@ struct BuildRules {
         if (attrValue) {
             for (auto value : attrValue) {
                 if (value.is<ASTNodeType::LiteralInt>()) {
-                    // add check range
+                    if (!type.accept<IntegerCastRules>(value).success) {
+                        node->flags |= ASTNODE_BUILD_ERROR;
+                    }
                     continue;
                 }
 
@@ -525,7 +580,7 @@ struct BuildRules {
                     continue;
                 }
 
-                auto decl = value.resolveRef(node.parent());
+                auto decl = value.resolveRef();
                 if (!decl) {
                     node->flags |= ASTNODE_BUILD_ERROR;
                     continue;
@@ -565,19 +620,19 @@ struct BuildRules {
                 }
             }
         } else {
-            static const std::string filename = "<runtime>";
-
-            const auto loc = location(position(&filename, 1, 1));
-
-            auto handle       = ctx.allocNode(loc, ASTNodeType::AttrValue);
+            auto handle       = ctx.allocNode(node->location, ASTNodeType::AttrValue);
             attrValue         = ASTNodeRef(ctx, handle);
             attrValue->parent = node.handle();
-            attrValue->child  = ctx.allocNode(loc, ASTNodeType::LiteralInt);
+            attrValue->child  = ctx.allocNode(node->location, ASTNodeType::LiteralInt);
 
             ctx.getNode(attrValue->child)->parent = handle;
             if (state.prevConst) {
                 if (auto evaulated = calcConstDeps(state.prevConst)) {
-                    ctx.getNode(attrValue->child)->valueInt = evaulated.value() + 1;
+                    auto argValue      = ctx.getNodeRef(attrValue->child);
+                    argValue->valueInt = evaulated.value() + 1;
+                    if (!type.accept<IntegerCastRules>(argValue).success) {
+                        node->flags |= ASTNODE_BUILD_ERROR;
+                    }
                 } else {
                     if (!state.prevE3041) {
                         state.prevE3041 = true;
@@ -602,15 +657,12 @@ struct BuildRules {
     }
 
     void visit(ASTNodeRef& node, Tag<ASTNodeType::DeclRef>) {
-        auto parent       = findParent(node);
-        auto parentParent = parent.parent();
-        node.resolveRef(parentParent);
+        node.resolveRef();
     }
 
     void visit(ASTNodeRef& node, Tag<ASTNodeType::AttrType>) {
         auto declRef = node.ctx().getNodeRef(node->child);
-        auto parent  = findParent(node);
-        declRef.resolveRef(parent, true);
+        declRef.resolveRef(true);
     }
 
     template <ASTNodeType Type>
@@ -638,7 +690,7 @@ struct BuildRules {
                 if (ref.is<ASTNodeType::LiteralInt>()) {
                     evaulated |= ref->valueInt;
                 } else if (ref.is<ASTNodeType::DeclRef>()) {
-                    auto decl = ref.resolveRef(ref.parent());
+                    auto decl = ref.resolveRef();
                     if (!decl.is<ASTNodeType::Const>() || decl.buildError()) {
                         return std::nullopt;
                     };
@@ -691,7 +743,7 @@ struct BuildRules {
             });
             buffer.clear();
             for (auto ref : declRefs) {
-                if (auto decl = ref.resolveRef(findParent(ref)); decl.is<ASTNodeType::Const>()) {
+                if (auto decl = ref.resolveRef(); decl.is<ASTNodeType::Const>()) {
                     if (!cameFrom.contains(decl.handle().handle)) {
                         cameFrom[decl.handle().handle] = top;
                     } else if (decl == target) {

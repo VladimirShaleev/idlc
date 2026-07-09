@@ -17,6 +17,8 @@ template <idl_status_t Status, typename... Args>
         str = fmt::format("Repeated import '{}'", args...);
     } else if constexpr (Status == IDL_STATUS_W2003) {
         str = fmt::format("The constant '{}' refers to a constant declared below '{}'", args...);
+    } else if constexpr (Status == IDL_STATUS_W2004) {
+        str = fmt::format("Integer {} with value {} out of range [{}, {}]", args...);
     } else if constexpr (Status == IDL_STATUS_E3001) {
         if constexpr (sizeof...(args) > 0) {
             str = fmt::format("Syntax error '{}'", args...);

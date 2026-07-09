@@ -42,18 +42,16 @@ public:
 
     auto getNodeRef(ASTNodeHandle handle) noexcept;
 
-    ASTNodeHandle allocNode(const idl::location& loc, ASTNodeType type, bool addedByCompiler = true) {
+    ASTNodeHandle allocNode(const ASTLocation& loc, ASTNodeType type, bool addedByCompiler = true) {
         auto index = _nodes.size();
         auto& node = _nodes.emplace_back();
 
-        node.location.filename = _stringPool.insert({ loc.begin.filename->c_str(), loc.begin.filename->length() });
-        node.location.line     = loc.begin.line;
-        node.location.column   = loc.begin.column;
-        node.type              = type;
-        node.flags             = addedByCompiler ? ASTNODE_ADDED_BY_COMPILER : 0;
-        node.parent            = NodeHandleNone;
-        node.sibling           = NodeHandleNone;
-        node.child             = NodeHandleNone;
+        node.location = loc;
+        node.type     = type;
+        node.flags    = addedByCompiler ? ASTNODE_ADDED_BY_COMPILER : 0;
+        node.parent   = NodeHandleNone;
+        node.sibling  = NodeHandleNone;
+        node.child    = NodeHandleNone;
 
         return { uint16_t(index) };
     }
@@ -308,7 +306,7 @@ public:
         });
     }
 
-    ASTNodeRef resolveRef(ASTNodeRef decl, bool onlyType = false);
+    ASTNodeRef resolveRef(bool onlyType = false);
 
     template <typename Visitor, typename... Args>
     Visitor accept(Args&&... args) {
@@ -541,7 +539,7 @@ public:
     [[nodiscard]] ASTNodeRef declType() const noexcept {
         if (auto attrType = findChild<ASTNodeType::AttrType>()) {
             if (auto declRef = ASTNodeRef(*_ctx, attrType->child)) {
-                if (auto type = declRef.resolveRef(parent(), true)) {
+                if (auto type = declRef.resolveRef(true)) {
                     return type;
                 }
             }
@@ -611,7 +609,8 @@ inline auto Context::findSymbol(ASTNodeRef& decl, const ASTLocation& loc, const 
     std::transform(nameLower.begin(), nameLower.end(), nameLower.begin(), [](auto c) {
         return std::tolower(c);
     });
-    auto curr = decl;
+    auto symbolFinded = false;
+    auto curr         = decl;
     while (curr) {
         const auto fullname = curr.fullnameLowercase() + '.' + nameLower;
         if (auto it = _symbols.find(fullname); it != _symbols.end()) {
@@ -623,6 +622,7 @@ inline auto Context::findSymbol(ASTNodeRef& decl, const ASTLocation& loc, const 
                 log<IDL_STATUS_E3036>(loc, actualName, expectedName);
                 return ASTNodeRef(*this);
             }
+            symbolFinded = true;
             if (onlyType) {
                 if (symbol.is<ASTNodeType::Type>()) {
                     return symbol;
@@ -644,6 +644,7 @@ inline auto Context::findSymbol(ASTNodeRef& decl, const ASTLocation& loc, const 
             log<IDL_STATUS_E3036>(loc, name, expectedName);
             return ASTNodeRef(*this);
         }
+        symbolFinded = true;
         if (onlyType) {
             if (symbol.is<ASTNodeType::Type>()) {
                 return symbol;
@@ -652,7 +653,7 @@ inline auto Context::findSymbol(ASTNodeRef& decl, const ASTLocation& loc, const 
             return symbol;
         }
     }
-    if (onlyType) {
+    if (onlyType && symbolFinded) {
         log<IDL_STATUS_E3043>(loc, name);
     } else {
         log<IDL_STATUS_E3037>(loc, name);
@@ -663,9 +664,7 @@ inline auto Context::findSymbol(ASTNodeRef& decl, const ASTLocation& loc, const 
 inline void Context::initBuiltins(ASTNodeRef node) {
     _api = node.handle();
 
-    static const std::string filename = "<builtin>";
-
-    const auto loc     = idl::location(idl::position(&filename, 1, 1));
+    const auto loc     = ASTLocation{ intern("<builtin>"), 1, 1 };
     ASTNodeHandle last = NodeHandleNone;
 
     auto addBuiltin =
@@ -711,12 +710,20 @@ inline void Context::initBuiltins(ASTNodeRef node) {
     addBuiltin("Data", "pointer to data.", Tag<ASTNodeType::Data>{});
 }
 
-inline ASTNodeRef ASTNodeRef::resolveRef(ASTNodeRef decl, bool onlyType) {
+inline ASTNodeRef ASTNodeRef::resolveRef(bool onlyType) {
     if (!evaulated()) {
         (*this)->flags |= ASTNODE_EVAULATED;
-        auto view = _ctx->getStr((*this)->valueDeclRef.symbol);
+        auto parentNode = parent();
+        while (parentNode) {
+            if (parentNode.is<ASTNodeType::Decl>()) {
+                break;
+            }
+            parentNode = parentNode.parent();
+        }
+        parentNode = parentNode.parent();
+        auto view  = _ctx->getStr((*this)->valueDeclRef.symbol);
         std::string name(view.data(), view.length());
-        if (auto symbol = _ctx->findSymbol(decl, (*this)->location, name, onlyType)) {
+        if (auto symbol = _ctx->findSymbol(parentNode, (*this)->location, name, onlyType)) {
             (*this)->valueDeclRef.handle = symbol.handle();
             return symbol;
         } else {

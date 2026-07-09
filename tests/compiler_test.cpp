@@ -1,63 +1,8 @@
-#include <gtest/gtest.h>
+#include "compiler.hpp"
 
-#include <idlc/idl.h>
+TEST(idlc, UnnecessaryParenthesesForAttribute) {
+    const auto [result, messages] = compile("N1001.idl");
 
-template <typename F>
-class Finally {
-public:
-    Finally(const Finally&) = delete;
-
-    Finally& operator=(const Finally&) = delete;
-    Finally& operator=(Finally&&)      = delete;
-
-    Finally(const F& func) : _func(func) {
-    }
-
-    Finally(F&& func) : _func(std::move(func)) {
-    }
-
-    Finally(Finally&& other) : _func(std::move(other._func)) {
-        other._valid = false;
-    }
-
-    ~Finally() {
-        if (_valid) {
-            _func();
-        }
-    }
-
-private:
-    F _func;
-    bool _valid = true;
-};
-
-template <typename F>
-inline Finally<F> makeFinally(F&& f) {
-    return Finally<F>(std::forward<F>(f));
-}
-
-#define CONCAT_STRING_(a, b) a##b
-#define CONCAT_STRING(a, b)  CONCAT_STRING_(a, b)
-#define deferred(x)                                             \
-    auto CONCAT_STRING(deferred_, __LINE__) = makeFinally([&] { \
-        x;                                                      \
-    })
-
-TEST(idlc, Test) {
-    idl_options_t options{};
-    auto code = idl_options_create(&options);
-    ASSERT_EQ(code, IDL_RESULT_SUCCESS);
-    deferred(idl_options_destroy(options));
-    idl_options_set_debug_mode(options, 0);
-    idl_options_set_warnings_as_errors(options, 0);
-
-    idl_compiler_t compiler{};
-    idl_compiler_create(&compiler);
-    ASSERT_EQ(code, IDL_RESULT_SUCCESS);
-    deferred(idl_compiler_destroy(compiler));
-
-    idl_compilation_result_t result{};
-    code = idl_compiler_compile(compiler, IDL_GENERATOR_C, nullptr, 0, nullptr, options, &result);
-    idl_compilation_result_destroy(result);
-    ASSERT_EQ(code, IDL_RESULT_ERROR_SOURCE_NOT_FOUND);
+    ASSERT_EQ(messages.size(), 1);
+    ASSERT_EQ(messages[0], "note [N1001]: Unnecessary parentheses for a parameterless attribute 'hex' at n1001:10:12");
 }

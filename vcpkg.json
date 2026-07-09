@@ -18,6 +18,7 @@
     "tests": {
       "description": "Build tests",
       "dependencies": [
+        "cmakerc",
         "gtest"
       ]
     },

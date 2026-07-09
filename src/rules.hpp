@@ -194,6 +194,7 @@ struct AttrArgRules {
 
     void visit(ASTNodeRef& node, Tag<ASTNodeType::AttrDocAuthor>) {
         static const std::regex email(R"([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})");
+        node->child = argFrist;
         // TODO:
     }
 

@@ -1,6 +1,10 @@
-@ Brief
-@ Detail [detail]
+@ Ref to {ApI} test
+@ Ref to {Test} and {Test.value} [detail]
 @ Copyright [copyright]
 @ License [license]
 @ Author [author]
 api Api
+
+@ Brief
+enum Test @ Detail
+    const Value @ Detail

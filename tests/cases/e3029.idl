@@ -3,4 +3,9 @@
 @ Copyright [copyright]
 @ License [license]
 @ Author [author]
-api Api
+api Api [cname(3.5)]
+
+@ Brief
+enum Test @ Detail
+    const Value1 [cname("string with spaces")] @ Detail
+    const Value2 [cname("puncts!")] @ Detail

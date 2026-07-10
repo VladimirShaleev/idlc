@@ -3,4 +3,8 @@
 @ Copyright [copyright]
 @ License [license]
 @ Author [author]
-api Api
+api Api [tokenizer("str1", "str2")]
+
+@ Brief
+enum Test @ Detail
+    const Value [tokenizer(3.5)] @ Detail

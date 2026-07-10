@@ -4,3 +4,6 @@
 @ License [license]
 @ Author [author]
 api Api
+
+@ Brief
+enum Test @ Detail

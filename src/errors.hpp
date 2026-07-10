@@ -100,9 +100,9 @@ template <idl_status_t Status, typename... Args>
         str = fmt::format(
             "The [tokenizer] attribute must contain one or more arguments (integers: 2, -2, 4 or string \"2-^3-4\")");
     } else if constexpr (Status == IDL_STATUS_E3034) {
-        str = fmt::format("The [detail] attribute must contain one or more arguments");
-    } else if constexpr (Status == IDL_STATUS_E3035) {
         str = fmt::format("The [copyright] attribute must contain one or more arguments");
+    } else if constexpr (Status == IDL_STATUS_E3035) {
+        str = fmt::format("The [license] attribute must contain one or more arguments");
     } else if constexpr (Status == IDL_STATUS_E3036) {
         str = fmt::format("Identifiers are case sensitive, error in '{}', but expected '{}'", args...);
     } else if constexpr (Status == IDL_STATUS_E3037) {
@@ -112,7 +112,7 @@ template <idl_status_t Status, typename... Args>
     } else if constexpr (Status == IDL_STATUS_E3039) {
         str = fmt::format("A constant '{}' cannot refer to itself when evaluated", args...);
     } else if constexpr (Status == IDL_STATUS_E3040) {
-        str = fmt::format("Enumeration constants can only be specified as integers or enum consts");
+        str = fmt::format("Enumeration constants '{}' can only be specified as integers or enum consts", args...);
     } else if constexpr (Status == IDL_STATUS_E3041) {
         str = fmt::format("Failed to calculate the constant '{}'", args...);
     } else if constexpr (Status == IDL_STATUS_E3042) {
@@ -120,7 +120,7 @@ template <idl_status_t Status, typename... Args>
     } else if constexpr (Status == IDL_STATUS_E3043) {
         str = fmt::format("The [type] attribute must contain only one type");
     } else if constexpr (Status == IDL_STATUS_E3044) {
-        str = fmt::format("Enumeration can only of integers type");
+        str = fmt::format("Enumeration '{}' can only of integers type", args...);
     } else if constexpr (Status == IDL_STATUS_E3045) {
         str = fmt::format("Enumeration '{}' must contain at least one constant", args...);
     } else {

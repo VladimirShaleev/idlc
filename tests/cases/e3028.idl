@@ -3,4 +3,4 @@
 @ Copyright [copyright]
 @ License [license]
 @ Author [author]
-api Api
+api Api [cname(not string)]

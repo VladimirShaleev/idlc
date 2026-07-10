@@ -33,6 +33,10 @@ public:
         return _boolType;
     }
 
+    [[nodiscard]] bool warnAsErrors() const noexcept {
+        return _options ? _options->getWarningsAsErrors() : false;
+    }
+
     ASTNode* getNode(ASTNodeHandle handle) noexcept {
         if (handle.handle < _nodes.size() && handle != NodeHandleNone) {
             return &_nodes[handle.handle];
@@ -724,8 +728,7 @@ inline ASTNodeRef ASTNodeRef::resolveRef(bool onlyType) {
             }
             parentNode = parentNode.parent();
         }
-        parentNode = parentNode.parent();
-        auto view  = _ctx->getStr((*this)->valueDeclRef.symbol);
+        auto view = _ctx->getStr((*this)->valueDeclRef.symbol);
         std::string name(view.data(), view.length());
         if (auto symbol = _ctx->findSymbol(parentNode, (*this)->location, name, onlyType)) {
             (*this)->valueDeclRef.handle = symbol.handle();

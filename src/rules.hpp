@@ -538,7 +538,7 @@ struct BuildRules {
         auto& ctx = node.ctx();
         if (auto type = node.declType()) {
             if (!type.is<ASTNodeType::IntegerType>()) {
-                ctx.log<IDL_STATUS_E3044>(node->location);
+                ctx.log<IDL_STATUS_E3044>(node->location, node.fullname());
             }
         } else {
             auto handle      = ctx.allocNode(node->location, ASTNodeType::AttrType);
@@ -574,14 +574,14 @@ struct BuildRules {
         if (attrValue) {
             for (auto value : attrValue) {
                 if (value.is<ASTNodeType::LiteralInt>()) {
-                    if (!type.accept<IntegerCastRules>(value).success) {
+                    if (!type.accept<IntegerCastRules>(value).success && ctx.warnAsErrors()) {
                         node->flags |= ASTNODE_BUILD_ERROR;
                     }
                     continue;
                 }
 
                 if (!value.is<ASTNodeType::DeclRef>()) {
-                    ctx.log<IDL_STATUS_E3040>(value->location);
+                    ctx.log<IDL_STATUS_E3040>(value->location, node.fullname());
                     node->flags |= ASTNODE_BUILD_ERROR;
                     continue;
                 }
@@ -636,7 +636,7 @@ struct BuildRules {
                 if (auto evaulated = calcConstDeps(state.prevConst)) {
                     auto argValue      = ctx.getNodeRef(attrValue->child);
                     argValue->valueInt = evaulated.value() + 1;
-                    if (!type.accept<IntegerCastRules>(argValue).success) {
+                    if (!type.accept<IntegerCastRules>(argValue).success && ctx.warnAsErrors()) {
                         node->flags |= ASTNODE_BUILD_ERROR;
                     }
                 } else {

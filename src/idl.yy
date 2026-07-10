@@ -59,7 +59,11 @@
             uint16_t(loc.begin.line) } __VA_OPT__(,) __VA_ARGS__)
     idl::ASTNodeHandleList idl::ASTNodeHandleList::init(ASTNodeHandle node) noexcept { return { node, node, 1u }; }
     idl::ASTNodeHandleList idl::ASTNodeHandleList::add(Scanner& scanner, ASTNodeHandle node) noexcept { 
-        scanner.context().getNode(last)->sibling = node; return { first, node, count + 1 };
+        if (auto lastNode = scanner.context().getNode(last)) { 
+            lastNode->sibling = node; 
+            return { first, node, count + 1 };
+        }
+        return *this;
     }
     #define list_init(node) ASTNodeHandleList::init(node)
     #define list_add(list, node) list.add(scanner, node)

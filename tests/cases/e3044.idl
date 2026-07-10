@@ -4,3 +4,7 @@
 @ License [license]
 @ Author [author]
 api Api
+
+@ Brief
+enum Test {Float32} @ Detail
+    const Value @ Detail

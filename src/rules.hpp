@@ -623,6 +623,15 @@ struct BuildRules {
                         node->flags |= ASTNODE_FORWARD_DECL;
                     }
                     continue;
+                } else if (decl.parent() != node.parent()) {
+                    if (auto valueInt = calcConstDeps(decl)) {
+                        auto argValue = ASTNodeRef::byType<ASTNodeType::LiteralInt>(ctx);
+                        argValue->valueInt = valueInt.value();
+                        argValue->location = value->location;
+                        if (!type.accept<IntegerCastRules>(argValue).success && ctx.warnAsErrors()) {
+                            node->flags |= ASTNODE_BUILD_ERROR;
+                        }
+                    }
                 }
             }
         } else {

@@ -7,8 +7,16 @@ api Api
 
 @ Brief
 @ Detail [detail]
+enum BigEnum {Uint32}
+    const BigValue1 : 100 @ Doc
+    const BigValue2 : 300 @ Doc
+    const BigValue3 : BigValue1, 7, BigValue2 @ Doc
+
+@ Brief
+@ Detail [detail]
 enum Test {Int8}
     const Value1 : 127 @ Doc
     const Value2 @ Doc
     const Value3 : -130 @ Doc
     const Value4 : 5 @ Doc
+    const Value5 : BigEnum.BigValue3 @ Doc

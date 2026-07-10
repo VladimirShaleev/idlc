@@ -59,9 +59,10 @@ TEST(idlc, ConstantForwardRefers) {
 
 TEST(idlc, IntegerOutOfRange) {
     const auto [result, messages] = compile("w2004.idl");
-    ASSERT_EQ(messages.size(), 2);
-    ASSERT_EQ(messages[0], "warning [W2004]: Integer Int8 with value 128 out of range [-128, 127] at w2004:12:5");
-    ASSERT_EQ(messages[1], "warning [W2004]: Integer Int8 with value -130 out of range [-128, 127] at w2004:13:20");
+    ASSERT_EQ(messages.size(), 3);
+    ASSERT_EQ(messages[0], "warning [W2004]: Integer Int8 with value 128 out of range [-128, 127] at w2004:19:5");
+    ASSERT_EQ(messages[1], "warning [W2004]: Integer Int8 with value -130 out of range [-128, 127] at w2004:20:20");
+    ASSERT_EQ(messages[2], "warning [W2004]: Integer Int8 with value 367 out of range [-128, 127] at w2004:22:20");
 }
 
 TEST(idlc, SyntaxError) {
@@ -374,7 +375,9 @@ TEST(idlc, FailedCalculateConst) {
 
 TEST(idlc, CyclicDependenceOfConst) {
     const auto [result, messages] = compile("e3042");
-    GTEST_FAIL();
+    ASSERT_EQ(messages.size(), 2);
+    ASSERT_EQ(messages[0], "error [E3042]: Cyclic dependence of constant 'Api.Test.Value1 -> Api.Test.Value5 -> Api.Test.Value4 -> Api.Test.Value3 -> Api.Test.Value1' at e3042:10:5");
+    ASSERT_EQ(messages[1], "error [E3041]: Failed to calculate the constant 'Api.Test.Value2' at e3042:11:5");
 }
 
 TEST(idlc, TypeAttrMustContainOnlyOneType) {

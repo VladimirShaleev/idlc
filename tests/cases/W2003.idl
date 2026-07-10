@@ -1,0 +1,14 @@
+@ Brief
+@ Detail [detail]
+@ Copyright [copyright]
+@ License [license]
+@ Author [author]
+api Api
+
+@ Brief
+@ Detail [detail]
+enum Test [hex, flags]
+    const Value1 @ Doc
+    const Value2 : Value1 @ Doc
+    const Value3 : Value4 @ Doc
+    const Value4 : 5 @ Doc

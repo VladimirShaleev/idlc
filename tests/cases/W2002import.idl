@@ -1,0 +1,6 @@
+@ Brief
+enum Other @ Detail
+    const Value @ Doc
+
+@ Test import
+import W2002 @ Repeat import of main idl file

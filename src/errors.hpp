@@ -10,7 +10,7 @@ template <idl_status_t Status, typename... Args>
 [[noreturn]] inline std::string err(Args&&... args) {
     std::string str;
     if constexpr (Status == IDL_STATUS_N1001) {
-        str = fmt::format("Unnecessary parentheses for a parameterless attribute '{}'", args...);
+        str = fmt::format("Unnecessary parentheses for a parameterless attribute [{}]", args...);
     } else if constexpr (Status == IDL_STATUS_W2001) {
         str = fmt::format("The declaration '{}' is missing an attribute [{}]", args...);
     } else if constexpr (Status == IDL_STATUS_W2002) {

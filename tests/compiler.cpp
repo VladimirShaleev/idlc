@@ -30,7 +30,9 @@ static void releaseImport(idl_source_t* source, idl_data_t data) {
 std::pair<idl_result_t, std::vector<std::string>> compile(std::string_view testCase, bool warnAsErrors) {
     idl_options_t options{};
     auto code = idl_options_create(&options);
-    // ASSERT_EQ(code, IDL_RESULT_SUCCESS);
+    if (code != IDL_RESULT_SUCCESS) {
+        return { code, {} };
+    }
     deferred(idl_options_destroy(options));
     idl_options_set_debug_mode(options, 0);
     idl_options_set_warnings_as_errors(options, warnAsErrors);
@@ -38,8 +40,10 @@ std::pair<idl_result_t, std::vector<std::string>> compile(std::string_view testC
     idl_options_set_release_import(options, releaseImport, nullptr);
 
     idl_compiler_t compiler{};
-    idl_compiler_create(&compiler);
-    // ASSERT_EQ(code, IDL_RESULT_SUCCESS);
+    code = idl_compiler_create(&compiler);
+    if (code != IDL_RESULT_SUCCESS) {
+        return { code, {} };
+    }
     deferred(idl_compiler_destroy(compiler));
 
     idl_compilation_result_t result{};
@@ -69,6 +73,9 @@ std::pair<idl_result_t, std::vector<std::string>> compile(std::string_view testC
         } else {
             status       = "note";
             prefixStatus = 'N';
+        }
+        if (message.is_error) {
+            status = "error";
         }
         ss << status << " [" << prefixStatus << (int) message.status << "]: " << message.message;
         if (message.line > 0) {

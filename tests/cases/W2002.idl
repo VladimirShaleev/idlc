@@ -1,0 +1,17 @@
+@ Brief
+@ Detail [detail]
+@ Copyright [copyright]
+@ License [license]
+@ Author [author]
+api Api
+
+@ Test import
+import W2002Import @ First import
+
+@ Brief
+@ Detail [detail]
+enum Test [hex, flags]
+    const Value @ Doc
+
+@ Test import
+import W2002Import @ Second import

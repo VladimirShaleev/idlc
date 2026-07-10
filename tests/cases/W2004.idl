@@ -1,0 +1,14 @@
+@ Brief
+@ Detail [detail]
+@ Copyright [copyright]
+@ License [license]
+@ Author [author]
+api Api
+
+@ Brief
+@ Detail [detail]
+enum Test {Int8}
+    const Value1 : 127 @ Doc
+    const Value2 @ Doc
+    const Value3 : -130 @ Doc
+    const Value4 : 5 @ Doc

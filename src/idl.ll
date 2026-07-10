@@ -6,8 +6,8 @@
 #define YY_USER_ACTION action(*yylloc);
 #define log(status, ...) context().log<IDL_STATUS_##status>({ \
     context().intern({yylloc->begin.filename->c_str(), yylloc->begin.filename->length()}), \
-    uint16_t(yylloc->begin.line), \
-    uint16_t(yylloc->begin.column) } __VA_OPT__(,) __VA_ARGS__)
+    uint16_t(yylloc->begin.column), \
+    uint16_t(yylloc->begin.line) } __VA_OPT__(,) __VA_ARGS__)
 using namespace std::string_literals;
 typedef idl::Parser::token token;
 std::string trim(const std::string& str);
@@ -114,7 +114,7 @@ import[ ]+ { BEGIN(IMPORTCTX); }
 <*>[A-Z][a-zA-Z0-9]*   { yylval->emplace<std::string>(YYText()); return token::ID; }
 <*>[A-Z][a-zA-Z0-9\.]* { yylval->emplace<std::string>(YYText()); return token::REF; }
 <*>\"(\\.|[^\\"\n])*\" { std::string str = YYText(); str = str.substr(1, str.length() - 2); yylval->emplace<std::string>(str); return token::STR; }
-<*>\"(\\.|[^\\"\n])*   { log(E3009, YYText()); }
+<*>\"(\\.|[^\\"\n])*   { std::string str = YYText(); log(E3009, str.substr(0, str.length() - 1)); }
 <*>{FLOAT}             { yylval->emplace<double>(std::stof(YYText())); return token::FLOAT; }
 <*>{INT}               { yylval->emplace<int64_t>(std::stoll(YYText())); return token::INT; }
 <*>true|false          { yylval->emplace<bool>(YYText()[0] == 't'); return token::BOOL; }

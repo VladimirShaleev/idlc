@@ -140,19 +140,19 @@ struct AttrArgRules {
         auto arg2 = arg1 ? ctx.getNodeRef(arg1->sibling) : ASTNodeRef(ctx);
         if (argCount == 3 && arg0.is<ASTNodeType::LiteralInt>() && arg1.is<ASTNodeType::LiteralInt>() &&
             arg2.is<ASTNodeType::LiteralInt>()) {
-            const auto major = arg0->valueInt;
-            const auto minor = arg1->valueInt;
-            const auto micro = arg2->valueInt;
+            const auto major = int64_t(arg0->valueInt);
+            const auto minor = int64_t(arg1->valueInt);
+            const auto micro = int64_t(arg2->valueInt);
             auto fail        = false;
-            if (major > 255) {
+            if (major < 0 || major > 255) {
                 ctx.log<IDL_STATUS_E3004>(node->location, major);
                 fail = true;
             }
-            if (minor > 255) {
+            if (minor < 0 || minor > 255) {
                 ctx.log<IDL_STATUS_E3004>(node->location, minor);
                 fail = true;
             }
-            if (micro > 255) {
+            if (micro < 0 || micro > 255) {
                 ctx.log<IDL_STATUS_E3004>(node->location, micro);
                 fail = true;
             }

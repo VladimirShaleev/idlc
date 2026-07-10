@@ -39,15 +39,15 @@ template <idl_status_t Status, typename... Args>
     } else if constexpr (Status == IDL_STATUS_E3004) {
         str = fmt::format("Version values must be between 0 and 255, while the argument is {}", args...);
     } else if constexpr (Status == IDL_STATUS_E3005) {
-        str = fmt::format("Invalid attribute '{}' for {} '{}' declaration, allowed attributes are {}", args...);
+        str = fmt::format("Invalid attribute [{}] for {} '{}' declaration, allowed attributes are {}", args...);
     } else if constexpr (Status == IDL_STATUS_E3006) {
         str = fmt::format("Attributes are not allowed for the {} '{}' declaration", args...);
     } else if constexpr (Status == IDL_STATUS_E3007) {
-        str = fmt::format("Attribute duplication for attribute '{}' in {} '{}'", args...);
+        str = fmt::format("Attribute duplication for attribute [{}] in {} '{}'", args...);
     } else if constexpr (Status == IDL_STATUS_E3008) {
-        str = fmt::format("The attribute '{}' must not have arguments", args...);
+        str = fmt::format("The attribute [{}] must not have arguments", args...);
     } else if constexpr (Status == IDL_STATUS_E3009) {
-        str = fmt::format("String closing character not found in string \"{}\"", args...);
+        str = fmt::format("String closing character not found in string: {}", args...);
     } else if constexpr (Status == IDL_STATUS_E3010) {
         str = fmt::format("API Redeclaration '{}'", args...);
     } else if constexpr (Status == IDL_STATUS_E3011) {
@@ -55,11 +55,11 @@ template <idl_status_t Status, typename... Args>
     } else if constexpr (Status == IDL_STATUS_E3012) {
         str = fmt::format("Symbol redefinition '{}'", args...);
     } else if constexpr (Status == IDL_STATUS_E3013) {
-        str = fmt::format("Unknown attribute '{}'", args...);
+        str = fmt::format("Unknown attribute [{}]", args...);
     } else if constexpr (Status == IDL_STATUS_E3014) {
         str = fmt::format("The [brief] attribute must contain one or more arguments");
     } else if constexpr (Status == IDL_STATUS_E3015) {
-        str = fmt::format("Unknown attribute in the documentation '{}'", args...);
+        str = fmt::format("Unknown attribute in the documentation [{}]", args...);
     } else if constexpr (Status == IDL_STATUS_E3016) {
         str = fmt::format("The documentation string cannot be empty");
     } else if constexpr (Status == IDL_STATUS_E3017) {

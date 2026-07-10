@@ -1,0 +1,7 @@
+@ Brief
+@ Detail [detail]
+@ Copyright [copyright]
+@ License [license]
+@ Author [author]
+@ Unknown [abcd]
+api Api [version(1.2.3-test), invalidattr(3.4)] @ Unknow doc attr [xyz]

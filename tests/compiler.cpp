@@ -9,11 +9,7 @@ using namespace std::string_literals;
 static idl_source_t* import(idl_utf8_t name, idl_uint32_t depth, idl_data_t data) {
     auto fs = cmrc::idlc::cases::get_filesystem();
     try {
-        auto filename = std::string(name);
-        if (filename.length() > 0) {
-            filename[0] = std::toupper(filename[0]);
-        }
-        auto file = fs.open("cases/"s + filename + ".idl"s);
+        auto file = fs.open("cases/"s + name + ".idl"s);
         return new idl_source_t{ name, (const char*) file.begin(), idl_uint32_t(file.size()) };
     } catch (const std::system_error& exc) {
         if (exc.code() == make_error_code(std::errc::no_such_file_or_directory)) {

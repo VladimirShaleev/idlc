@@ -1,6 +1,5 @@
-@ Brief
 @ Detail [detail]
 @ Copyright [copyright]
 @ License [license]
 @ Author [author]
-api Api
+api Api @ Not supported attribute [brief]

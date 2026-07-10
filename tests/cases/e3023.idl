@@ -4,3 +4,4 @@
 @ License [license]
 @ Author [author]
 api Api
+    const Value @ Fail

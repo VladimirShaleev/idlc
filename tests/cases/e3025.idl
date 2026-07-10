@@ -4,3 +4,8 @@
 @ License [license]
 @ Author [author]
 api Api
+
+@ Brief
+enum Test @ Detail
+    const Value1 [value(fail)] @ Empty value
+    const Value2 [value(1, 2, fail, 4)] @ Empty value

@@ -4,3 +4,7 @@
 @ License [license]
 @ Author [author]
 api Api
+
+@ Brief
+enum Test @ Detail
+    const Value [value] @ Empty value

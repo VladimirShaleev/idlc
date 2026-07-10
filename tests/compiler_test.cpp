@@ -74,7 +74,9 @@ TEST(idlc, IntegerOutOfRange) {
 
 TEST(idlc, SyntaxError) {
     const auto [result, messages] = compile("e3001.idl");
-    GTEST_FAIL();
+
+    ASSERT_EQ(messages.size(), 1);
+    ASSERT_EQ(messages[0], "error [E3001]: Syntax error at e3001:6:5");
 }
 
 TEST(idlc, ArgumentParsingError) {
@@ -212,27 +214,39 @@ TEST(idlc, DocumentationStringEmpty) {
 
 TEST(idlc, DetailAttrMustContainOneOrMoreArgs) {
     const auto [result, messages] = compile("e3017");
-    GTEST_FAIL();
+
+    ASSERT_EQ(messages.size(), 1);
+    ASSERT_EQ(messages[0], "error [E3017]: The [detail] attribute must contain one or more arguments at e3017:5:10");
 }
 
 TEST(idlc, InlineDocAllowedDetailOnlyAttr) {
     const auto [result, messages] = compile("e3018");
-    GTEST_FAIL();
+
+    ASSERT_EQ(messages.size(), 1);
+    ASSERT_EQ(messages[0], "error [E3018]: Inline documentation only [detail] description is allowed at e3018:5:37");
 }
 
 TEST(idlc, OrderAttrCanContainOneOptionalBoolParam) {
     const auto [result, messages] = compile("e3019");
-    GTEST_FAIL();
+
+    ASSERT_EQ(messages.size(), 3);
+    ASSERT_EQ(messages[0], "error [E3019]: The [order] attribute can contain one optional Boolean parameter at e3019:6:10");
+    ASSERT_EQ(messages[1], "error [E3019]: The [order] attribute can contain one optional Boolean parameter at e3019:6:22");
+    ASSERT_EQ(messages[2], "error [E3007]: Attribute duplication for attribute [order] in api 'Api' at e3019:6:22");
 }
 
 TEST(idlc, TabsNotAllowed) {
     const auto [result, messages] = compile("e3020");
-    GTEST_FAIL();
+
+    ASSERT_EQ(messages.size(), 1);
+    ASSERT_EQ(messages[0], "error [E3020]: Tabs are not allowed at e3020:6:4");
 }
 
 TEST(idlc, CouldNotFindFileForImport) {
     const auto [result, messages] = compile("e3021");
-    GTEST_FAIL();
+
+    ASSERT_EQ(messages.size(), 1);
+    ASSERT_EQ(messages[0], "error [E3021]: could not find file 'NotFoundImport' for import at e3021:9:1");
 }
 
 TEST(idlc, FailedOpenFile) {
@@ -242,27 +256,38 @@ TEST(idlc, FailedOpenFile) {
 
 TEST(idlc, ConstCanBeDefinedOnlyForEnum) {
     const auto [result, messages] = compile("e3023");
-    GTEST_FAIL();
+
+    ASSERT_EQ(messages.size(), 1);
+    ASSERT_EQ(messages[0], "error [E3023]: A 'const' of 'Value' can be defined only for an 'enum' at e3023:7:5");
 }
 
 TEST(idlc, ValueAttrMustContainOneOrMoreArgs) {
     const auto [result, messages] = compile("e3024");
-    GTEST_FAIL();
+
+    ASSERT_EQ(messages.size(), 1);
+    ASSERT_EQ(messages[0], "error [E3024]: The [value] attribute must contain one or more arguments at e3024:10:18");
 }
 
 TEST(idlc, ValueAttrArgsMustBeLiteralsOrDeclReference) {
     const auto [result, messages] = compile("e3025");
-    GTEST_FAIL();
+
+    ASSERT_EQ(messages.size(), 2);
+    ASSERT_EQ(messages[0], "error [E3002]: Argument parsing error 'fail' at e3025:10:24");
+    ASSERT_EQ(messages[1], "error [E3025]: Arguments for the [value] attribute must be literals at e3025:10:18");
 }
 
-TEST(idlc, AllLiteralsInTheVallueAttrMustBeOfSameType) {
+TEST(idlc, AllLiteralsInTheValueAttrMustBeOfSameType) {
     const auto [result, messages] = compile("e3026");
-    GTEST_FAIL();
+
+    ASSERT_EQ(messages.size(), 1);
+    ASSERT_EQ(messages[0], "error [E3026]: All literals in the [value] attribute must be of the same type at e3026:10:18");
 }
 
 TEST(idlc, TypeAttrArgCanOnlyReferToSymbols) {
     const auto [result, messages] = compile("e3027");
-    GTEST_FAIL();
+
+    ASSERT_EQ(messages.size(), 1);
+    ASSERT_EQ(messages[0], "error [E3027]: The [type] attribute argument can only refer to symbols at e3027:9:12");
 }
 
 TEST(idlc, CnameAttrMustContainSingleStringLiteralArg) {

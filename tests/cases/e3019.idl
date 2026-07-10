@@ -3,4 +3,4 @@
 @ Copyright [copyright]
 @ License [license]
 @ Author [author]
-api Api
+api Api [order(3.4), order("test", "fail")]

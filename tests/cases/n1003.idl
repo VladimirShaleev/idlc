@@ -1,0 +1,11 @@
+@ Brief
+@ Detail [detail]
+@ Copyright [copyright]
+@ License [license]
+@ Author [author]
+api Api
+
+@ Brief [brief]
+@ Detail [detail]
+enum Test
+    const Value @ Doc

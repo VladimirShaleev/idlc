@@ -11,6 +11,12 @@ template <idl_status_t Status, typename... Args>
     std::string str;
     if constexpr (Status == IDL_STATUS_N1001) {
         str = fmt::format("Unnecessary parentheses for a parameterless attribute [{}]", args...);
+    } else if constexpr (Status == IDL_STATUS_N1002) {
+        str = fmt::format("Unnecessary parentheses for empty attribute list");
+    } else if constexpr (Status == IDL_STATUS_N1003) {
+        str = fmt::format("Unnecessary explicit attribute [brief] in documentation");
+    } else if constexpr (Status == IDL_STATUS_N1004) {
+        str = fmt::format("Unnecessary explicit attribute [detail] in inline documentation");
     } else if constexpr (Status == IDL_STATUS_W2001) {
         str = fmt::format("The declaration '{}' is missing an attribute [{}]", args...);
     } else if constexpr (Status == IDL_STATUS_W2002) {

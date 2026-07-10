@@ -14,6 +14,9 @@ enum Result [errorcode]
 @ This enumeration contains warnings and errors that may occur during compilation. [detail]
 enum Status
     const N1001 : 1001 [tokenizer(0)] @ Unnecessary parentheses for a parameterless attribute.
+    const N1002 : 1002 [tokenizer(0)] @ Unnecessary parentheses for empty attribute list.
+    const N1003 : 1003 [tokenizer(0)] @ Unnecessary explicit attribute \[brief\] in documentation.
+    const N1004 : 1004 [tokenizer(0)] @ Unnecessary explicit attribute \[detail\] in inline documentation.
 
     const W2001 : 2001 [tokenizer(0)] @ The declaration is missing an attribute.
     const W2002 : 2002 [tokenizer(0)] @ Repeated import.

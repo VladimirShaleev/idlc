@@ -40,6 +40,9 @@ typedef enum
 typedef enum
 {
     IDL_STATUS_N1001    = 1001, /**< Unnecessary parentheses for a parameterless attribute. */
+    IDL_STATUS_N1002    = 1002, /**< Unnecessary parentheses for empty attribute list. */
+    IDL_STATUS_N1003    = 1003, /**< Unnecessary explicit attribute [brief] in documentation. */
+    IDL_STATUS_N1004    = 1004, /**< Unnecessary explicit attribute [detail] in inline documentation. */
     IDL_STATUS_W2001    = 2001, /**< The declaration is missing an attribute. */
     IDL_STATUS_W2002    = 2002, /**< Repeated import. */
     IDL_STATUS_W2003    = 2003, /**< The constant refers to a constant declared below. */

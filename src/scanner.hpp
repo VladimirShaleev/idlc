@@ -66,7 +66,7 @@ public:
 
         const auto [path, source, needRelease] = findFile(file);
         if (path.empty()) {
-            _ctx.log<IDL_STATUS_E3046>(astLoc, file.string());
+            _ctx.log<IDL_STATUS_E3021>(astLoc, file.string());
             return;
         }
 

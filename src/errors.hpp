@@ -123,8 +123,6 @@ template <idl_status_t Status, typename... Args>
         str = fmt::format("Enumeration can only of integers type");
     } else if constexpr (Status == IDL_STATUS_E3045) {
         str = fmt::format("Enumeration '{}' must contain at least one constant", args...);
-    } else if constexpr (Status == IDL_STATUS_E3046) {
-        str = fmt::format("Could not find file '{}' for import", args...);
     } else {
         assert(!"Unknown status code");
     }

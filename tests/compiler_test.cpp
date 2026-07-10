@@ -204,3 +204,153 @@ TEST(idlc, UnknownAttributeInDoc) {
               "error [E3005]: Invalid attribute [hex] for api 'Api' declaration, allowed attributes are cname, "
               "tokenizer, order, single, version, brief, detail, author, copyright, license at e3015:7:39");
 }
+
+TEST(idlc, DocumentationStringEmpty) {
+    const auto [result, messages] = compile("e3016");
+    GTEST_FAIL();
+}
+
+TEST(idlc, DetailAttrMustContainOneOrMoreArgs) {
+    const auto [result, messages] = compile("e3017");
+    GTEST_FAIL();
+}
+
+TEST(idlc, InlineDocAllowedDetailOnlyAttr) {
+    const auto [result, messages] = compile("e3018");
+    GTEST_FAIL();
+}
+
+TEST(idlc, OrderAttrCanContainOneOptionalBoolParam) {
+    const auto [result, messages] = compile("e3019");
+    GTEST_FAIL();
+}
+
+TEST(idlc, TabsNotAllowed) {
+    const auto [result, messages] = compile("e3020");
+    GTEST_FAIL();
+}
+
+TEST(idlc, CouldNotFindFileForImport) {
+    const auto [result, messages] = compile("e3021");
+    GTEST_FAIL();
+}
+
+TEST(idlc, FailedOpenFile) {
+    const auto [result, messages] = compile("e3022");
+    GTEST_FAIL();
+}
+
+TEST(idlc, ConstCanBeDefinedOnlyForEnum) {
+    const auto [result, messages] = compile("e3023");
+    GTEST_FAIL();
+}
+
+TEST(idlc, ValueAttrMustContainOneOrMoreArgs) {
+    const auto [result, messages] = compile("e3024");
+    GTEST_FAIL();
+}
+
+TEST(idlc, ValueAttrArgsMustBeLiteralsOrDeclReference) {
+    const auto [result, messages] = compile("e3025");
+    GTEST_FAIL();
+}
+
+TEST(idlc, AllLiteralsInTheVallueAttrMustBeOfSameType) {
+    const auto [result, messages] = compile("e3026");
+    GTEST_FAIL();
+}
+
+TEST(idlc, TypeAttrArgCanOnlyReferToSymbols) {
+    const auto [result, messages] = compile("e3027");
+    GTEST_FAIL();
+}
+
+TEST(idlc, CnameAttrMustContainSingleStringLiteralArg) {
+    const auto [result, messages] = compile("e3028");
+    GTEST_FAIL();
+}
+
+TEST(idlc, CnameAttrMustSpecifyNameWithoutSpacesAndPuncts) {
+    const auto [result, messages] = compile("e3029");
+    GTEST_FAIL();
+}
+
+TEST(idlc, SingleAttrCanContainOneOptionalBoolParam) {
+    const auto [result, messages] = compile("e3030");
+    GTEST_FAIL();
+}
+
+TEST(idlc, InvalidTokenizerFormatString) {
+    const auto [result, messages] = compile("e3031");
+    GTEST_FAIL();
+}
+
+TEST(idlc, IntTokenizationParamsOrFmtStringMustBePassedToTokenizerAttr) {
+    const auto [result, messages] = compile("e3032");
+    GTEST_FAIL();
+}
+
+TEST(idlc, TokenizerAttrMustContainOneOrMoreArgs) {
+    const auto [result, messages] = compile("e3033");
+    GTEST_FAIL();
+}
+
+TEST(idlc, CopyrightAttrMustContainOneOrMoreArgs) {
+    const auto [result, messages] = compile("e3034");
+    GTEST_FAIL();
+}
+
+TEST(idlc, LicenseAttrMustContainOneOrMoreArgs) {
+    const auto [result, messages] = compile("e3035");
+    GTEST_FAIL();
+}
+
+TEST(idlc, IdentifiersCaseSensitive) {
+    const auto [result, messages] = compile("e3036");
+    GTEST_FAIL();
+}
+
+TEST(idlc, SymbolDefinitionNotFound) {
+    const auto [result, messages] = compile("e3037");
+    GTEST_FAIL();
+}
+
+TEST(idlc, ConstCanOnlyReferToOtherConstWhenEvaluated) {
+    const auto [result, messages] = compile("e3038");
+    GTEST_FAIL();
+}
+
+TEST(idlc, ConstCannotReferToItselfWhenEvaluated) {
+    const auto [result, messages] = compile("e3039");
+    GTEST_FAIL();
+}
+
+TEST(idlc, EnumConstsCanOnlyBeSpecifiedAsIntOrEnumConsts) {
+    const auto [result, messages] = compile("e3040");
+    GTEST_FAIL();
+}
+
+TEST(idlc, FailedCalculateConst) {
+    const auto [result, messages] = compile("e3041");
+    GTEST_FAIL();
+}
+
+TEST(idlc, CyclicDependenceOfConst) {
+    const auto [result, messages] = compile("e3042");
+    GTEST_FAIL();
+}
+
+TEST(idlc, TypeAttrMustContainOnlyOneType) {
+    const auto [result, messages] = compile("e3043");
+    GTEST_FAIL();
+}
+
+TEST(idlc, EnumCanOnlyOfIntsType) {
+    const auto [result, messages] = compile("e3044");
+    GTEST_FAIL();
+}
+
+TEST(idlc, EnumMustContainAtLeastOneConst) {
+    const auto [result, messages] = compile("e3045");
+    GTEST_FAIL();
+}

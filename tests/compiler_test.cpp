@@ -387,21 +387,22 @@ TEST(idlc, FailedCalculateConst) {
 
 TEST(idlc, CyclicDependenceOfConst) {
     const auto [result, messages] = compile("e3042");
-    ASSERT_EQ(messages.size(), 5);
+    ASSERT_EQ(messages.size(), 6);
     ASSERT_EQ(messages[0],
               "warning [W2003]: The constant 'Api.Test.Value1' refers to a constant declared below 'Api.Test.Value5' "
               "at e3042:10:5");
     ASSERT_EQ(messages[1],
               "error [E3042]: Cyclic dependence of constant 'Api.Test.Value1 -> Api.Test.Value5 -> Api.Test.Value4 -> "
               "Api.Test.Value3 -> Api.Test.Value1' at e3042:10:5");
-    ASSERT_EQ(messages[2],
+    ASSERT_EQ(messages[2], "error [E3041]: Failed to calculate the constant 'Api.Test.Value3' at e3042:12:5");
+    ASSERT_EQ(messages[3],
               "warning [W2003]: The constant 'Api.OtherTest.Value3' refers to a constant declared below "
               "'Api.OtherTest.Value8' at e3042:20:5");
     ASSERT_EQ(
-        messages[3],
+        messages[4],
         "error [E3042]: Cyclic dependence of constant 'Api.OtherTest.Value3 -> Api.OtherTest.Value8 -> "
         "Api.OtherTest.Value7 -> Api.OtherTest.Value6 -> Api.OtherTest.Value4 -> Api.OtherTest.Value3' at e3042:20:5");
-    ASSERT_EQ(messages[4], "error [E3041]: Failed to calculate the constant 'Api.OtherTest.Value4' at e3042:21:5");
+    ASSERT_EQ(messages[5], "error [E3041]: Failed to calculate the constant 'Api.OtherTest.Value4' at e3042:21:5");
 }
 
 TEST(idlc, TypeAttrMustContainOnlyOneType) {

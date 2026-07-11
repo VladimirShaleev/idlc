@@ -288,6 +288,9 @@ public:
                 }
                 return false;
             }
+            if (child.is<ASTNodeType::DeclPrevSiblingRef>()) {
+                return false;
+            }
             return true;
         });
     }

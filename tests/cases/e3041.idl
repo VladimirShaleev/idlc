@@ -10,3 +10,4 @@ enum Test @ Detail
     const Value1 : "Invalid value" @ Detail
     const Value2 : Value1 @ Detail
     const Value3 : Value2 @ Detail
+    const Value4 @ Detail

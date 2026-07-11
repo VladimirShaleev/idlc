@@ -149,6 +149,16 @@ idl_api void
 idl_compilation_result_destroy(idl_compilation_result_t compilation_result);
 
 /**
+ * @brief     Checking if there were notes.
+ * @details   Check if there were any notes during compilation.
+ * @param[in] compilation_result Target compilation result instance.
+ * @return    *TRUE*, if there are notes.
+ * @ingroup   functions
+ */
+idl_api idl_bool_t
+idl_compilation_result_has_notes(idl_compilation_result_t compilation_result);
+
+/**
  * @brief     Checking if there were warnings.
  * @details   Check if there were any warnings during compilation.
  * @param[in] compilation_result Target compilation result instance.

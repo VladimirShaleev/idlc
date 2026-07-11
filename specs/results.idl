@@ -107,6 +107,12 @@ interface CompilationResult
     method Destroy [destroy]
         arg CompilationResult {CompilationResult} [this] @ Compilation result to destroy.
 
+    @ Checking if there were notes.
+    @ Check if there were any notes during compilation. [detail]
+    @ *{True}*, if there are notes. [return]
+    method HasNotes {Bool} [const]
+        arg CompilationResult {CompilationResult} [this] @ Target compilation result instance.
+
     @ Checking if there were warnings.
     @ Check if there were any warnings during compilation. [detail]
     @ *{True}*, if there are warnings. [return]

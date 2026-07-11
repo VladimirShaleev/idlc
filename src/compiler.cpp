@@ -336,6 +336,11 @@ void idl_compilation_result_destroy(idl_compilation_result_t compilation_result)
     }
 }
 
+idl_bool_t idl_compilation_result_has_notes(idl_compilation_result_t compilation_result) {
+    assert(compilation_result);
+    return compilation_result->as<idl::CompilationResult>()->hasNotes();
+}
+
 idl_bool_t idl_compilation_result_has_warnings(idl_compilation_result_t compilation_result) {
     assert(compilation_result);
     return compilation_result->as<idl::CompilationResult>()->hasWarnings();

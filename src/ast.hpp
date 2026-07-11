@@ -31,6 +31,7 @@ enum class ASTNodeType : uint8_t {
     AttrOrder,
     AttrSingle,
     AttrVersion,
+    AttrBuiltinPrevConst,
 
     AttrDoc,
     AttrDocBrief,

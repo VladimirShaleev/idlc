@@ -336,8 +336,11 @@ TEST(idlc, LicenseAttrMustContainOneOrMoreArgs) {
 TEST(idlc, IdentifiersCaseSensitive) {
     const auto [result, messages] = compile("e3036");
     ASSERT_EQ(messages.size(), 2);
-    ASSERT_EQ(messages[0], "error [E3036]: Identifiers are case sensitive, error in 'ApI', but expected 'Api' at e3036:1:10");
-    ASSERT_EQ(messages[1], "error [E3036]: Identifiers are case sensitive, error in 'Api.Test.value', but expected 'Api.Test.Value' at e3036:2:22");
+    ASSERT_EQ(messages[0],
+              "error [E3036]: Identifiers are case sensitive, error in 'ApI', but expected 'Api' at e3036:1:10");
+    ASSERT_EQ(messages[1],
+              "error [E3036]: Identifiers are case sensitive, error in 'Api.Test.value', but expected 'Api.Test.Value' "
+              "at e3036:2:22");
 }
 
 TEST(idlc, SymbolDefinitionNotFound) {
@@ -355,29 +358,50 @@ TEST(idlc, ConstCanOnlyReferToOtherConstWhenEvaluated) {
 TEST(idlc, ConstCannotReferToItselfWhenEvaluated) {
     const auto [result, messages] = compile("e3039");
     ASSERT_EQ(messages.size(), 1);
-    ASSERT_EQ(messages[0], "error [E3039]: A constant 'Api.Test.Value' cannot refer to itself when evaluated at e3039:10:5");
+    ASSERT_EQ(messages[0],
+              "error [E3039]: A constant 'Api.Test.Value' cannot refer to itself when evaluated at e3039:10:5");
 }
 
 TEST(idlc, EnumConstsCanOnlyBeSpecifiedAsIntOrEnumConsts) {
     const auto [result, messages] = compile("e3040");
     ASSERT_EQ(messages.size(), 3);
-    ASSERT_EQ(messages[0], "error [E3040]: Enumeration constants 'Api.Test.Value1' can only be specified as integers or enum consts at e3040:10:20");
-    ASSERT_EQ(messages[1], "error [E3040]: Enumeration constants 'Api.Test.Value2' can only be specified as integers or enum consts at e3040:11:20");
-    ASSERT_EQ(messages[2], "error [E3040]: Enumeration constants 'Api.Test.Value3' can only be specified as integers or enum consts at e3040:12:20");
+    ASSERT_EQ(messages[0],
+              "error [E3040]: Enumeration constants 'Api.Test.Value1' can only be specified as integers or enum consts "
+              "at e3040:10:20");
+    ASSERT_EQ(messages[1],
+              "error [E3040]: Enumeration constants 'Api.Test.Value2' can only be specified as integers or enum consts "
+              "at e3040:11:20");
+    ASSERT_EQ(messages[2],
+              "error [E3040]: Enumeration constants 'Api.Test.Value3' can only be specified as integers or enum consts "
+              "at e3040:12:20");
 }
 
 TEST(idlc, FailedCalculateConst) {
     const auto [result, messages] = compile("e3041");
     ASSERT_EQ(messages.size(), 2);
-    ASSERT_EQ(messages[0], "error [E3040]: Enumeration constants 'Api.Test.Value1' can only be specified as integers or enum consts at e3041:10:20");
+    ASSERT_EQ(messages[0],
+              "error [E3040]: Enumeration constants 'Api.Test.Value1' can only be specified as integers or enum consts "
+              "at e3041:10:20");
     ASSERT_EQ(messages[1], "error [E3041]: Failed to calculate the constant 'Api.Test.Value2' at e3041:11:5");
 }
 
 TEST(idlc, CyclicDependenceOfConst) {
     const auto [result, messages] = compile("e3042");
-    ASSERT_EQ(messages.size(), 2);
-    ASSERT_EQ(messages[0], "error [E3042]: Cyclic dependence of constant 'Api.Test.Value1 -> Api.Test.Value5 -> Api.Test.Value4 -> Api.Test.Value3 -> Api.Test.Value1' at e3042:10:5");
-    ASSERT_EQ(messages[1], "error [E3041]: Failed to calculate the constant 'Api.Test.Value2' at e3042:11:5");
+    ASSERT_EQ(messages.size(), 5);
+    ASSERT_EQ(messages[0],
+              "warning [W2003]: The constant 'Api.Test.Value1' refers to a constant declared below 'Api.Test.Value5' "
+              "at e3042:10:5");
+    ASSERT_EQ(messages[1],
+              "error [E3042]: Cyclic dependence of constant 'Api.Test.Value1 -> Api.Test.Value5 -> Api.Test.Value4 -> "
+              "Api.Test.Value3 -> Api.Test.Value1' at e3042:10:5");
+    ASSERT_EQ(messages[2],
+              "warning [W2003]: The constant 'Api.OtherTest.Value3' refers to a constant declared below "
+              "'Api.OtherTest.Value8' at e3042:20:5");
+    ASSERT_EQ(
+        messages[3],
+        "error [E3042]: Cyclic dependence of constant 'Api.OtherTest.Value3 -> Api.OtherTest.Value8 -> "
+        "Api.OtherTest.Value7 -> Api.OtherTest.Value6 -> Api.OtherTest.Value4 -> Api.OtherTest.Value3' at e3042:20:5");
+    ASSERT_EQ(messages[4], "error [E3041]: Failed to calculate the constant 'Api.OtherTest.Value4' at e3042:21:5");
 }
 
 TEST(idlc, TypeAttrMustContainOnlyOneType) {

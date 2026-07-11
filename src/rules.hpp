@@ -527,7 +527,6 @@ struct IntegerCastRules {
 
 struct BuildRules {
     struct State {
-        ASTNodeRef prevConst;
         bool prevE3041;
     };
 
@@ -535,6 +534,198 @@ struct BuildRules {
     }
 
     void visit(ASTNodeRef& node, Tag<ASTNodeType::Enum>) {
+        auto& ctx = node.ctx();
+        if (auto type = node.declType()) {
+            if (!type.is<ASTNodeType::IntegerType>()) {
+                ctx.log<IDL_STATUS_E3044>(node->location, node.fullname());
+            }
+        } else {
+            auto attrTypeHandle = ctx.allocNode(node->location, ASTNodeType::AttrType);
+            auto attrType       = ctx.getNodeRef(attrTypeHandle);
+            attrType->parent    = node.handle();
+            attrType->child     = ctx.allocNode(node->location, ASTNodeType::DeclRef);
+
+            auto declRef                 = ASTNodeRef(ctx, attrType->child);
+            declRef->parent              = attrTypeHandle;
+            declRef->valueDeclRef.symbol = ctx.intern("Int32");
+
+            node.addChild(attrType);
+        }
+
+        evaulateEnum(node);
+
+        if (!node.findChild<ASTNodeType::Const>()) {
+            ctx.log<IDL_STATUS_E3045>(node->location, node.fullname());
+            node->flags |= ASTNODE_BUILD_ERROR;
+        }
+    }
+
+    bool evaulateEnum(ASTNodeRef node) {
+        if (!node.evaulated()) {
+            auto enumConsts = node | std::views::filter([](const auto& child) {
+                return child.is<ASTNodeType::Const>();
+            });
+            auto& ctx       = node.ctx();
+            ASTNodeRef prevEnumConst(ctx);
+            for (auto enumConst : enumConsts) {
+                if (prevEnumConst) {
+                    auto attrPrevConstHandle = ctx.allocNode(enumConst->location, ASTNodeType::AttrBuiltinPrevConst);
+                    auto attrPrevConst       = ctx.getNodeRef(attrPrevConstHandle);
+                    attrPrevConst->parent    = enumConst.handle();
+
+                    attrPrevConst->valueDeclRef.symbol = prevEnumConst->valueStr;
+                    attrPrevConst->valueDeclRef.handle = prevEnumConst.handle();
+                    attrPrevConst->flags |= ASTNODE_EVAULATED;
+
+                    enumConst.addChild(attrPrevConst);
+                }
+                prevEnumConst = enumConst;
+            }
+            for (auto enumConst : enumConsts) {
+                if (!evaulateEnumConst(enumConst)) {
+                    node->flags |= ASTNODE_BUILD_ERROR;
+                }
+            }
+            node->flags |= ASTNODE_EVAULATED;
+        }
+        return !node.buildError();
+    }
+
+    std::optional<uint64_t> evaulateEnumConst(ASTNodeRef& enumConst) {
+        if (enumConst.evaulated()) {
+            if (!enumConst.buildError()) {
+                state.prevE3041 = false;
+            }
+            auto attrValue = enumConst.findChild<ASTNodeType::AttrValue>();
+            assert(attrValue);
+            return enumConst.buildError() ? std::nullopt : std::make_optional(attrValue->valueInt);
+        }
+
+        auto& ctx = enumConst.ctx();
+
+        ASTNodeRef prevEnumConst(ctx);
+        if (auto attrPrevConst = enumConst.findChild<ASTNodeType::AttrBuiltinPrevConst>()) {
+            prevEnumConst = attrPrevConst.resolveRef();
+        }
+        if (!prevEnumConst) {
+            state.prevE3041 = false;
+        }
+
+        auto type = enumConst.parent().declType();
+
+        if (auto attrValue = enumConst.findChild<ASTNodeType::AttrValue>()) {
+            attrValue->valueInt = 0;
+            for (auto value : attrValue) {
+                if (value.is<ASTNodeType::LiteralInt>()) {
+                    if (!type.accept<IntegerCastRules>(value).success && ctx.warnAsErrors()) {
+                        enumConst->flags |= ASTNODE_BUILD_ERROR;
+                    }
+                    attrValue->valueInt |= value->valueInt;
+                    continue;
+                }
+
+                if (!value.is<ASTNodeType::DeclRef>()) {
+                    ctx.log<IDL_STATUS_E3040>(value->location, enumConst.fullname());
+                    enumConst->flags |= ASTNODE_BUILD_ERROR;
+                    break;
+                }
+
+                auto decl = value.resolveRef();
+                if (!decl) {
+                    enumConst->flags |= ASTNODE_BUILD_ERROR;
+                    break;
+                }
+
+                if (!decl.is<ASTNodeType::Const>()) {
+                    ctx.log<IDL_STATUS_E3038>(enumConst->location);
+                    enumConst->flags |= ASTNODE_BUILD_ERROR;
+                    break;
+                }
+
+                if (decl == enumConst) {
+                    ctx.log<IDL_STATUS_E3039>(enumConst->location, decl.fullname());
+                    enumConst->flags |= ASTNODE_BUILD_ERROR;
+                    break;
+                }
+
+                if (!decl.evaulated()) {
+                    ctx.log<IDL_STATUS_W2003>(enumConst->location, enumConst.fullname(), decl.fullname());
+                    decl->flags |= ASTNODE_FORWARD_DECL;
+
+                    const auto [hasCyclic, deps] = findCyclicRelationshipConsts(enumConst, decl);
+                    if (hasCyclic) {
+                        ctx.log<IDL_STATUS_E3042>(enumConst->location, deps);
+                        enumConst->flags |= ASTNODE_BUILD_ERROR;
+                        break;
+                    }
+
+                    if (!evaulateEnum(decl.parent()) || decl.buildError()) {
+                        if (!state.prevE3041) {
+                            state.prevE3041 = true;
+                            ctx.log<IDL_STATUS_E3041>(enumConst->location, enumConst.fullname());
+                        }
+                        enumConst->flags |= ASTNODE_BUILD_ERROR;
+                        break;
+                    }
+                }
+
+                const auto evaulatedValue = decl.findChild<ASTNodeType::AttrValue>()->valueInt;
+                if (decl.parent() != enumConst.parent()) {
+                    auto argValue      = ASTNodeRef::byType<ASTNodeType::LiteralInt>(ctx);
+                    argValue->valueInt = evaulatedValue;
+                    argValue->location = value->location;
+                    if (!type.accept<IntegerCastRules>(argValue).success && ctx.warnAsErrors()) {
+                        enumConst->flags |= ASTNODE_BUILD_ERROR;
+                        break;
+                    }
+                }
+
+                attrValue->valueInt |= evaulatedValue;
+            }
+        } else {
+            auto attrValueHandle = ctx.allocNode(enumConst->location, ASTNodeType::AttrValue);
+            attrValue            = ctx.getNodeRef(attrValueHandle);
+            attrValue->parent    = enumConst.handle();
+            attrValue->child     = ctx.allocNode(enumConst->location, ASTNodeType::LiteralInt);
+
+            ctx.getNode(attrValue->child)->parent   = attrValueHandle;
+            ctx.getNode(attrValue->child)->valueInt = 0;
+
+            if (prevEnumConst) {
+                assert(prevEnumConst.evaulated());
+                if (prevEnumConst.buildError()) {
+                    if (!state.prevE3041) {
+                        state.prevE3041 = true;
+                        ctx.log<IDL_STATUS_E3041>(enumConst->location, enumConst.fullname());
+                    }
+                    enumConst->flags |= ASTNODE_BUILD_ERROR;
+                } else {
+                    auto prevEvaulatedValue = prevEnumConst.findChild<ASTNodeType::AttrValue>()->valueInt;
+                    ctx.getNode(attrValue->child)->valueInt = prevEvaulatedValue + 1;
+                }
+            } else {
+                ctx.getNode(attrValue->child)->valueInt = 0;
+            }
+            enumConst.addChild(attrValue);
+        }
+
+        auto attrValue = enumConst.findChild<ASTNodeType::AttrValue>();
+        assert(attrValue);
+
+        if (!type.is<ASTNodeType::IntegerType>()) {
+            attrValue->valueInt = 0;
+            enumConst->flags |= ASTNODE_BUILD_ERROR;
+        }
+
+        if (!enumConst.buildError()) {
+            state.prevE3041 = false;
+        }
+
+        enumConst->flags |= ASTNODE_EVAULATED;
+        return enumConst.buildError() ? std::nullopt : std::make_optional(attrValue->valueInt);
+    }
+
+    /*void visit(ASTNodeRef& node, Tag<ASTNodeType::Enum>) {
         auto& ctx = node.ctx();
         if (auto type = node.declType()) {
             if (!type.is<ASTNodeType::IntegerType>()) {
@@ -625,7 +816,7 @@ struct BuildRules {
                     continue;
                 } else if (decl.parent() != node.parent()) {
                     if (auto valueInt = calcConstDeps(decl)) {
-                        auto argValue = ASTNodeRef::byType<ASTNodeType::LiteralInt>(ctx);
+                        auto argValue      = ASTNodeRef::byType<ASTNodeType::LiteralInt>(ctx);
                         argValue->valueInt = valueInt.value();
                         argValue->location = value->location;
                         if (!type.accept<IntegerCastRules>(argValue).success && ctx.warnAsErrors()) {
@@ -635,31 +826,7 @@ struct BuildRules {
                 }
             }
         } else {
-            auto handle       = ctx.allocNode(node->location, ASTNodeType::AttrValue);
-            attrValue         = ASTNodeRef(ctx, handle);
-            attrValue->parent = node.handle();
-            attrValue->child  = ctx.allocNode(node->location, ASTNodeType::LiteralInt);
-
-            ctx.getNode(attrValue->child)->parent = handle;
-            if (state.prevConst) {
-                if (auto evaulated = calcConstDeps(state.prevConst)) {
-                    auto argValue      = ctx.getNodeRef(attrValue->child);
-                    argValue->valueInt = evaulated.value() + 1;
-                    if (!type.accept<IntegerCastRules>(argValue).success && ctx.warnAsErrors()) {
-                        node->flags |= ASTNODE_BUILD_ERROR;
-                    }
-                } else {
-                    if (!state.prevE3041) {
-                        state.prevE3041 = true;
-                        ctx.log<IDL_STATUS_E3041>(node->location, node.fullname());
-                    }
-                    ctx.getNode(attrValue->child)->valueInt = 0;
-                    node->flags |= ASTNODE_BUILD_ERROR;
-                }
-            } else {
-                ctx.getNode(attrValue->child)->valueInt = 0;
-            }
-            node.addChild(attrValue);
+            addAttrValueToConst(node);
         }
 
         if (!node.buildError()) {
@@ -669,7 +836,7 @@ struct BuildRules {
         node->flags |= ASTNODE_EVAULATED;
 
         state.prevConst = node;
-    }
+    }*/
 
     void visit(ASTNodeRef& node, Tag<ASTNodeType::DeclRef>) {
         node.resolveRef();
@@ -682,6 +849,37 @@ struct BuildRules {
 
     template <ASTNodeType Type>
     void visit(ASTNodeRef&, Tag<Type>) noexcept {
+    }
+
+    /*ASTNodeRef addAttrValueToConst(ASTNodeRef& node) {
+        auto& ctx         = node.ctx();
+        auto type         = node.parent().declType();
+        auto handle       = ctx.allocNode(node->location, ASTNodeType::AttrValue);
+        auto attrValue    = ASTNodeRef(ctx, handle);
+        attrValue->parent = node.handle();
+        attrValue->child  = ctx.allocNode(node->location, ASTNodeType::LiteralInt);
+
+        ctx.getNode(attrValue->child)->parent = handle;
+        if (state.prevConst) {
+            if (auto evaulated = calcConstDeps(state.prevConst)) {
+                auto argValue      = ctx.getNodeRef(attrValue->child);
+                argValue->valueInt = evaulated.value() + 1;
+                if (!type.accept<IntegerCastRules>(argValue).success && ctx.warnAsErrors()) {
+                    node->flags |= ASTNODE_BUILD_ERROR;
+                }
+            } else {
+                if (!state.prevE3041) {
+                    state.prevE3041 = true;
+                    ctx.log<IDL_STATUS_E3041>(node->location, node.fullname());
+                }
+                ctx.getNode(attrValue->child)->valueInt = 0;
+                node->flags |= ASTNODE_BUILD_ERROR;
+            }
+        } else {
+            ctx.getNode(attrValue->child)->valueInt = 0;
+        }
+        node.addChild(attrValue);
+        return attrValue;
     }
 
     std::optional<uint64_t> calcConstDeps(ASTNodeRef cnst) {
@@ -710,6 +908,9 @@ struct BuildRules {
                         return std::nullopt;
                     };
                     attrValue = decl.findChild<ASTNodeType::AttrValue>();
+                    if (!attrValue) {
+                        attrValue = addAttrValueToConst(decl);
+                    }
                     stack.emplace(decl, attrValue->child);
                 } else {
                     return std::nullopt;
@@ -721,7 +922,7 @@ struct BuildRules {
         }
 
         return std::make_optional(evaulated);
-    }
+    }*/
 
     std::pair<bool, std::string> findCyclicRelationshipConsts(ASTNodeRef& target, ASTNodeRef next) {
         std::stack<ASTNodeRef> consts;
@@ -753,19 +954,29 @@ struct BuildRules {
                 return { true, ss.str() };
             }
 
-            auto declRefs = top.findChild<ASTNodeType::AttrValue>() | std::views::filter([this](const auto& value) {
-                return value.is<ASTNodeType::DeclRef>();
-            });
             buffer.clear();
-            for (auto ref : declRefs) {
-                if (auto decl = ref.resolveRef(); decl.is<ASTNodeType::Const>()) {
-                    if (!cameFrom.contains(decl.handle().handle)) {
-                        cameFrom[decl.handle().handle] = top;
-                    } else if (decl == target) {
-                        cameFrom[decl.handle().handle] = top;
+            if (top.findChild<ASTNodeType::AttrValue>()) {
+                auto declRefs = top.findChild<ASTNodeType::AttrValue>() | std::views::filter([this](const auto& value) {
+                    return value.is<ASTNodeType::DeclRef>();
+                });
+                for (auto ref : declRefs) {
+                    if (auto decl = ref.resolveRef(); decl.is<ASTNodeType::Const>()) {
+                        if (!cameFrom.contains(decl.handle().handle)) {
+                            cameFrom[decl.handle().handle] = top;
+                        } else if (decl == target) {
+                            cameFrom[decl.handle().handle] = top;
+                        }
+                        buffer.push_back(decl);
                     }
-                    buffer.push_back(decl);
                 }
+            } else if (auto attrPrevConst = top.findChild<ASTNodeType::AttrBuiltinPrevConst>()) {
+                auto decl = attrPrevConst.resolveRef();
+                if (!cameFrom.contains(decl.handle().handle)) {
+                    cameFrom[decl.handle().handle] = top;
+                } else if (decl == target) {
+                    cameFrom[decl.handle().handle] = top;
+                }
+                buffer.push_back(decl);
             }
             for (auto it = buffer.rbegin(); it != buffer.rend(); ++it) {
                 consts.push(*it);
@@ -774,7 +985,7 @@ struct BuildRules {
         return { false, "" };
     }
 
-    ASTNodeRef findParent(ASTNodeRef node) noexcept {
+    /*ASTNodeRef findParent(ASTNodeRef node) noexcept {
         node = node.parent();
         while (node) {
             if (node.is<ASTNodeType::Decl>()) {
@@ -783,7 +994,7 @@ struct BuildRules {
             node = node.parent();
         }
         return ASTNodeRef(node.ctx());
-    }
+    }*/
 
     State& state;
 };

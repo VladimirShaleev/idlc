@@ -277,6 +277,21 @@ public:
         return _handle;
     }
 
+    [[nodiscard]] auto getChilds(bool originalNodes = false) const noexcept {
+        return *this | std::views::filter([originalNodes](const auto& child) {
+            if (child->flags & (ASTNODE_ADDED_BY_COMPILER | ASTNODE_REPLACED_BY_COMPILER)) {
+                if ((child->flags & ASTNODE_REPLACED_BY_COMPILER) && originalNodes) {
+                    return true;
+                }
+                if ((child->flags & ASTNODE_ADDED_BY_COMPILER) && !originalNodes) {
+                    return true;
+                }
+                return false;
+            }
+            return true;
+        });
+    }
+
     [[nodiscard]] bool hasChilds() const noexcept {
         return _node ? _node->child != NodeHandleNone : false;
     }

@@ -23,7 +23,9 @@ static void releaseImport(idl_source_t* source, idl_data_t data) {
     delete source;
 }
 
-std::pair<idl_result_t, std::vector<std::string>> compile(std::string_view testCase, bool warnAsErrors) {
+std::pair<idl_result_t, std::vector<std::string>> compile(std::string_view testCase,
+                                                          bool warnAsErrors,
+                                                          bool returnMessages) {
     idl_options_t options{};
     auto code = idl_options_create(&options);
     if (code != IDL_RESULT_SUCCESS) {
@@ -43,41 +45,43 @@ std::pair<idl_result_t, std::vector<std::string>> compile(std::string_view testC
     deferred(idl_compiler_destroy(compiler));
 
     idl_compilation_result_t result{};
-    code = idl_compiler_compile(compiler, IDL_GENERATOR_C, testCase.data(), 0, nullptr, options, &result);
-
-    idl_uint32_t count{};
-    idl_compilation_result_get_messages(result, &count, nullptr);
-    std::vector<idl_message_t> messages;
-
-    messages.resize(count);
-    idl_compilation_result_get_messages(result, &count, messages.data());
-    deferred(idl_compilation_result_destroy(result));
+    idl_compilation_result_t* resultPtr = returnMessages ? &result : nullptr;
+    code = idl_compiler_compile(compiler, IDL_GENERATOR_C, testCase.data(), 0, nullptr, options, resultPtr);
 
     std::vector<std::string> results;
-    results.reserve(count);
+    if (returnMessages) {
+        idl_uint32_t count{};
+        idl_compilation_result_get_messages(result, &count, nullptr);
+        std::vector<idl_message_t> messages;
 
-    for (const auto& message : messages) {
-        std::ostringstream ss;
-        std::string status;
-        char prefixStatus;
-        if (message.status >= IDL_STATUS_E3001) {
-            status       = "error";
-            prefixStatus = 'E';
-        } else if (message.status >= IDL_STATUS_W2001) {
-            status       = "warning";
-            prefixStatus = 'W';
-        } else {
-            status       = "note";
-            prefixStatus = 'N';
+        messages.resize(count);
+        idl_compilation_result_get_messages(result, &count, messages.data());
+        deferred(idl_compilation_result_destroy(result));
+
+        results.reserve(count);
+        for (const auto& message : messages) {
+            std::ostringstream ss;
+            std::string status;
+            char prefixStatus;
+            if (message.status >= IDL_STATUS_E3001) {
+                status       = "error";
+                prefixStatus = 'E';
+            } else if (message.status >= IDL_STATUS_W2001) {
+                status       = "warning";
+                prefixStatus = 'W';
+            } else {
+                status       = "note";
+                prefixStatus = 'N';
+            }
+            if (message.is_error) {
+                status = "error";
+            }
+            ss << status << " [" << prefixStatus << (int) message.status << "]: " << message.message;
+            if (message.line > 0) {
+                ss << " at " << message.filename << ':' << message.line << ':' << message.column;
+            }
+            results.push_back(ss.str());
         }
-        if (message.is_error) {
-            status = "error";
-        }
-        ss << status << " [" << prefixStatus << (int) message.status << "]: " << message.message;
-        if (message.line > 0) {
-            ss << " at " << message.filename << ':' << message.line << ':' << message.column;
-        }
-        results.push_back(ss.str());
     }
 
     return { code, results };

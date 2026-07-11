@@ -10,6 +10,8 @@ struct Source {
     std::string code;
 };
 
-std::pair<idl_result_t, std::vector<std::string>> compile(std::string_view testCase, bool warnAsErrors = false);
+std::pair<idl_result_t, std::vector<std::string>> compile(std::string_view testCase,
+                                                          bool warnAsErrors   = false,
+                                                          bool returnMessages = true);
 
 #endif

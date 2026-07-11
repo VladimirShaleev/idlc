@@ -19,7 +19,7 @@ class ASTNodeRef;
 
 class Context final {
 public:
-    Context(Options* options, CompilationResult* result) noexcept : _options(options), _result(result) {
+    Context(Options* options, CompilationResultBase* result) noexcept : _options(options), _result(result) {
         _nodes.reserve(1024);
     }
 
@@ -79,9 +79,10 @@ public:
         if (!_result) {
             return;
         }
-        const auto message     = err<Status>(std::forward<Args>(args)...);
         const auto warnAsError = _options ? _options->getWarningsAsErrors() : false;
-        _result->addMessage(Status, _stringPool[loc.filename], loc.line, loc.column, message, warnAsError);
+        _result->addMessage(Status, warnAsError, _stringPool[loc.filename], loc.line, loc.column, [&]() {
+            return err<Status>(std::forward<Args>(args)...);
+        });
     }
 
     bool hasErrors() const noexcept {
@@ -98,7 +99,7 @@ public:
 
 private:
     Options* _options;
-    CompilationResult* _result;
+    CompilationResultBase* _result;
     StringPool _stringPool;
     std::vector<idl_message_t> _messages{};
     std::optional<idl_api_version_t> _version{};

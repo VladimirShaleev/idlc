@@ -32,26 +32,51 @@ public:
                          Options* options,
                          CompilationResult* result) noexcept {
         try {
-            Context context{ options, result };
+            CompilationResultBase* base = result;
+            if (!base) {
+                idl_compilation_result_t tempResult{};
+                if (auto result = idl::Object::create<idl::CompilationResultStub>(tempResult);
+                    result != IDL_RESULT_SUCCESS) {
+                    return result;
+                }
+                base = tempResult->as<CompilationResultBase>();
+            }
+            Context context{ options, base };
             Scanner scanner{ context, options, sources, file ? file : "" };
             Parser parser{ scanner };
 
             if (scanner.filename() == nullptr) {
-                return IDL_RESULT_ERROR_SOURCE_NOT_FOUND;
+                if (result) {
+                    // Exception exc(IDL_STATUS_E2011, "<input>", 0, 0, "unknown error");
+                    // result->addMessage(exc);
+                    return IDL_RESULT_SUCCESS;
+                } else {
+                    base->destroy();
+                    return IDL_RESULT_ERROR_SOURCE_NOT_FOUND;
+                }
             }
 #if YYDEBUG
             parser.set_debug_level(0);
 #endif
             auto code = parser.parse();
 
-            if (code != 0) {
+            if (base->hasErrors() || code != 0) {
                 if (result) {
-                    // Exception exc(IDL_STATUS_E2011, "<input>", 0, 0, "unknown error");
-                    // result->addMessage(exc);
+                    if (!base->hasErrors()) {
+                        const auto warnAsErrors = options ? options->getWarningsAsErrors() : false;
+                        result->addMessage(IDL_STATUS_E3046, warnAsErrors, "<input>", 0, 0, []() {
+                            return err<IDL_STATUS_E3046>();
+                        });
+                    }
                     return IDL_RESULT_SUCCESS;
                 } else {
+                    base->destroy();
                     return IDL_RESULT_ERROR_COMPILATION;
                 }
+            }
+
+            if (!result) {
+                base->destroy();
             }
 
             // context.prepareEnumConsts();
@@ -107,7 +132,6 @@ public:
             if (result) {
                 // Exception exc(IDL_STATUS_E2045, "<input>", 0, 0, "out of memory");
                 // result->addMessage(exc);
-                return IDL_RESULT_ERROR_UNKNOWN;
             } else {
                 return IDL_RESULT_ERROR_OUT_OF_MEMORY;
             }
@@ -115,7 +139,6 @@ public:
             if (result) {
                 // Exception exc(IDL_STATUS_E2011, "<input>", 0, 0, "unknown error");
                 // result->addMessage(exc);
-                return IDL_RESULT_ERROR_UNKNOWN;
             } else {
                 return IDL_RESULT_ERROR_UNKNOWN;
             }

@@ -58,7 +58,9 @@ public:
 
     void import(const idl::location& loc, const std::filesystem::path& file, bool isRelative = true) {
         const std::string& locFile = *loc.begin.filename;
-        ASTLocation astLoc{ _ctx.result()->intern({ locFile.c_str(), locFile.length() }), 1, uint16_t(loc.end.line - 1) };
+        ASTLocation astLoc{ _ctx.result()->intern({ locFile.c_str(), locFile.length() }),
+                            1,
+                            uint16_t(loc.end.line - 1) };
         if (isRelative && file.is_absolute()) {
             _ctx.log<IDL_STATUS_E3021>(astLoc, file.string());
             return;
@@ -75,6 +77,9 @@ public:
         if (_allImports.contains(filename)) {
             _ctx.log<IDL_STATUS_W2002>(astLoc, filename);
             return;
+        }
+        if (_allImports.empty()) {
+            _ctx.addImport(filename);
         }
         _allImports[filename] = std::make_unique<std::string>(filename);
         auto filenamePtr      = _allImports[filename].get();

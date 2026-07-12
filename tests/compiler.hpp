@@ -22,6 +22,10 @@ static constexpr idl_ast_node_h HandleNone{ 0xFFFF };
 
 [[nodiscard]] idl_ast_node_h findChild(idl_compilation_result_t result, idl_ast_node_h node, idl_ast_node_type_t type);
 
+[[nodiscard]] std::vector<idl_ast_node_h> getChilds(idl_compilation_result_t result,
+                                                    idl_ast_node_h node,
+                                                    idl_ast_node_type_t type);
+
 [[nodiscard]] bool isType(idl_compilation_result_t result, idl_ast_node_h node, idl_ast_node_type_t type);
 
 [[nodiscard]] std::vector<idl_ast_node_h> getAttrs(idl_compilation_result_t result,

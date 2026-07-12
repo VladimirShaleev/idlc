@@ -42,6 +42,10 @@ public:
 
     auto findSymbol(ASTNodeRef& decl, const ASTLocation& loc, const std::string& name, bool onlyType = false);
 
+    void addImport(std::string name);
+
+    bool findImport(ASTNodeRef& decl) const noexcept;
+
     template <typename Visitor, typename... Args>
     Visitor visit(ASTNodeHandle node, Args&&... args) {
         auto nodeRef = ASTNodeRef(*this, node);
@@ -72,6 +76,7 @@ private:
     std::optional<idl_api_version_t> _version{};
     bool _useStdTypes{};
     BoolType _boolType{};
+    std::unordered_set<std::string> _imports{};
     std::unordered_map<std::string, ASTNodeHandle> _symbols{};
     std::unordered_map<std::string, ASTNodeHandle> _docSymbols{};
     std::unordered_map<std::string, ASTNodeHandle> _literals{};
@@ -639,6 +644,9 @@ inline void Context::addSymbol(ASTNodeHandle decl) {
 
     auto node = getNodeRef(decl);
     if (node.is<IDL_AST_NODE_TYPE_IMPORT>()) {
+        auto name = node.name();
+        std::string nameStr{ name.data(), name.length() };
+        addImport(nameStr);
         return;
     }
     const auto fullname = node.fullnameLowercase();
@@ -703,6 +711,16 @@ inline auto Context::findSymbol(ASTNodeRef& decl, const ASTLocation& loc, const 
         log<IDL_STATUS_E3037>(loc, name);
     }
     return ASTNodeRef(*this);
+}
+
+inline void Context::addImport(std::string name) {
+    _imports.insert(lower(name));
+}
+
+inline bool Context::findImport(ASTNodeRef& decl) const noexcept {
+    auto name = decl.name();
+    std::string nameStr{ name.data(), name.length() };
+    return _imports.contains(lower(nameStr));
 }
 
 inline void Context::initBuiltins(ASTNodeRef node) {

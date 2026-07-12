@@ -96,6 +96,18 @@ idl_ast_node_h findChild(idl_compilation_result_t result, idl_ast_node_h node, i
     return HandleNone;
 }
 
+std::vector<idl_ast_node_h> getChilds(idl_compilation_result_t result, idl_ast_node_h node, idl_ast_node_type_t type) {
+    std::vector<idl_ast_node_h> childs;
+    auto curr = idl_compilation_result_get_child_node(result, node);
+    while (curr != HandleNone) {
+        if (idl_compilation_result_is_node_type(result, curr, type)) {
+            childs.push_back(curr);
+        }
+        curr = idl_compilation_result_get_next_node(result, curr);
+    }
+    return childs;
+}
+
 bool isType(idl_compilation_result_t result, idl_ast_node_h node, idl_ast_node_type_t type) {
     return idl_compilation_result_is_node_type(result, node, type);
 }

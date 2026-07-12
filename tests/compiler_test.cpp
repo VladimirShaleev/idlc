@@ -134,6 +134,19 @@ TEST(idlc, RepeatedImport) {
     ASSERT_EQ(messages.size(), 2);
     ASSERT_EQ(messages[0], "warning [W2002]: Repeated import 'w2002' at w2002import:7:1");
     ASSERT_EQ(messages[1], "warning [W2002]: Repeated import 'w2002import' at w2002:17:1");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto imports = getChilds(ast, api, IDL_AST_NODE_TYPE_IMPORT);
+    ASSERT_EQ(imports.size(), 1);
+
+    auto w2002Import = imports[0];
+    ASSERT_NE(w2002Import, HandleNone);
+    ASSERT_EQ(getStr(ast, w2002Import), "W2002Import");
+
+    auto emptyImports = getChilds(ast, w2002Import, IDL_AST_NODE_TYPE_IMPORT);
+    ASSERT_EQ(emptyImports.size(), 0);
 }
 
 TEST(idlc, ConstantForwardRefers) {

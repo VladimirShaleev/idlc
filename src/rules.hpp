@@ -410,9 +410,13 @@ struct HierarchyRules {
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_IMPORT>) {
         if (checkApi(node.ctx())) {
-            auto parent  = findRoot(node.ctx());
-            node->parent = parent.handle();
-            parent.addChild(node);
+            if (!node.ctx().findImport(node)) {
+                auto parent  = findRoot(node.ctx());
+                node->parent = parent.handle();
+                parent.addChild(node);
+            } else {
+                node.setReplacedByCompiler();
+            }
         }
     }
 

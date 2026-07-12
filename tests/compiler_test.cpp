@@ -1,31 +1,47 @@
 #include "compiler.hpp"
 
 TEST(idlc, UnnecessaryParenthesesForAttribute) {
-    const auto [result, messages] = compile("n1001.idl");
+    const auto [result, ast, messages] = compile("n1001.idl");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "note [N1001]: Unnecessary parentheses for a parameterless attribute [hex] at n1001:10:12");
 }
 
 TEST(idlc, EmptyAttributeList) {
-    const auto [result, messages] = compile("n1002.idl");
+    const auto [result, ast, messages] = compile("n1002.idl");
+    deferred(idl_compilation_result_destroy(ast));
+
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
+    ASSERT_NE(ast, nullptr);
     ASSERT_EQ(messages.size(), 4);
     ASSERT_EQ(messages[0], "note [N1002]: Unnecessary parentheses for empty attribute list at n1002:8:10");
     ASSERT_EQ(messages[1], "note [N1002]: Unnecessary parentheses for empty attribute list at n1002:10:11");
     ASSERT_EQ(messages[2], "note [N1002]: Unnecessary parentheses for empty attribute list at n1002:11:27");
     ASSERT_EQ(messages[3], "note [N1002]: Unnecessary parentheses for empty attribute list at n1002:11:17");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto test = findChild(ast, api, IDL_AST_NODE_TYPE_ENUM);
+    ASSERT_NE(api, HandleNone);
+    ASSERT_EQ(getStr(ast, test), "Test");
+
+    auto hex = findChild(ast, test, IDL_AST_NODE_TYPE_ATTR_HEX);
+    ASSERT_NE(api, HandleNone);
 }
 
 TEST(idlc, ExplicitAttributeBrief) {
-    const auto [result, messages] = compile("n1003.idl");
+    const auto [result, ast, messages] = compile("n1003.idl");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "note [N1003]: Unnecessary explicit attribute [brief] in documentation at n1003:8:11");
 }
 
 TEST(idlc, ExplicitAttributeDetail) {
-    const auto [result, messages] = compile("n1004.idl");
+    const auto [result, ast, messages] = compile("n1004.idl");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0],
@@ -33,7 +49,8 @@ TEST(idlc, ExplicitAttributeDetail) {
 }
 
 TEST(idlc, MissingAttribute) {
-    const auto [result, messages] = compile("w2001.idl");
+    const auto [result, ast, messages] = compile("w2001.idl");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 8);
     ASSERT_EQ(messages[0], "warning [W2001]: The declaration 'Api' is missing an attribute [brief] at w2001:1:1");
@@ -48,7 +65,8 @@ TEST(idlc, MissingAttribute) {
 }
 
 TEST(idlc, RepeatedImport) {
-    const auto [result, messages] = compile("w2002.idl");
+    const auto [result, ast, messages] = compile("w2002.idl");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 2);
     ASSERT_EQ(messages[0], "warning [W2002]: Repeated import 'w2002' at w2002import:7:1");
@@ -56,7 +74,8 @@ TEST(idlc, RepeatedImport) {
 }
 
 TEST(idlc, ConstantForwardRefers) {
-    const auto [result, messages] = compile("w2003.idl");
+    const auto [result, ast, messages] = compile("w2003.idl");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0],
@@ -65,7 +84,8 @@ TEST(idlc, ConstantForwardRefers) {
 }
 
 TEST(idlc, IntegerOutOfRange) {
-    const auto [result, messages] = compile("w2004.idl");
+    const auto [result, ast, messages] = compile("w2004.idl");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 3);
     ASSERT_EQ(messages[0], "warning [W2004]: Integer Int8 with value 128 out of range [-128, 127] at w2004:19:5");
@@ -74,14 +94,16 @@ TEST(idlc, IntegerOutOfRange) {
 }
 
 TEST(idlc, SyntaxError) {
-    const auto [result, messages] = compile("e3001.idl");
+    const auto [result, ast, messages] = compile("e3001.idl");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "error [E3001]: Syntax error at e3001:6:5");
 }
 
 TEST(idlc, ArgumentParsingError) {
-    const auto [result, messages] = compile("e3002.idl");
+    const auto [result, ast, messages] = compile("e3002.idl");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 2);
     ASSERT_EQ(messages[0], "error [E3002]: Argument parsing error 'invalid arg' at e3002:6:24");
@@ -91,7 +113,8 @@ TEST(idlc, ArgumentParsingError) {
 }
 
 TEST(idlc, VersionAttrRequiredParams) {
-    const auto [result, messages] = compile("e3003.idl");
+    const auto [result, ast, messages] = compile("e3003.idl");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0],
@@ -100,7 +123,8 @@ TEST(idlc, VersionAttrRequiredParams) {
 }
 
 TEST(idlc, VersionComponentRange) {
-    const auto [result, messages] = compile("e3004.idl");
+    const auto [result, ast, messages] = compile("e3004.idl");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 3);
     ASSERT_EQ(messages[0],
@@ -112,7 +136,8 @@ TEST(idlc, VersionComponentRange) {
 }
 
 TEST(idlc, InvalidAttrForDeclaration) {
-    const auto [result, messages] = compile("e3005.idl");
+    const auto [result, ast, messages] = compile("e3005.idl");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 2);
     ASSERT_EQ(messages[0],
@@ -124,26 +149,30 @@ TEST(idlc, InvalidAttrForDeclaration) {
 }
 
 TEST(idlc, AttrNotAllowedForDeclaration) {
-    const auto [result, messages] = compile("e3006.idl");
+    const auto [result, ast, messages] = compile("e3006.idl");
+    deferred(idl_compilation_result_destroy(ast));
     GTEST_FAIL();
 }
 
 TEST(idlc, AttributeDuplication) {
-    const auto [result, messages] = compile("e3007.idl");
+    const auto [result, ast, messages] = compile("e3007.idl");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "error [E3007]: Attribute duplication for attribute [version] in api 'Api' at e3007:6:28");
 }
 
 TEST(idlc, AttributeMustNotHaveArguments) {
-    const auto [result, messages] = compile("e3008.idl");
+    const auto [result, ast, messages] = compile("e3008.idl");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "error [E3008]: The attribute [hex] must not have arguments at e3008:10:12");
 }
 
 TEST(idlc, StringClosingCharacter) {
-    const auto [result, messages] = compile("e3009.idl");
+    const auto [result, ast, messages] = compile("e3009.idl");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 2);
     ASSERT_EQ(
@@ -153,14 +182,16 @@ TEST(idlc, StringClosingCharacter) {
 }
 
 TEST(idlc, ApiRedeclaration) {
-    const auto [result, messages] = compile("e3010.idl");
+    const auto [result, ast, messages] = compile("e3010.idl");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "error [E3010]: API Redeclaration 'Other' at e3010:17:1");
 }
 
 TEST(idlc, FirstDeclaration) {
-    const auto [result, messages] = compile("e3011.idl");
+    const auto [result, ast, messages] = compile("e3011.idl");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0],
@@ -168,7 +199,8 @@ TEST(idlc, FirstDeclaration) {
 }
 
 TEST(idlc, SymbolRedefinition) {
-    const auto [result, messages] = compile("e3012.idl");
+    const auto [result, ast, messages] = compile("e3012.idl");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 2);
     ASSERT_EQ(messages[0], "error [E3012]: Symbol redefinition 'Api.Test.Value' at e3012:16:5");
@@ -176,7 +208,8 @@ TEST(idlc, SymbolRedefinition) {
 }
 
 TEST(idlc, UnknownAttribute) {
-    const auto [result, messages] = compile("e3013.idl");
+    const auto [result, ast, messages] = compile("e3013.idl");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 3);
     ASSERT_EQ(messages[0], "error [E3013]: Unknown attribute [abcd] at e3013:6:13");
@@ -185,14 +218,16 @@ TEST(idlc, UnknownAttribute) {
 }
 
 TEST(idlc, BriefAttrMustContainOneOrMoreArgs) {
-    const auto [result, messages] = compile("e3014.idl");
+    const auto [result, ast, messages] = compile("e3014.idl");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "error [E3014]: The [brief] attribute must contain one or more arguments at e3014:5:10");
 }
 
 TEST(idlc, UnknownAttributeInDoc) {
-    const auto [result, messages] = compile("e3015.idl");
+    const auto [result, ast, messages] = compile("e3015.idl");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 7);
     ASSERT_EQ(messages[0], "error [E3008]: The attribute [flags] must not have arguments at e3015:6:31");
@@ -209,26 +244,30 @@ TEST(idlc, UnknownAttributeInDoc) {
 }
 
 TEST(idlc, DocumentationStringEmpty) {
-    const auto [result, messages] = compile("e3016");
+    const auto [result, ast, messages] = compile("e3016");
+    deferred(idl_compilation_result_destroy(ast));
     GTEST_FAIL();
 }
 
 TEST(idlc, DetailAttrMustContainOneOrMoreArgs) {
-    const auto [result, messages] = compile("e3017");
+    const auto [result, ast, messages] = compile("e3017");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "error [E3017]: The [detail] attribute must contain one or more arguments at e3017:5:10");
 }
 
 TEST(idlc, InlineDocAllowedDetailOnlyAttr) {
-    const auto [result, messages] = compile("e3018");
+    const auto [result, ast, messages] = compile("e3018");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "error [E3018]: Inline documentation only [detail] description is allowed at e3018:5:37");
 }
 
 TEST(idlc, OrderAttrCanContainOneOptionalBoolParam) {
-    const auto [result, messages] = compile("e3019");
+    const auto [result, ast, messages] = compile("e3019");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 3);
     ASSERT_EQ(messages[0],
@@ -239,40 +278,46 @@ TEST(idlc, OrderAttrCanContainOneOptionalBoolParam) {
 }
 
 TEST(idlc, TabsNotAllowed) {
-    const auto [result, messages] = compile("e3020");
+    const auto [result, ast, messages] = compile("e3020");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "error [E3020]: Tabs are not allowed at e3020:6:4");
 }
 
 TEST(idlc, CouldNotFindFileForImport) {
-    const auto [result, messages] = compile("e3021");
+    const auto [result, ast, messages] = compile("e3021");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "error [E3021]: could not find file 'NotFoundImport' for import at e3021:9:1");
 
-    const auto [result2, messages2] = compile("e3021nonexists");
+    const auto [result2, ast2, messages2] = compile("e3021nonexists");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result2, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages2.size(), 1);
     ASSERT_EQ(messages2[0], "error [E3021]: could not find file 'e3021nonexists' for import");
 }
 
 TEST(idlc, ConstCanBeDefinedOnlyForEnum) {
-    const auto [result, messages] = compile("e3023");
+    const auto [result, ast, messages] = compile("e3023");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "error [E3023]: A 'const' of 'Value' can be defined only for an 'enum' at e3023:7:5");
 }
 
 TEST(idlc, ValueAttrMustContainOneOrMoreArgs) {
-    const auto [result, messages] = compile("e3024");
+    const auto [result, ast, messages] = compile("e3024");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "error [E3024]: The [value] attribute must contain one or more arguments at e3024:10:18");
 }
 
 TEST(idlc, ValueAttrArgsMustBeLiteralsOrDeclReference) {
-    const auto [result, messages] = compile("e3025");
+    const auto [result, ast, messages] = compile("e3025");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 2);
     ASSERT_EQ(messages[0], "error [E3002]: Argument parsing error 'fail' at e3025:10:24");
@@ -280,7 +325,8 @@ TEST(idlc, ValueAttrArgsMustBeLiteralsOrDeclReference) {
 }
 
 TEST(idlc, AllLiteralsInTheValueAttrMustBeOfSameType) {
-    const auto [result, messages] = compile("e3026");
+    const auto [result, ast, messages] = compile("e3026");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0],
@@ -288,14 +334,16 @@ TEST(idlc, AllLiteralsInTheValueAttrMustBeOfSameType) {
 }
 
 TEST(idlc, TypeAttrArgCanOnlyReferToSymbols) {
-    const auto [result, messages] = compile("e3027");
+    const auto [result, ast, messages] = compile("e3027");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "error [E3027]: The [type] attribute argument can only refer to symbols at e3027:9:12");
 }
 
 TEST(idlc, CnameAttrMustContainSingleStringLiteralArg) {
-    const auto [result, messages] = compile("e3028");
+    const auto [result, ast, messages] = compile("e3028");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 2);
     ASSERT_EQ(messages[0], "error [E3002]: Argument parsing error 'not string' at e3028:6:16");
@@ -304,7 +352,8 @@ TEST(idlc, CnameAttrMustContainSingleStringLiteralArg) {
 }
 
 TEST(idlc, CnameAttrMustSpecifyNameWithoutSpacesAndPuncts) {
-    const auto [result, messages] = compile("e3029");
+    const auto [result, ast, messages] = compile("e3029");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 3);
     ASSERT_EQ(messages[0],
@@ -319,7 +368,8 @@ TEST(idlc, CnameAttrMustSpecifyNameWithoutSpacesAndPuncts) {
 }
 
 TEST(idlc, SingleAttrCanContainOneOptionalBoolParam) {
-    const auto [result, messages] = compile("e3030");
+    const auto [result, ast, messages] = compile("e3030");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 3);
     ASSERT_EQ(messages[0],
@@ -330,7 +380,8 @@ TEST(idlc, SingleAttrCanContainOneOptionalBoolParam) {
 }
 
 TEST(idlc, InvalidTokenizerFormatString) {
-    const auto [result, messages] = compile("e3031");
+    const auto [result, ast, messages] = compile("e3031");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(
@@ -339,7 +390,8 @@ TEST(idlc, InvalidTokenizerFormatString) {
 }
 
 TEST(idlc, IntTokenizationParamsOrFmtStringMustBePassedToTokenizerAttr) {
-    const auto [result, messages] = compile("e3032");
+    const auto [result, ast, messages] = compile("e3032");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 2);
     ASSERT_EQ(messages[0],
@@ -351,7 +403,8 @@ TEST(idlc, IntTokenizationParamsOrFmtStringMustBePassedToTokenizerAttr) {
 }
 
 TEST(idlc, TokenizerAttrMustContainOneOrMoreArgs) {
-    const auto [result, messages] = compile("e3033");
+    const auto [result, ast, messages] = compile("e3033");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0],
@@ -360,21 +413,24 @@ TEST(idlc, TokenizerAttrMustContainOneOrMoreArgs) {
 }
 
 TEST(idlc, CopyrightAttrMustContainOneOrMoreArgs) {
-    const auto [result, messages] = compile("e3034");
+    const auto [result, ast, messages] = compile("e3034");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "error [E3034]: The [copyright] attribute must contain one or more arguments at e3034:5:10");
 }
 
 TEST(idlc, LicenseAttrMustContainOneOrMoreArgs) {
-    const auto [result, messages] = compile("e3035");
+    const auto [result, ast, messages] = compile("e3035");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "error [E3035]: The [license] attribute must contain one or more arguments at e3035:5:10");
 }
 
 TEST(idlc, IdentifiersCaseSensitive) {
-    const auto [result, messages] = compile("e3036");
+    const auto [result, ast, messages] = compile("e3036");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 2);
     ASSERT_EQ(messages[0],
@@ -385,21 +441,24 @@ TEST(idlc, IdentifiersCaseSensitive) {
 }
 
 TEST(idlc, SymbolDefinitionNotFound) {
-    const auto [result, messages] = compile("e3037");
+    const auto [result, ast, messages] = compile("e3037");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "error [E3037]: Symbol definition 'Test' not found at e3037:1:10");
 }
 
 TEST(idlc, ConstCanOnlyReferToOtherConstWhenEvaluated) {
-    const auto [result, messages] = compile("e3038");
+    const auto [result, ast, messages] = compile("e3038");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "error [E3038]: Constants can only refer to other constants when evaluated at e3038:10:5");
 }
 
 TEST(idlc, ConstCannotReferToItselfWhenEvaluated) {
-    const auto [result, messages] = compile("e3039");
+    const auto [result, ast, messages] = compile("e3039");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0],
@@ -407,7 +466,8 @@ TEST(idlc, ConstCannotReferToItselfWhenEvaluated) {
 }
 
 TEST(idlc, EnumConstsCanOnlyBeSpecifiedAsIntOrEnumConsts) {
-    const auto [result, messages] = compile("e3040");
+    const auto [result, ast, messages] = compile("e3040");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 3);
     ASSERT_EQ(messages[0],
@@ -422,7 +482,8 @@ TEST(idlc, EnumConstsCanOnlyBeSpecifiedAsIntOrEnumConsts) {
 }
 
 TEST(idlc, FailedCalculateConst) {
-    const auto [result, messages] = compile("e3041");
+    const auto [result, ast, messages] = compile("e3041");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 2);
     ASSERT_EQ(messages[0],
@@ -432,7 +493,8 @@ TEST(idlc, FailedCalculateConst) {
 }
 
 TEST(idlc, CyclicDependenceOfConst) {
-    const auto [result, messages] = compile("e3042");
+    const auto [result, ast, messages] = compile("e3042");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 6);
     ASSERT_EQ(messages[0],
@@ -453,36 +515,39 @@ TEST(idlc, CyclicDependenceOfConst) {
 }
 
 TEST(idlc, TypeAttrMustContainOnlyOneType) {
-    const auto [result, messages] = compile("e3043");
+    const auto [result, ast, messages] = compile("e3043");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "error [E3043]: The [type] attribute must contain only one type at e3043:9:12");
 }
 
 TEST(idlc, EnumCanOnlyOfIntsType) {
-    const auto [result, messages] = compile("e3044");
+    const auto [result, ast, messages] = compile("e3044");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "error [E3044]: Enumeration 'Api.Test' can only of integers type at e3044:9:1");
 }
 
 TEST(idlc, EnumMustContainAtLeastOneConst) {
-    const auto [result, messages] = compile("e3045");
+    const auto [result, ast, messages] = compile("e3045");
+    deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "error [E3045]: Enumeration 'Api.Test' must contain at least one constant at e3045:9:1");
 }
 
 TEST(idlc, ResultCode) {
-    const auto [result, _] = compile("e3021nonexists", false, false);
+    const auto [result, _, __] = compile("e3021nonexists", false, false);
     ASSERT_EQ(result, IDL_RESULT_ERROR_SOURCE_NOT_FOUND);
 
-    const auto [result2, _2] = compile("e3045", false, false);
+    const auto [result2, _2, __2] = compile("e3045", false, false);
     ASSERT_EQ(result2, IDL_RESULT_ERROR_COMPILATION);
 
-    const auto [result3, _3] = compile("w2002.idl", false, false);
+    const auto [result3, _3, __3] = compile("w2002.idl", false, false);
     ASSERT_EQ(result3, IDL_RESULT_SUCCESS);
 
-    const auto [result4, _4] = compile("w2002.idl", true, false);
+    const auto [result4, _4, __4] = compile("w2002.idl", true, false);
     ASSERT_EQ(result4, IDL_RESULT_ERROR_COMPILATION);
 }

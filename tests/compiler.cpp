@@ -1,5 +1,4 @@
 #include "compiler.hpp"
-#include "finally.hpp"
 
 #include <cmrc/cmrc.hpp>
 CMRC_DECLARE(idlc::cases);
@@ -23,13 +22,13 @@ static void releaseImport(idl_source_t* source, idl_data_t data) {
     delete source;
 }
 
-std::pair<idl_result_t, std::vector<std::string>> compile(std::string_view testCase,
-                                                          bool warnAsErrors,
-                                                          bool returnMessages) {
+std::tuple<idl_result_t, idl_compilation_result_t, std::vector<std::string>> compile(std::string_view testCase,
+                                                                                     bool warnAsErrors,
+                                                                                     bool returnMessages) {
     idl_options_t options{};
     auto code = idl_options_create(&options);
     if (code != IDL_RESULT_SUCCESS) {
-        return { code, {} };
+        return { code, nullptr, {} };
     }
     deferred(idl_options_destroy(options));
     idl_options_set_debug_mode(options, 0);
@@ -40,7 +39,7 @@ std::pair<idl_result_t, std::vector<std::string>> compile(std::string_view testC
     idl_compiler_t compiler{};
     code = idl_compiler_create(&compiler);
     if (code != IDL_RESULT_SUCCESS) {
-        return { code, {} };
+        return { code, nullptr, {} };
     }
     deferred(idl_compiler_destroy(compiler));
 
@@ -56,7 +55,6 @@ std::pair<idl_result_t, std::vector<std::string>> compile(std::string_view testC
 
         messages.resize(count);
         idl_compilation_result_get_messages(result, &count, messages.data());
-        deferred(idl_compilation_result_destroy(result));
 
         results.reserve(count);
         for (const auto& message : messages) {
@@ -84,5 +82,21 @@ std::pair<idl_result_t, std::vector<std::string>> compile(std::string_view testC
         }
     }
 
-    return { code, results };
+    return { code, result, results };
+}
+
+idl_ast_node_h findChild(idl_compilation_result_t result, idl_ast_node_h node, idl_ast_node_type_t type) {
+    auto curr = idl_compilation_result_get_child_node(result, node);
+    while (curr != HandleNone) {
+        if (idl_compilation_result_is_node_type(result, curr, type)) {
+            return curr;
+        }
+        curr = idl_compilation_result_get_next_node(result, curr);
+    }
+    return HandleNone;
+}
+
+std::string getStr(idl_compilation_result_t result, idl_ast_node_h node) {
+    auto str = idl_compilation_result_get_node_value_str(result, node);
+    return str ? std::string(str) : ""s;
 }

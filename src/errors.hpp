@@ -7,7 +7,7 @@
 namespace idl {
 
 template <idl_status_t Status, typename... Args>
-[[noreturn]] inline std::string err(Args&&... args) {
+inline std::string err(Args&&... args) {
     std::string str;
     if constexpr (Status == IDL_STATUS_N1001) {
         str = fmt::format("Unnecessary parentheses for a parameterless attribute [{}]", args...);

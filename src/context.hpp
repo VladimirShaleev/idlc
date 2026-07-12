@@ -8,12 +8,6 @@
 
 namespace idl {
 
-enum class BoolType {
-    Int32,
-    Int8,
-    StdBool
-};
-
 class ASTNodeRef;
 
 class Context final {
@@ -22,29 +16,33 @@ public:
         assert(result);
     }
 
-    bool useStdTypes() const noexcept {
-        return _useStdTypes;
+    [[nodiscard]] bool useStdTypes() const noexcept {
+        return _options ? _options->getCOptions().use_std_types : false;
     }
 
-    BoolType boolType() const noexcept {
-        return _boolType;
+    [[nodiscard]] bool addDocGroup() const noexcept {
+        return _options ? _options->getCOptions().add_doc_group : false;
+    }
+
+    [[nodiscard]] idl_bool_type_t boolType() const noexcept {
+        return _options ? _options->getBoolType() : IDL_BOOL_TYPE_INT_32;
     }
 
     [[nodiscard]] bool warnAsErrors() const noexcept {
         return _options ? _options->getWarningsAsErrors() : false;
     }
 
-    auto getNodeRef(ASTNodeHandle handle) noexcept;
+    [[nodiscard]] auto getNodeRef(ASTNodeHandle handle) noexcept;
 
     void addChild(ASTNodeHandle parent, ASTNodeHandle child) noexcept;
 
     void addSymbol(ASTNodeHandle decl);
 
-    auto findSymbol(ASTNodeRef& decl, const ASTLocation& loc, const std::string& name, bool onlyType = false);
+    [[nodiscard]] auto findSymbol(ASTNodeRef& decl, const ASTLocation& loc, const std::string& name, bool onlyType = false);
 
     void addImport(std::string name);
 
-    bool findImport(ASTNodeRef& decl) const noexcept;
+    [[nodiscard]] bool findImport(ASTNodeRef& decl) const noexcept;
 
     template <typename Visitor, typename... Args>
     Visitor visit(ASTNodeHandle node, Args&&... args) {
@@ -74,8 +72,6 @@ private:
     CompilationResultBase* _result;
     std::vector<idl_message_t> _messages{};
     std::optional<idl_api_version_t> _version{};
-    bool _useStdTypes{};
-    BoolType _boolType{};
     std::unordered_set<std::string> _imports{};
     std::unordered_map<std::string, ASTNodeHandle> _symbols{};
     std::unordered_map<std::string, ASTNodeHandle> _docSymbols{};

@@ -3,6 +3,12 @@
 #include "parser.hpp"
 #include "scanner.hpp"
 
+void generateIdl(idl::CompilationResultBase* result,
+                 const std::filesystem::path& out,
+                 idl_write_callback_t writer,
+                 idl_data_t writerData,
+                 const idl_idl_options_t& options);
+
 // void generateC(idl::Context& ctx,
 //                const std::filesystem::path& out,
 //                idl_write_callback_t writer,
@@ -76,17 +82,6 @@ public:
                 }
             }
 
-            // context.prepareEnumConsts();
-            // context.prepareStructs();
-            // context.prepareCallbacks();
-            // context.prepareFunctions();
-            // context.prepareMethods();
-            // context.prepareProperties();
-            // context.prepareEvents();
-            // context.prepareInterfaces();
-            // context.prepareHandles();
-            // context.prepareDocumentation();
-
             auto output = std::filesystem::current_path();
             idl_write_callback_t writer{};
             idl_data_t writerData{};
@@ -94,16 +89,18 @@ public:
             if (options) {
                 output = options->getOutputDir();
                 writer = options->getWriter(&writerData);
-                idl_uint32_t num{};
-                options->getAdditions(num, nullptr);
-                additions.resize(num);
-                options->getAdditions(num, additions.data());
                 if (auto version = options->getVersion()) {
                     // context.apiVersion(*version);
                 }
             }
 
             switch (generator) {
+                case IDL_GENERATOR_NONE:
+                    break;
+                case IDL_GENERATOR_IDL:
+                    generateIdl(
+                        base, output, writer, writerData, options ? options->getIdlOptions() : idl_idl_options_t{});
+                    break;
                 case IDL_GENERATOR_C:
                     // generateC(context, output, writer, writerData, std::span{ additions.data(), additions.size() });
                     break;
@@ -270,15 +267,34 @@ void idl_options_set_writer(idl_options_t options, idl_write_callback_t callback
     return options->as<idl::Options>()->setWriter(callback, data);
 }
 
-void idl_options_get_additions(idl_options_t options, idl_uint32_t* addition_count, idl_utf8_t* additions) {
+idl_bool_type_t idl_options_get_bool_type(idl_options_t options) {
     assert(options);
-    assert(addition_count);
-    return options->as<idl::Options>()->getAdditions(*addition_count, additions);
+    return options->as<idl::Options>()->getBoolType();
 }
 
-void idl_options_set_additions(idl_options_t options, idl_uint32_t addition_count, const idl_utf8_t* additions) {
+void idl_options_set_bool_type(idl_options_t options, idl_bool_type_t bool_type) {
     assert(options);
-    options->as<idl::Options>()->setAdditions(std::span{ additions, addition_count });
+    options->as<idl::Options>()->setBoolType(bool_type);
+}
+
+idl_idl_options_t idl_options_get_idl_options(idl_options_t options) {
+    assert(options);
+    return options->as<idl::Options>()->getIdlOptions();
+}
+
+void idl_options_set_idl_options(idl_options_t options, const idl_idl_options_t* idl_options) {
+    assert(options);
+    options->as<idl::Options>()->setIdlOptions(idl_options);
+}
+
+idl_c_options_t idl_options_get_c_options(idl_options_t options) {
+    assert(options);
+    return options->as<idl::Options>()->getCOptions();
+}
+
+void idl_options_set_c_options(idl_options_t options, const idl_c_options_t* coptions) {
+    assert(options);
+    options->as<idl::Options>()->setCOptions(coptions);
 }
 
 const idl_api_version_t* idl_options_get_version(idl_options_t options) {

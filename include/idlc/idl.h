@@ -47,7 +47,9 @@ IDL_BEGIN
  */
 typedef enum
 {
-    IDL_GENERATOR_C           = 0, /**< C generator. */
+    IDL_GENERATOR_NONE        = 0, /**< Null generator (parsing only ast node tree). */
+    IDL_GENERATOR_IDL         = 1, /**< Generate formatted idl output. */
+    IDL_GENERATOR_C           = 2, /**< C generator. */
     IDL_GENERATOR_JAVA_SCRIPT = 3, /**< JavaScript generator (generates Embind bindings). */
     IDL_GENERATOR_CSHARP      = 4, /**< C# generator. */
     IDL_GENERATOR_MAX_ENUM    = 0x7FFFFFFF /**< Max value of enum (not used) */

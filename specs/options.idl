@@ -1,3 +1,10 @@
+@ Bool type.
+@ Boolean ABI represent type. [detail]
+enum BoolType
+    const Int32 @ 32 bits integer.
+    const Int8 @ 8 bits integer.
+    const StdBool @ 8 bit C *_Bool* type.
+
 @ Source code.
 @ Used to provide source code in memory. [detail]
 struct Source
@@ -11,6 +18,17 @@ struct ApiVersion
     field Major {Uint32} @ Major component of the version.
     field Minor {Uint32} @ Minor component of the version.
     field Micro {Uint32} @ Micro component of the version.
+
+@ Idl Options.
+@ Specific options for Idl. [detail]
+struct IdlOptions
+    field PreferedOriginalStyle {Bool} @ Prefered original code style.
+
+@ C Options.
+@ Specific options for C. [detail]
+struct COptions [tokenizer(1)]
+    field AddDocGroup {Bool} @ Add Doxygen groups.
+    field UseStdTypes {Bool} @ Use stdint.h types directly.
 
 @ Callback to get sources.
 @ Used to retrieve and compile sources from memory. [detail]
@@ -47,7 +65,9 @@ interface Options
     prop WarningsAsErrors [get(GetWarningsAsErrors),set(SetWarningsAsErrors)] @ Treat warnings as errors.
     prop OutputDir [get(GetOutputDir),set(SetOutputDir)] @ Output directory of the compilation result.
     prop ImportDirs [get(GetImportDirs),set(SetImportDirs)] @ Directories to search for files when importing.
-    prop Additions [get(GetAdditions),set(SetAdditions)] @ Additional parameters (specific to each generator {Generator}).
+    prop BoolType [get(GetBoolType),set(SetBoolType)] @ Setting bool type representation.
+    prop IdlOptions [get(GetIdlOptions),set(SetIdlOptions)] @ Setting specifi Idl options.
+    prop COptions [get(GetCOptions),set(SetCOptions)] @ Setting specific C options.
 
     event Importer [get(GetImporter),set(SetImporter)] @ Events for receiving sources (for example, when importing).
     event ReleaseImport [get(GetReleaseImport),set(SetReleaseImport)] @ Event to release sources obtained from {Importer}.
@@ -196,27 +216,47 @@ interface Options
         arg Callback {WriteCallback} @ Callback function.
         arg Data {Data} [optional,userdata] @ Callback user data.
 
-    @ Get additional parameters.
-    @ Returns an array of additional parameters. [detail]
-    @ {SetAdditions} [see]
-    method GetAdditions [const]
+    @ Get bool type.
+    @ Returns the boolean ABI type. [detail]
+    @ ABI boolean type. [return]
+    @ {SetBoolType} [see]
+    method GetBoolType {BoolType} [const]
         arg Options {Options} [this] @ Target options.
-        arg AdditionCount {Uint32} [in,out] @ Number of additions.
-        arg Additions {Str} [result,array(AdditionCount)] @ Additions.
 
-    @ Set additional parameters.
-    @ Sets additional parameters specific to the generator ({Generator}). [detail]
-    @ ```
-        Supported Generators:
-        - {Generator.C} - additional headers included in the API header file
-          and the special value `+docgroup` to add Doxygen groups;
-        - {Generator.JavaScript} - no specific parameters.
-        ``` [note]
-    @ {GetAdditions} [see]
-    method SetAdditions
+    @ Set bool type.
+    @ Set boolean ABI type. [detail]
+    @ {GetBoolType} [see]
+    method SetBoolType
         arg Options {Options} [this] @ Target options.
-        arg AdditionCount {Uint32} @ Number of additions.
-        arg Additions {Str} [const,array(AdditionCount)] @ Additions.
+        arg BoolType {BoolType} @ Bool type.
+
+    @ Get Idl options.
+    @ Returns specific Idl options. [detail]
+    @ Idl options. [return]
+    @ {SetIdlOptions} [see]
+    method GetIdlOptions {IdlOptions} [const,optional]
+        arg Options {Options} [this] @ Target options.
+
+    @ Set Idl options.
+    @ Set specific Idl options. [detail]
+    @ {GetIdlOptions} [see]
+    method SetIdlOptions
+        arg Options {Options} [this] @ Target options.
+        arg IdlOptions {IdlOptions} [const,ref,optional] @ Idl options.
+
+    @ Get C options.
+    @ Returns specific C options. [detail]
+    @ C options. [return]
+    @ {SetCOptions} [see]
+    method GetCOptions {COptions} [const,optional,tokenizer(3-1)]
+        arg Options {Options} [this] @ Target options.
+
+    @ Set C options.
+    @ Set specific C options. [detail]
+    @ {GetCOptions} [see]
+    method SetCOptions [tokenizer(3-1)]
+        arg Options {Options} [this] @ Target options.
+        arg COptions {COptions} [const,ref,optional,tokenizer(1)] @ C options.
 
     @ Get api version.
     @ Returns the API version or null. [detail]

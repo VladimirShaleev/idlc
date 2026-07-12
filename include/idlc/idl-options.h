@@ -14,6 +14,19 @@
 IDL_BEGIN
 
 /**
+ * @brief   Bool type.
+ * @details Boolean ABI represent type.
+ * @ingroup enums
+ */
+typedef enum
+{
+    IDL_BOOL_TYPE_INT_32   = 0, /**< 32 bits integer. */
+    IDL_BOOL_TYPE_INT_8    = 1, /**< 8 bits integer. */
+    IDL_BOOL_TYPE_STD_BOOL = 2, /**< 8 bit C *_Bool* type. */
+    IDL_BOOL_TYPE_MAX_ENUM = 0x7FFFFFFF /**< Max value of enum (not used) */
+} idl_bool_type_t;
+
+/**
  * @brief   Source code.
  * @details Used to provide source code in memory.
  * @ingroup structs
@@ -36,6 +49,27 @@ typedef struct
     idl_uint32_t minor; /**< Minor component of the version. */
     idl_uint32_t micro; /**< Micro component of the version. */
 } idl_api_version_t;
+
+/**
+ * @brief   Idl Options.
+ * @details Specific options for Idl.
+ * @ingroup structs
+ */
+typedef struct
+{
+    idl_bool_t prefered_original_style; /**< Prefered original code style. */
+} idl_idl_options_t;
+
+/**
+ * @brief   C Options.
+ * @details Specific options for C.
+ * @ingroup structs
+ */
+typedef struct
+{
+    idl_bool_t add_doc_group; /**< Add Doxygen groups. */
+    idl_bool_t use_std_types; /**< Use stdint.h types directly. */
+} idl_c_options_t;
 
 /**
  * @name Function pointer types.
@@ -322,37 +356,73 @@ idl_options_set_writer(idl_options_t options,
                        idl_data_t data);
 
 /**
- * @brief         Get additional parameters.
- * @details       Returns an array of additional parameters.
- * @param[in]     options Target options.
- * @param[in,out] addition_count Number of additions.
- * @param[out]    additions Additions.
- * @sa            ::idl_options_set_additions
- * @ingroup       functions
+ * @brief     Get bool type.
+ * @details   Returns the boolean ABI type.
+ * @param[in] options Target options.
+ * @return    ABI boolean type.
+ * @sa        ::idl_options_set_bool_type
+ * @ingroup   functions
  */
-idl_api void
-idl_options_get_additions(idl_options_t options,
-                          idl_uint32_t* addition_count,
-                          idl_utf8_t* additions);
+idl_api idl_bool_type_t
+idl_options_get_bool_type(idl_options_t options);
 
 /**
- * @brief     Set additional parameters.
- * @details   Sets additional parameters specific to the generator (::idl_generator_t).
+ * @brief     Set bool type.
+ * @details   Set boolean ABI type.
  * @param[in] options Target options.
- * @param[in] addition_count Number of additions.
- * @param[in] additions Additions.
- * @note      Supported Generators:
- *            - ::IDL_GENERATOR_C - additional headers included in the API header file
- *              and the special value `+docgroup` to add Doxygen groups;
- *            - ::IDL_GENERATOR_JAVA_SCRIPT - no specific parameters.
- *            
- * @sa        ::idl_options_get_additions
+ * @param[in] bool_type Bool type.
+ * @sa        ::idl_options_get_bool_type
  * @ingroup   functions
  */
 idl_api void
-idl_options_set_additions(idl_options_t options,
-                          idl_uint32_t addition_count,
-                          const idl_utf8_t* additions);
+idl_options_set_bool_type(idl_options_t options,
+                          idl_bool_type_t bool_type);
+
+/**
+ * @brief     Get Idl options.
+ * @details   Returns specific Idl options.
+ * @param[in] options Target options.
+ * @return    Idl options.
+ * @sa        ::idl_options_set_idl_options
+ * @ingroup   functions
+ */
+idl_api idl_idl_options_t
+idl_options_get_idl_options(idl_options_t options);
+
+/**
+ * @brief     Set Idl options.
+ * @details   Set specific Idl options.
+ * @param[in] options Target options.
+ * @param[in] idl_options Idl options.
+ * @sa        ::idl_options_get_idl_options
+ * @ingroup   functions
+ */
+idl_api void
+idl_options_set_idl_options(idl_options_t options,
+                            const idl_idl_options_t* idl_options);
+
+/**
+ * @brief     Get C options.
+ * @details   Returns specific C options.
+ * @param[in] options Target options.
+ * @return    C options.
+ * @sa        ::idl_options_set_c_options
+ * @ingroup   functions
+ */
+idl_api idl_c_options_t
+idl_options_get_c_options(idl_options_t options);
+
+/**
+ * @brief     Set C options.
+ * @details   Set specific C options.
+ * @param[in] options Target options.
+ * @param[in] coptions C options.
+ * @sa        ::idl_options_get_c_options
+ * @ingroup   functions
+ */
+idl_api void
+idl_options_set_c_options(idl_options_t options,
+                          const idl_c_options_t* coptions);
 
 /**
  * @brief     Get api version.

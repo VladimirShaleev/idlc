@@ -47,6 +47,8 @@ import Options
 @ Generation language.
 @ Enumeration possible languages for generating interfaces and wrapping C libraries for other languages. [note]
 enum Generator
+    const None @ Null generator (parsing only ast node tree).
+    const Idl @ Generate formatted idl output.
     const C @ C generator.
     // const Cpp @ C++ generator.
     // const Python @ Python generator.

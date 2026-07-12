@@ -91,22 +91,28 @@ public:
         _writerData = data;
     }
 
-    void getAdditions(idl_uint32_t& additionCount, idl_utf8_t* additions) {
-        if (additions) {
-            additionCount = std::min(additionCount, (idl_uint32_t) _additions.size());
-            for (idl_uint32_t i = 0; i < additionCount; ++i) {
-                additions[i] = _additions[i].c_str();
-            }
-        } else {
-            additionCount = (idl_uint32_t) _additions.size();
-        }
+    idl_bool_type_t getBoolType() const noexcept {
+        return _boolType;
     }
 
-    void setAdditions(std::span<const idl_utf8_t> additions) {
-        _additions.resize(additions.size());
-        for (size_t i = 0; i < additions.size(); ++i) {
-            _additions[i] = additions[i];
-        }
+    void setBoolType(idl_bool_type_t boolType) noexcept {
+        _boolType = boolType;
+    }
+
+    idl_idl_options_t getIdlOptions() const noexcept {
+        return _idlOptions;
+    }
+
+    void setIdlOptions(const idl_idl_options_t* idl_options) noexcept {
+        _idlOptions = idl_options ? *idl_options : idl_idl_options_t{};
+    }
+
+    idl_c_options_t getCOptions() const noexcept {
+        return _cOptions;
+    }
+
+    void setCOptions(const idl_c_options_t* coptions) noexcept {
+        _cOptions = coptions ? *coptions : idl_c_options_t{};
     }
 
     const idl_api_version_t* getVersion() const noexcept {
@@ -123,6 +129,9 @@ private:
     std::string _outputDir{};
     std::vector<std::string> _importDirs{};
     std::vector<std::string> _additions{};
+    idl_bool_type_t _boolType{};
+    idl_idl_options_t _idlOptions{};
+    idl_c_options_t _cOptions{};
     idl_import_callback_t _importer{};
     idl_data_t _importerData{};
     idl_release_import_callback_t _releaseImport{};

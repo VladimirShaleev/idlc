@@ -157,6 +157,19 @@ TEST(idlc, ConstantForwardRefers) {
     ASSERT_EQ(messages[0],
               "warning [W2003]: The constant 'Api.Test.Value3' refers to a constant declared below 'Api.Test.Value4' "
               "at w2003:13:5");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto test = findChild(ast, api, IDL_AST_NODE_TYPE_ENUM);
+    ASSERT_NE(test, HandleNone);
+
+    auto testConsts = getChilds(ast, test, IDL_AST_NODE_TYPE_CONST);
+    ASSERT_EQ(testConsts.size(), 4);
+    ASSERT_TRUE(checkConst(ast, testConsts[0], 0, true, false, false));
+    ASSERT_TRUE(checkConst(ast, testConsts[1], 0, false, false, false));
+    ASSERT_TRUE(checkConst(ast, testConsts[2], 5, false, false, false));
+    ASSERT_TRUE(checkConst(ast, testConsts[3], 5, false, false, true));
 }
 
 TEST(idlc, IntegerOutOfRange) {

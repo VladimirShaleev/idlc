@@ -130,7 +130,73 @@ std::vector<idl_ast_node_h> getAttrs(idl_compilation_result_t result, idl_ast_no
     return attrs;
 }
 
+bool hasAllState(idl_compilation_result_t result, idl_ast_node_h node, idl_ast_node_state_flags_t state) {
+    const auto flags = idl_compilation_result_get_node_state(result, node);
+    return (flags & state) == state;
+}
+
+bool hasAnyState(idl_compilation_result_t result, idl_ast_node_h node, idl_ast_node_state_flags_t state) {
+    const auto flags = idl_compilation_result_get_node_state(result, node);
+    return (flags & state) != 0;
+}
+
+bool checkConst(idl_compilation_result_t result,
+                idl_ast_node_h node,
+                uint64_t value,
+                bool addedByCompiler,
+                bool buildFailed,
+                bool forwardDecl) {
+    if (node == HandleNone) {
+        false;
+    }
+
+    if (!hasAllState(result,
+                     node,
+                     IDL_AST_NODE_STATE_EVAULATED_BIT |
+                         (buildFailed ? IDL_AST_NODE_STATE_BUILD_ERROR_BIT : IDL_AST_NODE_STATE_NONE_BIT) |
+                         (forwardDecl ? IDL_AST_NODE_STATE_FORWARD_DECL_BIT : IDL_AST_NODE_STATE_NONE_BIT))) {
+        return false;
+    }
+
+    if (hasAnyState(result,
+                    node,
+                    IDL_AST_NODE_STATE_ADDED_BY_COMPILER_BIT | IDL_AST_NODE_STATE_REPLACED_BY_COMPILER_BIT |
+                        (buildFailed ? IDL_AST_NODE_STATE_NONE_BIT : IDL_AST_NODE_STATE_BUILD_ERROR_BIT) |
+                        (forwardDecl ? IDL_AST_NODE_STATE_NONE_BIT : IDL_AST_NODE_STATE_FORWARD_DECL_BIT))) {
+        return false;
+    }
+
+    auto evaulated = findChild(result, node, IDL_AST_NODE_TYPE_ATTR_VALUE);
+    if (evaulated == HandleNone) {
+        return false;
+    }
+
+    if (getInt(result, evaulated) != value) {
+        return false;
+    }
+
+    if (!hasAllState(result,
+                     evaulated,
+                     addedByCompiler ? IDL_AST_NODE_STATE_ADDED_BY_COMPILER_BIT : IDL_AST_NODE_STATE_NONE_BIT)) {
+        return false;
+    }
+
+    if (hasAnyState(result,
+                    evaulated,
+                    IDL_AST_NODE_STATE_BUILD_ERROR_BIT | IDL_AST_NODE_STATE_FORWARD_DECL_BIT |
+                        IDL_AST_NODE_STATE_EVAULATED_BIT | IDL_AST_NODE_STATE_REPLACED_BY_COMPILER_BIT |
+                        (addedByCompiler ? IDL_AST_NODE_STATE_NONE_BIT : IDL_AST_NODE_STATE_ADDED_BY_COMPILER_BIT))) {
+        return false;
+    }
+
+    return true;
+}
+
 std::string getStr(idl_compilation_result_t result, idl_ast_node_h node) {
     auto str = idl_compilation_result_get_node_value_str(result, node);
     return str ? std::string(str) : ""s;
+}
+
+uint64_t getInt(idl_compilation_result_t result, idl_ast_node_h node) {
+    return idl_compilation_result_get_node_value_int(result, node);
 }

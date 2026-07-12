@@ -44,7 +44,7 @@ public:
 
         node.location = loc;
         node.type     = type;
-        node.flags    = addedByCompiler ? IDL_AST_NODE_STATE_REPLACED_BY_COMPILER_BIT : IDL_AST_NODE_STATE_NONE_BIT;
+        node.flags    = addedByCompiler ? IDL_AST_NODE_STATE_ADDED_BY_COMPILER_BIT : IDL_AST_NODE_STATE_NONE_BIT;
         node.parent   = HandleNone;
         node.sibling  = HandleNone;
         node.child    = HandleNone;

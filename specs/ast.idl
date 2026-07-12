@@ -1,0 +1,80 @@
+@ TODO.
+@ TODO. [detail]
+enum ASTNodeType [tokenizer(3-4)]
+    const Decl @ TODO
+    const Api @ TODO
+    const Import @ TODO
+    const Enum @ TODO
+    const Const @ TODO
+
+    const DeclRef @ TODO
+
+    const Literal @ TODO
+    const LiteralStr @ TODO
+    const LiteralInt @ TODO
+    const LiteralBool @ TODO
+    const LiteralFloat @ TODO
+
+    const Attr @ TODO
+    const AttrFlags @ TODO
+    const AttrHex @ TODO
+    const AttrValue @ TODO
+    const AttrType @ TODO
+    const AttrCName @ TODO
+    const AttrTokenizer @ TODO
+    const AttrOrder @ TODO
+    const AttrSingle @ TODO
+    const AttrVersion @ TODO
+
+    const AttrDoc @ TODO
+    const AttrDocBrief @ TODO
+    const AttrDocDetail @ TODO
+    const AttrDocAuthor @ TODO
+    const AttrDocCopyright @ TODO
+    const AttrDocLicense @ TODO
+
+    const Type @ TODO
+    const TrivialType @ TODO
+    const Void @ TODO
+    const Data @ TODO
+    const Char @ TODO
+    const Str @ TODO
+    const Bool @ TODO
+    const IntegerType @ TODO
+    const Int8 @ TODO
+    const Uint8 @ TODO
+    const Int16 @ TODO
+    const Uint16 @ TODO
+    const Int32 @ TODO
+    const Uint32 @ TODO
+    const Int64 @ TODO
+    const Uint64 @ TODO
+    const FloatType @ TODO
+    const Float32 @ TODO
+    const Float64 @ TODO
+
+@ TODO.
+@ TODO. [detail]
+enum ASTNodeState [hex,flags,tokenizer(3-4)]
+    const None : 0 @ TODO
+    const Evaulated : 1 @ TODO
+    const BuildError : 2 @ TODO
+    const ForwardDecl : 4 @ TODO
+    const AddedByCompiler : 8 @ TODO
+    const ReplacedByCompiler : 16 @ TODO
+
+@ TODO.
+@ TODO. [detail]
+struct Handle [handle]
+    field Handle {Uint16} @ TODO
+
+@ TODO.
+@ TODO. [detail]
+handle ASTNode {Handle} [tokenizer(3-4)]
+
+@ TODO.
+@ TODO. [detail]
+struct ASTLocation [tokenizer(3)]
+    field Filename {Str} @ TODO
+    field Line {Uint16} @ TODO
+    field Column {Uint16} @ TODO

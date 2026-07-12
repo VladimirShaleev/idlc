@@ -338,17 +338,17 @@ void idl_compilation_result_destroy(idl_compilation_result_t compilation_result)
 
 idl_bool_t idl_compilation_result_has_notes(idl_compilation_result_t compilation_result) {
     assert(compilation_result);
-    return compilation_result->as<idl::CompilationResult>()->hasNotes();
+    return compilation_result->as<idl::CompilationResultBase>()->hasNotes();
 }
 
 idl_bool_t idl_compilation_result_has_warnings(idl_compilation_result_t compilation_result) {
     assert(compilation_result);
-    return compilation_result->as<idl::CompilationResult>()->hasWarnings();
+    return compilation_result->as<idl::CompilationResultBase>()->hasWarnings();
 }
 
 idl_bool_t idl_compilation_result_has_errors(idl_compilation_result_t compilation_result) {
     assert(compilation_result);
-    return compilation_result->as<idl::CompilationResult>()->hasErrors();
+    return compilation_result->as<idl::CompilationResultBase>()->hasErrors();
 }
 
 void idl_compilation_result_get_messages(idl_compilation_result_t compilation_result,
@@ -356,5 +356,82 @@ void idl_compilation_result_get_messages(idl_compilation_result_t compilation_re
                                          idl_message_t* messages) {
     assert(compilation_result);
     assert(message_count);
-    return compilation_result->as<idl::CompilationResult>()->getMessages(*message_count, messages);
+    return compilation_result->as<idl::CompilationResultBase>()->getMessages(*message_count, messages);
+}
+
+idl_ast_node_h idl_compilation_result_get_api(idl_compilation_result_t compilation_result) {
+    assert(compilation_result);
+    return compilation_result->as<idl::CompilationResultBase>()->getApi();
+}
+
+idl_ast_node_type_t idl_compilation_result_get_node_type(idl_compilation_result_t compilation_result,
+                                                         idl_ast_node_h node) {
+    assert(compilation_result);
+    return compilation_result->as<idl::CompilationResultBase>()->getNodeType(node);
+}
+
+idl_ast_node_state_flags_t idl_compilation_result_get_node_state(idl_compilation_result_t compilation_result,
+                                                                 idl_ast_node_h node) {
+    assert(compilation_result);
+    return compilation_result->as<idl::CompilationResultBase>()->getNodeState(node);
+}
+
+void idl_compilation_result_get_node_location(idl_compilation_result_t compilation_result,
+                                              idl_ast_node_h node,
+                                              idl_ast_location_t* location) {
+    assert(compilation_result);
+    assert(location);
+    return compilation_result->as<idl::CompilationResultBase>()->getNodeLocation(node, *location);
+}
+
+idl_ast_node_h idl_compilation_result_get_parent_node(idl_compilation_result_t compilation_result,
+                                                      idl_ast_node_h node) {
+    assert(compilation_result);
+    return compilation_result->as<idl::CompilationResultBase>()->getParentNode(node);
+}
+
+idl_ast_node_h idl_compilation_result_get_next_node(idl_compilation_result_t compilation_result, idl_ast_node_h node) {
+    assert(compilation_result);
+    return compilation_result->as<idl::CompilationResultBase>()->getNextNode(node);
+}
+
+idl_ast_node_h idl_compilation_result_get_child_node(idl_compilation_result_t compilation_result, idl_ast_node_h node) {
+    assert(compilation_result);
+    return compilation_result->as<idl::CompilationResultBase>()->getChildNode(node);
+}
+
+idl_bool_t idl_compilation_result_is_node_type(idl_compilation_result_t compilation_result,
+                                               idl_ast_node_h node,
+                                               idl_ast_node_type_t type) {
+    assert(compilation_result);
+    return compilation_result->as<idl::CompilationResultBase>()->isNodeType(node, type);
+}
+
+idl_utf8_t idl_compilation_result_get_node_value_str(idl_compilation_result_t compilation_result, idl_ast_node_h node) {
+    assert(compilation_result);
+    return compilation_result->as<idl::CompilationResultBase>()->getNodeValueStr(node);
+}
+
+idl_uint64_t idl_compilation_result_get_node_value_int(idl_compilation_result_t compilation_result,
+                                                       idl_ast_node_h node) {
+    assert(compilation_result);
+    return compilation_result->as<idl::CompilationResultBase>()->getNodeValueInt(node);
+}
+
+idl_float64_t idl_compilation_result_get_node_value_float(idl_compilation_result_t compilation_result,
+                                                          idl_ast_node_h node) {
+    assert(compilation_result);
+    return compilation_result->as<idl::CompilationResultBase>()->getNodeValueFloat(node);
+}
+
+idl_bool_t idl_compilation_result_get_node_value_bool(idl_compilation_result_t compilation_result,
+                                                      idl_ast_node_h node) {
+    assert(compilation_result);
+    return compilation_result->as<idl::CompilationResultBase>()->getNodeValueBool(node);
+}
+
+idl_ast_node_h idl_compilation_result_get_node_value_decl_ref(idl_compilation_result_t compilation_result,
+                                                              idl_ast_node_h node) {
+    assert(compilation_result);
+    return compilation_result->as<idl::CompilationResultBase>()->getNodeValueDeclRef(node);
 }

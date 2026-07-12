@@ -9,8 +9,7 @@
 #ifndef IDL_RESULTS_H
 #define IDL_RESULTS_H
 
-#include "idl-version.h"
-#include "idl-types.h"
+#include "idl-ast.h"
 
 IDL_BEGIN
 
@@ -190,6 +189,158 @@ idl_api void
 idl_compilation_result_get_messages(idl_compilation_result_t compilation_result,
                                     idl_uint32_t* message_count,
                                     idl_message_t* messages);
+
+/**
+ * @brief     TODO.
+ * @details   TODO.
+ * @param[in] compilation_result Target compilation result instance.
+ * @return    TODO.
+ * @ingroup   functions
+ */
+idl_api idl_ast_node_h
+idl_compilation_result_get_api(idl_compilation_result_t compilation_result);
+
+/**
+ * @brief     TODO
+ * @details   TODO.
+ * @param[in] compilation_result Target compilation result instance.
+ * @param[in] node TODO
+ * @ingroup   functions
+ */
+idl_api idl_ast_node_type_t
+idl_compilation_result_get_node_type(idl_compilation_result_t compilation_result,
+                                     idl_ast_node_h node);
+
+/**
+ * @brief     TODO
+ * @details   TODO.
+ * @param[in] compilation_result Target compilation result instance.
+ * @param[in] node TODO
+ * @ingroup   functions
+ */
+idl_api idl_ast_node_state_flags_t
+idl_compilation_result_get_node_state(idl_compilation_result_t compilation_result,
+                                      idl_ast_node_h node);
+
+/**
+ * @brief      TODO
+ * @details    TODO.
+ * @param[in]  compilation_result Target compilation result instance.
+ * @param[in]  node TODO
+ * @param[out] location TODO
+ * @ingroup    functions
+ */
+idl_api void
+idl_compilation_result_get_node_location(idl_compilation_result_t compilation_result,
+                                         idl_ast_node_h node,
+                                         idl_ast_location_t* location);
+
+/**
+ * @brief     TODO
+ * @details   TODO.
+ * @param[in] compilation_result Target compilation result instance.
+ * @param[in] node TODO
+ * @ingroup   functions
+ */
+idl_api idl_ast_node_h
+idl_compilation_result_get_parent_node(idl_compilation_result_t compilation_result,
+                                       idl_ast_node_h node);
+
+/**
+ * @brief     TODO
+ * @details   TODO.
+ * @param[in] compilation_result Target compilation result instance.
+ * @param[in] node TODO
+ * @ingroup   functions
+ */
+idl_api idl_ast_node_h
+idl_compilation_result_get_next_node(idl_compilation_result_t compilation_result,
+                                     idl_ast_node_h node);
+
+/**
+ * @brief     TODO
+ * @details   TODO.
+ * @param[in] compilation_result Target compilation result instance.
+ * @param[in] node TODO
+ * @ingroup   functions
+ */
+idl_api idl_ast_node_h
+idl_compilation_result_get_child_node(idl_compilation_result_t compilation_result,
+                                      idl_ast_node_h node);
+
+/**
+ * @brief     TODO.
+ * @details   TODO.
+ * @param[in] compilation_result Target compilation result instance.
+ * @param[in] node TODO
+ * @param[in] type TODO
+ * @return    TODO.
+ * @ingroup   functions
+ */
+idl_api idl_bool_t
+idl_compilation_result_is_node_type(idl_compilation_result_t compilation_result,
+                                    idl_ast_node_h node,
+                                    idl_ast_node_type_t type);
+
+/**
+ * @brief     TODO
+ * @details   TODO.
+ * @param[in] compilation_result Target compilation result instance.
+ * @param[in] node TODO
+ * @return    TODO.
+ * @ingroup   functions
+ */
+idl_api idl_utf8_t
+idl_compilation_result_get_node_value_str(idl_compilation_result_t compilation_result,
+                                          idl_ast_node_h node);
+
+/**
+ * @brief     TODO
+ * @details   TODO.
+ * @param[in] compilation_result Target compilation result instance.
+ * @param[in] node TODO
+ * @return    TODO.
+ * @ingroup   functions
+ */
+idl_api idl_uint64_t
+idl_compilation_result_get_node_value_int(idl_compilation_result_t compilation_result,
+                                          idl_ast_node_h node);
+
+/**
+ * @brief     TODO
+ * @details   TODO.
+ * @param[in] compilation_result Target compilation result instance.
+ * @param[in] node TODO
+ * @return    TODO.
+ * @ingroup   functions
+ */
+idl_api idl_float64_t
+idl_compilation_result_get_node_value_float(idl_compilation_result_t compilation_result,
+                                            idl_ast_node_h node);
+
+/**
+ * @brief     TODO
+ * @details   TODO.
+ * @param[in] compilation_result Target compilation result instance.
+ * @param[in] node TODO
+ * @return    TODO.
+ * @ingroup   functions
+ */
+idl_api idl_bool_t
+idl_compilation_result_get_node_value_bool(idl_compilation_result_t compilation_result,
+                                           idl_ast_node_h node);
+
+/**
+ * @brief     TODO
+ * @details   TODO.
+ * @param[in] compilation_result Target compilation result instance.
+ * @param[in] node TODO
+ * @return    TODO.
+ * @ingroup   functions
+ */
+idl_api idl_ast_node_h
+idl_compilation_result_get_node_value_decl_ref(idl_compilation_result_t compilation_result,
+                                               idl_ast_node_h node);
 
 /** @} */
 

@@ -45,7 +45,7 @@
             intern(*loc.begin.filename), \
             uint16_t(loc.begin.column), \
             uint16_t(loc.begin.line) \
-        }, ASTNodeType::type, false)
+        }, IDL_AST_NODE_TYPE_##type, false)
     #define node(handle) \
         scanner.context().getNode(handle)
     #define add_child(parent, child) \
@@ -138,8 +138,8 @@ idl : stack_decls {
 }
 
 stack_decls
-    : def_with_attrs { rule(Hierarchy, $1, NodeHandleNone); rule(AttrValidator, $1, scanner.context()); add_symbol($1); $$.push_back($1); }
-    | stack_decls def_with_attrs { rule(Hierarchy, $2, $1.back()); rule(AttrValidator, $2, scanner.context()); add_symbol($2); if (astNodeIs(node($2), ASTNodeType::Import)) { $1.push_back($2); } else { $1.back() = $2; } $$ = std::move($1); }
+    : def_with_attrs { rule(Hierarchy, $1, HandleNone); rule(AttrValidator, $1, scanner.context()); add_symbol($1); $$.push_back($1); }
+    | stack_decls def_with_attrs { rule(Hierarchy, $2, $1.back()); rule(AttrValidator, $2, scanner.context()); add_symbol($2); if (isNodeType(node($2), IDL_AST_NODE_TYPE_IMPORT)) { $1.push_back($2); } else { $1.back() = $2; } $$ = std::move($1); }
     | stack_decls POPIMPORT { $1.pop_back(); $$ = std::move($1); }
     ;
 
@@ -154,12 +154,12 @@ def_with_attrs
 
 def_with_type
     : def_with_value { $$ = $1; }
-    | def_with_value '{' arg_item '}' { $$ = $1; auto type = alloc_node(@3, AttrType); rule(AttrArg, type, $3, $3, 1); add_child($$, type);}
+    | def_with_value '{' arg_item '}' { $$ = $1; auto type = alloc_node(@3, ATTR_TYPE); rule(AttrArg, type, $3, $3, 1); add_child($$, type);}
     ;
 
 def_with_value
     : def { $$ = $1; }
-    | def ':' arg_list { $$ = $1; auto val = alloc_node(@3, AttrValue); rule(AttrArg, val, $3.first, $3.last, $3.count); add_child($$, val); }
+    | def ':' arg_list { $$ = $1; auto val = alloc_node(@3, ATTR_VALUE); rule(AttrArg, val, $3.first, $3.last, $3.count); add_child($$, val); }
     ;
 
 def
@@ -168,19 +168,19 @@ def
     ;
 
 doc
-    : DOC doc_nodes { $$ = alloc_node(@2, AttrDocBrief); rule(AttrArg, $$, $2.first, $2.last, $2.count); rule(AttrDocValidator, $$); }
-    | DOC doc_nodes '[' ']' { $$ = alloc_node(@2, AttrDocBrief); rule(AttrArg, $$, $2.first, $2.last, $2.count); rule(AttrDocValidator, $$); log(N1002, @3); }
-    | DOC doc_nodes '[' attr_item ']' { $$ = $4; rule(AttrArg, $$, $2.first, $2.last, $2.count); rule(AttrDocValidator, $$); if (astNodeIs(node($4), ASTNodeType::AttrDocBrief)) { log(N1003, @4); } }
+    : DOC doc_nodes { $$ = alloc_node(@2, ATTR_DOC_BRIEF); rule(AttrArg, $$, $2.first, $2.last, $2.count); rule(AttrDocValidator, $$); }
+    | DOC doc_nodes '[' ']' { $$ = alloc_node(@2, ATTR_DOC_BRIEF); rule(AttrArg, $$, $2.first, $2.last, $2.count); rule(AttrDocValidator, $$); log(N1002, @3); }
+    | DOC doc_nodes '[' attr_item ']' { $$ = $4; rule(AttrArg, $$, $2.first, $2.last, $2.count); rule(AttrDocValidator, $$); if (isNodeType(node($4), IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF)) { log(N1003, @4); } }
     ;
 
 idoc
-    : IDOC doc_nodes { $$ = alloc_node(@2, AttrDocDetail); rule(AttrArg, $$, $2.first, $2.last, $2.count); rule(AttrDocValidator, $$); rule(AttrIDocValidator, $$); }
-    | IDOC doc_nodes '[' ']' { $$ = alloc_node(@2, AttrDocDetail); rule(AttrArg, $$, $2.first, $2.last, $2.count); rule(AttrDocValidator, $$); rule(AttrIDocValidator, $$); log(N1002, @3); }
-    | IDOC doc_nodes '[' attr_item ']' { $$ = $4; rule(AttrArg, $$, $2.first, $2.last, $2.count); rule(AttrDocValidator, $$); rule(AttrIDocValidator, $$); if (astNodeIs(node($4), ASTNodeType::AttrDocDetail)) { log(N1004, @4); } }
+    : IDOC doc_nodes { $$ = alloc_node(@2, ATTR_DOC_DETAIL); rule(AttrArg, $$, $2.first, $2.last, $2.count); rule(AttrDocValidator, $$); rule(AttrIDocValidator, $$); }
+    | IDOC doc_nodes '[' ']' { $$ = alloc_node(@2, ATTR_DOC_DETAIL); rule(AttrArg, $$, $2.first, $2.last, $2.count); rule(AttrDocValidator, $$); rule(AttrIDocValidator, $$); log(N1002, @3); }
+    | IDOC doc_nodes '[' attr_item ']' { $$ = $4; rule(AttrArg, $$, $2.first, $2.last, $2.count); rule(AttrDocValidator, $$); rule(AttrIDocValidator, $$); if (isNodeType(node($4), IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL)) { log(N1004, @4); } }
     ;
 
 doc_lit_or_ref
-    : STR { $$ = alloc_node(@1, LiteralStr); node($$)->valueStr = intern($1); }
+    : STR { $$ = alloc_node(@1, LITERAL_STR); node($$)->valueStr = intern($1); }
     | '{' ref '}' { $$ = $2; }
     ;
 
@@ -194,15 +194,15 @@ doc_list
     | doc_list doc { $$ = list_add($1, $2); }
 
 ref
-    : ID { $$ = alloc_node(@1, DeclRef); node($$)->valueDeclRef.symbol = intern($1); }
-    | REF { $$ = alloc_node(@1, DeclRef); node($$)->valueDeclRef.symbol = intern($1); }
+    : ID { $$ = alloc_node(@1, DECL_REF); node($$)->valueDeclRef.symbol = intern($1); }
+    | REF { $$ = alloc_node(@1, DECL_REF); node($$)->valueDeclRef.symbol = intern($1); }
     ;
 
 decl
-    : API { $$ = alloc_node(@1, Api); }
-    | ENUM { $$ = alloc_node(@1, Enum); }
-    | CONST { $$ = alloc_node(@1, Const); }
-    | IMPORT { $$ = alloc_node(@1, Import); }
+    : API { $$ = alloc_node(@1, API); }
+    | ENUM { $$ = alloc_node(@1, ENUM); }
+    | CONST { $$ = alloc_node(@1, CONST); }
+    | IMPORT { $$ = alloc_node(@1, IMPORT); }
     ;
 
 attr_list
@@ -211,36 +211,36 @@ attr_list
     ;
 
 attr_item_with_args
-    : attr_item { $$ = $1; rule(AttrArg, $$, NodeHandleNone, NodeHandleNone, 0); }
-    | attr_item '(' ')' { $$ = $1; rule(AttrArg, $$, NodeHandleNone, NodeHandleNone, 0); log(N1001, @1, visit(AttrName, $$, str)); }
+    : attr_item { $$ = $1; rule(AttrArg, $$, HandleNone, HandleNone, 0); }
+    | attr_item '(' ')' { $$ = $1; rule(AttrArg, $$, HandleNone, HandleNone, 0); log(N1001, @1, visit(AttrName, $$, str)); }
     | attr_item '(' arg_list ')' { $$ = $1; rule(AttrArg, $$, $3.first, $3.last, $3.count); }
     ;
 
 attr_item
-    : ATTRVERSION   { $$ = alloc_node(@1, AttrVersion); }
-    | ATTRAUTHOR    { $$ = alloc_node(@1, AttrDocAuthor); }
-    | ATTRCOPYRIGHT { $$ = alloc_node(@1, AttrDocCopyright); }
-    | ATTRLICENSE   { $$ = alloc_node(@1, AttrDocLicense); }
-    | ATTRFLAGS     { $$ = alloc_node(@1, AttrFlags); }
-    | ATTRVALUE     { $$ = alloc_node(@1, AttrValue); }
-    | ATTRTYPE      { $$ = alloc_node(@1, AttrType); }
-    | ATTRCNAME     { $$ = alloc_node(@1, AttrCName); }
-    | ATTRTOKENIZER { $$ = alloc_node(@1, AttrTokenizer); }
-    | ATTRORDER     { $$ = alloc_node(@1, AttrOrder); }
-    | ATTRSINGLE    { $$ = alloc_node(@1, AttrSingle); }
-    | ATTRHEX       { $$ = alloc_node(@1, AttrHex); }
-    | ATTRBRIEF     { $$ = alloc_node(@1, AttrDocBrief); }
-    | ATTRDETAIL    { $$ = alloc_node(@1, AttrDocDetail); }
-    | INVALID_ATTR  { $$ = NodeHandleNone; log(E3013, @1, $1); }
+    : ATTRVERSION   { $$ = alloc_node(@1, ATTR_VERSION); }
+    | ATTRAUTHOR    { $$ = alloc_node(@1, ATTR_DOC_AUTHOR); }
+    | ATTRCOPYRIGHT { $$ = alloc_node(@1, ATTR_DOC_COPYRIGHT); }
+    | ATTRLICENSE   { $$ = alloc_node(@1, ATTR_DOC_LICENSE); }
+    | ATTRFLAGS     { $$ = alloc_node(@1, ATTR_FLAGS); }
+    | ATTRVALUE     { $$ = alloc_node(@1, ATTR_VALUE); }
+    | ATTRTYPE      { $$ = alloc_node(@1, ATTR_TYPE); }
+    | ATTRCNAME     { $$ = alloc_node(@1, ATTR_CNAME); }
+    | ATTRTOKENIZER { $$ = alloc_node(@1, ATTR_TOKENIZER); }
+    | ATTRORDER     { $$ = alloc_node(@1, ATTR_ORDER); }
+    | ATTRSINGLE    { $$ = alloc_node(@1, ATTR_SINGLE); }
+    | ATTRHEX       { $$ = alloc_node(@1, ATTR_HEX); }
+    | ATTRBRIEF     { $$ = alloc_node(@1, ATTR_DOC_BRIEF); }
+    | ATTRDETAIL    { $$ = alloc_node(@1, ATTR_DOC_DETAIL); }
+    | INVALID_ATTR  { $$ = HandleNone; log(E3013, @1, $1); }
     ;
 
 arg_item
-    : INT   { $$ = alloc_node(@1, LiteralInt); node($$)->valueInt = $1; }
-    | FLOAT { $$ = alloc_node(@1, LiteralFloat); node($$)->valueFloat = $1; }
-    | BOOL  { $$ = alloc_node(@1, LiteralBool); node($$)->valueBool = $1; }
-    | STR   { $$ = alloc_node(@1, LiteralStr); node($$)->valueStr = intern($1); }
+    : INT   { $$ = alloc_node(@1, LITERAL_INT); node($$)->valueInt = $1; }
+    | FLOAT { $$ = alloc_node(@1, LITERAL_FLOAT); node($$)->valueFloat = $1; }
+    | BOOL  { $$ = alloc_node(@1, LITERAL_BOOL); node($$)->valueBool = $1; }
+    | STR   { $$ = alloc_node(@1, LITERAL_STR); node($$)->valueStr = intern($1); }
     | ref   { $$ = $1; }
-    | INVALID_ARG { $$ = NodeHandleNone; log(E3002, @1, $1); }
+    | INVALID_ARG { $$ = HandleNone; log(E3002, @1, $1); }
     ;
 
 arg_list

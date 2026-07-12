@@ -64,10 +64,11 @@ if(IDLC_USE_IDLC)
         DEPENDS
             "${PROJECT_SOURCE_DIR}/specs/api.idl"
             "${PROJECT_SOURCE_DIR}/specs/options.idl"
-            "${PROJECT_SOURCE_DIR}/specs/results.idl")
+            "${PROJECT_SOURCE_DIR}/specs/results.idl"
+            "${PROJECT_SOURCE_DIR}/specs/ast.idl")
 endif()
 
-set(IDL_SOURCES src/ast.cpp src/string_pool.cpp src/compiler.cpp)# src/generator_c.cpp)
+set(IDL_SOURCES src/string_pool.cpp src/compiler.cpp)# src/generator_c.cpp)
 if(IDLC_SUPPORTED_JS)
 #    list(APPEND IDL_SOURCES src/generator_js.cpp)
 endif()

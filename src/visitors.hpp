@@ -6,34 +6,34 @@
 namespace idl {
 
 struct CName {
-    /*void visit(ASTNodeRef& node, Tag<ASTNodeType::Enum>) {
+    /*void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ENUM>) {
         str = cname(node);
-        if (ctx.findChild<ASTNodeType::AttrFlags>(node)) {
+        if (ctx.findChild<IDL_AST_NODE_TYPE_ATTR_FLAGS>(node)) {
             str += "_flags";
         }
         str += "_t";
     }
 
-    void visit(ASTNodeRef& node, Tag<ASTNodeType::Const>) {
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_CONST>) {
         str = cname(node, true);
-        if (ctx.findChild<ASTNodeType::AttrFlags>(node->parent)) {
+        if (ctx.findChild<IDL_AST_NODE_TYPE_ATTR_FLAGS>(node->parent)) {
             str += "_BIT";
         }
     }
 
-    void visit(ASTNodeRef& node, Tag<ASTNodeType::Void>) {
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_VOID>) {
         str = ctx.useStdTypes() ? "void" : cname(node) + "_t";
     }
 
-    void visit(ASTNodeRef& node, Tag<ASTNodeType::Char>) {
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_CHAR>) {
         str = ctx.useStdTypes() ? "char" : cname(node) + "_t";
     }
 
-    void visit(ASTNodeRef& node, Tag<ASTNodeType::Str>) {
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_STR>) {
         str = ctx.useStdTypes() ? "const char*" : cname(node) + "_t";
     }
 
-    void visit(ASTNodeRef& node, Tag<ASTNodeType::Bool>) {
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_BOOL>) {
         switch (ctx.boolType()) {
             case BoolType::Int32:
                 str = ctx.useStdTypes() ? "uint32_t" : cname(node) + "_t";
@@ -50,58 +50,58 @@ struct CName {
         }
     }
 
-    void visit(ASTNodeRef& node, Tag<ASTNodeType::Int8>) {
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_INT_8>) {
         str = ctx.useStdTypes() ? "int8_t" : cname(node) + "_t";
     }
 
-    void visit(ASTNodeRef& node, Tag<ASTNodeType::Uint8>) {
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_UINT_8>) {
         str = ctx.useStdTypes() ? "uint8_t" : cname(node) + "_t";
     }
 
-    void visit(ASTNodeRef& node, Tag<ASTNodeType::Int16>) {
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_INT_16>) {
         str = ctx.useStdTypes() ? "int16_t" : cname(node) + "_t";
     }
 
-    void visit(ASTNodeRef& node, Tag<ASTNodeType::Uint16>) {
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_UINT_16>) {
         str = ctx.useStdTypes() ? "uint16_t" : cname(node) + "_t";
     }
 
-    void visit(ASTNodeRef& node, Tag<ASTNodeType::Int32>) {
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_INT_32>) {
         str = ctx.useStdTypes() ? "int32_t" : cname(node) + "_t";
     }
 
-    void visit(ASTNodeRef& node, Tag<ASTNodeType::Uint32>) {
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_UINT_32>) {
         str = ctx.useStdTypes() ? "uint32_t" : cname(node) + "_t";
     }
 
-    void visit(ASTNodeRef& node, Tag<ASTNodeType::Int64>) {
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_INT_64>) {
         str = ctx.useStdTypes() ? "int64_t" : cname(node) + "_t";
     }
 
-    void visit(ASTNodeRef& node, Tag<ASTNodeType::Uint64>) {
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_UINT_64>) {
         str = ctx.useStdTypes() ? "uint64_t" : cname(node) + "_t";
     }
 
-    void visit(ASTNodeRef& node, Tag<ASTNodeType::Float32 {
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_FLOAT_32 {
         str = ctx.useStdTypes() ? "float" : cname(node) + "_t";
     }
 
-    void visit(ASTNodeRef& node, Tag<ASTNodeType::Float64>) {
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_FLOAT_64>) {
         str = ctx.useStdTypes() ? "double" : cname(node) + "_t";
     }
 
-    void visit(ASTNodeRef& node, Tag<ASTNodeType::Data>) {
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_DATA>) {
         str = ctx.useStdTypes() ? "void*" : cname(node) + "_t";
     }*/
 
     std::string cnameDecl(ASTNodeRef& decl, bool upper) {
-        assert(decl.is<ASTNodeType::Decl>());
-        if (auto attr = decl.findChild<ASTNodeType::AttrCName>()) {
+        assert(decl.is<IDL_AST_NODE_TYPE_DECL>());
+        if (auto attr = decl.findChild<IDL_AST_NODE_TYPE_ATTR_CNAME>()) {
             auto str = attr.valueStr();
             return { str.data(), str.length() };
         }
         std::vector<int> nums{};
-        if (auto attr = decl.findChild<ASTNodeType::AttrTokenizer>()) {
+        if (auto attr = decl.findChild<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>()) {
             auto view = attr | std::views::transform([](const auto& arg) {
                 return int(arg->valueInt);
             });
@@ -115,7 +115,7 @@ struct CName {
 
     std::string cname(ASTNodeRef& decl, bool upper = false) {
         auto name = cnameDecl(decl, upper);
-        if (auto parent = decl.parent(); parent.is<ASTNodeType::Decl>()) {
+        if (auto parent = decl.parent(); parent.is<IDL_AST_NODE_TYPE_DECL>()) {
             return cname(parent, upper) + '_' + name;
         }
         return name;
@@ -125,19 +125,19 @@ struct CName {
 };
 
 struct DeclToken {
-    void visit(ASTNodeRef&, Tag<ASTNodeType::Api>) {
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_API>) {
         str = "api";
     }
 
-    void visit(ASTNodeRef&, Tag<ASTNodeType::Enum>) {
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ENUM>) {
         str = "enum";
     }
 
-    void visit(ASTNodeRef&, Tag<ASTNodeType::Const>) {
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_CONST>) {
         str = "const";
     }
 
-    void visit(ASTNodeRef&, Tag<ASTNodeType::Import>) {
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_IMPORT>) {
         str = "import";
     }
 
@@ -150,59 +150,59 @@ struct DeclToken {
 };
 
 struct AttrName {
-    void visit(ASTNodeRef&, Tag<ASTNodeType::AttrTokenizer>) {
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>) {
         str = "tokenizer";
     }
 
-    void visit(ASTNodeRef&, Tag<ASTNodeType::AttrOrder>) {
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_ORDER>) {
         str = "order";
     }
 
-    void visit(ASTNodeRef&, Tag<ASTNodeType::AttrSingle>) {
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_SINGLE>) {
         str = "single";
     }
 
-    void visit(ASTNodeRef&, Tag<ASTNodeType::AttrVersion>) {
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_VERSION>) {
         str = "version";
     }
 
-    void visit(ASTNodeRef&, Tag<ASTNodeType::AttrDocAuthor>) {
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR>) {
         str = "author";
     }
 
-    void visit(ASTNodeRef&, Tag<ASTNodeType::AttrDocCopyright>) {
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT>) {
         str = "copyright";
     }
 
-    void visit(ASTNodeRef&, Tag<ASTNodeType::AttrDocLicense>) {
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE>) {
         str = "license";
     }
 
-    void visit(ASTNodeRef&, Tag<ASTNodeType::AttrFlags>) {
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_FLAGS>) {
         str = "flags";
     }
 
-    void visit(ASTNodeRef&, Tag<ASTNodeType::AttrHex>) {
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_HEX>) {
         str = "hex";
     }
 
-    void visit(ASTNodeRef&, Tag<ASTNodeType::AttrDocBrief>) {
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>) {
         str = "brief";
     }
 
-    void visit(ASTNodeRef&, Tag<ASTNodeType::AttrDocDetail>) {
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>) {
         str = "detail";
     }
 
-    void visit(ASTNodeRef&, Tag<ASTNodeType::AttrValue>) {
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_VALUE>) {
         str = "value";
     }
 
-    void visit(ASTNodeRef&, Tag<ASTNodeType::AttrType>) {
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_TYPE>) {
         str = "type";
     }
 
-    void visit(ASTNodeRef&, Tag<ASTNodeType::AttrCName>) {
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_CNAME>) {
         str = "cname";
     }
 

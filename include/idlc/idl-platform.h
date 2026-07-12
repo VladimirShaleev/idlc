@@ -182,4 +182,17 @@ inline IDL_CONSTEXPR_14 idl_enum_t& operator^=(idl_enum_t& lhr, idl_enum_t rhs) 
 #define IDL_TYPE(idl_name) \
 typedef struct _##idl_name* idl_name##_t;
 
+/**
+ * @def       IDL_HANDLE
+ * @brief     Declares an index-based handle type.
+ * @details   Creates a struct containing an index value, typically used for
+ *            resource handles in API designs that avoid direct pointers.
+ * @param[in] idl_name Base name for the handle type (suffix `_h` will be added).
+ * @ingroup   macros
+ */
+#define IDL_HANDLE(idl_name) \
+typedef struct _##idl_name { \
+    idl_uint16_t handle; \
+} idl_name##_h;
+
 #endif /* IDL_PLATFORM_H */

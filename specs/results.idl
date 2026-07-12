@@ -93,6 +93,7 @@ interface CompilationResult
     prop PropHasWarnings [get(HasWarnings),tokenizer(^4)] @ Property indicating whether there were warnings during compilation.
     prop PropHasErrors [get(HasErrors),tokenizer(^4)] @ Property indicating whether there were errors during compilation.
     prop Messages [get(GetMessages)] @ Property for getting an array of messages with warnings and errors.
+    prop Api [get(GetApi)] @ TODO.
 
     @ Increments reference count.
     @ Manages compilation result instance lifetime. [detail]
@@ -131,3 +132,89 @@ interface CompilationResult
         arg CompilationResult {CompilationResult} [this] @ Target compilation result instance.
         arg MessageCount {Uint32} [in,out] @ Number of messages.
         arg Messages {Message} [result,array(MessageCount)] @ Message array.
+
+    @ TODO.
+    @ TODO. [detail]
+    @ TODO. [return]
+    method GetApi {ASTNode} [const]
+        arg CompilationResult {CompilationResult} [this] @ Target compilation result instance.
+
+    @ TODO
+    @ TODO. [detail]
+    method GetNodeType {ASTNodeType}
+        arg CompilationResult {CompilationResult} [this] @ Target compilation result instance.
+        arg Node {ASTNode} @ TODO
+
+    @ TODO
+    @ TODO. [detail]
+    method GetNodeState {ASTNodeState}
+        arg CompilationResult {CompilationResult} [this] @ Target compilation result instance.
+        arg Node {ASTNode} @ TODO
+
+    @ TODO
+    @ TODO. [detail]
+    method GetNodeLocation
+        arg CompilationResult {CompilationResult} [this] @ Target compilation result instance.
+        arg Node {ASTNode} @ TODO
+        arg Location {ASTLocation} [result] @ TODO
+
+    @ TODO
+    @ TODO. [detail]
+    method GetParentNode {ASTNode}
+        arg CompilationResult {CompilationResult} [this] @ Target compilation result instance.
+        arg Node {ASTNode} @ TODO
+
+    @ TODO
+    @ TODO. [detail]
+    method GetNextNode {ASTNode}
+        arg CompilationResult {CompilationResult} [this] @ Target compilation result instance.
+        arg Node {ASTNode} @ TODO
+
+    @ TODO
+    @ TODO. [detail]
+    method GetChildNode {ASTNode}
+        arg CompilationResult {CompilationResult} [this] @ Target compilation result instance.
+        arg Node {ASTNode} @ TODO
+
+    @ TODO.
+    @ TODO. [detail]
+    @ TODO. [return]
+    method IsNodeType {Bool}
+        arg CompilationResult {CompilationResult} [this] @ Target compilation result instance.
+        arg Node {ASTNode} @ TODO
+        arg Type {ASTNodeType} @ TODO
+
+    @ TODO
+    @ TODO. [detail]
+    @ TODO. [return]
+    method GetNodeValueStr {Str}
+        arg CompilationResult {CompilationResult} [this] @ Target compilation result instance.
+        arg Node {ASTNode} @ TODO
+
+    @ TODO
+    @ TODO. [detail]
+    @ TODO. [return]
+    method GetNodeValueInt {Uint64}
+        arg CompilationResult {CompilationResult} [this] @ Target compilation result instance.
+        arg Node {ASTNode} @ TODO
+
+    @ TODO
+    @ TODO. [detail]
+    @ TODO. [return]
+    method GetNodeValueFloat {Float64}
+        arg CompilationResult {CompilationResult} [this] @ Target compilation result instance.
+        arg Node {ASTNode} @ TODO
+
+    @ TODO
+    @ TODO. [detail]
+    @ TODO. [return]
+    method GetNodeValueBool {Bool}
+        arg CompilationResult {CompilationResult} [this] @ Target compilation result instance.
+        arg Node {ASTNode} @ TODO
+
+    @ TODO
+    @ TODO. [detail]
+    @ TODO. [return]
+    method GetNodeValueDeclRef {ASTNode}
+        arg CompilationResult {CompilationResult} [this] @ Target compilation result instance.
+        arg Node {ASTNode} @ TODO

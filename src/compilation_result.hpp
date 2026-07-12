@@ -1,6 +1,7 @@
 #ifndef IDL_COMPILATION_RESULT_HPP
 #define IDL_COMPILATION_RESULT_HPP
 
+#include "ast.hpp"
 #include "errors.hpp"
 #include "object.hpp"
 
@@ -33,6 +34,57 @@ public:
         messageCount = 0;
     }
 
+    idl_ast_node_h getApi() const noexcept {
+        return {};
+    }
+
+    idl_ast_node_type_t getNodeType(idl_ast_node_h node) const noexcept {
+        return {};
+    }
+
+    idl_ast_node_state_flags_t getNodeState(idl_ast_node_h node) const noexcept {
+        return {};
+    }
+
+    void getNodeLocation(idl_ast_node_h node, idl_ast_location_t& location) const noexcept {
+    }
+
+    idl_ast_node_h getParentNode(idl_ast_node_h node) const noexcept {
+        return {};
+    }
+
+    idl_ast_node_h getNextNode(idl_ast_node_h node) const noexcept {
+        return {};
+    }
+
+    idl_ast_node_h getChildNode(idl_ast_node_h node) const noexcept {
+        return {};
+    }
+
+    bool isNodeType(idl_ast_node_h node, idl_ast_node_type_t type) const noexcept {
+        return {};
+    }
+
+    idl_utf8_t getNodeValueStr(idl_ast_node_h node) const noexcept {
+        return {};
+    }
+
+    idl_uint64_t getNodeValueInt(idl_ast_node_h node) const noexcept {
+        return {};
+    }
+
+    idl_float64_t getNodeValueFloat(idl_ast_node_h node) const noexcept {
+        return {};
+    }
+
+    idl_bool_t getNodeValueBool(idl_ast_node_h node) const noexcept {
+        return {};
+    }
+
+    idl_ast_node_h getNodeValueDeclRef(idl_ast_node_h node) const noexcept {
+        return {};
+    }
+
 protected:
     bool applyStatusAndCheckIsError(idl_status_t status, bool warnAsError) noexcept {
         if (status >= IDL_STATUS_E3001 || (warnAsError && status >= IDL_STATUS_W2001 && status < IDL_STATUS_E3001)) {
@@ -50,6 +102,7 @@ private:
     bool _hasNotes{};
     bool _hasWarnings{};
     bool _hasErrors{};
+    std::vector<ASTNode> _nodes{};
 };
 
 class CompilationResult final : public CompilationResultBase {

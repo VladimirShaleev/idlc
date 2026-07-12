@@ -1,7 +1,6 @@
 #ifndef CONTEXT_HPP
 #define CONTEXT_HPP
 
-#include "ast.hpp"
 #include "case_converter.hpp"
 #include "compilation_result.hpp"
 #include "errors.hpp"
@@ -38,7 +37,7 @@ public:
     }
 
     ASTNode* getNode(ASTNodeHandle handle) noexcept {
-        if (handle.handle < _nodes.size() && handle != NodeHandleNone) {
+        if (handle.handle < _nodes.size() && handle != HandleNone) {
             return &_nodes[handle.handle];
         }
         return nullptr;
@@ -52,10 +51,10 @@ public:
 
         node.location = loc;
         node.type     = type;
-        node.flags    = addedByCompiler ? ASTNODE_ADDED_BY_COMPILER : 0;
-        node.parent   = NodeHandleNone;
-        node.sibling  = NodeHandleNone;
-        node.child    = NodeHandleNone;
+        node.flags    = addedByCompiler ? IDL_AST_NODE_STATE_REPLACED_BY_COMPILER_BIT : IDL_AST_NODE_STATE_NONE_BIT;
+        node.parent   = HandleNone;
+        node.sibling  = HandleNone;
+        node.child    = HandleNone;
 
         return { uint16_t(index) };
     }
@@ -86,7 +85,7 @@ public:
     }
 
     bool hasErrors() const noexcept {
-        return _api != NodeHandleNone ? _result->hasErrors() : true;
+        return _api != HandleNone ? _result->hasErrors() : true;
     }
 
     String intern(std::string_view str) {
@@ -105,7 +104,7 @@ private:
     std::optional<idl_api_version_t> _version{};
     bool _useStdTypes{};
     BoolType _boolType{};
-    ASTNodeHandle _api{ NodeHandleNone };
+    ASTNodeHandle _api{ HandleNone };
     std::vector<ASTNode> _nodes{};
     std::unordered_map<std::string, ASTNodeHandle> _symbols{};
     std::unordered_map<std::string, ASTNodeHandle> _docSymbols{};
@@ -238,32 +237,36 @@ public:
     }
 
     [[nodiscard]] iterator begin() noexcept {
-        return iterator(ASTNodeRef(*_ctx, _node ? _node->child : NodeHandleNone));
+        return iterator(ASTNodeRef(*_ctx, _node ? _node->child : HandleNone));
     }
 
     [[nodiscard]] iterator end() noexcept {
-        return iterator(ASTNodeRef(*_ctx, NodeHandleNone));
+        return iterator(ASTNodeRef(*_ctx, HandleNone));
     }
 
     [[nodiscard]] const_iterator begin() const noexcept {
-        return const_iterator(ASTNodeRef(*_ctx, _node ? _node->child : NodeHandleNone));
+        return const_iterator(ASTNodeRef(*_ctx, _node ? _node->child : HandleNone));
     }
 
     [[nodiscard]] const_iterator end() const noexcept {
-        return const_iterator(ASTNodeRef(*_ctx, NodeHandleNone));
+        return const_iterator(ASTNodeRef(*_ctx, HandleNone));
     }
 
     [[nodiscard]] const_iterator cbegin() const noexcept {
-        return const_iterator(ASTNodeRef(*_ctx, _node ? _node->child : NodeHandleNone));
+        return const_iterator(ASTNodeRef(*_ctx, _node ? _node->child : HandleNone));
     }
 
     [[nodiscard]] const_iterator cend() const noexcept {
-        return const_iterator(ASTNodeRef(*_ctx, NodeHandleNone));
+        return const_iterator(ASTNodeRef(*_ctx, HandleNone));
+    }
+
+    [[nodiscard]] ASTNodeType type() const noexcept {
+        return ASTNodeType(_node ? _node->type : 0);
     }
 
     template <ASTNodeType... Types>
     [[nodiscard]] bool is() const noexcept {
-        return (astNodeIs(_node, Types) || ...);
+        return (isNodeType(_node, Types) || ...);
     }
 
     [[nodiscard]] Context& ctx() noexcept {
@@ -271,7 +274,7 @@ public:
     }
 
     [[nodiscard]] ASTNodeRef parent() const noexcept {
-        return ASTNodeRef(*_ctx, _node ? _node->parent : NodeHandleNone);
+        return ASTNodeRef(*_ctx, _node ? _node->parent : HandleNone);
     }
 
     [[nodiscard]] ASTNodeHandle handle() const noexcept {
@@ -280,16 +283,16 @@ public:
 
     [[nodiscard]] auto getChilds(bool originalNodes = false) const noexcept {
         return *this | std::views::filter([originalNodes](const auto& child) {
-            if (child->flags & (ASTNODE_ADDED_BY_COMPILER | ASTNODE_REPLACED_BY_COMPILER)) {
-                if ((child->flags & ASTNODE_REPLACED_BY_COMPILER) && originalNodes) {
+            if (child.changedByCompiler()) {
+                if (child.replacedByCompiler() && originalNodes) {
                     return true;
                 }
-                if ((child->flags & ASTNODE_ADDED_BY_COMPILER) && !originalNodes) {
+                if (child.addedByCompiler() && !originalNodes) {
                     return true;
                 }
                 return false;
             }
-            if (child.is<ASTNodeType::DeclPrevSiblingRef>()) {
+            if (child.is<IDL_AST_NODE_TYPE_DECL_PREV_SIBLING_REF>()) {
                 return false;
             }
             return true;
@@ -297,7 +300,7 @@ public:
     }
 
     [[nodiscard]] bool hasChilds() const noexcept {
-        return _node ? _node->child != NodeHandleNone : false;
+        return _node ? _node->child != HandleNone : false;
     }
 
     void addChild(const ASTNodeRef& node) noexcept {
@@ -325,7 +328,7 @@ public:
 
     [[nodiscard]] auto attrs() const noexcept {
         return *this | std::views::filter([](const auto& child) {
-            return child.is<ASTNodeType::Attr>();
+            return child.is<IDL_AST_NODE_TYPE_ATTR>();
         });
     }
 
@@ -337,119 +340,119 @@ public:
         auto& node = *this;
         if (node) {
             switch (node->type) {
-                case ASTNodeType::Api:
-                    visitor.visit(node, Tag<ASTNodeType::Api>{});
+                case IDL_AST_NODE_TYPE_API:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_API>{});
                     break;
-                case ASTNodeType::Import:
-                    visitor.visit(node, Tag<ASTNodeType::Import>{});
+                case IDL_AST_NODE_TYPE_IMPORT:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_IMPORT>{});
                     break;
-                case ASTNodeType::Enum:
-                    visitor.visit(node, Tag<ASTNodeType::Enum>{});
+                case IDL_AST_NODE_TYPE_ENUM:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ENUM>{});
                     break;
-                case ASTNodeType::Const:
-                    visitor.visit(node, Tag<ASTNodeType::Const>{});
+                case IDL_AST_NODE_TYPE_CONST:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_CONST>{});
                     break;
-                case ASTNodeType::DeclRef:
-                    visitor.visit(node, Tag<ASTNodeType::DeclRef>{});
+                case IDL_AST_NODE_TYPE_DECL_REF:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_DECL_REF>{});
                     break;
-                case ASTNodeType::LiteralStr:
-                    visitor.visit(node, Tag<ASTNodeType::LiteralStr>{});
+                case IDL_AST_NODE_TYPE_LITERAL_STR:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_LITERAL_STR>{});
                     break;
-                case ASTNodeType::LiteralInt:
-                    visitor.visit(node, Tag<ASTNodeType::LiteralInt>{});
+                case IDL_AST_NODE_TYPE_LITERAL_INT:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_LITERAL_INT>{});
                     break;
-                case ASTNodeType::LiteralBool:
-                    visitor.visit(node, Tag<ASTNodeType::LiteralBool>{});
+                case IDL_AST_NODE_TYPE_LITERAL_BOOL:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_LITERAL_BOOL>{});
                     break;
-                case ASTNodeType::LiteralFloat:
-                    visitor.visit(node, Tag<ASTNodeType::LiteralFloat>{});
+                case IDL_AST_NODE_TYPE_LITERAL_FLOAT:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_LITERAL_FLOAT>{});
                     break;
-                case ASTNodeType::AttrFlags:
-                    visitor.visit(node, Tag<ASTNodeType::AttrFlags>{});
+                case IDL_AST_NODE_TYPE_ATTR_FLAGS:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_FLAGS>{});
                     break;
-                case ASTNodeType::AttrHex:
-                    visitor.visit(node, Tag<ASTNodeType::AttrHex>{});
+                case IDL_AST_NODE_TYPE_ATTR_HEX:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_HEX>{});
                     break;
-                case ASTNodeType::AttrValue:
-                    visitor.visit(node, Tag<ASTNodeType::AttrValue>{});
+                case IDL_AST_NODE_TYPE_ATTR_VALUE:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_VALUE>{});
                     break;
-                case ASTNodeType::AttrType:
-                    visitor.visit(node, Tag<ASTNodeType::AttrType>{});
+                case IDL_AST_NODE_TYPE_ATTR_TYPE:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_TYPE>{});
                     break;
-                case ASTNodeType::AttrCName:
-                    visitor.visit(node, Tag<ASTNodeType::AttrCName>{});
+                case IDL_AST_NODE_TYPE_ATTR_CNAME:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_CNAME>{});
                     break;
-                case ASTNodeType::AttrTokenizer:
-                    visitor.visit(node, Tag<ASTNodeType::AttrTokenizer>{});
+                case IDL_AST_NODE_TYPE_ATTR_TOKENIZER:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>{});
                     break;
-                case ASTNodeType::AttrOrder:
-                    visitor.visit(node, Tag<ASTNodeType::AttrOrder>{});
+                case IDL_AST_NODE_TYPE_ATTR_ORDER:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_ORDER>{});
                     break;
-                case ASTNodeType::AttrSingle:
-                    visitor.visit(node, Tag<ASTNodeType::AttrSingle>{});
+                case IDL_AST_NODE_TYPE_ATTR_SINGLE:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_SINGLE>{});
                     break;
-                case ASTNodeType::AttrVersion:
-                    visitor.visit(node, Tag<ASTNodeType::AttrVersion>{});
+                case IDL_AST_NODE_TYPE_ATTR_VERSION:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_VERSION>{});
                     break;
-                case ASTNodeType::AttrDocBrief:
-                    visitor.visit(node, Tag<ASTNodeType::AttrDocBrief>{});
+                case IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>{});
                     break;
-                case ASTNodeType::AttrDocDetail:
-                    visitor.visit(node, Tag<ASTNodeType::AttrDocDetail>{});
+                case IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>{});
                     break;
-                case ASTNodeType::AttrDocAuthor:
-                    visitor.visit(node, Tag<ASTNodeType::AttrDocAuthor>{});
+                case IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR>{});
                     break;
-                case ASTNodeType::AttrDocCopyright:
-                    visitor.visit(node, Tag<ASTNodeType::AttrDocCopyright>{});
+                case IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT>{});
                     break;
-                case ASTNodeType::AttrDocLicense:
-                    visitor.visit(node, Tag<ASTNodeType::AttrDocLicense>{});
+                case IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE>{});
                     break;
-                case ASTNodeType::Void:
-                    visitor.visit(node, Tag<ASTNodeType::Void>{});
+                case IDL_AST_NODE_TYPE_VOID:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_VOID>{});
                     break;
-                case ASTNodeType::Data:
-                    visitor.visit(node, Tag<ASTNodeType::Data>{});
+                case IDL_AST_NODE_TYPE_DATA:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_DATA>{});
                     break;
-                case ASTNodeType::Char:
-                    visitor.visit(node, Tag<ASTNodeType::Char>{});
+                case IDL_AST_NODE_TYPE_CHAR:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_CHAR>{});
                     break;
-                case ASTNodeType::Str:
-                    visitor.visit(node, Tag<ASTNodeType::Str>{});
+                case IDL_AST_NODE_TYPE_STR:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_STR>{});
                     break;
-                case ASTNodeType::Bool:
-                    visitor.visit(node, Tag<ASTNodeType::Bool>{});
+                case IDL_AST_NODE_TYPE_BOOL:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_BOOL>{});
                     break;
-                case ASTNodeType::Int8:
-                    visitor.visit(node, Tag<ASTNodeType::Int8>{});
+                case IDL_AST_NODE_TYPE_INT_8:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_INT_8>{});
                     break;
-                case ASTNodeType::Uint8:
-                    visitor.visit(node, Tag<ASTNodeType::Uint8>{});
+                case IDL_AST_NODE_TYPE_UINT_8:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_UINT_8>{});
                     break;
-                case ASTNodeType::Int16:
-                    visitor.visit(node, Tag<ASTNodeType::Int16>{});
+                case IDL_AST_NODE_TYPE_INT_16:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_INT_16>{});
                     break;
-                case ASTNodeType::Uint16:
-                    visitor.visit(node, Tag<ASTNodeType::Uint16>{});
+                case IDL_AST_NODE_TYPE_UINT_16:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_UINT_16>{});
                     break;
-                case ASTNodeType::Int32:
-                    visitor.visit(node, Tag<ASTNodeType::Int32>{});
+                case IDL_AST_NODE_TYPE_INT_32:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_INT_32>{});
                     break;
-                case ASTNodeType::Uint32:
-                    visitor.visit(node, Tag<ASTNodeType::Uint32>{});
+                case IDL_AST_NODE_TYPE_UINT_32:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_UINT_32>{});
                     break;
-                case ASTNodeType::Int64:
-                    visitor.visit(node, Tag<ASTNodeType::Int64>{});
+                case IDL_AST_NODE_TYPE_INT_64:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_INT_64>{});
                     break;
-                case ASTNodeType::Uint64:
-                    visitor.visit(node, Tag<ASTNodeType::Uint64>{});
+                case IDL_AST_NODE_TYPE_UINT_64:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_UINT_64>{});
                     break;
-                case ASTNodeType::Float32:
-                    visitor.visit(node, Tag<ASTNodeType::Float32>{});
+                case IDL_AST_NODE_TYPE_FLOAT_32:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_FLOAT_32>{});
                     break;
-                case ASTNodeType::Float64:
-                    visitor.visit(node, Tag<ASTNodeType::Float64>{});
+                case IDL_AST_NODE_TYPE_FLOAT_64:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_FLOAT_64>{});
                     break;
             }
         }
@@ -479,31 +482,31 @@ public:
             auto node = stack.top();
             stack.pop();
 
-            if ((filters & SkipAttrs) == SkipAttrs && node.is<ASTNodeType::Attr>()) {
+            if ((filters & SkipAttrs) == SkipAttrs && node.is<IDL_AST_NODE_TYPE_ATTR>()) {
                 continue;
             }
-            if ((filters & SkipDocs) == SkipDocs && node.is<ASTNodeType::AttrDoc>()) {
+            if ((filters & SkipDocs) == SkipDocs && node.is<IDL_AST_NODE_TYPE_ATTR_DOC>()) {
                 continue;
             }
-            if ((filters & SkipDecls) == SkipDecls && node.is<ASTNodeType::Decl>()) {
+            if ((filters & SkipDecls) == SkipDecls && node.is<IDL_AST_NODE_TYPE_DECL>()) {
                 continue;
             }
-            if ((filters & SkipImports) == SkipImports && node.is<ASTNodeType::Import>()) {
+            if ((filters & SkipImports) == SkipImports && node.is<IDL_AST_NODE_TYPE_IMPORT>()) {
                 continue;
             }
-            if ((filters & SkipLiterals) == SkipLiterals && node.is<ASTNodeType::Literal>()) {
+            if ((filters & SkipLiterals) == SkipLiterals && node.is<IDL_AST_NODE_TYPE_LITERAL>()) {
                 continue;
             }
-            if ((filters & SkipTrivials) == SkipTrivials && node.is<ASTNodeType::TrivialType>()) {
+            if ((filters & SkipTrivials) == SkipTrivials && node.is<IDL_AST_NODE_TYPE_TRIVIAL_TYPE>()) {
                 continue;
             }
-            if (node->flags & (ASTNODE_ADDED_BY_COMPILER | ASTNODE_REPLACED_BY_COMPILER)) {
+            if (node.changedByCompiler()) {
                 if ((filters & OriginalIdl) == OriginalIdl) {
-                    if (node->flags & ASTNODE_ADDED_BY_COMPILER) {
+                    if (node.addedByCompiler()) {
                         continue;
                     }
                 } else {
-                    if (node->flags & ASTNODE_REPLACED_BY_COMPILER) {
+                    if (node.replacedByCompiler()) {
                         continue;
                     }
                 }
@@ -519,15 +522,64 @@ public:
     }
 
     [[nodiscard]] bool evaulated() const noexcept {
-        return _node ? (_node->flags & ASTNODE_EVAULATED) == ASTNODE_EVAULATED : false;
+        return _node ? (_node->flags & IDL_AST_NODE_STATE_EVAULATED_BIT) == IDL_AST_NODE_STATE_EVAULATED_BIT : false;
+    }
+
+    void setEvaulated() noexcept {
+        if (_node) {
+            _node->flags |= IDL_AST_NODE_STATE_EVAULATED_BIT;
+        }
     }
 
     [[nodiscard]] bool buildError() const noexcept {
-        return _node ? (_node->flags & ASTNODE_BUILD_ERROR) == ASTNODE_BUILD_ERROR : true;
+        return _node ? (_node->flags & IDL_AST_NODE_STATE_BUILD_ERROR_BIT) == IDL_AST_NODE_STATE_BUILD_ERROR_BIT : true;
+    }
+
+    void setBuildError() noexcept {
+        if (_node) {
+            _node->flags |= IDL_AST_NODE_STATE_BUILD_ERROR_BIT;
+        }
     }
 
     [[nodiscard]] bool forwardDecl() const noexcept {
-        return _node ? (_node->flags & ASTNODE_FORWARD_DECL) == ASTNODE_FORWARD_DECL : false;
+        return _node ? (_node->flags & IDL_AST_NODE_STATE_FORWARD_DECL_BIT) == IDL_AST_NODE_STATE_FORWARD_DECL_BIT
+                     : false;
+    }
+
+    void setForwardDecl() noexcept {
+        if (_node) {
+            _node->flags |= IDL_AST_NODE_STATE_FORWARD_DECL_BIT;
+        }
+    }
+
+    [[nodiscard]] bool addedByCompiler() const noexcept {
+        return _node ? (_node->flags & IDL_AST_NODE_STATE_ADDED_BY_COMPILER_BIT) ==
+                           IDL_AST_NODE_STATE_ADDED_BY_COMPILER_BIT
+                     : false;
+    }
+
+    void setAddedByCompiler() noexcept {
+        if (_node) {
+            _node->flags |= IDL_AST_NODE_STATE_ADDED_BY_COMPILER_BIT;
+        }
+    }
+
+    [[nodiscard]] bool replacedByCompiler() const noexcept {
+        return _node ? (_node->flags & IDL_AST_NODE_STATE_REPLACED_BY_COMPILER_BIT) ==
+                           IDL_AST_NODE_STATE_REPLACED_BY_COMPILER_BIT
+                     : false;
+    }
+
+    void setReplacedByCompiler() noexcept {
+        if (_node) {
+            _node->flags |= IDL_AST_NODE_STATE_REPLACED_BY_COMPILER_BIT;
+        }
+    }
+
+    [[nodiscard]] bool changedByCompiler() const noexcept {
+        return _node ? (_node->flags &
+                        (IDL_AST_NODE_STATE_ADDED_BY_COMPILER_BIT | IDL_AST_NODE_STATE_REPLACED_BY_COMPILER_BIT)) != 0
+                     : false;
     }
 
     [[nodiscard]] std::string_view valueStr() const noexcept {
@@ -539,15 +591,15 @@ public:
     }
 
     [[nodiscard]] std::string fullname() const {
-        assert(is<ASTNodeType::Decl>());
+        assert(is<IDL_AST_NODE_TYPE_DECL>());
         assert(name().length() > 0);
         std::string str{};
         if (auto prnt = parent()) {
-            if (prnt.is<ASTNodeType::Decl>()) {
+            if (prnt.is<IDL_AST_NODE_TYPE_DECL>()) {
                 str = prnt.fullname() + '.';
             }
         }
-        if (is<ASTNodeType::Import>()) {
+        if (is<IDL_AST_NODE_TYPE_IMPORT>()) {
             return str.substr(0, str.length() - 1);
         } else {
             auto nameView = name();
@@ -564,7 +616,7 @@ public:
     }
 
     [[nodiscard]] ASTNodeRef declType() const noexcept {
-        if (auto attrType = findChild<ASTNodeType::AttrType>()) {
+        if (auto attrType = findChild<IDL_AST_NODE_TYPE_ATTR_TYPE>()) {
             if (auto declRef = ASTNodeRef(*_ctx, attrType->child)) {
                 if (auto type = declRef.resolveRef(true)) {
                     return type;
@@ -580,9 +632,9 @@ public:
         node.location = {};
         node.type     = Type;
         node.flags    = 0;
-        node.parent   = NodeHandleNone;
-        node.sibling  = NodeHandleNone;
-        node.child    = NodeHandleNone;
+        node.parent   = HandleNone;
+        node.sibling  = HandleNone;
+        node.child    = HandleNone;
         ASTNodeRef ref(ctx);
         ref._node = &node;
         return ref;
@@ -590,7 +642,7 @@ public:
 
 private:
     Context* _ctx{};
-    ASTNodeHandle _handle{ NodeHandleNone };
+    ASTNodeHandle _handle{ HandleNone };
     ASTNode* _node{};
 };
 
@@ -621,7 +673,7 @@ inline void Context::addSymbol(ASTNodeHandle decl) {
     }
 
     auto node = getNodeRef(decl);
-    if (node.is<ASTNodeType::Import>()) {
+    if (node.is<IDL_AST_NODE_TYPE_IMPORT>()) {
         return;
     }
     const auto fullname = node.fullnameLowercase();
@@ -651,7 +703,7 @@ inline auto Context::findSymbol(ASTNodeRef& decl, const ASTLocation& loc, const 
             }
             symbolFinded = true;
             if (onlyType) {
-                if (symbol.is<ASTNodeType::Type>()) {
+                if (symbol.is<IDL_AST_NODE_TYPE_TYPE>()) {
                     return symbol;
                 }
             } else {
@@ -659,7 +711,7 @@ inline auto Context::findSymbol(ASTNodeRef& decl, const ASTLocation& loc, const 
             }
         }
         curr = curr.parent() ? curr.parent() : ASTNodeRef(*this);
-        if (!curr.is<ASTNodeType::Decl>()) {
+        if (!curr.is<IDL_AST_NODE_TYPE_DECL>()) {
             curr = ASTNodeRef(*this);
         }
     }
@@ -673,7 +725,7 @@ inline auto Context::findSymbol(ASTNodeRef& decl, const ASTLocation& loc, const 
         }
         symbolFinded = true;
         if (onlyType) {
-            if (symbol.is<ASTNodeType::Type>()) {
+            if (symbol.is<IDL_AST_NODE_TYPE_TYPE>()) {
                 return symbol;
             }
         } else {
@@ -692,7 +744,7 @@ inline void Context::initBuiltins(ASTNodeRef node) {
     _api = node.handle();
 
     const auto loc     = ASTLocation{ intern("<builtin>"), 1, 1 };
-    ASTNodeHandle last = NodeHandleNone;
+    ASTNodeHandle last = HandleNone;
 
     auto addBuiltin =
         [this, &loc, &last]<ASTNodeType Type>(std::string_view name, const std::string& detail, Tag<Type>) {
@@ -701,13 +753,13 @@ inline void Context::initBuiltins(ASTNodeRef node) {
         getNode(node)->parent   = _api;
         addSymbol(node);
 
-        if (last == NodeHandleNone) {
-            if (getNode(_api)->child == NodeHandleNone) {
+        if (last == HandleNone) {
+            if (getNode(_api)->child == HandleNone) {
                 getNode(_api)->child = node;
             } else {
-                auto lastChild = NodeHandleNone;
+                auto lastChild = HandleNone;
                 auto currChild = getNode(_api)->child;
-                while (currChild != NodeHandleNone) {
+                while (currChild != HandleNone) {
                     auto nodeChild = getNode(currChild);
                     lastChild      = currChild;
                     currChild      = nodeChild->sibling;
@@ -720,29 +772,29 @@ inline void Context::initBuiltins(ASTNodeRef node) {
         last = node;
     };
 
-    addBuiltin("Void", "void type.", Tag<ASTNodeType::Void>{});
-    addBuiltin("Char", "symbol type.", Tag<ASTNodeType::Char>{});
-    addBuiltin("Bool", "boolean type.", Tag<ASTNodeType::Bool>{});
-    addBuiltin("Int8", "8 bit signed integer.", Tag<ASTNodeType::Int8>{});
-    addBuiltin("Uint8", "8 bit unsigned integer.", Tag<ASTNodeType::Uint8>{});
-    addBuiltin("Int16", "16 bit signed integer.", Tag<ASTNodeType::Int16>{});
-    addBuiltin("Uint16", "16 bit unsigned integer.", Tag<ASTNodeType::Uint16>{});
-    addBuiltin("Int32", "32 bit signed integer.", Tag<ASTNodeType::Int32>{});
-    addBuiltin("Uint32", "32 bit unsigned integer.", Tag<ASTNodeType::Uint32>{});
-    addBuiltin("Int64", "64 bit signed integer.", Tag<ASTNodeType::Int64>{});
-    addBuiltin("Uint64", "64 bit unsigned integer.", Tag<ASTNodeType::Uint64>{});
-    addBuiltin("Float32", "32 bit float point.", Tag<ASTNodeType::Float32>{});
-    addBuiltin("Float64", "64 bit float point.", Tag<ASTNodeType::Float64>{});
-    addBuiltin("Str", "utf8 string.", Tag<ASTNodeType::Str>{});
-    addBuiltin("Data", "pointer to data.", Tag<ASTNodeType::Data>{});
+    addBuiltin("Void", "void type.", Tag<IDL_AST_NODE_TYPE_VOID>{});
+    addBuiltin("Char", "symbol type.", Tag<IDL_AST_NODE_TYPE_CHAR>{});
+    addBuiltin("Bool", "boolean type.", Tag<IDL_AST_NODE_TYPE_BOOL>{});
+    addBuiltin("Int8", "8 bit signed integer.", Tag<IDL_AST_NODE_TYPE_INT_8>{});
+    addBuiltin("Uint8", "8 bit unsigned integer.", Tag<IDL_AST_NODE_TYPE_UINT_8>{});
+    addBuiltin("Int16", "16 bit signed integer.", Tag<IDL_AST_NODE_TYPE_INT_16>{});
+    addBuiltin("Uint16", "16 bit unsigned integer.", Tag<IDL_AST_NODE_TYPE_UINT_16>{});
+    addBuiltin("Int32", "32 bit signed integer.", Tag<IDL_AST_NODE_TYPE_INT_32>{});
+    addBuiltin("Uint32", "32 bit unsigned integer.", Tag<IDL_AST_NODE_TYPE_UINT_32>{});
+    addBuiltin("Int64", "64 bit signed integer.", Tag<IDL_AST_NODE_TYPE_INT_64>{});
+    addBuiltin("Uint64", "64 bit unsigned integer.", Tag<IDL_AST_NODE_TYPE_UINT_64>{});
+    addBuiltin("Float32", "32 bit float point.", Tag<IDL_AST_NODE_TYPE_FLOAT_32>{});
+    addBuiltin("Float64", "64 bit float point.", Tag<IDL_AST_NODE_TYPE_FLOAT_64>{});
+    addBuiltin("Str", "utf8 string.", Tag<IDL_AST_NODE_TYPE_STR>{});
+    addBuiltin("Data", "pointer to data.", Tag<IDL_AST_NODE_TYPE_DATA>{});
 }
 
 inline ASTNodeRef ASTNodeRef::resolveRef(bool onlyType) {
     if (!evaulated()) {
-        (*this)->flags |= ASTNODE_EVAULATED;
+        setEvaulated();
         auto parentNode = parent();
         while (parentNode) {
-            if (parentNode.is<ASTNodeType::Decl>()) {
+            if (parentNode.is<IDL_AST_NODE_TYPE_DECL>()) {
                 break;
             }
             parentNode = parentNode.parent();
@@ -753,7 +805,7 @@ inline ASTNodeRef ASTNodeRef::resolveRef(bool onlyType) {
             (*this)->valueDeclRef.handle = symbol.handle();
             return symbol;
         } else {
-            (*this)->valueDeclRef.handle = NodeHandleNone;
+            (*this)->valueDeclRef.handle = HandleNone;
         }
     }
     return ASTNodeRef(*_ctx, (*this)->valueDeclRef.handle);

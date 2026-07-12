@@ -168,8 +168,8 @@ TEST(idlc, ConstantForwardRefers) {
     ASSERT_EQ(testConsts.size(), 4);
     ASSERT_TRUE(checkConst(ast, testConsts[0], 0, true, false, false));
     ASSERT_TRUE(checkConst(ast, testConsts[1], 0, false, false, false));
-    ASSERT_TRUE(checkConst(ast, testConsts[2], 5, false, false, false));
-    ASSERT_TRUE(checkConst(ast, testConsts[3], 5, false, false, true));
+    ASSERT_TRUE(checkConst(ast, testConsts[2], 5, false, false, true));
+    ASSERT_TRUE(checkConst(ast, testConsts[3], 5, false, false, false));
 }
 
 TEST(idlc, IntegerOutOfRange) {

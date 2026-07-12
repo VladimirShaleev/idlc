@@ -540,6 +540,32 @@ struct IntegerCastRules {
 struct BuildRules {
     struct State {
         bool prevE3041;
+        std::vector<ASTNodeRef> enums;
+
+        void clearNodes() noexcept {
+            for (auto enumNode : enums) {
+                auto& ctx   = enumNode.ctx();
+                auto consts = enumNode.getChilds() | std::views::filter([](const auto& child) {
+                    return child.is<IDL_AST_NODE_TYPE_CONST>();
+                });
+                for (auto constNode : consts) {
+                    auto prevChild = ASTNodeRef(ctx);
+                    for (auto child : constNode) {
+                        if (child.is<IDL_AST_NODE_TYPE_DECL_PREV_SIBLING_REF>()) {
+                            break;
+                        }
+                        prevChild = child;
+                    }
+                    if (prevChild && prevChild->sibling != HandleNone) {
+                        auto declPrevSiblingRef     = ctx.getNodeRef(prevChild->sibling);
+                        prevChild->sibling          = declPrevSiblingRef->sibling;
+                        declPrevSiblingRef->parent  = HandleNone;
+                        declPrevSiblingRef->sibling = HandleNone;
+                        declPrevSiblingRef->child   = HandleNone;
+                    }
+                }
+            }
+        }
     };
 
     BuildRules(State& state) noexcept : state(state) {
@@ -588,6 +614,8 @@ struct BuildRules {
             }
             prevEnumConst = enumConst;
         }
+
+        state.enums.push_back(node);
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_CONST>) {
@@ -650,7 +678,7 @@ struct BuildRules {
 
                 if (!decl.evaulated()) {
                     ctx.log<IDL_STATUS_W2003>(enumConst->location, enumConst.fullname(), decl.fullname());
-                    decl.setForwardDecl();
+                    enumConst.setForwardDecl();
 
                     const auto [hasCyclic, deps] = findCyclicRelationshipConsts(enumConst, decl);
                     if (hasCyclic) {

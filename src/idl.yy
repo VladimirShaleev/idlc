@@ -39,15 +39,15 @@
     #define visit(type, node, result, ...) \
         scanner.context().visit<type>(node __VA_OPT__(,) __VA_ARGS__).result
     #define intern(str) \
-        scanner.context().intern({(str).c_str(), (str).length()})
+        scanner.context().result()->intern({(str).c_str(), (str).length()})
     #define alloc_node(loc, type) \
-        scanner.context().allocNode(ASTLocation { \
+        scanner.context().result()->allocNode(ASTLocation { \
             intern(*loc.begin.filename), \
             uint16_t(loc.begin.column), \
             uint16_t(loc.begin.line) \
         }, IDL_AST_NODE_TYPE_##type, false)
     #define node(handle) \
-        scanner.context().getNode(handle)
+        scanner.context().result()->getNode(handle)
     #define add_child(parent, child) \
         scanner.context().addChild(parent, child)
     #define add_symbol(decl) \
@@ -59,7 +59,7 @@
             uint16_t(loc.begin.line) } __VA_OPT__(,) __VA_ARGS__)
     idl::ASTNodeHandleList idl::ASTNodeHandleList::init(ASTNodeHandle node) noexcept { return { node, node, 1u }; }
     idl::ASTNodeHandleList idl::ASTNodeHandleList::add(Scanner& scanner, ASTNodeHandle node) noexcept { 
-        if (auto lastNode = scanner.context().getNode(last)) { 
+        if (auto lastNode = scanner.context().result()->getNode(last)) { 
             lastNode->sibling = node; 
             return { first, node, count + 1 };
         }
@@ -131,9 +131,10 @@
 %%
 
 idl : stack_decls { 
-    if (!scanner.context().hasErrors()) {
+    if (!scanner.context().result()->hasErrors()) {
         BuildRules::State state {};
-        scanner.context().api().acceptRecursive<BuildRules>(ASTNodeRef::SkipLiterals | ASTNodeRef::SkipTrivials, std::ref(state));
+        ASTNodeRef api(scanner.context(), scanner.context().result()->getApi());
+        api.acceptRecursive<BuildRules>(ASTNodeRef::SkipLiterals | ASTNodeRef::SkipTrivials, std::ref(state));
     } 
 }
 

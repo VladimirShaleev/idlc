@@ -19,10 +19,8 @@ class ASTNodeRef;
 class Context final {
 public:
     Context(Options* options, CompilationResultBase* result) noexcept : _options(options), _result(result) {
-        _nodes.reserve(1024);
+        assert(result);
     }
-
-    auto api() noexcept;
 
     bool useStdTypes() const noexcept {
         return _useStdTypes;
@@ -36,28 +34,7 @@ public:
         return _options ? _options->getWarningsAsErrors() : false;
     }
 
-    ASTNode* getNode(ASTNodeHandle handle) noexcept {
-        if (handle.handle < _nodes.size() && handle != HandleNone) {
-            return &_nodes[handle.handle];
-        }
-        return nullptr;
-    }
-
     auto getNodeRef(ASTNodeHandle handle) noexcept;
-
-    ASTNodeHandle allocNode(const ASTLocation& loc, ASTNodeType type, bool addedByCompiler = true) {
-        auto index = _nodes.size();
-        auto& node = _nodes.emplace_back();
-
-        node.location = loc;
-        node.type     = type;
-        node.flags    = addedByCompiler ? IDL_AST_NODE_STATE_REPLACED_BY_COMPILER_BIT : IDL_AST_NODE_STATE_NONE_BIT;
-        node.parent   = HandleNone;
-        node.sibling  = HandleNone;
-        node.child    = HandleNone;
-
-        return { uint16_t(index) };
-    }
 
     void addChild(ASTNodeHandle parent, ASTNodeHandle child) noexcept;
 
@@ -79,33 +56,22 @@ public:
             return;
         }
         const auto warnAsError = _options ? _options->getWarningsAsErrors() : false;
-        _result->addMessage(Status, warnAsError, _stringPool[loc.filename], loc.line, loc.column, [&]() {
+        _result->addMessage(Status, warnAsError, loc.filename, loc.line, loc.column, [&]() {
             return err<Status>(std::forward<Args>(args)...);
         });
     }
 
-    bool hasErrors() const noexcept {
-        return _api != HandleNone ? _result->hasErrors() : true;
-    }
-
-    String intern(std::string_view str) {
-        return _stringPool.insert(str);
-    }
-
-    std::string_view getStr(String str) const noexcept {
-        return _stringPool[str];
+    [[nodiscard]] CompilationResultBase* result() noexcept {
+        return _result;
     }
 
 private:
     Options* _options;
     CompilationResultBase* _result;
-    StringPool _stringPool;
     std::vector<idl_message_t> _messages{};
     std::optional<idl_api_version_t> _version{};
     bool _useStdTypes{};
     BoolType _boolType{};
-    ASTNodeHandle _api{ HandleNone };
-    std::vector<ASTNode> _nodes{};
     std::unordered_map<std::string, ASTNodeHandle> _symbols{};
     std::unordered_map<std::string, ASTNodeHandle> _docSymbols{};
     std::unordered_map<std::string, ASTNodeHandle> _literals{};
@@ -181,7 +147,10 @@ public:
     explicit ASTNodeRef(Context& ctx) noexcept : _ctx(&ctx) {
     }
 
-    ASTNodeRef(Context& ctx, ASTNodeHandle handle) noexcept : _ctx(&ctx), _handle(handle), _node(ctx.getNode(_handle)) {
+    ASTNodeRef(Context& ctx, ASTNodeHandle handle) noexcept :
+        _ctx(&ctx),
+        _handle(handle),
+        _node(ctx.result()->getNode(_handle)) {
     }
 
     ASTNodeRef(const ASTNodeRef& node) noexcept : _ctx(node._ctx), _handle(node._handle), _node(node._node) {
@@ -583,7 +552,7 @@ public:
     }
 
     [[nodiscard]] std::string_view valueStr() const noexcept {
-        return _ctx->getStr(_node->valueStr);
+        return _ctx->result()->getStr(_node->valueStr);
     }
 
     [[nodiscard]] std::string_view name() const noexcept {
@@ -648,10 +617,6 @@ private:
 
 inline auto Context::getNodeRef(ASTNodeHandle handle) noexcept {
     return ASTNodeRef(*this, handle);
-}
-
-inline auto Context::api() noexcept {
-    return getNodeRef(_api);
 }
 
 inline void Context::addChild(ASTNodeHandle parent, ASTNodeHandle child) noexcept {
@@ -741,33 +706,33 @@ inline auto Context::findSymbol(ASTNodeRef& decl, const ASTLocation& loc, const 
 }
 
 inline void Context::initBuiltins(ASTNodeRef node) {
-    _api = node.handle();
+    _result->setApi(node.handle());
 
-    const auto loc     = ASTLocation{ intern("<builtin>"), 1, 1 };
+    const auto loc     = ASTLocation{ _result->intern("<builtin>"), 1, 1 };
     ASTNodeHandle last = HandleNone;
 
-    auto addBuiltin =
-        [this, &loc, &last]<ASTNodeType Type>(std::string_view name, const std::string& detail, Tag<Type>) {
-        auto node               = allocNode(loc, Tag<Type>::type);
-        getNode(node)->valueStr = intern(name);
-        getNode(node)->parent   = _api;
+    auto addBuiltin = [this, api = node, &loc, &last]<ASTNodeType Type>(
+                          std::string_view name, const std::string& detail, Tag<Type>) mutable {
+        auto node                        = _result->allocNode(loc, Tag<Type>::type);
+        _result->getNode(node)->valueStr = _result->intern(name);
+        _result->getNode(node)->parent   = api.handle();
         addSymbol(node);
 
         if (last == HandleNone) {
-            if (getNode(_api)->child == HandleNone) {
-                getNode(_api)->child = node;
+            if (api->child == HandleNone) {
+                api->child = node;
             } else {
                 auto lastChild = HandleNone;
-                auto currChild = getNode(_api)->child;
+                auto currChild = api->child;
                 while (currChild != HandleNone) {
-                    auto nodeChild = getNode(currChild);
+                    auto nodeChild = _result->getNode(currChild);
                     lastChild      = currChild;
                     currChild      = nodeChild->sibling;
                 }
-                getNode(lastChild)->sibling = node;
+                _result->getNode(lastChild)->sibling = node;
             }
         } else {
-            getNode(last)->sibling = node;
+            _result->getNode(last)->sibling = node;
         }
         last = node;
     };
@@ -799,7 +764,7 @@ inline ASTNodeRef ASTNodeRef::resolveRef(bool onlyType) {
             }
             parentNode = parentNode.parent();
         }
-        auto view = _ctx->getStr((*this)->valueDeclRef.symbol);
+        auto view = _ctx->result()->getStr((*this)->valueDeclRef.symbol);
         std::string name(view.data(), view.length());
         if (auto symbol = _ctx->findSymbol(parentNode, (*this)->location, name, onlyType)) {
             (*this)->valueDeclRef.handle = symbol.handle();

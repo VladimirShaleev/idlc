@@ -31,8 +31,8 @@ public:
                          std::span<const idl_source_t> sources,
                          Options* options,
                          CompilationResult* result) noexcept {
+        CompilationResultBase* base = result;
         try {
-            CompilationResultBase* base = result;
             if (!base) {
                 idl_compilation_result_t tempResult{};
                 if (auto result = idl::Object::create<idl::CompilationResultStub>(tempResult);
@@ -64,7 +64,8 @@ public:
                 if (result) {
                     if (!base->hasErrors()) {
                         const auto warnAsErrors = options ? options->getWarningsAsErrors() : false;
-                        result->addMessage(IDL_STATUS_E3046, warnAsErrors, "<input>", 0, 0, []() {
+                        const auto sourceHandle = result->intern("<input>");
+                        result->addMessage(IDL_STATUS_E3046, warnAsErrors, sourceHandle, 0, 0, []() {
                             return err<IDL_STATUS_E3046>();
                         });
                     }
@@ -73,10 +74,6 @@ public:
                     base->destroy();
                     return IDL_RESULT_ERROR_COMPILATION;
                 }
-            }
-
-            if (!result) {
-                base->destroy();
             }
 
             // context.prepareEnumConsts();
@@ -133,6 +130,7 @@ public:
                 // Exception exc(IDL_STATUS_E2045, "<input>", 0, 0, "out of memory");
                 // result->addMessage(exc);
             } else {
+                base->destroy();
                 return IDL_RESULT_ERROR_OUT_OF_MEMORY;
             }
         } catch (...) {
@@ -140,9 +138,15 @@ public:
                 // Exception exc(IDL_STATUS_E2011, "<input>", 0, 0, "unknown error");
                 // result->addMessage(exc);
             } else {
+                base->destroy();
                 return IDL_RESULT_ERROR_UNKNOWN;
             }
         }
+
+        if (!result) {
+            base->destroy();
+        }
+
         return IDL_RESULT_SUCCESS;
     }
 };

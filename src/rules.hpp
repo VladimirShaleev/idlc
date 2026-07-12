@@ -35,13 +35,12 @@ struct AttrValidatorRules {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ENUM>) {
-        static std::map allowed = { add<IDL_AST_NODE_TYPE_ATTR_FLAGS>(),
-                                    add<IDL_AST_NODE_TYPE_ATTR_HEX>(),
-                                    add<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>(true),
-                                    add<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(true),
-                                    add<IDL_AST_NODE_TYPE_ATTR_CNAME>(),
-                                    add<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>(),
-                                    add<IDL_AST_NODE_TYPE_ATTR_TYPE>() };
+        static std::map allowed = {
+            add<IDL_AST_NODE_TYPE_ATTR_FLAGS>(),         add<IDL_AST_NODE_TYPE_ATTR_HEX>(),
+            add<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>(true), add<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(true),
+            add<IDL_AST_NODE_TYPE_ATTR_CNAME>(),         add<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>(),
+            add<IDL_AST_NODE_TYPE_ATTR_TYPE>()
+        };
         validate(node, allowed);
     }
 
@@ -172,23 +171,23 @@ struct AttrArgRules {
             static const std::regex semverRegex(R"((0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*))");
             std::smatch matches;
             // Compatibility with old version format: "1.2.3" instead of "version(1, 2, 3)"
-            auto strView = ctx.getStr(arg0->valueStr);
+            auto strView = ctx.result()->getStr(arg0->valueStr);
             auto str     = std::string(strView.data(), strView.length());
             if (std::regex_match(str, matches, semverRegex)) {
                 const auto major = std::stoll(matches[1].str());
                 const auto minor = std::stoll(matches[2].str());
                 const auto micro = std::stoll(matches[3].str());
                 if (major <= 255 && minor <= 255 && micro <= 255) {
-                    auto nodeMajor = ctx.allocNode(node->location, IDL_AST_NODE_TYPE_LITERAL_INT);
-                    auto nodeMinor = ctx.allocNode(node->location, IDL_AST_NODE_TYPE_LITERAL_INT);
-                    auto nodeMicro = ctx.allocNode(node->location, IDL_AST_NODE_TYPE_LITERAL_INT);
+                    auto nodeMajor = ctx.result()->allocNode(node->location, IDL_AST_NODE_TYPE_LITERAL_INT);
+                    auto nodeMinor = ctx.result()->allocNode(node->location, IDL_AST_NODE_TYPE_LITERAL_INT);
+                    auto nodeMicro = ctx.result()->allocNode(node->location, IDL_AST_NODE_TYPE_LITERAL_INT);
 
-                    ctx.getNode(nodeMajor)->valueInt = major;
-                    ctx.getNode(nodeMinor)->valueInt = minor;
-                    ctx.getNode(nodeMicro)->valueInt = micro;
-                    ctx.getNode(nodeMajor)->sibling  = nodeMinor;
-                    ctx.getNode(nodeMinor)->sibling  = nodeMicro;
-                    ctx.getNode(nodeMicro)->sibling  = argFrist;
+                    ctx.result()->getNode(nodeMajor)->valueInt = major;
+                    ctx.result()->getNode(nodeMinor)->valueInt = minor;
+                    ctx.result()->getNode(nodeMicro)->valueInt = micro;
+                    ctx.result()->getNode(nodeMajor)->sibling  = nodeMinor;
+                    ctx.result()->getNode(nodeMinor)->sibling  = nodeMicro;
+                    ctx.result()->getNode(nodeMicro)->sibling  = argFrist;
                     arg0.setReplacedByCompiler();
 
                     node->child = nodeMajor;
@@ -322,18 +321,18 @@ struct AttrArgRules {
                         std::string token;
                         ASTNode* lastNum = nullptr;
                         while (std::getline(ss, token, '-')) {
-                            auto num = ctx.allocNode(node->location, IDL_AST_NODE_TYPE_LITERAL_INT);
+                            auto num = ctx.result()->allocNode(node->location, IDL_AST_NODE_TYPE_LITERAL_INT);
                             if (token[0] == '^') {
-                                ctx.getNode(num)->valueInt = -std::stoi(token.substr(1));
+                                ctx.result()->getNode(num)->valueInt = -std::stoi(token.substr(1));
                             } else {
-                                ctx.getNode(num)->valueInt = std::stoi(token);
+                                ctx.result()->getNode(num)->valueInt = std::stoi(token);
                             }
                             if (!lastNum) {
                                 node->child = num;
                             } else {
                                 lastNum->sibling = num;
                             }
-                            lastNum = ctx.getNode(num);
+                            lastNum = ctx.result()->getNode(num);
                         }
                         lastNum->sibling = argFrist;
                         arg0.setReplacedByCompiler();
@@ -357,9 +356,9 @@ struct AttrArgRules {
         if (argCount == 1 && arg0.is<IDL_AST_NODE_TYPE_LITERAL_BOOL>()) {
             node->child = argFrist;
         } else if (argCount == 0) {
-            auto valueBool = ctx.allocNode(node->location, IDL_AST_NODE_TYPE_LITERAL_BOOL);
+            auto valueBool = ctx.result()->allocNode(node->location, IDL_AST_NODE_TYPE_LITERAL_BOOL);
 
-            ctx.getNode(valueBool)->valueBool = true;
+            ctx.result()->getNode(valueBool)->valueBool = true;
 
             node->child = valueBool;
         } else {
@@ -373,9 +372,9 @@ struct AttrArgRules {
         if (argCount == 1 && arg0.is<IDL_AST_NODE_TYPE_LITERAL_BOOL>()) {
             node->child = argFrist;
         } else if (argCount == 0) {
-            auto valueBool = ctx.allocNode(node->location, IDL_AST_NODE_TYPE_LITERAL_BOOL);
+            auto valueBool = ctx.result()->allocNode(node->location, IDL_AST_NODE_TYPE_LITERAL_BOOL);
 
-            ctx.getNode(valueBool)->valueBool = true;
+            ctx.result()->getNode(valueBool)->valueBool = true;
 
             node->child = valueBool;
         } else {
@@ -402,7 +401,7 @@ struct HierarchyRules {
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_API>) {
         auto& ctx = node.ctx();
-        if (ctx.api()) {
+        if (ctx.result()->getApi() != HandleNone) {
             ctx.log<IDL_STATUS_E3010>(node->location, node.fullname());
         } else {
             ctx.initBuiltins(node);
@@ -431,7 +430,7 @@ struct HierarchyRules {
             parent.addChild(node);
         } else {
             node.ctx().log<IDL_STATUS_E3023>(node->location, node.fullname());
-            node->parent = node.ctx().api().handle();
+            node->parent = node.ctx().result()->getApi();
         }
     }
 
@@ -441,7 +440,7 @@ struct HierarchyRules {
     }
 
     static bool checkApi(Context& ctx) {
-        if (!ctx.api()) {
+        if (ctx.result()->getApi() == HandleNone) {
             ctx.log<IDL_STATUS_E3011>(ASTLocation());
             return false;
         }
@@ -549,14 +548,14 @@ struct BuildRules {
                 ctx.log<IDL_STATUS_E3044>(node->location, node.fullname());
             }
         } else {
-            auto attrTypeHandle = ctx.allocNode(node->location, IDL_AST_NODE_TYPE_ATTR_TYPE);
+            auto attrTypeHandle = ctx.result()->allocNode(node->location, IDL_AST_NODE_TYPE_ATTR_TYPE);
             auto attrType       = ctx.getNodeRef(attrTypeHandle);
             attrType->parent    = node.handle();
-            attrType->child     = ctx.allocNode(node->location, IDL_AST_NODE_TYPE_DECL_REF);
+            attrType->child     = ctx.result()->allocNode(node->location, IDL_AST_NODE_TYPE_DECL_REF);
 
             auto declRef                 = ASTNodeRef(ctx, attrType->child);
             declRef->parent              = attrTypeHandle;
-            declRef->valueDeclRef.symbol = ctx.intern("Int32");
+            declRef->valueDeclRef.symbol = ctx.result()->intern("Int32");
 
             node.addChild(attrType);
         }
@@ -572,9 +571,10 @@ struct BuildRules {
         ASTNodeRef prevEnumConst(ctx);
         for (auto enumConst : enumConsts) {
             if (prevEnumConst) {
-                auto prevSiblingHandle = ctx.allocNode(enumConst->location, IDL_AST_NODE_TYPE_DECL_PREV_SIBLING_REF);
-                auto prevSibling       = ctx.getNodeRef(prevSiblingHandle);
-                prevSibling->parent    = enumConst.handle();
+                auto prevSiblingHandle =
+                    ctx.result()->allocNode(enumConst->location, IDL_AST_NODE_TYPE_DECL_PREV_SIBLING_REF);
+                auto prevSibling    = ctx.getNodeRef(prevSiblingHandle);
+                prevSibling->parent = enumConst.handle();
 
                 prevSibling->valueDeclRef.symbol = prevEnumConst->valueStr;
                 prevSibling->valueDeclRef.handle = prevEnumConst.handle();
@@ -679,13 +679,13 @@ struct BuildRules {
                 attrValue->valueInt |= evaulatedValue;
             }
         } else {
-            auto attrValueHandle = ctx.allocNode(enumConst->location, IDL_AST_NODE_TYPE_ATTR_VALUE);
+            auto attrValueHandle = ctx.result()->allocNode(enumConst->location, IDL_AST_NODE_TYPE_ATTR_VALUE);
             attrValue            = ctx.getNodeRef(attrValueHandle);
             attrValue->parent    = enumConst.handle();
-            attrValue->child     = ctx.allocNode(enumConst->location, IDL_AST_NODE_TYPE_LITERAL_INT);
+            attrValue->child     = ctx.result()->allocNode(enumConst->location, IDL_AST_NODE_TYPE_LITERAL_INT);
             attrValue->valueInt  = 0;
 
-            ctx.getNode(attrValue->child)->parent = attrValueHandle;
+            ctx.result()->getNode(attrValue->child)->parent = attrValueHandle;
             if (prevEnumConst) {
                 assert(prevEnumConst.evaulated());
                 if (prevEnumConst.buildError()) {

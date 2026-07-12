@@ -5,7 +5,7 @@
 #define YY_DECL int idl::Scanner::yylex(idl::Parser::semantic_type* yylval, idl::Parser::location_type* yylloc)
 #define YY_USER_ACTION action(*yylloc);
 #define log(status, ...) context().log<IDL_STATUS_##status>({ \
-    context().intern({yylloc->begin.filename->c_str(), yylloc->begin.filename->length()}), \
+    context().result()->intern({yylloc->begin.filename->c_str(), yylloc->begin.filename->length()}), \
     uint16_t(yylloc->begin.column), \
     uint16_t(yylloc->begin.line) } __VA_OPT__(,) __VA_ARGS__)
 using namespace std::string_literals;

@@ -96,6 +96,28 @@ idl_ast_node_h findChild(idl_compilation_result_t result, idl_ast_node_h node, i
     return HandleNone;
 }
 
+bool isType(idl_compilation_result_t result, idl_ast_node_h node, idl_ast_node_type_t type) {
+    return idl_compilation_result_is_node_type(result, node, type);
+}
+
+std::vector<idl_ast_node_h> getAttrs(idl_compilation_result_t result, idl_ast_node_h node, bool onlyDocAttrs) {
+    std::vector<idl_ast_node_h> attrs;
+    auto curr = idl_compilation_result_get_child_node(result, node);
+    while (curr != HandleNone) {
+        if (idl_compilation_result_is_node_type(result, curr, IDL_AST_NODE_TYPE_ATTR)) {
+            if (onlyDocAttrs) {
+                if (idl_compilation_result_is_node_type(result, curr, IDL_AST_NODE_TYPE_ATTR_DOC)) {
+                    attrs.push_back(curr);
+                }
+            } else {
+                attrs.push_back(curr);
+            }
+        }
+        curr = idl_compilation_result_get_next_node(result, curr);
+    }
+    return attrs;
+}
+
 std::string getStr(idl_compilation_result_t result, idl_ast_node_h node) {
     auto str = idl_compilation_result_get_node_value_str(result, node);
     return str ? std::string(str) : ""s;

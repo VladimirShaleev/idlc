@@ -6,6 +6,16 @@ TEST(idlc, UnnecessaryParenthesesForAttribute) {
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "note [N1001]: Unnecessary parentheses for a parameterless attribute [hex] at n1001:10:12");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto test = findChild(ast, api, IDL_AST_NODE_TYPE_ENUM);
+    ASSERT_NE(test, HandleNone);
+    ASSERT_EQ(getStr(ast, test), "Test");
+
+    auto hex = findChild(ast, test, IDL_AST_NODE_TYPE_ATTR_HEX);
+    ASSERT_NE(hex, HandleNone);
 }
 
 TEST(idlc, EmptyAttributeList) {
@@ -24,11 +34,22 @@ TEST(idlc, EmptyAttributeList) {
     ASSERT_NE(api, HandleNone);
 
     auto test = findChild(ast, api, IDL_AST_NODE_TYPE_ENUM);
-    ASSERT_NE(api, HandleNone);
+    ASSERT_NE(test, HandleNone);
     ASSERT_EQ(getStr(ast, test), "Test");
 
-    auto hex = findChild(ast, test, IDL_AST_NODE_TYPE_ATTR_HEX);
-    ASSERT_NE(api, HandleNone);
+    auto testAttrs = getAttrs(ast, test);
+    ASSERT_EQ(testAttrs.size(), 3);
+    ASSERT_TRUE(isType(ast, testAttrs[0], IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF));
+    ASSERT_TRUE(isType(ast, testAttrs[1], IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL));
+    ASSERT_TRUE(isType(ast, testAttrs[2], IDL_AST_NODE_TYPE_ATTR_TYPE));
+
+    auto value = findChild(ast, test, IDL_AST_NODE_TYPE_CONST);
+    ASSERT_NE(value, HandleNone);
+
+    auto valueAttrs = getAttrs(ast, value);
+    ASSERT_EQ(valueAttrs.size(), 2);
+    ASSERT_TRUE(isType(ast, valueAttrs[0], IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL));
+    ASSERT_TRUE(isType(ast, valueAttrs[1], IDL_AST_NODE_TYPE_ATTR_VALUE));
 }
 
 TEST(idlc, ExplicitAttributeBrief) {
@@ -37,6 +58,16 @@ TEST(idlc, ExplicitAttributeBrief) {
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "note [N1003]: Unnecessary explicit attribute [brief] in documentation at n1003:8:11");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto test = findChild(ast, api, IDL_AST_NODE_TYPE_ENUM);
+    ASSERT_NE(test, HandleNone);
+    ASSERT_EQ(getStr(ast, test), "Test");
+
+    auto brief = findChild(ast, test, IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF);
+    ASSERT_NE(brief, HandleNone);
 }
 
 TEST(idlc, ExplicitAttributeDetail) {
@@ -46,6 +77,19 @@ TEST(idlc, ExplicitAttributeDetail) {
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0],
               "note [N1004]: Unnecessary explicit attribute [detail] in inline documentation at n1004:11:25");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto test = findChild(ast, api, IDL_AST_NODE_TYPE_ENUM);
+    ASSERT_NE(test, HandleNone);
+    ASSERT_EQ(getStr(ast, test), "Test");
+
+    auto value = findChild(ast, test, IDL_AST_NODE_TYPE_CONST);
+    ASSERT_NE(value, HandleNone);
+
+    auto detail = findChild(ast, value, IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL);
+    ASSERT_NE(detail, HandleNone);
 }
 
 TEST(idlc, MissingAttribute) {
@@ -62,6 +106,25 @@ TEST(idlc, MissingAttribute) {
     ASSERT_EQ(messages[6], "warning [W2001]: The declaration 'Api.Test' is missing an attribute [detail] at w2001:3:1");
     ASSERT_EQ(messages[7],
               "warning [W2001]: The declaration 'Api.Test.Value' is missing an attribute [detail] at w2001:4:5");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+    ASSERT_EQ(getAttrs(ast, api, true).size(), 0);
+    ASSERT_EQ(getAttrs(ast, api).size(), 0);
+
+    auto test = findChild(ast, api, IDL_AST_NODE_TYPE_ENUM);
+    ASSERT_NE(test, HandleNone);
+    ASSERT_EQ(getStr(ast, test), "Test");
+    ASSERT_EQ(getAttrs(ast, test, true).size(), 0);
+    ASSERT_EQ(getAttrs(ast, test).size(), 1);
+    ASSERT_TRUE(isType(ast, getAttrs(ast, test)[0], IDL_AST_NODE_TYPE_ATTR_TYPE));
+
+    auto value = findChild(ast, test, IDL_AST_NODE_TYPE_CONST);
+    ASSERT_NE(value, HandleNone);
+    ASSERT_EQ(getStr(ast, value), "Value");
+    ASSERT_EQ(getAttrs(ast, value, true).size(), 0);
+    ASSERT_EQ(getAttrs(ast, value).size(), 1);
+    ASSERT_TRUE(isType(ast, getAttrs(ast, value)[0], IDL_AST_NODE_TYPE_ATTR_VALUE));
 }
 
 TEST(idlc, RepeatedImport) {

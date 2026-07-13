@@ -1,13 +1,10 @@
-#include "compilation_result.hpp"
-#include "options.hpp"
 #include "parser.hpp"
 #include "scanner.hpp"
+#include "writer.hpp"
 
-void generateIdl(idl::CompilationResultBase* result,
-                 const std::filesystem::path& out,
-                 idl_write_callback_t writer,
-                 idl_data_t writerData,
-                 const idl_idl_options_t& options);
+namespace idl::gen::idl {
+void generate(Writer& writer);
+}
 
 // void generateC(idl::Context& ctx,
 //                const std::filesystem::path& out,
@@ -82,24 +79,12 @@ public:
                 }
             }
 
-            auto output = std::filesystem::current_path();
-            idl_write_callback_t writer{};
-            idl_data_t writerData{};
-            std::vector<idl_utf8_t> additions{};
-            if (options) {
-                output = options->getOutputDir();
-                writer = options->getWriter(&writerData);
-                if (auto version = options->getVersion()) {
-                    // context.apiVersion(*version);
-                }
-            }
-
+            Writer writer(base, options);
             switch (generator) {
                 case IDL_GENERATOR_NONE:
                     break;
                 case IDL_GENERATOR_IDL:
-                    generateIdl(
-                        base, output, writer, writerData, options ? options->getIdlOptions() : idl_idl_options_t{});
+                    gen::idl::generate(writer);
                     break;
                 case IDL_GENERATOR_C:
                     // generateC(context, output, writer, writerData, std::span{ additions.data(), additions.size() });

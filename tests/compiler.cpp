@@ -122,17 +122,21 @@ bool isType(idl_compilation_result_t result, idl_ast_node_h node, idl_ast_node_t
     return idl_compilation_result_is_node_type(result, node, type);
 }
 
-std::vector<idl_ast_node_h> getAttrs(idl_compilation_result_t result, idl_ast_node_h node, bool onlyDocAttrs) {
+std::vector<idl_ast_node_h> getAttrs(idl_compilation_result_t result, idl_ast_node_h node, AttrFilter filter) {
     std::vector<idl_ast_node_h> attrs;
     auto curr = idl_compilation_result_get_child_node(result, node);
     while (curr != HandleNone) {
         if (idl_compilation_result_is_node_type(result, curr, IDL_AST_NODE_TYPE_ATTR)) {
-            if (onlyDocAttrs) {
+            if ((filter & AttrFilterAll) == AttrFilterAll) {
+                attrs.push_back(curr);
+            } else if ((filter & AttrFilterDoc) == AttrFilterDoc) {
                 if (idl_compilation_result_is_node_type(result, curr, IDL_AST_NODE_TYPE_ATTR_DOC)) {
                     attrs.push_back(curr);
                 }
-            } else {
-                attrs.push_back(curr);
+            } else if ((filter & AttrFilterNonDoc) == AttrFilterNonDoc) {
+                if (!idl_compilation_result_is_node_type(result, curr, IDL_AST_NODE_TYPE_ATTR_DOC)) {
+                    attrs.push_back(curr);
+                }
             }
         }
         curr = idl_compilation_result_get_next_node(result, curr);

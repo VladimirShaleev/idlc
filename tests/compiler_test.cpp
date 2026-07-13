@@ -109,20 +109,20 @@ TEST(idlc, MissingAttribute) {
 
     auto api = idl_compilation_result_get_api(ast);
     ASSERT_NE(api, HandleNone);
-    ASSERT_EQ(getAttrs(ast, api, true).size(), 0);
+    ASSERT_EQ(getAttrs(ast, api, AttrFilterDoc).size(), 0);
     ASSERT_EQ(getAttrs(ast, api).size(), 0);
 
     auto test = findChild(ast, api, IDL_AST_NODE_TYPE_ENUM);
     ASSERT_NE(test, HandleNone);
     ASSERT_EQ(getStr(ast, test), "Test");
-    ASSERT_EQ(getAttrs(ast, test, true).size(), 0);
+    ASSERT_EQ(getAttrs(ast, test, AttrFilterDoc).size(), 0);
     ASSERT_EQ(getAttrs(ast, test).size(), 1);
     ASSERT_TRUE(isType(ast, getAttrs(ast, test)[0], IDL_AST_NODE_TYPE_ATTR_TYPE));
 
     auto value = findChild(ast, test, IDL_AST_NODE_TYPE_CONST);
     ASSERT_NE(value, HandleNone);
     ASSERT_EQ(getStr(ast, value), "Value");
-    ASSERT_EQ(getAttrs(ast, value, true).size(), 0);
+    ASSERT_EQ(getAttrs(ast, value, AttrFilterDoc).size(), 0);
     ASSERT_EQ(getAttrs(ast, value).size(), 1);
     ASSERT_TRUE(isType(ast, getAttrs(ast, value)[0], IDL_AST_NODE_TYPE_ATTR_VALUE));
 }
@@ -180,6 +180,9 @@ TEST(idlc, IntegerOutOfRange) {
     ASSERT_EQ(messages[0], "warning [W2004]: Integer Int8 with value 128 out of range [-128, 127] at w2004:19:5");
     ASSERT_EQ(messages[1], "warning [W2004]: Integer Int8 with value -130 out of range [-128, 127] at w2004:20:20");
     ASSERT_EQ(messages[2], "warning [W2004]: Integer Int8 with value 367 out of range [-128, 127] at w2004:22:20");
+    ASSERT_FALSE(idl_compilation_result_has_notes(ast));
+    ASSERT_TRUE(idl_compilation_result_has_warnings(ast));
+    ASSERT_FALSE(idl_compilation_result_has_errors(ast));
 
     auto api = idl_compilation_result_get_api(ast);
     ASSERT_NE(api, HandleNone);
@@ -210,6 +213,9 @@ TEST(idlc, IntegerOutOfRangeWarnAsErrors) {
     ASSERT_EQ(messages[0], "error [W2004]: Integer Int8 with value 128 out of range [-128, 127] at w2004:19:5");
     ASSERT_EQ(messages[1], "error [W2004]: Integer Int8 with value -130 out of range [-128, 127] at w2004:20:20");
     ASSERT_EQ(messages[2], "error [W2004]: Integer Int8 with value 367 out of range [-128, 127] at w2004:22:20");
+    ASSERT_FALSE(idl_compilation_result_has_notes(ast));
+    ASSERT_FALSE(idl_compilation_result_has_warnings(ast));
+    ASSERT_TRUE(idl_compilation_result_has_errors(ast));
 
     auto api = idl_compilation_result_get_api(ast);
     ASSERT_NE(api, HandleNone);
@@ -540,6 +546,20 @@ TEST(idlc, DetailAttrMustContainOneOrMoreArgs) {
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "error [E3017]: The [detail] attribute must contain one or more arguments at e3017:5:10");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto attrs = getAttrs(ast, api);
+    ASSERT_EQ(attrs.size(), 5);
+    ASSERT_TRUE(isType(ast, attrs[0], IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF));
+    ASSERT_TRUE(isType(ast, attrs[1], IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT));
+    ASSERT_TRUE(isType(ast, attrs[2], IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE));
+    ASSERT_TRUE(isType(ast, attrs[3], IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR));
+    ASSERT_TRUE(isType(ast, attrs[4], IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL));
+
+    auto args = getChilds(ast, attrs[4]);
+    ASSERT_TRUE(args.empty());
 }
 
 TEST(idlc, InlineDocAllowedDetailOnlyAttr) {
@@ -548,6 +568,17 @@ TEST(idlc, InlineDocAllowedDetailOnlyAttr) {
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "error [E3018]: Inline documentation only [detail] description is allowed at e3018:5:37");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto attrs = getAttrs(ast, api);
+    ASSERT_EQ(attrs.size(), 5);
+    ASSERT_TRUE(isType(ast, attrs[0], IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL));
+    ASSERT_TRUE(isType(ast, attrs[1], IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT));
+    ASSERT_TRUE(isType(ast, attrs[2], IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE));
+    ASSERT_TRUE(isType(ast, attrs[3], IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR));
+    ASSERT_TRUE(isType(ast, attrs[4], IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF));
 }
 
 TEST(idlc, OrderAttrCanContainOneOptionalBoolParam) {
@@ -560,6 +591,14 @@ TEST(idlc, OrderAttrCanContainOneOptionalBoolParam) {
     ASSERT_EQ(messages[1],
               "error [E3019]: The [order] attribute can contain one optional Boolean parameter at e3019:6:22");
     ASSERT_EQ(messages[2], "error [E3007]: Attribute duplication for attribute [order] in api 'Api' at e3019:6:22");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto attrs = getAttrs(ast, api, AttrFilterNonDoc);
+    ASSERT_EQ(attrs.size(), 2);
+    ASSERT_TRUE(getChilds(ast, attrs[0]).empty());
+    ASSERT_TRUE(getChilds(ast, attrs[1]).empty());
 }
 
 TEST(idlc, TabsNotAllowed) {
@@ -582,6 +621,19 @@ TEST(idlc, CouldNotFindFileForImport) {
     ASSERT_EQ(result2, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages2.size(), 1);
     ASSERT_EQ(messages2[0], "error [E3021]: could not find file 'e3021nonexists' for import");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto notFoundImport = findChild(ast, api, IDL_AST_NODE_TYPE_IMPORT);
+    ASSERT_NE(notFoundImport, HandleNone);
+
+    auto importAttrs = getChilds(ast, notFoundImport);
+    ASSERT_EQ(importAttrs.size(), 2);
+    ASSERT_TRUE(isType(ast, importAttrs[0], IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF));
+    ASSERT_TRUE(isType(ast, importAttrs[1], IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL));
+
+    ASSERT_EQ(idl_compilation_result_get_api(ast2), HandleNone);
 }
 
 TEST(idlc, ConstCanBeDefinedOnlyForEnum) {

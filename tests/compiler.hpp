@@ -17,13 +17,19 @@ static constexpr idl_ast_node_h HandleNone{ 0xFFFF };
     return lhs.handle != rhs.handle;
 }
 
+enum AttrFilter {
+    AttrFilterNone   = 0,
+    AttrFilterDoc    = 1,
+    AttrFilterNonDoc = 2,
+    AttrFilterAll    = AttrFilterDoc | AttrFilterNonDoc
+};
+
 [[nodiscard]] std::tuple<idl_result_t, idl_compilation_result_t, std::vector<std::string>> compile(
     std::string_view testCase, bool warnAsErrors = false, bool returnMessages = true);
 
 [[nodiscard]] idl_ast_node_h findChild(idl_compilation_result_t result, idl_ast_node_h node, idl_ast_node_type_t type);
 
-[[nodiscard]] std::vector<idl_ast_node_h> getChilds(idl_compilation_result_t result,
-                                                    idl_ast_node_h node);
+[[nodiscard]] std::vector<idl_ast_node_h> getChilds(idl_compilation_result_t result, idl_ast_node_h node);
 
 [[nodiscard]] std::vector<idl_ast_node_h> getChilds(idl_compilation_result_t result,
                                                     idl_ast_node_h node,
@@ -33,7 +39,7 @@ static constexpr idl_ast_node_h HandleNone{ 0xFFFF };
 
 [[nodiscard]] std::vector<idl_ast_node_h> getAttrs(idl_compilation_result_t result,
                                                    idl_ast_node_h node,
-                                                   bool onlyDocAttrs = false);
+                                                   AttrFilter filter = AttrFilterAll);
 
 [[nodiscard]] bool hasAllState(idl_compilation_result_t result, idl_ast_node_h node, idl_ast_node_state_flags_t state);
 

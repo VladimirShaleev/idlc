@@ -144,8 +144,8 @@ struct AttrArgRules {
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ATTR_VERSION>) {
         auto& ctx = node.ctx();
         auto arg0 = ctx.getNodeRef(argFrist);
-        auto arg1 = arg0 ? ctx.getNodeRef(arg0->sibling) : ASTNodeRef(ctx);
-        auto arg2 = arg1 ? ctx.getNodeRef(arg1->sibling) : ASTNodeRef(ctx);
+        auto arg1 = arg0 ? ctx.getNodeRef(arg0->sibling) : ctx.emptyNodeRef();
+        auto arg2 = arg1 ? ctx.getNodeRef(arg1->sibling) : ctx.emptyNodeRef();
         if (argCount == 3 && arg0.is<IDL_AST_NODE_TYPE_LITERAL_INT>() && arg1.is<IDL_AST_NODE_TYPE_LITERAL_INT>() &&
             arg2.is<IDL_AST_NODE_TYPE_LITERAL_INT>()) {
             const auto major = int64_t(arg0->valueInt);
@@ -460,7 +460,7 @@ struct HierarchyRules {
             }
             curr = curr.parent();
         }
-        return ASTNodeRef(ctx);
+        return ctx.emptyNodeRef();
     }
 
     ASTNodeRef findRoot(Context& ctx) noexcept {
@@ -549,7 +549,7 @@ struct BuildRules {
                     return child.is<IDL_AST_NODE_TYPE_CONST>();
                 });
                 for (auto constNode : consts) {
-                    auto prevChild = ASTNodeRef(ctx);
+                    auto prevChild = ctx.emptyNodeRef();
                     for (auto child : constNode) {
                         if (child.is<IDL_AST_NODE_TYPE_DECL_PREV_SIBLING_REF>()) {
                             break;
@@ -583,7 +583,7 @@ struct BuildRules {
             attrType->parent    = node.handle();
             attrType->child     = ctx.result()->allocNode(node->location, IDL_AST_NODE_TYPE_DECL_REF);
 
-            auto declRef                 = ASTNodeRef(ctx, attrType->child);
+            auto declRef                 = ctx.getNodeRef(attrType->child);
             declRef->parent              = attrTypeHandle;
             declRef->valueDeclRef.symbol = ctx.result()->intern("Int32");
 
@@ -598,7 +598,7 @@ struct BuildRules {
         auto enumConsts = node | std::views::filter([](const auto& child) {
             return child.is<IDL_AST_NODE_TYPE_CONST>();
         });
-        ASTNodeRef prevEnumConst(ctx);
+        ASTNodeRef prevEnumConst = ctx.emptyNodeRef();
         for (auto enumConst : enumConsts) {
             if (prevEnumConst) {
                 auto prevSiblingHandle =
@@ -634,7 +634,7 @@ struct BuildRules {
 
         auto& ctx = enumConst.ctx();
 
-        ASTNodeRef prevEnumConst(ctx);
+        ASTNodeRef prevEnumConst = ctx.emptyNodeRef();
         if (auto prevSiblingRef = enumConst.findChild<IDL_AST_NODE_TYPE_DECL_PREV_SIBLING_REF>()) {
             prevEnumConst = prevSiblingRef.resolveRef();
         }
@@ -755,7 +755,7 @@ struct BuildRules {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_DECL_REF>) {
-        node.resolveRef();
+        auto _ = node.resolveRef();
     }
 
     template <ASTNodeType Type>

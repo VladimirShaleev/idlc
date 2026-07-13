@@ -38,9 +38,10 @@ int main(int argc, char* argv[]) {
     std::string apiver;
 
     std::map<std::string, idl_generator_t> generators = {
-        { "c",  IDL_GENERATOR_C           },
-        { "js", IDL_GENERATOR_JAVA_SCRIPT },
-        { "cs", IDL_GENERATOR_CSHARP      }
+        { "idl", IDL_GENERATOR_IDL         },
+        { "c",   IDL_GENERATOR_C           },
+        { "js",  IDL_GENERATOR_JAVA_SCRIPT },
+        { "cs",  IDL_GENERATOR_CSHARP      }
     };
 
     argparse::ArgumentParser program("idlc", IDL_VERSION_STRING);

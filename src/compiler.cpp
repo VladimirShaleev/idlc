@@ -79,7 +79,7 @@ public:
                 }
             }
 
-            Writer writer(base, options);
+            Writer writer(options, context.getNodeRef(base->getApi()));
             switch (generator) {
                 case IDL_GENERATOR_NONE:
                     break;

@@ -133,7 +133,7 @@
 idl : stack_decls { 
     if (!scanner.context().result()->hasErrors()) {
         BuildRules::State state {};
-        ASTNodeRef api(scanner.context(), scanner.context().result()->getApi());
+        ASTNodeRef api = scanner.context().getNodeRef(scanner.context().result()->getApi());
         api.acceptRecursive<BuildRules>(ASTNodeRef::SkipLiterals | ASTNodeRef::SkipTrivials, std::ref(state));
         state.clearNodes();
     } 

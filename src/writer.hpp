@@ -1,7 +1,7 @@
 #ifndef IDL_WRITER_HPP
 #define IDL_WRITER_HPP
 
-#include "compilation_result.hpp"
+#include "ast_ref.hpp"
 #include "options.hpp"
 
 namespace idl {
@@ -18,8 +18,12 @@ public:
         return *_out->stream;
     }
 
+    [[nodiscard]] ASTNodeRef api() const noexcept {
+        return _out->api;
+    }
+
     [[nodiscard]] CompilationResultBase* result() noexcept {
-        return _out->result;
+        return api().result();
     }
 
     [[nodiscard]] Options* options() noexcept {
@@ -38,14 +42,14 @@ private:
     friend Writer;
 
     struct OutputImpl {
-        OutputImpl(CompilationResultBase* result,
-                   Options* options,
+        OutputImpl(Options* options,
+                   ASTNodeRef api,
                    const std::filesystem::path& dir,
                    const std::string& filename,
                    idl_write_callback_t writer,
                    idl_data_t writerData) noexcept :
-            result(result),
             options(options),
+            api(api),
             dir(dir),
             filename(filename),
             writer(writer),
@@ -78,8 +82,8 @@ private:
             }
         }
 
-        CompilationResultBase* result{};
         Options* options{};
+        ASTNodeRef api{};
         std::filesystem::path dir{};
         std::string filename{};
         idl_write_callback_t writer{};
@@ -89,13 +93,13 @@ private:
         std::ostream* stream{};
     };
 
-    Output(CompilationResultBase* result,
-           Options* options,
+    Output(Options* options,
+           ASTNodeRef api,
            const std::filesystem::path& dir,
            const std::string& filename,
            idl_write_callback_t writer,
            idl_data_t writerData) noexcept :
-        _out(std::make_shared<OutputImpl>(result, options, dir, filename, writer, writerData)) {
+        _out(std::make_shared<OutputImpl>(options, api, dir, filename, writer, writerData)) {
     }
 
     std::shared_ptr<OutputImpl> _out{};
@@ -103,7 +107,7 @@ private:
 
 class Writer {
 public:
-    Writer(CompilationResultBase* result, Options* options) : _result(result), _options(options) {
+    Writer(Options* options, ASTNodeRef api) : _options(options), _api(api) {
         _out = std::filesystem::current_path();
         if (_options) {
             _out    = options->getOutputDir();
@@ -112,11 +116,11 @@ public:
     }
 
     [[nodiscard]] Output createOutput(const std::string& filename) noexcept {
-        return Output(_result, _options, _out, filename, _writer, _writerData);
+        return Output(_options, _api, _out, filename, _writer, _writerData);
     }
 
     [[nodiscard]] CompilationResultBase* result() noexcept {
-        return _result;
+        return _api.result();
     }
 
     [[nodiscard]] Options* options() noexcept {
@@ -134,8 +138,8 @@ public:
     Writer& operator=(Writer&&)      = delete;
 
 private:
-    CompilationResultBase* _result{};
     Options* _options{};
+    ASTNodeRef _api{};
     std::filesystem::path _out{};
     idl_write_callback_t _writer{};
     idl_data_t _writerData{};

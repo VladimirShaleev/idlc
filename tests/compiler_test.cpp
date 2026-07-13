@@ -642,6 +642,12 @@ TEST(idlc, ConstCanBeDefinedOnlyForEnum) {
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "error [E3023]: A 'const' of 'Value' can be defined only for an 'enum' at e3023:7:5");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto value = findChild(ast, api, IDL_AST_NODE_TYPE_CONST);
+    ASSERT_EQ(value, HandleNone);
 }
 
 TEST(idlc, ValueAttrMustContainOneOrMoreArgs) {
@@ -650,6 +656,21 @@ TEST(idlc, ValueAttrMustContainOneOrMoreArgs) {
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "error [E3024]: The [value] attribute must contain one or more arguments at e3024:10:18");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto test = findChild(ast, api, IDL_AST_NODE_TYPE_ENUM);
+    ASSERT_NE(test, HandleNone);
+
+    auto value = findChild(ast, test, IDL_AST_NODE_TYPE_CONST);
+    ASSERT_NE(value, HandleNone);
+
+    auto attrValue = findChild(ast, value, IDL_AST_NODE_TYPE_ATTR_VALUE);
+    ASSERT_NE(attrValue, HandleNone);
+
+    auto attrValueArgs = getChilds(ast, attrValue);
+    ASSERT_TRUE(attrValueArgs.empty());
 }
 
 TEST(idlc, ValueAttrArgsMustBeLiteralsOrDeclReference) {
@@ -659,6 +680,21 @@ TEST(idlc, ValueAttrArgsMustBeLiteralsOrDeclReference) {
     ASSERT_EQ(messages.size(), 2);
     ASSERT_EQ(messages[0], "error [E3002]: Argument parsing error 'fail' at e3025:10:24");
     ASSERT_EQ(messages[1], "error [E3025]: Arguments for the [value] attribute must be literals at e3025:10:18");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto test = findChild(ast, api, IDL_AST_NODE_TYPE_ENUM);
+    ASSERT_NE(test, HandleNone);
+
+    auto value = findChild(ast, test, IDL_AST_NODE_TYPE_CONST);
+    ASSERT_NE(value, HandleNone);
+
+    auto attrValue = findChild(ast, value, IDL_AST_NODE_TYPE_ATTR_VALUE);
+    ASSERT_NE(attrValue, HandleNone);
+
+    auto attrValueArgs = getChilds(ast, attrValue);
+    ASSERT_TRUE(attrValueArgs.empty());
 }
 
 TEST(idlc, AllLiteralsInTheValueAttrMustBeOfSameType) {
@@ -668,6 +704,21 @@ TEST(idlc, AllLiteralsInTheValueAttrMustBeOfSameType) {
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0],
               "error [E3026]: All literals in the [value] attribute must be of the same type at e3026:10:18");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto test = findChild(ast, api, IDL_AST_NODE_TYPE_ENUM);
+    ASSERT_NE(test, HandleNone);
+
+    auto value = findChild(ast, test, IDL_AST_NODE_TYPE_CONST);
+    ASSERT_NE(value, HandleNone);
+
+    auto attrValue = findChild(ast, value, IDL_AST_NODE_TYPE_ATTR_VALUE);
+    ASSERT_NE(attrValue, HandleNone);
+
+    auto attrValueArgs = getChilds(ast, attrValue);
+    ASSERT_TRUE(attrValueArgs.empty());
 }
 
 TEST(idlc, TypeAttrArgCanOnlyReferToSymbols) {
@@ -676,6 +727,18 @@ TEST(idlc, TypeAttrArgCanOnlyReferToSymbols) {
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "error [E3027]: The [type] attribute argument can only refer to symbols at e3027:9:12");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto test = findChild(ast, api, IDL_AST_NODE_TYPE_ENUM);
+    ASSERT_NE(test, HandleNone);
+
+    auto attrType = findChild(ast, test, IDL_AST_NODE_TYPE_ATTR_TYPE);
+    ASSERT_NE(attrType, HandleNone);
+
+    auto declRef = findChild(ast, attrType, IDL_AST_NODE_TYPE_DECL_REF);
+    ASSERT_EQ(declRef, HandleNone);
 }
 
 TEST(idlc, CnameAttrMustContainSingleStringLiteralArg) {
@@ -686,6 +749,15 @@ TEST(idlc, CnameAttrMustContainSingleStringLiteralArg) {
     ASSERT_EQ(messages[0], "error [E3002]: Argument parsing error 'not string' at e3028:6:16");
     ASSERT_EQ(messages[1],
               "error [E3028]: The [cname] attribute must contain a single string literal argument at e3028:6:10");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto cname = findChild(ast, api, IDL_AST_NODE_TYPE_ATTR_CNAME);
+    ASSERT_NE(cname, HandleNone);
+
+    auto cnameArgs = getChilds(ast, cname);
+    ASSERT_TRUE(cnameArgs.empty());
 }
 
 TEST(idlc, CnameAttrMustSpecifyNameWithoutSpacesAndPuncts) {
@@ -702,6 +774,21 @@ TEST(idlc, CnameAttrMustSpecifyNameWithoutSpacesAndPuncts) {
     ASSERT_EQ(messages[2],
               "error [E3029]: The [cname] attribute must specify a name (\"puncts!\") without spaces and punctuations "
               "at e3029:11:19");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto test = findChild(ast, api, IDL_AST_NODE_TYPE_ENUM);
+    ASSERT_NE(test, HandleNone);
+
+    auto consts = getChilds(ast, test, IDL_AST_NODE_TYPE_CONST);
+    ASSERT_EQ(consts.size(), 2);
+
+    for (auto c : consts) {
+        auto value     = findChild(ast, c, IDL_AST_NODE_TYPE_ATTR_CNAME);
+        auto valueArgs = getChilds(ast, value);
+        ASSERT_TRUE(valueArgs.empty());
+    }
 }
 
 TEST(idlc, SingleAttrCanContainOneOptionalBoolParam) {
@@ -714,6 +801,15 @@ TEST(idlc, SingleAttrCanContainOneOptionalBoolParam) {
     ASSERT_EQ(messages[1],
               "error [E3030]: The [single] attribute can contain one optional Boolean parameter at e3030:6:23");
     ASSERT_EQ(messages[2], "error [E3007]: Attribute duplication for attribute [single] in api 'Api' at e3030:6:23");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto attrs = getAttrs(ast, api, AttrFilterNonDoc);
+    for (auto attr : attrs) {
+        auto attrArgs = getChilds(ast, attr);
+        ASSERT_TRUE(attrArgs.empty());
+    }
 }
 
 TEST(idlc, InvalidTokenizerFormatString) {
@@ -724,6 +820,15 @@ TEST(idlc, InvalidTokenizerFormatString) {
     ASSERT_EQ(
         messages[0],
         "error [E3031]: Invalid tokenizer format string \"2-a3-4\", a valid string looks like (2-^3-4) at e3031:6:10");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto attrs = getAttrs(ast, api, AttrFilterNonDoc);
+    for (auto attr : attrs) {
+        auto attrArgs = getChilds(ast, attr);
+        ASSERT_TRUE(attrArgs.empty());
+    }
 }
 
 TEST(idlc, IntTokenizationParamsOrFmtStringMustBePassedToTokenizerAttr) {
@@ -737,6 +842,15 @@ TEST(idlc, IntTokenizationParamsOrFmtStringMustBePassedToTokenizerAttr) {
     ASSERT_EQ(messages[1],
               "error [E3032]: Integer tokenization parameters or a tokenizer string must be passed to the attribute "
               "[tokenizer] at e3032:10:18");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto attrs = getAttrs(ast, api, AttrFilterNonDoc);
+    for (auto attr : attrs) {
+        auto attrArgs = getChilds(ast, attr);
+        ASSERT_TRUE(attrArgs.empty());
+    }
 }
 
 TEST(idlc, TokenizerAttrMustContainOneOrMoreArgs) {
@@ -747,6 +861,15 @@ TEST(idlc, TokenizerAttrMustContainOneOrMoreArgs) {
     ASSERT_EQ(messages[0],
               "error [E3033]: The [tokenizer] attribute must contain one or more arguments (integers: 2, -2, 4 or "
               "string \"2-^3-4\") at e3033:6:10");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto attrs = getAttrs(ast, api, AttrFilterNonDoc);
+    for (auto attr : attrs) {
+        auto attrArgs = getChilds(ast, attr);
+        ASSERT_TRUE(attrArgs.empty());
+    }
 }
 
 TEST(idlc, CopyrightAttrMustContainOneOrMoreArgs) {
@@ -755,6 +878,15 @@ TEST(idlc, CopyrightAttrMustContainOneOrMoreArgs) {
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "error [E3034]: The [copyright] attribute must contain one or more arguments at e3034:5:10");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto copyright = findChild(ast, api, IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT);
+    ASSERT_NE(copyright, HandleNone);
+
+    auto copyrightArgs = getChilds(ast, copyright);
+    ASSERT_TRUE(copyrightArgs.empty());
 }
 
 TEST(idlc, LicenseAttrMustContainOneOrMoreArgs) {
@@ -763,6 +895,15 @@ TEST(idlc, LicenseAttrMustContainOneOrMoreArgs) {
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "error [E3035]: The [license] attribute must contain one or more arguments at e3035:5:10");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto license = findChild(ast, api, IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE);
+    ASSERT_NE(license, HandleNone);
+
+    auto licenseArgs = getChilds(ast, license);
+    ASSERT_TRUE(licenseArgs.empty());
 }
 
 TEST(idlc, IdentifiersCaseSensitive) {
@@ -775,6 +916,18 @@ TEST(idlc, IdentifiersCaseSensitive) {
     ASSERT_EQ(messages[1],
               "error [E3036]: Identifiers are case sensitive, error in 'Api.Test.value', but expected 'Api.Test.Value' "
               "at e3036:2:22");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto brief = findChild(ast, api, IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF);
+    ASSERT_NE(brief, HandleNone);
+
+    auto declRef = findChild(ast, brief, IDL_AST_NODE_TYPE_DECL_REF);
+    ASSERT_NE(brief, HandleNone);
+
+    auto symbol = getDeclRef(ast, declRef);
+    ASSERT_EQ(symbol, HandleNone);
 }
 
 TEST(idlc, SymbolDefinitionNotFound) {
@@ -783,6 +936,18 @@ TEST(idlc, SymbolDefinitionNotFound) {
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "error [E3037]: Symbol definition 'Test' not found at e3037:1:10");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto brief = findChild(ast, api, IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF);
+    ASSERT_NE(brief, HandleNone);
+
+    auto declRef = findChild(ast, brief, IDL_AST_NODE_TYPE_DECL_REF);
+    ASSERT_NE(brief, HandleNone);
+
+    auto symbol = getDeclRef(ast, declRef);
+    ASSERT_EQ(symbol, HandleNone);
 }
 
 TEST(idlc, ConstCanOnlyReferToOtherConstWhenEvaluated) {
@@ -791,6 +956,17 @@ TEST(idlc, ConstCanOnlyReferToOtherConstWhenEvaluated) {
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "error [E3038]: Constants can only refer to other constants when evaluated at e3038:10:5");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto test = findChild(ast, api, IDL_AST_NODE_TYPE_ENUM);
+    ASSERT_NE(test, HandleNone);
+
+    auto consts = getChilds(ast, test, IDL_AST_NODE_TYPE_CONST);
+    ASSERT_EQ(consts.size(), 2);
+    ASSERT_TRUE(checkConst(ast, consts[0], 0, false, true, false));
+    ASSERT_TRUE(checkConst(ast, consts[1], 1, false, false, false));
 }
 
 TEST(idlc, ConstCannotReferToItselfWhenEvaluated) {
@@ -800,6 +976,16 @@ TEST(idlc, ConstCannotReferToItselfWhenEvaluated) {
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0],
               "error [E3039]: A constant 'Api.Test.Value' cannot refer to itself when evaluated at e3039:10:5");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto test = findChild(ast, api, IDL_AST_NODE_TYPE_ENUM);
+    ASSERT_NE(test, HandleNone);
+
+    auto consts = getChilds(ast, test, IDL_AST_NODE_TYPE_CONST);
+    ASSERT_EQ(consts.size(), 1);
+    ASSERT_TRUE(checkConst(ast, consts.front(), 0, false, true, false));
 }
 
 TEST(idlc, EnumConstsCanOnlyBeSpecifiedAsIntOrEnumConsts) {
@@ -816,6 +1002,18 @@ TEST(idlc, EnumConstsCanOnlyBeSpecifiedAsIntOrEnumConsts) {
     ASSERT_EQ(messages[2],
               "error [E3040]: Enumeration constants 'Api.Test.Value3' can only be specified as integers or enum consts "
               "at e3040:12:20");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto test = findChild(ast, api, IDL_AST_NODE_TYPE_ENUM);
+    ASSERT_NE(test, HandleNone);
+
+    auto consts = getChilds(ast, test, IDL_AST_NODE_TYPE_CONST);
+    ASSERT_EQ(consts.size(), 3);
+    ASSERT_TRUE(checkConst(ast, consts[0], 0, false, true, false));
+    ASSERT_TRUE(checkConst(ast, consts[1], 0, false, true, false));
+    ASSERT_TRUE(checkConst(ast, consts[2], 0, false, true, false));
 }
 
 TEST(idlc, FailedCalculateConst) {
@@ -827,6 +1025,19 @@ TEST(idlc, FailedCalculateConst) {
               "error [E3040]: Enumeration constants 'Api.Test.Value1' can only be specified as integers or enum consts "
               "at e3041:10:20");
     ASSERT_EQ(messages[1], "error [E3041]: Failed to calculate the constant 'Api.Test.Value2' at e3041:11:5");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto test = findChild(ast, api, IDL_AST_NODE_TYPE_ENUM);
+    ASSERT_NE(test, HandleNone);
+
+    auto consts = getChilds(ast, test, IDL_AST_NODE_TYPE_CONST);
+    ASSERT_EQ(consts.size(), 4);
+    ASSERT_TRUE(checkConst(ast, consts[0], 0, false, true, false));
+    ASSERT_TRUE(checkConst(ast, consts[1], 0, false, true, false));
+    ASSERT_TRUE(checkConst(ast, consts[2], 0, false, true, false));
+    ASSERT_TRUE(checkConst(ast, consts[3], 0, true, true, false));
 }
 
 TEST(idlc, CyclicDependenceOfConst) {
@@ -849,6 +1060,33 @@ TEST(idlc, CyclicDependenceOfConst) {
         "error [E3042]: Cyclic dependence of constant 'Api.OtherTest.Value3 -> Api.OtherTest.Value8 -> "
         "Api.OtherTest.Value7 -> Api.OtherTest.Value6 -> Api.OtherTest.Value4 -> Api.OtherTest.Value3' at e3042:20:5");
     ASSERT_EQ(messages[5], "error [E3041]: Failed to calculate the constant 'Api.OtherTest.Value4' at e3042:21:5");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto enums = getChilds(ast, api, IDL_AST_NODE_TYPE_ENUM);
+    ASSERT_EQ(enums.size(), 2);
+    auto test      = enums[0];
+    auto otherTest = enums[1];
+
+    auto testConsts = getChilds(ast, test, IDL_AST_NODE_TYPE_CONST);
+    ASSERT_EQ(testConsts.size(), 5);
+    ASSERT_TRUE(checkConst(ast, testConsts[0], 0, false, true, true));
+    ASSERT_TRUE(checkConst(ast, testConsts[1], 2, false, false, false));
+    ASSERT_TRUE(checkConst(ast, testConsts[2], 0, false, true, false));
+    ASSERT_TRUE(checkConst(ast, testConsts[3], 2, false, true, false));
+    ASSERT_TRUE(checkConst(ast, testConsts[4], 0, false, true, false));
+
+    auto otherTestConsts = getChilds(ast, otherTest, IDL_AST_NODE_TYPE_CONST);
+    ASSERT_EQ(otherTestConsts.size(), 8);
+    ASSERT_TRUE(checkConst(ast, otherTestConsts[0], 0, true, false, false));
+    ASSERT_TRUE(checkConst(ast, otherTestConsts[1], 2, false, false, false));
+    ASSERT_TRUE(checkConst(ast, otherTestConsts[2], 0, false, true, true));
+    ASSERT_TRUE(checkConst(ast, otherTestConsts[3], 0, true, true, false));
+    ASSERT_TRUE(checkConst(ast, otherTestConsts[4], 0, true, true, false));
+    ASSERT_TRUE(checkConst(ast, otherTestConsts[5], 0, false, true, false));
+    ASSERT_TRUE(checkConst(ast, otherTestConsts[6], 0, true, true, false));
+    ASSERT_TRUE(checkConst(ast, otherTestConsts[7], 0, true, true, false));
 }
 
 TEST(idlc, TypeAttrMustContainOnlyOneType) {
@@ -857,6 +1095,21 @@ TEST(idlc, TypeAttrMustContainOnlyOneType) {
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "error [E3043]: The [type] attribute must contain only one type at e3043:9:12");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto test = findChild(ast, api, IDL_AST_NODE_TYPE_ENUM);
+    ASSERT_NE(test, HandleNone);
+
+    auto attrType = findChild(ast, test, IDL_AST_NODE_TYPE_ATTR_TYPE);
+    ASSERT_NE(test, HandleNone);
+
+    auto declRef = findChild(ast, attrType, IDL_AST_NODE_TYPE_DECL_REF);
+    ASSERT_NE(declRef, HandleNone);
+
+    auto decl = getDeclRef(ast, declRef);
+    ASSERT_EQ(decl, HandleNone);
 }
 
 TEST(idlc, EnumCanOnlyOfIntsType) {
@@ -865,6 +1118,23 @@ TEST(idlc, EnumCanOnlyOfIntsType) {
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "error [E3044]: Enumeration 'Api.Test' can only of integers type at e3044:9:1");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto test = findChild(ast, api, IDL_AST_NODE_TYPE_ENUM);
+    ASSERT_NE(test, HandleNone);
+
+    auto attrType = findChild(ast, test, IDL_AST_NODE_TYPE_ATTR_TYPE);
+    ASSERT_NE(test, HandleNone);
+
+    auto declRef = findChild(ast, attrType, IDL_AST_NODE_TYPE_DECL_REF);
+    ASSERT_NE(declRef, HandleNone);
+
+    auto type = getDeclRef(ast, declRef);
+    ASSERT_NE(type, HandleNone);
+    ASSERT_TRUE(isType(ast, type, IDL_AST_NODE_TYPE_FLOAT_TYPE));
+    ASSERT_FALSE(isType(ast, type, IDL_AST_NODE_TYPE_INTEGER_TYPE));
 }
 
 TEST(idlc, EnumMustContainAtLeastOneConst) {
@@ -873,6 +1143,15 @@ TEST(idlc, EnumMustContainAtLeastOneConst) {
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "error [E3045]: Enumeration 'Api.Test' must contain at least one constant at e3045:9:1");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto test = findChild(ast, api, IDL_AST_NODE_TYPE_ENUM);
+    ASSERT_NE(test, HandleNone);
+
+    auto consts = getChilds(ast, test, IDL_AST_NODE_TYPE_CONST);
+    ASSERT_TRUE(consts.empty());
 }
 
 TEST(idlc, ResultCode) {

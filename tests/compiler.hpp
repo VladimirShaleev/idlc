@@ -56,4 +56,6 @@ enum AttrFilter {
 
 [[nodiscard]] uint64_t getInt(idl_compilation_result_t result, idl_ast_node_h node);
 
+[[nodiscard]] idl_ast_node_h getDeclRef(idl_compilation_result_t result, idl_ast_node_h node);
+
 #endif

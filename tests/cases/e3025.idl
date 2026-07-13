@@ -7,4 +7,4 @@ api Api
 
 @ Brief
 enum Test @ Detail
-    const Value [value(fail)] @ Empty value
+    const Value [value(fail)] @ Invalid value

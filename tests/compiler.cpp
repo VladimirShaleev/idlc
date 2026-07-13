@@ -214,3 +214,7 @@ std::string getStr(idl_compilation_result_t result, idl_ast_node_h node) {
 uint64_t getInt(idl_compilation_result_t result, idl_ast_node_h node) {
     return idl_compilation_result_get_node_value_int(result, node);
 }
+
+idl_ast_node_h getDeclRef(idl_compilation_result_t result, idl_ast_node_h node) {
+    return idl_compilation_result_get_node_value_decl_ref(result, node);
+}

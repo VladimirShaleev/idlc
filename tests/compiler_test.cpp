@@ -180,6 +180,56 @@ TEST(idlc, IntegerOutOfRange) {
     ASSERT_EQ(messages[0], "warning [W2004]: Integer Int8 with value 128 out of range [-128, 127] at w2004:19:5");
     ASSERT_EQ(messages[1], "warning [W2004]: Integer Int8 with value -130 out of range [-128, 127] at w2004:20:20");
     ASSERT_EQ(messages[2], "warning [W2004]: Integer Int8 with value 367 out of range [-128, 127] at w2004:22:20");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto enums = getChilds(ast, api, IDL_AST_NODE_TYPE_ENUM);
+    ASSERT_EQ(enums.size(), 2);
+
+    auto firstConsts = getChilds(ast, enums[0], IDL_AST_NODE_TYPE_CONST);
+    ASSERT_EQ(firstConsts.size(), 3);
+    ASSERT_TRUE(checkConst(ast, firstConsts[0], 100, false, false, false));
+    ASSERT_TRUE(checkConst(ast, firstConsts[1], 300, false, false, false));
+    ASSERT_TRUE(checkConst(ast, firstConsts[2], 367, false, false, false));
+
+    auto secondConsts = getChilds(ast, enums[1], IDL_AST_NODE_TYPE_CONST);
+    ASSERT_EQ(secondConsts.size(), 5);
+    ASSERT_TRUE(checkConst(ast, secondConsts[0], 127, false, false, false));
+    ASSERT_TRUE(checkConst(ast, secondConsts[1], 128, true, false, false));
+    ASSERT_TRUE(checkConst(ast, secondConsts[2], uint64_t(-130), false, false, false));
+    ASSERT_TRUE(checkConst(ast, secondConsts[3], 5, false, false, false));
+    ASSERT_TRUE(checkConst(ast, secondConsts[4], 367, false, false, false));
+}
+
+TEST(idlc, IntegerOutOfRangeWarnAsErrors) {
+    const auto [result, ast, messages] = compile("w2004.idl", true);
+    deferred(idl_compilation_result_destroy(ast));
+    ASSERT_EQ(result, IDL_RESULT_SUCCESS);
+    ASSERT_EQ(messages.size(), 3);
+    ASSERT_EQ(messages[0], "error [W2004]: Integer Int8 with value 128 out of range [-128, 127] at w2004:19:5");
+    ASSERT_EQ(messages[1], "error [W2004]: Integer Int8 with value -130 out of range [-128, 127] at w2004:20:20");
+    ASSERT_EQ(messages[2], "error [W2004]: Integer Int8 with value 367 out of range [-128, 127] at w2004:22:20");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto enums = getChilds(ast, api, IDL_AST_NODE_TYPE_ENUM);
+    ASSERT_EQ(enums.size(), 2);
+
+    auto firstConsts = getChilds(ast, enums[0], IDL_AST_NODE_TYPE_CONST);
+    ASSERT_EQ(firstConsts.size(), 3);
+    ASSERT_TRUE(checkConst(ast, firstConsts[0], 100, false, false, false));
+    ASSERT_TRUE(checkConst(ast, firstConsts[1], 300, false, false, false));
+    ASSERT_TRUE(checkConst(ast, firstConsts[2], 367, false, false, false));
+
+    auto secondConsts = getChilds(ast, enums[1], IDL_AST_NODE_TYPE_CONST);
+    ASSERT_EQ(secondConsts.size(), 5);
+    ASSERT_TRUE(checkConst(ast, secondConsts[0], 127, false, false, false));
+    ASSERT_TRUE(checkConst(ast, secondConsts[1], 128, true, true, false));
+    ASSERT_TRUE(checkConst(ast, secondConsts[2], uint64_t(-130), false, true, false));
+    ASSERT_TRUE(checkConst(ast, secondConsts[3], 5, false, false, false));
+    ASSERT_TRUE(checkConst(ast, secondConsts[4], 367, false, true, false));
 }
 
 TEST(idlc, SyntaxError) {
@@ -188,6 +238,9 @@ TEST(idlc, SyntaxError) {
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "error [E3001]: Syntax error at e3001:6:5");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_EQ(api, HandleNone);
 }
 
 TEST(idlc, ArgumentParsingError) {
@@ -199,6 +252,15 @@ TEST(idlc, ArgumentParsingError) {
     ASSERT_EQ(messages[1],
               "error [E3003]: The [version] attribute must have three required integer parameters, such as version(1, "
               "2, 3) or version(\"string\") at e3002:6:10");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto version = findChild(ast, api, IDL_AST_NODE_TYPE_ATTR_VERSION);
+    ASSERT_NE(version, HandleNone);
+
+    auto args = getChilds(ast, version);
+    ASSERT_EQ(args.size(), 0);
 }
 
 TEST(idlc, VersionAttrRequiredParams) {
@@ -209,6 +271,15 @@ TEST(idlc, VersionAttrRequiredParams) {
     ASSERT_EQ(messages[0],
               "error [E3003]: The [version] attribute must have three required integer parameters, such as version(1, "
               "2, 3) or version(\"string\") at e3003:6:10");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto version = findChild(ast, api, IDL_AST_NODE_TYPE_ATTR_VERSION);
+    ASSERT_NE(version, HandleNone);
+
+    auto args = getChilds(ast, version);
+    ASSERT_EQ(args.size(), 0);
 }
 
 TEST(idlc, VersionComponentRange) {
@@ -222,6 +293,15 @@ TEST(idlc, VersionComponentRange) {
               "error [E3004]: Version values must be between 0 and 255, while the argument is 256 at e3004:6:10");
     ASSERT_EQ(messages[2],
               "error [E3004]: Version values must be between 0 and 255, while the argument is 1000 at e3004:6:10");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto version = findChild(ast, api, IDL_AST_NODE_TYPE_ATTR_VERSION);
+    ASSERT_NE(version, HandleNone);
+
+    auto args = getChilds(ast, version);
+    ASSERT_EQ(args.size(), 0);
 }
 
 TEST(idlc, InvalidAttrForDeclaration) {
@@ -235,6 +315,19 @@ TEST(idlc, InvalidAttrForDeclaration) {
     ASSERT_EQ(messages[1],
               "error [E3005]: Invalid attribute [hex] for api 'Api' declaration, allowed attributes are cname, "
               "tokenizer, order, single, version, brief, detail, author, copyright, license at e3005:6:17");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto attrs = getAttrs(ast, api);
+    ASSERT_EQ(attrs.size(), 7);
+    ASSERT_TRUE(isType(ast, attrs[0], IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF));
+    ASSERT_TRUE(isType(ast, attrs[1], IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL));
+    ASSERT_TRUE(isType(ast, attrs[2], IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT));
+    ASSERT_TRUE(isType(ast, attrs[3], IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE));
+    ASSERT_TRUE(isType(ast, attrs[4], IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR));
+    ASSERT_TRUE(isType(ast, attrs[5], IDL_AST_NODE_TYPE_ATTR_FLAGS));
+    ASSERT_TRUE(isType(ast, attrs[6], IDL_AST_NODE_TYPE_ATTR_HEX));
 }
 
 TEST(idlc, AttrNotAllowedForDeclaration) {
@@ -249,6 +342,20 @@ TEST(idlc, AttributeDuplication) {
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "error [E3007]: Attribute duplication for attribute [version] in api 'Api' at e3007:6:28");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto attrs = getAttrs(ast, api);
+    ASSERT_EQ(attrs.size(), 7);
+    ASSERT_TRUE(isType(ast, attrs[0], IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF));
+    ASSERT_TRUE(isType(ast, attrs[1], IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL));
+    ASSERT_TRUE(isType(ast, attrs[2], IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT));
+    ASSERT_TRUE(isType(ast, attrs[3], IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE));
+    ASSERT_TRUE(isType(ast, attrs[4], IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR));
+    ASSERT_TRUE(isType(ast, attrs[5], IDL_AST_NODE_TYPE_ATTR_VERSION));
+    ASSERT_TRUE(isType(ast, attrs[6], IDL_AST_NODE_TYPE_ATTR_VERSION));
+    ASSERT_NE(attrs[5], attrs[6]);
 }
 
 TEST(idlc, AttributeMustNotHaveArguments) {
@@ -257,6 +364,18 @@ TEST(idlc, AttributeMustNotHaveArguments) {
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "error [E3008]: The attribute [hex] must not have arguments at e3008:10:12");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto test = findChild(ast, api, IDL_AST_NODE_TYPE_ENUM);
+    ASSERT_NE(test, HandleNone);
+
+    auto hex = findChild(ast, test, IDL_AST_NODE_TYPE_ATTR_HEX);
+    ASSERT_NE(hex, HandleNone);
+
+    auto hexArgs = getChilds(ast, hex);
+    ASSERT_TRUE(hexArgs.empty());
 }
 
 TEST(idlc, StringClosingCharacter) {
@@ -268,6 +387,9 @@ TEST(idlc, StringClosingCharacter) {
         messages[0],
         "error [E3009]: String closing character not found in string: \"Lost closing character)])] at e3009:5:17");
     ASSERT_EQ(messages[1], "error [E3001]: Syntax error at e3009:5:45");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_EQ(api, HandleNone);
 }
 
 TEST(idlc, ApiRedeclaration) {
@@ -276,6 +398,13 @@ TEST(idlc, ApiRedeclaration) {
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "error [E3010]: API Redeclaration 'Other' at e3010:17:1");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+    ASSERT_EQ(getStr(ast, api), "Api");
+
+    auto other = findChild(ast, api, IDL_AST_NODE_TYPE_API);
+    ASSERT_EQ(other, HandleNone);
 }
 
 TEST(idlc, FirstDeclaration) {
@@ -285,6 +414,12 @@ TEST(idlc, FirstDeclaration) {
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0],
               "error [E3011]: The first declaration in the description should always begin with the 'api' declaration");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto test = findChild(ast, api, IDL_AST_NODE_TYPE_ENUM);
+    ASSERT_EQ(test, HandleNone);
 }
 
 TEST(idlc, SymbolRedefinition) {
@@ -294,6 +429,19 @@ TEST(idlc, SymbolRedefinition) {
     ASSERT_EQ(messages.size(), 2);
     ASSERT_EQ(messages[0], "error [E3012]: Symbol redefinition 'Api.Test.Value' at e3012:16:5");
     ASSERT_EQ(messages[1], "error [E3012]: Symbol redefinition 'Api.Test.TeSt' at e3012:17:5");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto test = getChilds(ast, api, IDL_AST_NODE_TYPE_ENUM).back();
+    ASSERT_NE(test, HandleNone);
+
+    auto consts = getChilds(ast, test, IDL_AST_NODE_TYPE_CONST);
+    ASSERT_EQ(consts.size(), 4);
+    ASSERT_FALSE(hasAllState(ast, consts[0], IDL_AST_NODE_STATE_EVAULATED_BIT));
+    ASSERT_FALSE(hasAllState(ast, consts[1], IDL_AST_NODE_STATE_EVAULATED_BIT));
+    ASSERT_FALSE(hasAllState(ast, consts[2], IDL_AST_NODE_STATE_EVAULATED_BIT));
+    ASSERT_FALSE(hasAllState(ast, consts[3], IDL_AST_NODE_STATE_EVAULATED_BIT));
 }
 
 TEST(idlc, UnknownAttribute) {
@@ -304,6 +452,18 @@ TEST(idlc, UnknownAttribute) {
     ASSERT_EQ(messages[0], "error [E3013]: Unknown attribute [abcd] at e3013:6:13");
     ASSERT_EQ(messages[1], "error [E3013]: Unknown attribute [invalidattr] at e3013:7:31");
     ASSERT_EQ(messages[2], "error [E3013]: Unknown attribute [xyz] at e3013:7:69");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto attrs = getAttrs(ast, api);
+    ASSERT_EQ(attrs.size(), 6);
+    ASSERT_TRUE(isType(ast, attrs[0], IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF));
+    ASSERT_TRUE(isType(ast, attrs[1], IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL));
+    ASSERT_TRUE(isType(ast, attrs[2], IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT));
+    ASSERT_TRUE(isType(ast, attrs[3], IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE));
+    ASSERT_TRUE(isType(ast, attrs[4], IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR));
+    ASSERT_TRUE(isType(ast, attrs[5], IDL_AST_NODE_TYPE_ATTR_VERSION));
 }
 
 TEST(idlc, BriefAttrMustContainOneOrMoreArgs) {
@@ -312,6 +472,20 @@ TEST(idlc, BriefAttrMustContainOneOrMoreArgs) {
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "error [E3014]: The [brief] attribute must contain one or more arguments at e3014:5:10");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto attrs = getAttrs(ast, api);
+    ASSERT_EQ(attrs.size(), 5);
+    ASSERT_TRUE(isType(ast, attrs[0], IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL));
+    ASSERT_TRUE(isType(ast, attrs[1], IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT));
+    ASSERT_TRUE(isType(ast, attrs[2], IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE));
+    ASSERT_TRUE(isType(ast, attrs[3], IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR));
+    ASSERT_TRUE(isType(ast, attrs[4], IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF));
+
+    auto args = getChilds(ast, attrs[4]);
+    ASSERT_TRUE(args.empty());
 }
 
 TEST(idlc, UnknownAttributeInDoc) {
@@ -330,6 +504,28 @@ TEST(idlc, UnknownAttributeInDoc) {
     ASSERT_EQ(messages[6],
               "error [E3005]: Invalid attribute [hex] for api 'Api' declaration, allowed attributes are cname, "
               "tokenizer, order, single, version, brief, detail, author, copyright, license at e3015:7:39");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto attrs = getAttrs(ast, api);
+    ASSERT_EQ(attrs.size(), 7);
+    ASSERT_TRUE(isType(ast, attrs[0], IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF));
+    ASSERT_TRUE(isType(ast, attrs[1], IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL));
+    ASSERT_TRUE(isType(ast, attrs[2], IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT));
+    ASSERT_TRUE(isType(ast, attrs[3], IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE));
+    ASSERT_TRUE(isType(ast, attrs[4], IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR));
+    ASSERT_TRUE(isType(ast, attrs[5], IDL_AST_NODE_TYPE_ATTR_FLAGS));
+    ASSERT_TRUE(isType(ast, attrs[6], IDL_AST_NODE_TYPE_ATTR_HEX));
+
+    auto briefArgs = getChilds(ast, attrs[0]);
+    ASSERT_FALSE(briefArgs.empty());
+
+    auto flagsArgs = getChilds(ast, attrs[5]);
+    ASSERT_TRUE(flagsArgs.empty());
+
+    auto hexArgs = getChilds(ast, attrs[6]);
+    ASSERT_TRUE(hexArgs.empty());
 }
 
 TEST(idlc, DocumentationStringEmpty) {

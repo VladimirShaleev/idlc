@@ -205,6 +205,52 @@ idl_options_set_warnings_as_errors(idl_options_t options,
                                    idl_bool_t enable);
 
 /**
+ * @brief     Get indents setting.
+ * @details   Return space count for generators.
+ * @param[in] options Target options.
+ * @return    Indents.
+ * @sa        ::idl_options_set_indents
+ * @ingroup   functions
+ */
+idl_api idl_uint32_t
+idl_options_get_indents(idl_options_t options);
+
+/**
+ * @brief     Set indents setting.
+ * @details   Setting space count for generators.
+ * @param[in] options Target options.
+ * @param[in] indents Indent count.
+ * @sa        ::idl_options_get_indents
+ * @ingroup   functions
+ */
+idl_api void
+idl_options_set_indents(idl_options_t options,
+                        idl_uint32_t indents);
+
+/**
+ * @brief     Get line length.
+ * @details   Return maximum line length for generators.
+ * @param[in] options Target options.
+ * @return    Maximum length.
+ * @sa        ::idl_options_set_line_length
+ * @ingroup   functions
+ */
+idl_api idl_uint32_t
+idl_options_get_line_length(idl_options_t options);
+
+/**
+ * @brief     Set line length.
+ * @details   Setting maximum line length for generators.
+ * @param[in] options Target options.
+ * @param[in] length Maximum line length.
+ * @sa        ::idl_options_get_line_length
+ * @ingroup   functions
+ */
+idl_api void
+idl_options_set_line_length(idl_options_t options,
+                            idl_uint32_t length);
+
+/**
  * @brief     Get output directory.
  * @details   Returns the path that the compiler will use to save compilation output.
  * @param[in] options Target options.

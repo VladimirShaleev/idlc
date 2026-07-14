@@ -63,6 +63,8 @@ callback WriteCallback
 interface Options
     prop DebugMode [get(GetDebugMode),set(SetDebugMode)] @ Setting debug compilation output to console.
     prop WarningsAsErrors [get(GetWarningsAsErrors),set(SetWarningsAsErrors)] @ Treat warnings as errors.
+    prop Indents [get(GetIndents),set(SetIndents)] @ Setting indent count.
+    prop LineLength [get(GetLineLength),set(SetLineLength)] @ Setting maximum line length.
     prop OutputDir [get(GetOutputDir),set(SetOutputDir)] @ Output directory of the compilation result.
     prop ImportDirs [get(GetImportDirs),set(SetImportDirs)] @ Directories to search for files when importing.
     prop BoolType [get(GetBoolType),set(SetBoolType)] @ Setting bool type representation.
@@ -119,6 +121,34 @@ interface Options
     method SetWarningsAsErrors
         arg Options {Options} [this] @ Target options.
         arg Enable {Bool} @ Enable treat warnings as errors.
+
+    @ Get indents setting.
+    @ Return space count for generators. [detail]
+    @ Indents. [return]
+    @ {SetIndents} [see]
+    method GetIndents {Uint32} [const]
+        arg Options {Options} [this] @ Target options.
+
+    @ Set indents setting.
+    @ Setting space count for generators. [detail]
+    @ {GetIndents} [see]
+    method SetIndents
+        arg Options {Options} [this] @ Target options.
+        arg Indents {Uint32} @ Indent count.
+
+    @ Get line length.
+    @ Return maximum line length for generators. [detail]
+    @ Maximum length. [return]
+    @ {SetLineLength} [see]
+    method GetLineLength {Uint32} [const]
+        arg Options {Options} [this] @ Target options.
+
+    @ Set line length.
+    @ Setting maximum line length for generators. [detail]
+    @ {GetLineLength} [see]
+    method SetLineLength
+        arg Options {Options} [this] @ Target options.
+        arg Length {Uint32} @ Maximum line length.
 
     @ Get output directory.
     @ Returns the path that the compiler will use to save compilation output. [detail]

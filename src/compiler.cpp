@@ -201,6 +201,26 @@ void idl_options_set_warnings_as_errors(idl_options_t options, idl_bool_t enable
     options->as<idl::Options>()->setWarningsAsErrors(enable);
 }
 
+idl_uint32_t idl_options_get_indents(idl_options_t options) {
+    assert(options);
+    return options->as<idl::Options>()->getIndents();
+}
+
+void idl_options_set_indents(idl_options_t options, idl_uint32_t indents) {
+    assert(options);
+    options->as<idl::Options>()->setIndents(indents);
+}
+
+idl_uint32_t idl_options_get_line_length(idl_options_t options) {
+    assert(options);
+    return options->as<idl::Options>()->getLineLength();
+}
+
+void idl_options_set_line_length(idl_options_t options, idl_uint32_t length) {
+     assert(options);
+    options->as<idl::Options>()->setLineLength(length);
+}
+
 idl_utf8_t idl_options_get_output_dir(idl_options_t options) {
     assert(options);
     return options->as<idl::Options>()->getOutputDir();

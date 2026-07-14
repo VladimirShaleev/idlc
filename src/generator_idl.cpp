@@ -163,6 +163,8 @@ struct ASTVisitor {
     struct State {
         Writer& writer;
         bool origin;
+        uint32_t indents;
+        uint32_t lineLength;
         std::stack<File> files;
     };
 
@@ -184,20 +186,20 @@ struct ASTVisitor {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_CONST>) {
-        printDecl(node, 4, true);
+        printDecl(node, 1, true);
     }
 
     template <ASTNodeType Type>
     void visit(ASTNodeRef&, Tag<Type>) noexcept {
     }
 
-    void printDecl(ASTNodeRef& node, int indent, bool hasIDoc) {
+    void printDecl(ASTNodeRef& node, int level, bool hasIDoc) {
         popImport(node);
         for (int i = 0; i < newLines() - (hasIDoc ? 1 : 0); ++i) {
             fmt::print(out(), "\n");
         }
-        printDoc(node, indent, hasIDoc);
-        fmt::print(out(), "{:{}}{} {}", "", indent, token(node), node.name());
+        printDoc(node, level, hasIDoc);
+        fmt::print(out(), "{:{}}{} {}", "", state.indents * level, token(node), node.name());
         printType(node);
         printValue(node);
         printAttrs(node);
@@ -247,7 +249,7 @@ struct ASTVisitor {
         }
     }
 
-    void printDoc(ASTNodeRef& node, int indent, bool hasIDoc) {
+    void printDoc(ASTNodeRef& node, int level, bool hasIDoc) {
         auto docs = node.attrs() | std::views::filter([hasIDoc](const auto& attr) {
             if (hasIDoc && attr.is<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>()) {
                 return false;
@@ -261,7 +263,7 @@ struct ASTVisitor {
         sortedDocs.assign(docs.begin(), docs.end());
         std::ranges::sort(sortedDocs, {}, &std::pair<int, ASTNodeRef>::first);
         for (auto [_, doc] : sortedDocs) {
-            fmt::print(out(), "{:{}}", "", indent);
+            fmt::print(out(), "{:{}}", "", state.indents * level);
             printDocMessage(doc, !doc.is<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>());
             fmt::print(out(), "\n");
         }
@@ -332,14 +334,18 @@ struct ASTVisitor {
 void generate(Writer& writer) {
     auto origin  = false;
     auto filters = ASTNodeRef::SkipDocs | ASTNodeRef::SkipAttrs | ASTNodeRef::SkipLiterals | ASTNodeRef::SkipTrivials;
+    uint32_t indents    = 4;
+    uint32_t lineLength = 120;
     if (auto options = writer.options()) {
+        indents         = options->getIndents();
+        lineLength      = options->getLineLength();
         auto idlOptions = options->getIdlOptions();
         if (idlOptions.prefered_original_style) {
             filters |= ASTNodeRef::OriginalIdl;
             origin = true;
         }
     }
-    ASTVisitor::State state{ writer, origin };
+    ASTVisitor::State state{ writer, origin, indents, lineLength };
     writer.api().acceptRecursive<ASTVisitor>(filters, state);
     fmt::print(state.files.top().output.stream(), "\n");
 }

@@ -29,6 +29,22 @@ public:
         _warningsAsErrors = enable;
     }
 
+    idl_uint32_t getIndents() const noexcept {
+        return _indents;
+    }
+
+    void setIndents(idl_uint32_t indents) noexcept {
+        _indents = std::min(indents, idl_uint32_t(64u));
+    }
+
+    idl_uint32_t getLineLength() const noexcept {
+        return _lineLength;
+    }
+
+    void setLineLength(idl_uint32_t length) noexcept {
+        _lineLength = std::clamp(length, idl_uint32_t(60u), idl_uint32_t(10000u));
+    }
+
     idl_utf8_t getOutputDir() const noexcept {
         return _outputDir.c_str();
     }
@@ -126,6 +142,8 @@ public:
 private:
     bool _debugMode{};
     bool _warningsAsErrors{};
+    uint32_t _indents{ 4 };
+    uint32_t _lineLength{ 120 };
     std::string _outputDir{};
     std::vector<std::string> _importDirs{};
     std::vector<std::string> _additions{};

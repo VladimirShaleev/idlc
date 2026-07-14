@@ -102,6 +102,7 @@
 %token <double>      FLOAT
 %token <bool>        BOOL
 %token <std::string> STR
+%token <std::string> INVALID_ID
 %token <std::string> INVALID_ARG
 %token <std::string> INVALID_ATTR
 
@@ -166,7 +167,9 @@ def_with_value
 
 def
     : decl ID { node($1)->valueStr = intern($2); $$ = $1; }
+    | decl INVALID_ID { node($1)->valueStr = intern($2); $$ = $1; log(E3047, @2, $2); }
     | doc_list decl ID { node($2)->valueStr = intern($3); $$ = $2; add_child($$, $1.first); }
+    | doc_list decl INVALID_ID { node($2)->valueStr = intern($3); $$ = $2; add_child($$, $1.first); log(E3047, @3, $3); }
     ;
 
 doc

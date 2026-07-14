@@ -34,7 +34,7 @@ public:
         return _out->dir;
     }
 
-    [[nodiscard]] const std::string& filename() const noexcept {
+    [[nodiscard]] const std::filesystem::path& filename() const noexcept {
         return _out->filename;
     }
 
@@ -45,7 +45,7 @@ private:
         OutputImpl(Options* options,
                    ASTNodeRef api,
                    const std::filesystem::path& dir,
-                   const std::string& filename,
+                   const std::filesystem::path& filename,
                    idl_write_callback_t writer,
                    idl_data_t writerData) noexcept :
             options(options),
@@ -72,7 +72,8 @@ private:
             if (stream && writer) {
                 try {
                     const auto data = sstream->str();
-                    idl_source_t source{ filename.c_str(), data.c_str(), (idl_uint32_t) data.length() };
+                    const auto name = filename.string();
+                    idl_source_t source{ name.c_str(), data.c_str(), (idl_uint32_t) data.length() };
                     writer(&source, writerData);
                 } catch (const std::bad_alloc) {
                     // result->addMessage();
@@ -85,7 +86,7 @@ private:
         Options* options{};
         ASTNodeRef api{};
         std::filesystem::path dir{};
-        std::string filename{};
+        std::filesystem::path filename{};
         idl_write_callback_t writer{};
         idl_data_t writerData{};
         std::unique_ptr<std::ofstream> fstream{};
@@ -96,7 +97,7 @@ private:
     Output(Options* options,
            ASTNodeRef api,
            const std::filesystem::path& dir,
-           const std::string& filename,
+           const std::filesystem::path& filename,
            idl_write_callback_t writer,
            idl_data_t writerData) noexcept :
         _out(std::make_shared<OutputImpl>(options, api, dir, filename, writer, writerData)) {
@@ -115,8 +116,12 @@ public:
         }
     }
 
-    [[nodiscard]] Output createOutput(const std::string& filename) noexcept {
+    [[nodiscard]] Output createOutput(const std::filesystem::path& filename) noexcept {
         return Output(_options, _api, _out, filename, _writer, _writerData);
+    }
+
+    [[nodiscard]] ASTNodeRef api() const noexcept {
+        return _api;
     }
 
     [[nodiscard]] CompilationResultBase* result() noexcept {

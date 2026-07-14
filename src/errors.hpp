@@ -125,6 +125,8 @@ inline std::string err(Args&&... args) {
         str = fmt::format("Enumeration '{}' must contain at least one constant", args...);
     } else if constexpr (Status == IDL_STATUS_E3046) {
         str = fmt::format("Unknown error");
+    } else if constexpr (Status == IDL_STATUS_E3047) {
+        str = fmt::format("The name or type must start with a capital letter '{}'", args...);
     } else {
         assert(!"Unknown status code");
     }

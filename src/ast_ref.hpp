@@ -185,19 +185,7 @@ public:
 
     [[nodiscard]] auto getChilds(bool originalNodes = false) const noexcept {
         return *this | std::views::filter([originalNodes](const auto& child) {
-            if (child.changedByCompiler()) {
-                if (child.replacedByCompiler() && originalNodes) {
-                    return true;
-                }
-                if (child.addedByCompiler() && !originalNodes) {
-                    return true;
-                }
-                return false;
-            }
-            if (child.is<IDL_AST_NODE_TYPE_DECL_PREV_SIBLING_REF>()) {
-                return false;
-            }
-            return true;
+            return child.isSaveNode(originalNodes);
         });
     }
 
@@ -218,11 +206,11 @@ public:
     }
 
     template <ASTNodeType Type>
-    [[nodiscard]] ASTNodeRef findChild() const noexcept {
+    [[nodiscard]] ASTNodeRef findChild(bool originalNode = false) const noexcept {
         auto view = *this | std::views::all;
 
-        auto it = std::ranges::find_if(view, [](const auto& child) {
-            return child.is<Type>();
+        auto it = std::ranges::find_if(view, [originalNode](const auto& child) {
+            return child.isSaveNode(originalNode) && child.is<Type>();
         });
 
         return it != view.end() ? *it : ASTNodeRef(*_ctx);
@@ -543,6 +531,19 @@ public:
     }
 
 private:
+    bool isSaveNode(bool originalNode) const noexcept {
+        if (changedByCompiler()) {
+            if (replacedByCompiler() && originalNode) {
+                return true;
+            }
+            if (addedByCompiler() && !originalNode) {
+                return true;
+            }
+            return false;
+        }
+        return true;
+    }
+
     Context* _ctx{};
     ASTNodeHandle _handle{ HandleNone };
     ASTNode* _node{};

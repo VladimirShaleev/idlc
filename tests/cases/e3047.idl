@@ -1,0 +1,18 @@
+@ Brief
+@ Detail [detail]
+@ Copyright [copyright]
+@ License [license]
+@ Author [author]
+api Api
+
+@ Brief
+enum tEst @ Detail
+    const Value @ Detial
+
+@ Brief
+enum OK @ Detail
+    const fail @ Detial
+
+@ Brief
+enum 0Other @ Detail
+    const Value @ Detial

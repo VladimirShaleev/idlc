@@ -113,17 +113,17 @@ import[ ]+ { BEGIN(IMPORTCTX); }
 
 <*>[A-Z][a-zA-Z0-9]*   { yylval->emplace<std::string>(YYText()); return token::ID; }
 <*>[A-Z][a-zA-Z0-9\.]* { yylval->emplace<std::string>(YYText()); return token::REF; }
-<*>\"(\\.|[^\\"\n])*\" { std::string str = YYText(); str = str.substr(1, str.length() - 2); yylval->emplace<std::string>(str); return token::STR; }
-<*>\"(\\.|[^\\"\n])*   { std::string str = YYText(); log(E3009, str.substr(0, str.length() - 1)); }
+<*>true|false          { yylval->emplace<bool>(YYText()[0] == 't'); return token::BOOL; }
 <*>{FLOAT}             { yylval->emplace<double>(std::stof(YYText())); return token::FLOAT; }
 <*>{INT}               { yylval->emplace<int64_t>(std::stoll(YYText())); return token::INT; }
-<*>true|false          { yylval->emplace<bool>(YYText()[0] == 't'); return token::BOOL; }
+<*>{SYMBOL}+           { yylval->emplace<std::string>(YYText()); return token::INVALID_ID; }
+<*>\"(\\.|[^\\"\n])*\" { std::string str = YYText(); str = str.substr(1, str.length() - 2); yylval->emplace<std::string>(str); return token::STR; }
+<*>\"(\\.|[^\\"\n])*   { std::string str = YYText(); log(E3009, str.substr(0, str.length() - 1)); }
 
 <*><<EOF>>                { setDeclaring(false); if (popImport()) { return token::POPIMPORT; } else { return token::YYEOF; } }
 <*>\r?\n                  { yylloc->lines(); setDeclaring(false); }
 <*>\t                     { log(E3020); }
 <*>" "                    { }
-<*>[A-Za-z0-9]+           { log(E3001, YYText()); }
 <*>.                      { log(E3001, YYText()); }
 
 %%

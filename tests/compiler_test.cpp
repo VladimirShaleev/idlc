@@ -1154,6 +1154,25 @@ TEST(idlc, EnumMustContainAtLeastOneConst) {
     ASSERT_TRUE(consts.empty());
 }
 
+TEST(idlc, NameOrTypeMustStartWithCapitalLetter) {
+    const auto [result, ast, messages] = compile("e3047");
+    deferred(idl_compilation_result_destroy(ast));
+    ASSERT_EQ(result, IDL_RESULT_SUCCESS);
+    ASSERT_EQ(messages.size(), 3);
+    ASSERT_EQ(messages[0], "error [E3047]: The name or type must start with a capital letter 'tEst' at e3047:9:6");
+    ASSERT_EQ(messages[1], "error [E3047]: The name or type must start with a capital letter 'fail' at e3047:14:11");
+    ASSERT_EQ(messages[2], "error [E3047]: The name or type must start with a capital letter '0Other' at e3047:17:6");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto enums = getChilds(ast, api, IDL_AST_NODE_TYPE_ENUM);
+    ASSERT_EQ(enums.size(), 3);
+    ASSERT_EQ(getStr(ast, enums[0]), "tEst");
+    ASSERT_EQ(getStr(ast, findChild(ast, enums[1], IDL_AST_NODE_TYPE_CONST)), "fail");
+    ASSERT_EQ(getStr(ast, enums[2]), "0Other");
+}
+
 TEST(idlc, ResultCode) {
     const auto [result, _, __] = compile("e3021nonexists", false, false);
     ASSERT_EQ(result, IDL_RESULT_ERROR_SOURCE_NOT_FOUND);

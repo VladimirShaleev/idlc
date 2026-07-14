@@ -69,6 +69,7 @@ enum Status
     const E3044 : 3044 [tokenizer(0)] @ Enumeration can only of integers type.
     const E3045 : 3045 [tokenizer(0)] @ Enumeration must contain at least one constant.
     const E3046 : 3046 [tokenizer(0)] @ Unknown error.
+    const E3047 : 3047 [tokenizer(0)] @ The name or type must start with a capital letter.
 
 @ Compilation message.
 @ Detailed description of warning or compilation error. [detail]

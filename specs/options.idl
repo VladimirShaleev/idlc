@@ -1,9 +1,17 @@
 @ Bool type.
 @ Boolean ABI represent type. [detail]
 enum BoolType
+    const Default @ Default type from .idl file.
     const Int32 @ 32 bits integer.
     const Int8 @ 8 bits integer.
     const StdBool @ 8 bit C *_Bool* type.
+
+@ Output format files.
+@ Output default, in single file or multi files. [detail]
+enum OutputFiles
+    const Default @ Default format from .idl file.
+    const Single @ Output in single file.
+    const Multi @ Output multi files.
 
 @ Source code.
 @ Used to provide source code in memory. [detail]
@@ -65,6 +73,7 @@ interface Options
     prop WarningsAsErrors [get(GetWarningsAsErrors),set(SetWarningsAsErrors)] @ Treat warnings as errors.
     prop Indents [get(GetIndents),set(SetIndents)] @ Setting indent count.
     prop LineLength [get(GetLineLength),set(SetLineLength)] @ Setting maximum line length.
+    prop OutputFiles [get(GetOutputFiles),set(SetOutputFiles)] @ Setting output format: default from .idl, single or multi files.
     prop OutputDir [get(GetOutputDir),set(SetOutputDir)] @ Output directory of the compilation result.
     prop ImportDirs [get(GetImportDirs),set(SetImportDirs)] @ Directories to search for files when importing.
     prop BoolType [get(GetBoolType),set(SetBoolType)] @ Setting bool type representation.
@@ -149,6 +158,20 @@ interface Options
     method SetLineLength
         arg Options {Options} [this] @ Target options.
         arg Length {Uint32} @ Maximum line length.
+
+    @ Get output format.
+    @ Return output format default, single or multi files. [detail]
+    @ Output format. [return]
+    @ {SetOutputFiles} [see]
+    method GetOutputFiles {OutputFiles} [const]
+        arg Options {Options} [this] @ Target options.
+
+    @ Set output format.
+    @ Set output default, single or multi files. [detail]
+    @ {GetOutputFiles} [see]
+    method SetOutputFiles
+        arg Options {Options} [this] @ Target options.
+        arg Output {OutputFiles} @ Output format.
 
     @ Get output directory.
     @ Returns the path that the compiler will use to save compilation output. [detail]

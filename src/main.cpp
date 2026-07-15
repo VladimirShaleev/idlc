@@ -20,6 +20,40 @@ void addGeneratorArg(argparse::ArgumentParser& program, const std::map<std::stri
     arg.help(help.str());
 }
 
+void addBoolType(argparse::ArgumentParser& program, const std::map<std::string, idl_bool_type_t>& types) {
+    auto& arg = program.add_argument("--bool");
+    std::ostringstream help;
+    help << "bool type (";
+    bool first = true;
+    for (auto& [type, _] : types) {
+        arg.add_choice(type);
+        if (!first) {
+            help << ", ";
+        }
+        first = false;
+        help << type;
+    }
+    help << ')';
+    arg.help(help.str());
+}
+
+void addOutputFiles(argparse::ArgumentParser& program, const std::map<std::string, idl_output_files_t>& formats) {
+    auto& arg = program.add_argument("--output-files");
+    std::ostringstream help;
+    help << "output files format (";
+    bool first = true;
+    for (auto& [fmt, _] : formats) {
+        arg.add_choice(fmt);
+        if (!first) {
+            help << ", ";
+        }
+        first = false;
+        help << fmt;
+    }
+    help << ')';
+    arg.help(help.str());
+}
+
 idl_generator_t getGeneratorArg(argparse::ArgumentParser& program,
                                 const std::map<std::string, idl_generator_t>& generators) {
     if (!program.is_used("--generator")) {
@@ -29,6 +63,24 @@ idl_generator_t getGeneratorArg(argparse::ArgumentParser& program,
     return generators.at(gen);
 }
 
+idl_bool_type_t getBoolTypesArg(argparse::ArgumentParser& program,
+                                const std::map<std::string, idl_bool_type_t>& types) {
+    if (!program.is_used("--bool")) {
+        return IDL_BOOL_TYPE_DEFAULT;
+    }
+    std::string type = program.get("--bool");
+    return types.at(type);
+}
+
+idl_output_files_t getOutputFilesArg(argparse::ArgumentParser& program,
+                                     const std::map<std::string, idl_output_files_t>& formats) {
+    if (!program.is_used("--output-files")) {
+        return IDL_OUTPUT_FILES_DEFAULT;
+    }
+    std::string fmt = program.get("--output-files");
+    return formats.at(fmt);
+}
+
 int main(int argc, char* argv[]) {
     auto warnAsErr = false;
     auto input     = std::filesystem::path();
@@ -36,12 +88,28 @@ int main(int argc, char* argv[]) {
     auto imports   = std::vector<std::string>();
     auto additions = std::vector<std::string>();
     std::string apiver;
+    uint32_t indents = 4;
+    uint32_t line    = 120;
+    bool idlOriginal;
 
     std::map<std::string, idl_generator_t> generators = {
         { "idl", IDL_GENERATOR_IDL         },
         { "c",   IDL_GENERATOR_C           },
         { "js",  IDL_GENERATOR_JAVA_SCRIPT },
         { "cs",  IDL_GENERATOR_CSHARP      }
+    };
+
+    std::map<std::string, idl_bool_type_t> boolTypes = {
+        { "default", IDL_BOOL_TYPE_DEFAULT  },
+        { "int32",   IDL_BOOL_TYPE_INT_32   },
+        { "int8",    IDL_BOOL_TYPE_INT_8    },
+        { "std",     IDL_BOOL_TYPE_STD_BOOL }
+    };
+
+    std::map<std::string, idl_output_files_t> formats = {
+        { "default", IDL_OUTPUT_FILES_DEFAULT },
+        { "single",  IDL_OUTPUT_FILES_SINGLE  },
+        { "multi",   IDL_OUTPUT_FILES_MULTI   }
     };
 
     argparse::ArgumentParser program("idlc", IDL_VERSION_STRING);
@@ -52,6 +120,11 @@ int main(int argc, char* argv[]) {
     program.add_argument("-a", "--additions").append().store_into(additions).help("additional inclusions");
     program.add_argument("-w", "--warnings").store_into(warnAsErr).help("warnings as errors");
     program.add_argument("--apiver").store_into(apiver).help("api version");
+    program.add_argument("--indents").store_into(indents).help("indents count");
+    program.add_argument("--line").store_into(line).help("max line length");
+    addBoolType(program, boolTypes);
+    addOutputFiles(program, formats);
+    program.add_argument("--idl-original").store_into(idlOriginal).help("prefered original style");
 
     try {
         program.parse_args(argc, argv);
@@ -79,9 +152,11 @@ int main(int argc, char* argv[]) {
             return EXIT_FAILURE;
         }
     }
-    idl_generator_t gen   = getGeneratorArg(program, generators);
-    std::string inputFile = input.string();
-    std::string outputDir = output.string();
+    idl_generator_t gen       = getGeneratorArg(program, generators);
+    idl_bool_type_t boolType  = getBoolTypesArg(program, boolTypes);
+    idl_output_files_t format = getOutputFilesArg(program, formats);
+    std::string inputFile     = input.string();
+    std::string outputDir     = output.string();
     std::vector<idl_utf8_t> dirs;
     std::vector<idl_utf8_t> adds;
     for (const auto& import : imports) {
@@ -97,13 +172,19 @@ int main(int argc, char* argv[]) {
         std::cerr << idl_result_to_string(code) << std::endl;
         return EXIT_FAILURE;
     }
+    idl_idl_options_t idlOptions{};
+    idlOptions.prefered_original_style = idlOriginal ? 1 : 0;
+
     idl_options_set_debug_mode(options, 0);
     idl_options_set_warnings_as_errors(options, warnAsErr ? 1 : 0);
     idl_options_set_output_dir(options, outputDir.c_str());
     idl_options_set_import_dirs(options, (idl_uint32_t) dirs.size(), dirs.data());
-    // idl_options_set_additions(options, (idl_uint32_t) adds.size(), adds.data());
     idl_options_set_version(options, version ? &version.value() : nullptr);
-
+    idl_options_set_indents(options, indents);
+    idl_options_set_line_length(options, line);
+    idl_options_set_output_files(options, format);
+    idl_options_set_bool_type(options, boolType);
+    idl_options_set_idl_options(options, &idlOptions);
     idl_compiler_t compiler{};
     idl_compiler_create(&compiler);
     if (code != IDL_RESULT_SUCCESS) {

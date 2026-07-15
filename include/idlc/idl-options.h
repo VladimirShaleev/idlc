@@ -20,11 +20,25 @@ IDL_BEGIN
  */
 typedef enum
 {
-    IDL_BOOL_TYPE_INT_32   = 0, /**< 32 bits integer. */
-    IDL_BOOL_TYPE_INT_8    = 1, /**< 8 bits integer. */
-    IDL_BOOL_TYPE_STD_BOOL = 2, /**< 8 bit C *_Bool* type. */
+    IDL_BOOL_TYPE_DEFAULT  = 0, /**< Default type from .idl file. */
+    IDL_BOOL_TYPE_INT_32   = 1, /**< 32 bits integer. */
+    IDL_BOOL_TYPE_INT_8    = 2, /**< 8 bits integer. */
+    IDL_BOOL_TYPE_STD_BOOL = 3, /**< 8 bit C *_Bool* type. */
     IDL_BOOL_TYPE_MAX_ENUM = 0x7FFFFFFF /**< Max value of enum (not used) */
 } idl_bool_type_t;
+
+/**
+ * @brief   Output format files.
+ * @details Output default, in single file or multi files.
+ * @ingroup enums
+ */
+typedef enum
+{
+    IDL_OUTPUT_FILES_DEFAULT  = 0, /**< Default format from .idl file. */
+    IDL_OUTPUT_FILES_SINGLE   = 1, /**< Output in single file. */
+    IDL_OUTPUT_FILES_MULTI    = 2, /**< Output multi files. */
+    IDL_OUTPUT_FILES_MAX_ENUM = 0x7FFFFFFF /**< Max value of enum (not used) */
+} idl_output_files_t;
 
 /**
  * @brief   Source code.
@@ -249,6 +263,29 @@ idl_options_get_line_length(idl_options_t options);
 idl_api void
 idl_options_set_line_length(idl_options_t options,
                             idl_uint32_t length);
+
+/**
+ * @brief     Get output format.
+ * @details   Return output format default, single or multi files.
+ * @param[in] options Target options.
+ * @return    Output format.
+ * @sa        ::idl_options_set_output_files
+ * @ingroup   functions
+ */
+idl_api idl_output_files_t
+idl_options_get_output_files(idl_options_t options);
+
+/**
+ * @brief     Set output format.
+ * @details   Set output default, single or multi files.
+ * @param[in] options Target options.
+ * @param[in] output Output format.
+ * @sa        ::idl_options_get_output_files
+ * @ingroup   functions
+ */
+idl_api void
+idl_options_set_output_files(idl_options_t options,
+                             idl_output_files_t output);
 
 /**
  * @brief     Get output directory.

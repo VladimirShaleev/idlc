@@ -45,6 +45,14 @@ public:
         _lineLength = std::clamp(length, idl_uint32_t(60u), idl_uint32_t(10000u));
     }
 
+    idl_output_files_t getOutputFiles() const noexcept {
+        return _outputFiles;
+    }
+
+    void setOutputFiles(idl_output_files_t output) noexcept {
+        _outputFiles = output;
+    }
+
     idl_utf8_t getOutputDir() const noexcept {
         return _outputDir.c_str();
     }
@@ -144,6 +152,7 @@ private:
     bool _warningsAsErrors{};
     uint32_t _indents{ 4 };
     uint32_t _lineLength{ 120 };
+    idl_output_files_t _outputFiles{};
     std::string _outputDir{};
     std::vector<std::string> _importDirs{};
     std::vector<std::string> _additions{};

@@ -258,7 +258,7 @@ struct ASTVisitor {
     }
 
     void printAttrs(ASTNodeRef& node) {
-        auto attrs = node.attrs() | std::views::filter([](const auto& attr) {
+        auto attrs = node.attrs(state.origin) | std::views::filter([](const auto& attr) {
             return attr.is<IDL_AST_NODE_TYPE_ATTR>() && !attr.is<IDL_AST_NODE_TYPE_ATTR_DOC>() &&
                    !attr.is<IDL_AST_NODE_TYPE_ATTR_VALUE>() && !attr.is<IDL_AST_NODE_TYPE_ATTR_TYPE>();
         });

@@ -15,22 +15,6 @@ public:
         assert(result);
     }
 
-    [[nodiscard]] bool useStdTypes() const noexcept {
-        return _options ? _options->getCOptions().use_std_types : false;
-    }
-
-    [[nodiscard]] bool addDocGroup() const noexcept {
-        return _options ? _options->getCOptions().add_doc_group : false;
-    }
-
-    [[nodiscard]] idl_bool_type_t boolType() const noexcept {
-        return _options ? _options->getBoolType() : IDL_BOOL_TYPE_INT_32;
-    }
-
-    [[nodiscard]] bool warnAsErrors() const noexcept {
-        return _options ? _options->getWarningsAsErrors() : false;
-    }
-
     [[nodiscard]] ASTNodeRef getNodeRef(ASTNodeHandle handle) noexcept {
         return ASTNodeRef(*this, handle);
     }
@@ -238,6 +222,10 @@ public:
 
     [[nodiscard]] CompilationResultBase* result() noexcept {
         return _result;
+    }
+
+    [[nodiscard]] const Options* options() const noexcept {
+        return _options;
     }
 
 private:

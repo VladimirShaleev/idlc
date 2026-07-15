@@ -217,8 +217,18 @@ idl_uint32_t idl_options_get_line_length(idl_options_t options) {
 }
 
 void idl_options_set_line_length(idl_options_t options, idl_uint32_t length) {
-     assert(options);
+    assert(options);
     options->as<idl::Options>()->setLineLength(length);
+}
+
+idl_output_files_t idl_options_get_output_files(idl_options_t options) {
+    assert(options);
+    return options->as<idl::Options>()->getOutputFiles();
+}
+
+void idl_options_set_output_files(idl_options_t options, idl_output_files_t output) {
+    assert(options);
+    options->as<idl::Options>()->setOutputFiles(output);
 }
 
 idl_utf8_t idl_options_get_output_dir(idl_options_t options) {

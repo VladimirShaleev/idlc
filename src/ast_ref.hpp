@@ -216,8 +216,8 @@ public:
         return it != view.end() ? *it : ASTNodeRef(*_ctx);
     }
 
-    [[nodiscard]] auto attrs() const noexcept {
-        return *this | std::views::filter([](const auto& child) {
+    [[nodiscard]] auto attrs(bool originalNodes = false) const noexcept {
+        return getChilds(originalNodes) | std::views::filter([](const auto& child) {
             return child.is<IDL_AST_NODE_TYPE_ATTR>();
         });
     }

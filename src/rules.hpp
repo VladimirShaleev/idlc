@@ -11,19 +11,17 @@ struct AttrValidatorRules {
         bool recommended;
     };
 
-    AttrValidatorRules(Context& ctx) noexcept : ctx(ctx) {
+    AttrValidatorRules(Context& ctx) noexcept : ctx(ctx), options(options) {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_API>) {
-        static std::map allowed = { add<IDL_AST_NODE_TYPE_ATTR_VERSION>(),
-                                    add<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>(true),
-                                    add<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(true),
-                                    add<IDL_AST_NODE_TYPE_ATTR_CNAME>(),
-                                    add<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>(),
-                                    add<IDL_AST_NODE_TYPE_ATTR_SINGLE>(),
-                                    add<IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR>(true),
-                                    add<IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT>(true),
-                                    add<IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE>(true) };
+        static std::map allowed = {
+            add<IDL_AST_NODE_TYPE_ATTR_VERSION>(),        add<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>(true),
+            add<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(true), add<IDL_AST_NODE_TYPE_ATTR_CNAME>(),
+            add<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>(),      add<IDL_AST_NODE_TYPE_ATTR_SINGLE>(),
+            add<IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR>(true), add<IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT>(true),
+            add<IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE>(true)
+        };
         validate(node, allowed);
     }
 
@@ -103,6 +101,7 @@ struct AttrValidatorRules {
     }
 
     Context& ctx;
+    const Options* options;
 };
 
 struct AttrDocValidatorRules {
@@ -141,12 +140,45 @@ struct AttrArgRules {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ATTR_VERSION>) {
-        auto& ctx = node.ctx();
-        auto arg0 = ctx.getNodeRef(argFrist);
-        auto arg1 = arg0 ? ctx.getNodeRef(arg0->sibling) : ctx.emptyNodeRef();
-        auto arg2 = arg1 ? ctx.getNodeRef(arg1->sibling) : ctx.emptyNodeRef();
-        if (argCount == 3 && arg0.is<IDL_AST_NODE_TYPE_LITERAL_INT>() && arg1.is<IDL_AST_NODE_TYPE_LITERAL_INT>() &&
-            arg2.is<IDL_AST_NODE_TYPE_LITERAL_INT>()) {
+        const auto optionVersion = node.ctx().options() ? node.ctx().options()->getVersion() : nullptr;
+        auto& ctx                = node.ctx();
+        auto arg0                = ctx.getNodeRef(argFrist);
+        auto arg1                = arg0 ? ctx.getNodeRef(arg0->sibling) : ctx.emptyNodeRef();
+        auto arg2                = arg1 ? ctx.getNodeRef(arg1->sibling) : ctx.emptyNodeRef();
+        if (optionVersion) {
+            arg0.setReplacedByCompiler();
+            arg1.setReplacedByCompiler();
+            arg2.setReplacedByCompiler();
+            auto fail = false;
+            if (optionVersion->major < 0 || optionVersion->major > 255) {
+                ctx.log<IDL_STATUS_E3004>(node->location, optionVersion->major);
+                fail = true;
+            }
+            if (optionVersion->minor < 0 || optionVersion->minor > 255) {
+                ctx.log<IDL_STATUS_E3004>(node->location, optionVersion->minor);
+                fail = true;
+            }
+            if (optionVersion->micro < 0 || optionVersion->micro > 255) {
+                ctx.log<IDL_STATUS_E3004>(node->location, optionVersion->micro);
+                fail = true;
+            }
+            if (!fail) {
+                auto nodeMajor = ctx.result()->allocNode(node->location, IDL_AST_NODE_TYPE_LITERAL_INT);
+                auto nodeMinor = ctx.result()->allocNode(node->location, IDL_AST_NODE_TYPE_LITERAL_INT);
+                auto nodeMicro = ctx.result()->allocNode(node->location, IDL_AST_NODE_TYPE_LITERAL_INT);
+
+                ctx.result()->getNode(nodeMajor)->valueInt = optionVersion->major;
+                ctx.result()->getNode(nodeMinor)->valueInt = optionVersion->minor;
+                ctx.result()->getNode(nodeMicro)->valueInt = optionVersion->micro;
+                ctx.result()->getNode(nodeMajor)->sibling  = nodeMinor;
+                ctx.result()->getNode(nodeMinor)->sibling  = nodeMicro;
+                ctx.result()->getNode(nodeMicro)->sibling  = argFrist;
+                arg0.setReplacedByCompiler();
+
+                node->child = nodeMajor;
+            }
+        } else if (argCount == 3 && arg0.is<IDL_AST_NODE_TYPE_LITERAL_INT>() &&
+                   arg1.is<IDL_AST_NODE_TYPE_LITERAL_INT>() && arg2.is<IDL_AST_NODE_TYPE_LITERAL_INT>()) {
             const auto major = int64_t(arg0->valueInt);
             const auto minor = int64_t(arg1->valueInt);
             const auto micro = int64_t(arg2->valueInt);
@@ -538,6 +570,20 @@ struct BuildRules {
     BuildRules(State& state) noexcept : state(state) {
     }
 
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_API>) {
+        if (node.ctx().options() && node.ctx().options()->getOutputFiles() != IDL_OUTPUT_FILES_DEFAULT) {
+            const auto format = node.ctx().options()->getOutputFiles();
+            if (format == IDL_OUTPUT_FILES_SINGLE && !node.findChild<IDL_AST_NODE_TYPE_ATTR_SINGLE>()) {
+                auto attrSinglehandle = node.ctx().result()->allocNode(node->location, IDL_AST_NODE_TYPE_ATTR_SINGLE);
+                auto attrSingle       = node.ctx().getNodeRef(attrSinglehandle);
+                attrSingle->parent    = node.handle();
+                node.addChild(attrSingle);
+            } else if (format == IDL_OUTPUT_FILES_MULTI && node.findChild<IDL_AST_NODE_TYPE_ATTR_SINGLE>()) {
+                node.findChild<IDL_AST_NODE_TYPE_ATTR_SINGLE>().setReplacedByCompiler();
+            }
+        }
+    }
+
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ENUM>) {
         auto& ctx = node.ctx();
         if (auto type = node.declType()) {
@@ -565,6 +611,7 @@ struct BuildRules {
         auto enumConsts = node | std::views::filter([](const auto& child) {
             return child.is<IDL_AST_NODE_TYPE_CONST>();
         });
+
         ASTNodeRef prevEnumConst = ctx.emptyNodeRef();
         for (auto enumConst : enumConsts) {
             if (prevEnumConst) {
@@ -706,10 +753,11 @@ struct BuildRules {
         auto attrValue = enumConst.findChild<IDL_AST_NODE_TYPE_ATTR_VALUE>();
         assert(attrValue);
 
+        const auto warnAsErrors = ctx.options() ? ctx.options()->getWarningsAsErrors() : false;
         if (!type.is<IDL_AST_NODE_TYPE_INTEGER_TYPE>()) {
             attrValue->valueInt = 0;
             enumConst.setBuildError();
-        } else if (!type.accept<IntegerCastRules>(attrValue).success && ctx.warnAsErrors()) {
+        } else if (!type.accept<IntegerCastRules>(attrValue).success && warnAsErrors) {
             enumConst.setBuildError();
         }
 

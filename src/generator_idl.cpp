@@ -137,15 +137,6 @@ struct AttrArgsGetter {
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>) {
     }
 
-    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ATTR_ORDER>) {
-        /*auto view = node.getChilds(origin);
-        std::vector<ASTNodeRef> childs;
-        childs.assign(view.begin(), view.end());
-        if ((origin && !childs.empty()) || (!origin && !childs.front()->valueBool)) {
-            args = childs.front().accept<LiteralPrinter>(false).str;
-        }*/
-    }
-
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ATTR_SINGLE>) {
         /*auto view = node.getChilds(origin);
         std::vector<ASTNodeRef> childs;

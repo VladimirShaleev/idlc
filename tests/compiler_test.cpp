@@ -317,10 +317,10 @@ TEST(idlc, InvalidAttrForDeclaration) {
     ASSERT_EQ(messages.size(), 2);
     ASSERT_EQ(messages[0],
               "error [E3005]: Invalid attribute [flags] for api 'Api' declaration, allowed attributes are cname, "
-              "tokenizer, order, single, version, brief, detail, author, copyright, license at e3005:6:10");
+              "tokenizer, single, version, brief, detail, author, copyright, license at e3005:6:10");
     ASSERT_EQ(messages[1],
               "error [E3005]: Invalid attribute [hex] for api 'Api' declaration, allowed attributes are cname, "
-              "tokenizer, order, single, version, brief, detail, author, copyright, license at e3005:6:17");
+              "tokenizer, single, version, brief, detail, author, copyright, license at e3005:6:17");
 
     auto api = idl_compilation_result_get_api(ast);
     ASSERT_NE(api, HandleNone);
@@ -506,10 +506,10 @@ TEST(idlc, UnknownAttributeInDoc) {
     ASSERT_EQ(messages[4], "error [E3018]: Inline documentation only [detail] description is allowed at e3015:7:39");
     ASSERT_EQ(messages[5],
               "error [E3005]: Invalid attribute [flags] for api 'Api' declaration, allowed attributes are cname, "
-              "tokenizer, order, single, version, brief, detail, author, copyright, license at e3015:6:31");
+              "tokenizer, single, version, brief, detail, author, copyright, license at e3015:6:31");
     ASSERT_EQ(messages[6],
               "error [E3005]: Invalid attribute [hex] for api 'Api' declaration, allowed attributes are cname, "
-              "tokenizer, order, single, version, brief, detail, author, copyright, license at e3015:7:39");
+              "tokenizer, single, version, brief, detail, author, copyright, license at e3015:7:39");
 
     auto api = idl_compilation_result_get_api(ast);
     ASSERT_NE(api, HandleNone);
@@ -581,24 +581,11 @@ TEST(idlc, InlineDocAllowedDetailOnlyAttr) {
     ASSERT_TRUE(isType(ast, attrs[4], IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF));
 }
 
-TEST(idlc, OrderAttrCanContainOneOptionalBoolParam) {
+TEST(idlc, EmptySlot) { // TODO
     const auto [result, ast, messages] = compile("e3019");
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
-    ASSERT_EQ(messages.size(), 3);
-    ASSERT_EQ(messages[0],
-              "error [E3019]: The [order] attribute can contain one optional Boolean parameter at e3019:6:10");
-    ASSERT_EQ(messages[1],
-              "error [E3019]: The [order] attribute can contain one optional Boolean parameter at e3019:6:22");
-    ASSERT_EQ(messages[2], "error [E3007]: Attribute duplication for attribute [order] in api 'Api' at e3019:6:22");
-
-    auto api = idl_compilation_result_get_api(ast);
-    ASSERT_NE(api, HandleNone);
-
-    auto attrs = getAttrs(ast, api, AttrFilterNonDoc);
-    ASSERT_EQ(attrs.size(), 2);
-    ASSERT_TRUE(getChilds(ast, attrs[0]).empty());
-    ASSERT_TRUE(getChilds(ast, attrs[1]).empty());
+    GTEST_FAIL();
 }
 
 TEST(idlc, TabsNotAllowed) {

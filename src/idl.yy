@@ -93,7 +93,6 @@
 %token ATTRTYPE
 %token ATTRCNAME
 %token ATTRTOKENIZER
-%token ATTRORDER
 %token ATTRSINGLE
 
 %token <std::string> ID
@@ -231,7 +230,6 @@ attr_item
     | ATTRTYPE      { $$ = alloc_node(@1, ATTR_TYPE); }
     | ATTRCNAME     { $$ = alloc_node(@1, ATTR_CNAME); }
     | ATTRTOKENIZER { $$ = alloc_node(@1, ATTR_TOKENIZER); }
-    | ATTRORDER     { $$ = alloc_node(@1, ATTR_ORDER); }
     | ATTRSINGLE    { $$ = alloc_node(@1, ATTR_SINGLE); }
     | ATTRHEX       { $$ = alloc_node(@1, ATTR_HEX); }
     | ATTRBRIEF     { $$ = alloc_node(@1, ATTR_DOC_BRIEF); }

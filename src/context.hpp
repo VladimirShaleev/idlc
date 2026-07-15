@@ -213,7 +213,6 @@ private:
     std::unordered_map<std::string, ASTNodeHandle> _symbols{};
     std::unordered_map<std::string, ASTNodeHandle> _docSymbols{};
     std::unordered_map<std::string, ASTNodeHandle> _literals{};
-    uint32_t _lastOrder{};
 };
 
 inline CompilationResultBase* ASTNodeRef::result() noexcept {

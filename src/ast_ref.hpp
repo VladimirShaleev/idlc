@@ -275,9 +275,6 @@ public:
                 case IDL_AST_NODE_TYPE_ATTR_TOKENIZER:
                     visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>{});
                     break;
-                case IDL_AST_NODE_TYPE_ATTR_ORDER:
-                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_ORDER>{});
-                    break;
                 case IDL_AST_NODE_TYPE_ATTR_SINGLE:
                     visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_SINGLE>{});
                     break;

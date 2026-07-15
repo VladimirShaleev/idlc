@@ -52,7 +52,7 @@ enum Status
     const E3027 : 3027 [tokenizer(0)] @ The \[type\] attribute argument can only refer to symbols.
     const E3028 : 3028 [tokenizer(0)] @ The \[cname\] attribute must contain a single string literal argument.
     const E3029 : 3029 [tokenizer(0)] @ The \[cname\] attribute must specify a name without spaces and punctuations.
-    const E3030 : 3030 [tokenizer(0)] @ The \[single\] attribute can contain one optional Boolean parameter.
+    const E3030 : 3030 [tokenizer(0)] @ TODO: empty slot
     const E3031 : 3031 [tokenizer(0)] @ Invalid tokenizer format string, a valid string looks like (2-^3-4).
     const E3032 : 3032 [tokenizer(0)] @ Integer tokenization parameters or a tokenizer string must be passed to the attribute \[tokenizer\].
     const E3033 : 3033 [tokenizer(0)] @ The \[tokeinzer\] attribute must contain one or more arguments (integers: 2, -2, 4 or string "2-^3-4").

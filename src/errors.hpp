@@ -90,7 +90,7 @@ inline std::string err(Args&&... args) {
         str =
             fmt::format("The [cname] attribute must specify a name (\"{}\") without spaces and punctuations", args...);
     } else if constexpr (Status == IDL_STATUS_E3030) {
-        str = fmt::format("The [single] attribute can contain one optional Boolean parameter");
+        str = fmt::format("TODO: empty slot");
     } else if constexpr (Status == IDL_STATUS_E3031) {
         str = fmt::format("Invalid tokenizer format string \"{}\", a valid string looks like (2-^3-4)", args...);
     } else if constexpr (Status == IDL_STATUS_E3032) {

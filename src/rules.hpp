@@ -349,22 +349,6 @@ struct AttrArgRules {
         }
     }
 
-    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ATTR_SINGLE>) {
-        auto& ctx = node.ctx();
-        auto arg0 = ctx.getNodeRef(argFrist);
-        if (argCount == 1 && arg0.is<IDL_AST_NODE_TYPE_LITERAL_BOOL>()) {
-            node->child = argFrist;
-        } else if (argCount == 0) {
-            auto valueBool = ctx.result()->allocNode(node->location, IDL_AST_NODE_TYPE_LITERAL_BOOL);
-
-            ctx.result()->getNode(valueBool)->valueBool = true;
-
-            node->child = valueBool;
-        } else {
-            node.ctx().log<IDL_STATUS_E3030>(node->location);
-        }
-    }
-
     template <ASTNodeType Type>
     void visit(ASTNodeRef& node, Tag<Type>) {
         if (argCount > 0) {

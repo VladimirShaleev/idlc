@@ -778,25 +778,11 @@ TEST(idlc, CnameAttrMustSpecifyNameWithoutSpacesAndPuncts) {
     }
 }
 
-TEST(idlc, SingleAttrCanContainOneOptionalBoolParam) {
+TEST(idlc, EmptySlot2) { // TODO
     const auto [result, ast, messages] = compile("e3030");
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
-    ASSERT_EQ(messages.size(), 3);
-    ASSERT_EQ(messages[0],
-              "error [E3030]: The [single] attribute can contain one optional Boolean parameter at e3030:6:10");
-    ASSERT_EQ(messages[1],
-              "error [E3030]: The [single] attribute can contain one optional Boolean parameter at e3030:6:23");
-    ASSERT_EQ(messages[2], "error [E3007]: Attribute duplication for attribute [single] in api 'Api' at e3030:6:23");
-
-    auto api = idl_compilation_result_get_api(ast);
-    ASSERT_NE(api, HandleNone);
-
-    auto attrs = getAttrs(ast, api, AttrFilterNonDoc);
-    for (auto attr : attrs) {
-        auto attrArgs = getChilds(ast, attr);
-        ASSERT_TRUE(attrArgs.empty());
-    }
+    GTEST_FAIL();
 }
 
 TEST(idlc, InvalidTokenizerFormatString) {

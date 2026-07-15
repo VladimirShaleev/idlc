@@ -74,6 +74,10 @@ public:
         return _stringPool[str];
     }
 
+    [[nodiscard]] std::optional<String> findStr(std::string_view str) const noexcept {
+        return _stringPool.find(str);
+    }
+
     [[nodiscard]] idl_ast_node_h getApi() const noexcept {
         return _api;
     }

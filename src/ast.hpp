@@ -33,6 +33,11 @@ struct ASTLocation {
     uint16_t line{};
 };
 
+struct ASTName {
+    String name;
+    String fullname;
+};
+
 struct ASTDeclRef {
     String symbol;
     ASTNodeHandle handle;
@@ -51,6 +56,7 @@ struct ASTNode {
         uint64_t valueInt;
         double valueFloat;
         bool valueBool;
+        ASTName name;
         ASTDeclRef valueDeclRef;
     };
 

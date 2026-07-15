@@ -140,8 +140,8 @@ idl : stack_decls {
 }
 
 stack_decls
-    : def_with_attrs { rule(Hierarchy, $1, HandleNone); rule(AttrValidator, $1, scanner.context()); add_symbol($1); $$.push_back($1); }
-    | stack_decls def_with_attrs { rule(Hierarchy, $2, $1.back()); rule(AttrValidator, $2, scanner.context()); add_symbol($2); if (isNodeType(node($2), IDL_AST_NODE_TYPE_IMPORT)) { $1.push_back($2); } else { $1.back() = $2; } $$ = std::move($1); }
+    : def_with_attrs { rule(Hierarchy, $1, HandleNone); add_symbol($1); rule(AttrValidator, $1, scanner.context()); $$.push_back($1); }
+    | stack_decls def_with_attrs { rule(Hierarchy, $2, $1.back()); add_symbol($2); rule(AttrValidator, $2, scanner.context()); if (isNodeType(node($2), IDL_AST_NODE_TYPE_IMPORT)) { $1.push_back($2); } else { $1.back() = $2; } $$ = std::move($1); }
     | stack_decls POPIMPORT { $1.pop_back(); $$ = std::move($1); }
     ;
 
@@ -165,10 +165,10 @@ def_with_value
     ;
 
 def
-    : decl ID { node($1)->valueStr = intern($2); $$ = $1; }
-    | decl INVALID_ID { node($1)->valueStr = intern($2); $$ = $1; log(E3047, @2, $2); }
-    | doc_list decl ID { node($2)->valueStr = intern($3); $$ = $2; add_child($$, $1.first); }
-    | doc_list decl INVALID_ID { node($2)->valueStr = intern($3); $$ = $2; add_child($$, $1.first); log(E3047, @3, $3); }
+    : decl ID { node($1)->name.name = intern($2); $$ = $1; }
+    | decl INVALID_ID { node($1)->name.name = intern($2); $$ = $1; log(E3047, @2, $2); }
+    | doc_list decl ID { node($2)->name.name = intern($3); $$ = $2; add_child($$, $1.first); }
+    | doc_list decl INVALID_ID { node($2)->name.name = intern($3); $$ = $2; add_child($$, $1.first); log(E3047, @3, $3); }
     ;
 
 doc

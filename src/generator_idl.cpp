@@ -1,4 +1,5 @@
 #include "case_converter.hpp"
+#include "fixed_stack.hpp"
 #include "visitors.hpp"
 #include "writer.hpp"
 
@@ -7,8 +8,8 @@ namespace idl::gen::idl {
 namespace {
 
 std::string refName(ASTNodeRef path, ASTNodeRef exclude) {
-    std::stack<ASTNodeRef> pathStack;
-    std::stack<ASTNodeRef> excludeStack;
+    FixedStack<ASTNodeRef, 20> pathStack;
+    FixedStack<ASTNodeRef, 20> excludeStack;
     auto fillStack = [](auto& stack, auto node) {
         while (node) {
             if (node.is<IDL_AST_NODE_TYPE_DECL>() && !node.is<IDL_AST_NODE_TYPE_IMPORT>()) {
@@ -21,8 +22,8 @@ std::string refName(ASTNodeRef path, ASTNodeRef exclude) {
     fillStack(excludeStack, exclude);
 
     while (!pathStack.empty() && !excludeStack.empty()) {
-        auto pathStr    = pathStack.top()->valueStr;
-        auto excludeStr = excludeStack.top()->valueStr;
+        auto pathStr    = pathStack.top()->name.name;
+        auto excludeStr = excludeStack.top()->name.name;
         if (pathStr.handle != excludeStr.handle) {
             break;
         }
@@ -36,7 +37,7 @@ std::string refName(ASTNodeRef path, ASTNodeRef exclude) {
             ss << '.';
         }
         hasPrev = true;
-        ss << pathStack.top().valueStr();
+        ss << pathStack.top().name();
         pathStack.pop();
     }
     return ss.str();

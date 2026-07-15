@@ -369,7 +369,7 @@ struct HierarchyRules {
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_API>) {
         auto& ctx = node.ctx();
         if (ctx.result()->getApi() != HandleNone) {
-            ctx.log<IDL_STATUS_E3010>(node->location, node.fullname());
+            ctx.log<IDL_STATUS_E3010>(node->location, node.name());
         } else {
             ctx.initBuiltins(node);
         }
@@ -400,7 +400,7 @@ struct HierarchyRules {
             node->parent = parent.handle();
             parent.addChild(node);
         } else {
-            node.ctx().log<IDL_STATUS_E3023>(node->location, node.fullname());
+            node.ctx().log<IDL_STATUS_E3023>(node->location, node.name());
             node->parent = node.ctx().result()->getApi();
         }
     }

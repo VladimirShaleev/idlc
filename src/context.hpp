@@ -4,6 +4,7 @@
 #include "ast_ref.hpp"
 #include "case_converter.hpp"
 #include "errors.hpp"
+#include "fixed_stack.hpp"
 #include "options.hpp"
 
 namespace idl {
@@ -63,29 +64,85 @@ public:
             addImport(nameStr);
             return;
         }
-        const auto fullname = node.fullnameLowercase();
-        if (_symbols.contains(fullname)) {
+
+        assert(node->name.name.handle != 0);
+        FixedStack<String, 20> stack;
+        auto curr = node;
+        while (curr) {
+            if (curr.is<IDL_AST_NODE_TYPE_DECL>() && !curr.is<IDL_AST_NODE_TYPE_IMPORT>()) {
+                stack.push(curr->name.name);
+            }
+            curr = curr.parent();
+        }
+
+        auto hasPrev = false;
+        std::ostringstream ss;
+        for (auto it = stack.rbegin(); it != stack.rend(); ++it) {
+            if (hasPrev) {
+                ss << '.';
+            }
+            hasPrev = true;
+            ss << _result->getStr(*it);
+        }
+        auto fullname = ss.str();
+
+        node->name.fullname = _result->intern(std::string_view(fullname.c_str(), fullname.length()));
+
+        lower(fullname);
+        auto fullnameLowercase = _result->intern(std::string_view(fullname.c_str(), fullname.length()));
+        if (_symbols.contains(fullnameLowercase)) {
             log<IDL_STATUS_E3012>(node->location, node.fullname());
         }
-        _symbols[fullname] = decl;
+        _symbols[fullnameLowercase] = decl;
     }
 
-    [[nodiscard]] auto findSymbol(ASTNodeRef& decl, const ASTLocation& loc, const std::string& name, bool onlyType) {
-        auto nameLower = name;
-        std::transform(nameLower.begin(), nameLower.end(), nameLower.begin(), [](auto c) {
-            return std::tolower(c);
-        });
+    [[nodiscard]] ASTNodeRef findSymbol(ASTNodeRef& decl,
+                                        const ASTLocation& loc,
+                                        std::string_view name,
+                                        bool onlyType) {
+        assert(decl.is<IDL_AST_NODE_TYPE_DECL>());
+        char buffer[500];
+        char buffer2[50];
+        auto nameLower    = concat(buffer2, name, "", name.length(), '\0');
         auto symbolFinded = false;
         auto curr         = decl;
         while (curr) {
-            const auto fullname = curr.fullnameLowercase() + '.' + nameLower;
-            if (auto it = _symbols.find(fullname); it != _symbols.end()) {
+            auto currFullname = curr.fullname();
+            auto fullname     = concat(buffer, currFullname, nameLower, currFullname.length());
+            auto fullnameId   = _result->findStr(fullname);
+            if (fullnameId) {
+                if (auto it = _symbols.find(fullnameId.value()); it != _symbols.end()) {
+                    auto symbol   = getNodeRef(it->second);
+                    auto actual   = concat(buffer, currFullname, name, 0);
+                    auto actualId = _result->findStr(fullname);
+                    if (actualId != symbol->name.fullname) {
+                        log<IDL_STATUS_E3036>(loc, actual, symbol.fullname());
+                        return emptyNodeRef();
+                    }
+                    symbolFinded = true;
+                    if (onlyType) {
+                        if (symbol.is<IDL_AST_NODE_TYPE_TYPE>()) {
+                            return symbol;
+                        }
+                    } else {
+                        return symbol;
+                    }
+                }
+            }
+            curr = curr.parent() ? curr.parent() : emptyNodeRef();
+            if (curr.is<IDL_AST_NODE_TYPE_IMPORT>()) {
+                curr = curr.parent();
+            }
+            if (!curr.is<IDL_AST_NODE_TYPE_DECL>()) {
+                curr = emptyNodeRef();
+            }
+        }
+        auto nameId = _result->findStr({ nameLower.data(), nameLower.length() });
+        if (nameId) {
+            if (auto it = _symbols.find(nameId.value()); it != _symbols.end()) {
                 auto symbol = getNodeRef(it->second);
-
-                const auto actualName   = curr.fullname() + '.' + name;
-                const auto expectedName = symbol.fullname();
-                if (actualName != expectedName) {
-                    log<IDL_STATUS_E3036>(loc, actualName, expectedName);
+                if (_result->findStr(name) != symbol->name.fullname) {
+                    log<IDL_STATUS_E3036>(loc, name, symbol.fullname());
                     return emptyNodeRef();
                 }
                 symbolFinded = true;
@@ -96,27 +153,6 @@ public:
                 } else {
                     return symbol;
                 }
-            }
-            curr = curr.parent() ? curr.parent() : emptyNodeRef();
-            if (!curr.is<IDL_AST_NODE_TYPE_DECL>()) {
-                curr = emptyNodeRef();
-            }
-        }
-        if (auto it = _symbols.find(nameLower); it != _symbols.end()) {
-            auto symbol = getNodeRef(it->second);
-
-            const auto expectedName = symbol.fullname();
-            if (name != expectedName) {
-                log<IDL_STATUS_E3036>(loc, name, expectedName);
-                return emptyNodeRef();
-            }
-            symbolFinded = true;
-            if (onlyType) {
-                if (symbol.is<IDL_AST_NODE_TYPE_TYPE>()) {
-                    return symbol;
-                }
-            } else {
-                return symbol;
             }
         }
         if (onlyType && symbolFinded) {
@@ -151,9 +187,9 @@ public:
 
         auto addBuiltin = [this, api = node, &loc, &last]<ASTNodeType Type>(
                               std::string_view name, const std::string& detail, Tag<Type>) mutable {
-            auto node                        = _result->allocNode(loc, Tag<Type>::type);
-            _result->getNode(node)->valueStr = _result->intern(name);
-            _result->getNode(node)->parent   = api.handle();
+            auto node                         = _result->allocNode(loc, Tag<Type>::type);
+            _result->getNode(node)->name.name = _result->intern(name);
+            _result->getNode(node)->parent    = api.handle();
             addSymbol(node);
 
             if (last == HandleNone) {
@@ -205,14 +241,30 @@ public:
     }
 
 private:
+    template <size_t N>
+    std::string_view
+    concat(char (&buffer)[N], std::string_view str1, std::string_view str2, size_t lower, char delimeter = '.') {
+        if (str1.length() + str2.length() + 2 >= N) {
+            throw std::bad_alloc();
+        }
+        memcpy(buffer, str1.data(), str1.length());
+        size_t len = str1.length();
+        if (delimeter != '\0') {
+            buffer[str1.length()] = delimeter;
+            memcpy(buffer + str1.length() + 1, str2.data(), str2.length());
+            len += 1 + str2.length();
+        }
+        buffer[len] = '\0';
+        std::transform(buffer, buffer + std::min(lower, len), buffer, [](auto c) {
+            return std::tolower(c);
+        });
+        return { buffer, len };
+    }
+
     Options* _options;
     CompilationResultBase* _result;
-    std::vector<idl_message_t> _messages{};
-    std::optional<idl_api_version_t> _version{};
     std::unordered_set<std::string> _imports{};
-    std::unordered_map<std::string, ASTNodeHandle> _symbols{};
-    std::unordered_map<std::string, ASTNodeHandle> _docSymbols{};
-    std::unordered_map<std::string, ASTNodeHandle> _literals{};
+    std::unordered_map<String, ASTNodeHandle> _symbols{};
 };
 
 inline CompilationResultBase* ASTNodeRef::result() noexcept {

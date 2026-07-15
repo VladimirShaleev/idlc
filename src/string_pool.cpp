@@ -35,21 +35,9 @@ struct StringPool::Impl {
             growHash();
         }
 
-        const auto hash = hashFnv1a(str);
-
-        auto bucket = hash % hashTable.size();
-
-        while (hashTable[bucket] != EmptySlot) {
-            const auto slotIndex = hashTable[bucket];
-            const auto& slot     = slots[slotIndex];
-
-            if (slot.length == str.length()) {
-                if (std::memcmp(&buffer[slot.offset], str.data(), str.length()) == 0) {
-                    return { slotIndex };
-                }
-            }
-
-            bucket = (bucket + 1) % hashTable.size();
+        const auto [findedStr, bucket] = find(str);
+        if (findedStr) {
+            return findedStr.value();
         }
 
         const auto newOffset = bufferSize;
@@ -68,6 +56,31 @@ struct StringPool::Impl {
 
         hashTable[bucket] = newSlotIndex;
         return { (uint32_t) newSlotIndex };
+    }
+
+    std::pair<std::optional<String>, size_t> find(std::string_view str) const noexcept {
+        if (str.empty()) {
+            return std::make_pair(std::make_optional(String{ 0 }), 0);
+        }
+
+        const auto hash = hashFnv1a(str);
+
+        auto bucket = hash % hashTable.size();
+
+        while (hashTable[bucket] != EmptySlot) {
+            const auto slotIndex = hashTable[bucket];
+            const auto& slot     = slots[slotIndex];
+
+            if (slot.length == str.length()) {
+                if (std::memcmp(&buffer[slot.offset], str.data(), str.length()) == 0) {
+                    return std::make_pair(std::make_optional(String{ slotIndex }), bucket);
+                }
+            }
+
+            bucket = (bucket + 1) % hashTable.size();
+        }
+
+        return std::make_pair(std::nullopt, bucket);
     }
 
     void growHash() {
@@ -129,6 +142,11 @@ std::string_view StringPool::get(String str) const noexcept {
 
 String StringPool::insert(std::string_view str) {
     return _impl->insert(str);
+}
+
+std::optional<String> StringPool::find(std::string_view str) const noexcept {
+    const auto [result, _] = _impl->find(str);
+    return result;
 }
 
 } // namespace idl

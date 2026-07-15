@@ -474,32 +474,15 @@ public:
     }
 
     [[nodiscard]] std::string_view name() const noexcept {
-        return valueStr();
-    }
-
-    [[nodiscard]] std::string fullname() const {
         assert(is<IDL_AST_NODE_TYPE_DECL>());
-        assert(name().length() > 0);
-        std::string str{};
-        if (auto prnt = parent()) {
-            if (prnt.is<IDL_AST_NODE_TYPE_DECL>()) {
-                str = prnt.fullname() + '.';
-            }
-        }
-        if (is<IDL_AST_NODE_TYPE_IMPORT>()) {
-            return str.substr(0, str.length() - 1);
-        } else {
-            auto nameView = name();
-            return str + std::string(nameView.data(), nameView.length());
-        }
+        assert(_node->name.name.handle != 0);
+        return result()->getStr(_node->name.name);
     }
 
-    [[nodiscard]] std::string fullnameLowercase() const {
-        auto str = fullname();
-        std::transform(str.begin(), str.end(), str.begin(), [](auto c) {
-            return std::tolower(c);
-        });
-        return str;
+    [[nodiscard]] std::string_view fullname() const {
+        assert(is<IDL_AST_NODE_TYPE_DECL>());
+        assert(_node->name.fullname.handle != 0);
+        return result()->getStr(_node->name.fullname);
     }
 
     [[nodiscard]] ASTNodeRef declType() const noexcept {

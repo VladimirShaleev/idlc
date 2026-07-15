@@ -97,7 +97,7 @@ struct CName {
     std::string cnameDecl(ASTNodeRef& decl, bool upper) {
         assert(decl.is<IDL_AST_NODE_TYPE_DECL>());
         if (auto attr = decl.findChild<IDL_AST_NODE_TYPE_ATTR_CNAME>()) {
-            auto str = attr.valueStr();
+            auto str = attr.name();
             return { str.data(), str.length() };
         }
         std::vector<int> nums{};
@@ -107,7 +107,7 @@ struct CName {
             });
             nums.assign(view.begin(), view.end());
         }
-        auto str = decl.valueStr();
+        auto str = decl.name();
         return convert({ str.data(), str.length() },
                        upper ? Case::ScreamingSnakeCase : Case::SnakeCase,
                        nums.empty() ? nullptr : &nums);

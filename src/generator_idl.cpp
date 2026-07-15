@@ -6,6 +6,42 @@ namespace idl::gen::idl {
 
 namespace {
 
+std::string refName(ASTNodeRef path, ASTNodeRef exclude) {
+    std::stack<ASTNodeRef> pathStack;
+    std::stack<ASTNodeRef> excludeStack;
+    auto fillStack = [](auto& stack, auto node) {
+        while (node) {
+            if (node.is<IDL_AST_NODE_TYPE_DECL>() && !node.is<IDL_AST_NODE_TYPE_IMPORT>()) {
+                stack.push(node);
+            }
+            node = node.parent();
+        }
+    };
+    fillStack(pathStack, path);
+    fillStack(excludeStack, exclude);
+
+    while (!pathStack.empty() && !excludeStack.empty()) {
+        auto pathStr    = pathStack.top()->valueStr;
+        auto excludeStr = excludeStack.top()->valueStr;
+        if (pathStr.handle != excludeStr.handle) {
+            break;
+        }
+        pathStack.pop();
+        excludeStack.pop();
+    }
+    auto hasPrev = false;
+    std::ostringstream ss;
+    while (!pathStack.empty()) {
+        if (hasPrev) {
+            ss << '.';
+        }
+        hasPrev = true;
+        ss << pathStack.top().valueStr();
+        pathStack.pop();
+    }
+    return ss.str();
+}
+
 struct PriorityDocAttr {
     void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>) {
         prior = 0;
@@ -35,7 +71,9 @@ struct PriorityDocAttr {
 };
 
 struct LiteralPrinter {
-    explicit LiteralPrinter(bool addQuotes) noexcept : addQuotes(addQuotes) {
+    explicit LiteralPrinter(bool addQuotes, ASTNodeRef currDepth) noexcept :
+        addQuotes(addQuotes),
+        currDepth(currDepth) {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_LITERAL_STR>) {
@@ -74,11 +112,16 @@ struct LiteralPrinter {
         str = std::to_string(node->valueFloat);
     }
 
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_DECL_REF>) {
+        str = refName(node.resolveRef(), currDepth);
+    }
+
     template <ASTNodeType Type>
     void visit(ASTNodeRef&, Tag<Type>) noexcept {
     }
 
     bool addQuotes;
+    ASTNodeRef currDepth;
     std::string str;
 };
 
@@ -144,7 +187,7 @@ struct AttrArgsGetter {
                 fmt::print(ss, ", ");
             }
             hasPrev = true;
-            fmt::print(ss, "{}", (*it).accept<LiteralPrinter>(addQuotes).str);
+            fmt::print(ss, "{}", (*it).accept<LiteralPrinter>(addQuotes, (*it).parent()).str);
         }
         args = ss.str();
     }
@@ -203,7 +246,7 @@ struct ASTVisitor {
         printType(node);
         printValue(node);
         printAttrs(node);
-        printIDoc(node, hasIDoc);
+        printIDoc(node, level, hasIDoc);
     }
 
     void printType(ASTNodeRef& node) {
@@ -218,6 +261,17 @@ struct ASTVisitor {
     }
 
     void printValue(ASTNodeRef& node) {
+        if (auto attrValue = node.findChild<IDL_AST_NODE_TYPE_ATTR_VALUE>(state.origin)) {
+            auto hasPrev = false;
+            for (auto value : attrValue) {
+                if (value.addedByCompiler()) {
+                    continue;
+                }
+                auto valStr = value.accept<LiteralPrinter>(true, node.parent()).str;
+                fmt::print(out(), "{}{}", hasPrev ? ", " : " : ", valStr);
+                hasPrev = true;
+            }
+        }
     }
 
     void printAttrs(ASTNodeRef& node) {
@@ -264,25 +318,52 @@ struct ASTVisitor {
         std::ranges::sort(sortedDocs, {}, &std::pair<int, ASTNodeRef>::first);
         for (auto [_, doc] : sortedDocs) {
             fmt::print(out(), "{:{}}", "", state.indents * level);
-            printDocMessage(doc, !doc.is<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>());
+            printDocMessage(doc, level, !doc.is<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>());
             fmt::print(out(), "\n");
         }
     }
 
-    void printIDoc(ASTNodeRef& node, bool hasIDoc) {
+    void printIDoc(ASTNodeRef& node, int level, bool hasIDoc) {
         if (hasIDoc) {
             if (auto detail = node.findChild<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>()) {
-                fmt::print(out(), " @ TODO");
+                fmt::print(out(), " ");
+                printDocMessage(detail, level, false);
             }
         }
     }
 
-    void printDocMessage(ASTNodeRef& node, bool addAttr) {
-        std::string attr = "";
-        if (addAttr) {
-            attr = " [" + attrName(node) + ']';
+    void printDocMessage(ASTNodeRef& node, int level, bool addAttr) {
+        const uint32_t start = state.indents * level + 2;
+        uint32_t pos         = start;
+        auto isMultiline     = false;
+        for (auto data : node) {
+            if (data.is<IDL_AST_NODE_TYPE_LITERAL_STR>()) {
+                auto str = data.valueStr();
+                if (pos + str.length() > state.lineLength) {
+                    isMultiline = true;
+                    break;
+                }
+                pos += str.length();
+            } else if (data.is<IDL_AST_NODE_TYPE_DECL_REF>()) {
+            }
         }
-        fmt::print(out(), "@ TODO{}", attr);
+
+        fmt::print(out(), "@ ");
+        auto hasPrev = false;
+        for (auto data : node) {
+            if (hasPrev) {
+                fmt::print(out(), " ");
+            }
+            hasPrev = true;
+            if (data.is<IDL_AST_NODE_TYPE_LITERAL_STR>()) {
+                fmt::print(out(), "{}", data.valueStr());
+            } else if (data.is<IDL_AST_NODE_TYPE_DECL_REF>()) {
+                fmt::print(out(), "{{{}}}", refName(data.resolveRef(), node.parent().parent()));
+            }
+        }
+        if (addAttr) {
+            fmt::print(out(), " [{}]", attrName(node));
+        }
     }
 
     void popImport(ASTNodeRef& node) {

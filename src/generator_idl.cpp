@@ -192,19 +192,25 @@ struct ASTVisitor {
         uint32_t indents;
         uint32_t lineLength;
         std::stack<File> files;
+        bool single;
     };
 
     ASTVisitor(State& state) noexcept : state(state) {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_API>) {
-        state.files.emplace(state.writer.createOutput(filename(node)), node.ctx().emptyNodeRef(), 0);
+        pushImport(node);
         printDecl(node, 0, false);
+        if (node.findChild<IDL_AST_NODE_TYPE_ATTR_SINGLE>()) {
+            state.single = true;
+        }
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_IMPORT>) {
-        printDecl(node, 0, false);
-        state.files.emplace(state.writer.createOutput(filename(node)), node, 0);
+        if (!state.single) {
+            printDecl(node, 0, false);
+        }
+        pushImport(node);
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ENUM>) {
@@ -349,7 +355,18 @@ struct ASTVisitor {
         }
     }
 
+    void pushImport(ASTNodeRef& node) {
+        auto isImport = node.is<IDL_AST_NODE_TYPE_IMPORT>();
+        if (isImport && state.single) {
+            return;
+        }
+        state.files.emplace(state.writer.createOutput(filename(node)), isImport ? node : node.ctx().emptyNodeRef(), 0);
+    }
+
     void popImport(ASTNodeRef& node) {
+        if (state.single) {
+            return;
+        }
         auto currImport = state.files.top().import;
         auto currParent = node.parent();
         while (currParent && !currParent.is<IDL_AST_NODE_TYPE_IMPORT>()) {

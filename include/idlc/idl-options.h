@@ -81,8 +81,7 @@ typedef struct
  */
 typedef struct
 {
-    idl_bool_t add_doc_group; /**< Add Doxygen groups. */
-    idl_bool_t use_std_types; /**< Use stdint.h types directly. */
+    idl_bool_t add_doc_groups; /**< Add Doxygen groups. */
 } idl_c_options_t;
 
 /**
@@ -460,6 +459,29 @@ idl_options_get_bool_type(idl_options_t options);
 idl_api void
 idl_options_set_bool_type(idl_options_t options,
                           idl_bool_type_t bool_type);
+
+/**
+ * @brief     Is std types.
+ * @details   Returns is used std types.
+ * @param[in] options Target options.
+ * @return    TRUE is use std types.
+ * @sa        ::idl_options_set_std_types
+ * @ingroup   functions
+ */
+idl_api idl_bool_t
+idl_options_get_std_types(idl_options_t options);
+
+/**
+ * @brief     Set std types.
+ * @details   Use stdint.h types directly if TRUE.
+ * @param[in] options Target options.
+ * @param[in] use_std Use stdint.h types.
+ * @sa        ::idl_options_get_std_types
+ * @ingroup   functions
+ */
+idl_api void
+idl_options_set_std_types(idl_options_t options,
+                          idl_bool_t use_std);
 
 /**
  * @brief     Get Idl options.

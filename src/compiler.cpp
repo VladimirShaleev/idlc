@@ -292,6 +292,16 @@ void idl_options_set_bool_type(idl_options_t options, idl_bool_type_t bool_type)
     options->as<idl::Options>()->setBoolType(bool_type);
 }
 
+idl_bool_t idl_options_get_std_types(idl_options_t options) {
+    assert(options);
+    return options->as<idl::Options>()->getStdTypes() ? 1 : 0;
+}
+
+void idl_options_set_std_types(idl_options_t options, idl_bool_t use_std) {
+    assert(options);
+    options->as<idl::Options>()->setStdTypes(use_std);
+}
+
 idl_idl_options_t idl_options_get_idl_options(idl_options_t options) {
     assert(options);
     return options->as<idl::Options>()->getIdlOptions();

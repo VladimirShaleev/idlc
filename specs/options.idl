@@ -35,8 +35,7 @@ struct IdlOptions
 @ C Options.
 @ Specific options for C. [detail]
 struct COptions [tokenizer(1)]
-    field AddDocGroup {Bool} @ Add Doxygen groups.
-    field UseStdTypes {Bool} @ Use stdint.h types directly.
+    field AddDocGroups {Bool} @ Add Doxygen groups.
 
 @ Callback to get sources.
 @ Used to retrieve and compile sources from memory. [detail]
@@ -77,6 +76,7 @@ interface Options
     prop OutputDir [get(GetOutputDir),set(SetOutputDir)] @ Output directory of the compilation result.
     prop ImportDirs [get(GetImportDirs),set(SetImportDirs)] @ Directories to search for files when importing.
     prop BoolType [get(GetBoolType),set(SetBoolType)] @ Setting bool type representation.
+    prop StdTypes [get(GetStdTypes),set(SetStdTypes)] @ Setting use stdint.h types directly.
     prop IdlOptions [get(GetIdlOptions),set(SetIdlOptions)] @ Setting specifi Idl options.
     prop COptions [get(GetCOptions),set(SetCOptions)] @ Setting specific C options.
 
@@ -282,6 +282,20 @@ interface Options
     method SetBoolType
         arg Options {Options} [this] @ Target options.
         arg BoolType {BoolType} @ Bool type.
+
+    @ Is std types.
+    @ Returns is used std types. [detail]
+    @ {True} is use std types. [return]
+    @ {SetStdTypes} [see]
+    method GetStdTypes {Bool} [const]
+        arg Options {Options} [this] @ Target options.
+
+    @ Set std types.
+    @ Use stdint.h types directly if {True}. [detail]
+    @ {GetStdTypes} [see]
+    method SetStdTypes
+        arg Options {Options} [this] @ Target options.
+        arg UseStd {Bool} @ Use stdint.h types.
 
     @ Get Idl options.
     @ Returns specific Idl options. [detail]

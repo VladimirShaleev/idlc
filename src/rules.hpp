@@ -276,9 +276,11 @@ struct AttrArgRules {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR>) {
-        static const std::regex email(R"([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})");
-        node->child = argFrist;
-        // TODO:
+        if (argCount > 0) {
+            node->child = argFrist;
+        } else {
+            node.ctx().log<IDL_STATUS_E3019>(node->location);
+        }
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>) {

@@ -756,11 +756,26 @@ TEST(idlc, InlineDocAllowedDetailOnlyAttr) {
     ASSERT_TRUE(isType(ast, attrs[4], IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF));
 }
 
-TEST(idlc, EmptySlot) { // TODO
-    const auto [result, ast, messages] = compile("e3019");
+TEST(idlc, AuthorAttrMustContainOneOrMoreArgs) {
+    const auto [result, ast, messages] = compile("e3019.idl");
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
-    GTEST_FAIL();
+    ASSERT_EQ(messages.size(), 1);
+    ASSERT_EQ(messages[0], "error [E3019]: The [author] attribute must contain one or more arguments at e3019:5:10");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto attrs = getAttrs(ast, api);
+    ASSERT_EQ(attrs.size(), 5);
+    ASSERT_TRUE(isType(ast, attrs[0], IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF));
+    ASSERT_TRUE(isType(ast, attrs[1], IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL));
+    ASSERT_TRUE(isType(ast, attrs[2], IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT));
+    ASSERT_TRUE(isType(ast, attrs[3], IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE));
+    ASSERT_TRUE(isType(ast, attrs[4], IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR));
+
+    auto args = getChilds(ast, attrs[4]);
+    ASSERT_TRUE(args.empty());
 }
 
 TEST(idlc, TabsNotAllowed) {

@@ -111,9 +111,8 @@ struct AttrDocValidatorRules {
             if (node.is<IDL_AST_NODE_TYPE_ATTR_DOC>()) {
                 if (!node.hasChilds()) {
                     node.ctx().log<IDL_STATUS_E3016>(node->location);
-                } else {
+                } else if (node.multilineDoc()) {
                     auto minIndents  = std::numeric_limits<size_t>::max();
-                    auto isMultiline = false;
                     auto isNewLine   = true;
                     for (auto arg : node) {
                         if (arg.is<IDL_AST_NODE_TYPE_LITERAL_STR>()) {
@@ -124,41 +123,37 @@ struct AttrDocValidatorRules {
                                 }
                                 isNewLine = false;
                             } else if (str.length() == 1 && str[0] == '\n') {
-                                isMultiline = true;
                                 isNewLine   = true;
                             }
                         }
                     }
-                    if (isMultiline) {
-                        node.setMultilineDoc();
-                        isNewLine    = true;
-                        auto prevArg = node.ctx().emptyNodeRef();
-                        for (auto arg : node) {
-                            if (arg.is<IDL_AST_NODE_TYPE_LITERAL_STR>()) {
-                                auto str = arg.valueStr();
-                                if (isNewLine) {
-                                    if (str.length() && str[0] == ' ') {
-                                        auto substr = str.substr(minIndents);
-                                        if (substr.empty()) {
-                                            if (prevArg) {
-                                                prevArg->sibling = arg->sibling;
-                                            } else {
-                                                node->child = arg->sibling;
-                                            }
-                                            arg->parent = HandleNone;
-                                            arg->child  = HandleNone;
-                                            continue;
+                    isNewLine    = true;
+                    auto prevArg = node.ctx().emptyNodeRef();
+                    for (auto arg : node) {
+                        if (arg.is<IDL_AST_NODE_TYPE_LITERAL_STR>()) {
+                            auto str = arg.valueStr();
+                            if (isNewLine) {
+                                if (str.length() && str[0] == ' ') {
+                                    auto substr = str.substr(minIndents);
+                                    if (substr.empty()) {
+                                        if (prevArg) {
+                                            prevArg->sibling = arg->sibling;
                                         } else {
-                                            arg->valueStr = node.result()->intern(substr);
+                                            node->child = arg->sibling;
                                         }
+                                        arg->parent = HandleNone;
+                                        arg->child  = HandleNone;
+                                        continue;
+                                    } else {
+                                        arg->valueStr = node.result()->intern(substr);
                                     }
-                                    isNewLine = false;
-                                } else if (str.length() == 1 && str[0] == '\n') {
-                                    isNewLine = true;
                                 }
+                                isNewLine = false;
+                            } else if (str.length() == 1 && str[0] == '\n') {
+                                isNewLine = true;
                             }
-                            prevArg = arg;
                         }
+                        prevArg = arg;
                     }
                 }
             } else {

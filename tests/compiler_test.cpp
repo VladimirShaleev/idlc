@@ -265,16 +265,39 @@ TEST(idlc, SpecialCharacterExpectedAfterBackslash) {
     auto api = idl_compilation_result_get_api(ast);
     ASSERT_NE(api, HandleNone);
 
+    auto test = findChild(ast, api, IDL_AST_NODE_TYPE_ENUM);
+    ASSERT_NE(test, HandleNone);
+
+    auto consts = getChilds(ast, test, IDL_AST_NODE_TYPE_CONST);
+    ASSERT_EQ(consts.size(), 3);
+
+    auto value1 = consts[0];
+    auto value2 = consts[1];
+    auto value3 = consts[2];
+    ASSERT_NE(value1, HandleNone);
+    ASSERT_NE(value2, HandleNone);
+    ASSERT_NE(value3, HandleNone);
+
     auto apiBrief     = findChild(ast, api, IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF);
     auto apiDetail    = findChild(ast, api, IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL);
     auto apiCopyright = findChild(ast, api, IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT);
     auto apiLicense   = findChild(ast, api, IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE);
     auto apiAuthor    = findChild(ast, api, IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR);
+    auto testBrief    = findChild(ast, test, IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF);
+    auto testDetail   = findChild(ast, test, IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL);
+    auto value1Detail = findChild(ast, value1, IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL);
+    auto value2Detail = findChild(ast, value2, IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL);
+    auto value3Detail = findChild(ast, value3, IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL);
     ASSERT_NE(apiBrief, HandleNone);
     ASSERT_NE(apiDetail, HandleNone);
     ASSERT_NE(apiCopyright, HandleNone);
     ASSERT_NE(apiLicense, HandleNone);
     ASSERT_NE(apiAuthor, HandleNone);
+    ASSERT_NE(testBrief, HandleNone);
+    ASSERT_NE(testDetail, HandleNone);
+    ASSERT_NE(value1Detail, HandleNone);
+    ASSERT_NE(value2Detail, HandleNone);
+    ASSERT_NE(value3Detail, HandleNone);
 
     auto apiBriefArgs = getChilds(ast, apiBrief);
     ASSERT_EQ(apiBriefArgs.size(), 25);
@@ -303,6 +326,91 @@ TEST(idlc, SpecialCharacterExpectedAfterBackslash) {
     ASSERT_EQ(getStr(ast, apiBriefArgs[22]), "\n");
     ASSERT_EQ(getStr(ast, apiBriefArgs[23]), "   ");
     ASSERT_EQ(getStr(ast, apiBriefArgs[24]), "OK`");
+
+    auto apiDetailArgs = getChilds(ast, apiDetail);
+    ASSERT_EQ(apiDetailArgs.size(), 17);
+    ASSERT_EQ(getStr(ast, apiDetailArgs[0]), "\\");
+    ASSERT_EQ(getStr(ast, apiDetailArgs[1]), "eDetail");
+    ASSERT_EQ(getStr(ast, apiDetailArgs[2]), "\n");
+    ASSERT_EQ(getStr(ast, apiDetailArgs[3]), "\n");
+    ASSERT_EQ(getStr(ast, apiDetailArgs[4]), "Test");
+    ASSERT_EQ(getStr(ast, apiDetailArgs[5]), "\\");
+    ASSERT_EQ(getStr(ast, apiDetailArgs[6]), "OK");
+    ASSERT_EQ(getStr(ast, apiDetailArgs[7]), "   ");
+    ASSERT_EQ(getStr(ast, apiDetailArgs[8]), " ");
+    ASSERT_EQ(getStr(ast, apiDetailArgs[9]), "123");
+    ASSERT_EQ(getStr(ast, apiDetailArgs[10]), " ");
+    ASSERT_EQ(getStr(ast, apiDetailArgs[11]), "  ");
+    ASSERT_EQ(getStr(ast, apiDetailArgs[12]), " ");
+    ASSERT_EQ(getStr(ast, apiDetailArgs[13]), "AAA");
+    ASSERT_EQ(getStr(ast, apiDetailArgs[14]), "\t");
+    ASSERT_EQ(getStr(ast, apiDetailArgs[15]), "BBB");
+    ASSERT_EQ(getStr(ast, apiDetailArgs[16]), "\\");
+
+    auto apiCopyrightArgs = getChilds(ast, apiCopyright);
+    ASSERT_EQ(apiCopyrightArgs.size(), 1);
+    ASSERT_EQ(getStr(ast, apiCopyrightArgs[0]), "Copyright");
+
+    auto apiLicenseArgs = getChilds(ast, apiLicense);
+    ASSERT_EQ(apiLicenseArgs.size(), 1);
+    ASSERT_EQ(getStr(ast, apiLicenseArgs[0]), "License");
+
+    auto apiAuthorArgs = getChilds(ast, apiAuthor);
+    ASSERT_EQ(apiAuthorArgs.size(), 5);
+    ASSERT_EQ(getStr(ast, apiAuthorArgs[0]), "  ");
+    ASSERT_EQ(getStr(ast, apiAuthorArgs[1]), "Author");
+    ASSERT_EQ(getStr(ast, apiAuthorArgs[2]), "\n");
+    ASSERT_EQ(getStr(ast, apiAuthorArgs[3]), "Indent");
+    ASSERT_EQ(getStr(ast, apiAuthorArgs[4]), "\n");
+
+    auto testBriefArgs = getChilds(ast, testBrief);
+    ASSERT_EQ(testBriefArgs.size(), 1);
+    ASSERT_EQ(getStr(ast, testBriefArgs[0]), "Brief");
+
+    auto testDetailArgs = getChilds(ast, testDetail);
+    ASSERT_EQ(testDetailArgs.size(), 1);
+    ASSERT_EQ(getStr(ast, testDetailArgs[0]), "Detail");
+
+    auto value1DetailArgs = getChilds(ast, value1Detail);
+    ASSERT_EQ(value1DetailArgs.size(), 7);
+    ASSERT_EQ(getStr(ast, value1DetailArgs[0]), "Test");
+    ASSERT_EQ(getStr(ast, value1DetailArgs[1]), " ");
+    ASSERT_EQ(getStr(ast, value1DetailArgs[2]), "first");
+    ASSERT_EQ(getStr(ast, value1DetailArgs[3]), " ");
+    ASSERT_EQ(getStr(ast, value1DetailArgs[4]), "doc");
+    ASSERT_EQ(getStr(ast, value1DetailArgs[5]), " ");
+    ASSERT_EQ(getStr(ast, value1DetailArgs[6]), "string");
+
+    auto value2DetailArgs = getChilds(ast, value2Detail);
+    ASSERT_EQ(value2DetailArgs.size(), 22);
+    ASSERT_EQ(getStr(ast, value2DetailArgs[0]), "Test");
+    ASSERT_EQ(getStr(ast, value2DetailArgs[1]), " ");
+    ASSERT_EQ(getStr(ast, value2DetailArgs[2]), "multiline");
+    ASSERT_EQ(getStr(ast, value2DetailArgs[3]), "\n");
+    ASSERT_EQ(getStr(ast, value2DetailArgs[4]), "inline");
+    ASSERT_EQ(getStr(ast, value2DetailArgs[5]), " ");
+    ASSERT_EQ(getStr(ast, value2DetailArgs[6]), "doc");
+    ASSERT_EQ(getStr(ast, value2DetailArgs[7]), " ");
+    ASSERT_EQ(getStr(ast, value2DetailArgs[8]), "for");
+    ASSERT_EQ(getStr(ast, value2DetailArgs[9]), " ");
+    ASSERT_EQ(getStr(ast, value2DetailArgs[10]), "enum");
+    ASSERT_EQ(getStr(ast, value2DetailArgs[11]), " ");
+    ASSERT_EQ(getDeclRef(ast, value2DetailArgs[12]), test);
+    ASSERT_EQ(getStr(ast, value2DetailArgs[13]), "\n");
+    ASSERT_EQ(getStr(ast, value2DetailArgs[14]), "  ");
+    ASSERT_EQ(getStr(ast, value2DetailArgs[15]), "of");
+    ASSERT_EQ(getStr(ast, value2DetailArgs[16]), " ");
+    ASSERT_EQ(getStr(ast, value2DetailArgs[17]), "const");
+    ASSERT_EQ(getStr(ast, value2DetailArgs[18]), " ");
+    ASSERT_EQ(getDeclRef(ast, value2DetailArgs[19]), value2);
+    ASSERT_EQ(getStr(ast, value2DetailArgs[20]), ".");
+    ASSERT_EQ(getStr(ast, value2DetailArgs[21]), "\n");
+    
+    auto value3DetailArgs = getChilds(ast, value3Detail);
+    ASSERT_EQ(value3DetailArgs.size(), 3);
+    ASSERT_EQ(getStr(ast, value3DetailArgs[0]), "Test");
+    ASSERT_EQ(getDeclRef(ast, value3DetailArgs[1]), value3);
+    ASSERT_EQ(getStr(ast, value3DetailArgs[2]), "OK.");
 }
 
 TEST(idlc, SyntaxError) {

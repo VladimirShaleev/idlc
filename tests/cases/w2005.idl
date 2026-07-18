@@ -15,6 +15,10 @@ api Api
 @ Brief
 @ Detail [detail]
 enum Test
-    const Value1 @ Doc
-    const Value2 @ Doc
-    const Value3 @ Doc
+    const Value1 @   Test    first doc\sstring
+    const Value2 @ ```
+        Test multiline
+        inline doc for enum {Test}
+          of const {Value2}.
+        ```
+    const Value3 @ Test{Value3}OK.

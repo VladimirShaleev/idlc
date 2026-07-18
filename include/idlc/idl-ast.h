@@ -82,6 +82,7 @@ typedef enum
     IDL_AST_NODE_STATE_FORWARD_DECL_BIT         = 0x04, /**< TODO */
     IDL_AST_NODE_STATE_ADDED_BY_COMPILER_BIT    = 0x08, /**< TODO */
     IDL_AST_NODE_STATE_REPLACED_BY_COMPILER_BIT = 0x10, /**< TODO */
+    IDL_AST_NODE_STATE_MULTILINE_DOC_BIT        = 0x20, /**< TODO */
     IDL_AST_NODE_STATE_MAX_ENUM                 = 0x7FFFFFFF /**< Max value of enum (not used) */
 } idl_ast_node_state_flags_t;
 IDL_FLAGS(idl_ast_node_state_flags_t)

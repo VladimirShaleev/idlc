@@ -61,6 +61,7 @@ enum ASTNodeState [hex,flags,tokenizer(3-4)]
     const ForwardDecl : 4 @ TODO
     const AddedByCompiler : 8 @ TODO
     const ReplacedByCompiler : 16 @ TODO
+    const MultilineDoc : 32 @ TODO
 
 @ TODO.
 @ TODO. [detail]

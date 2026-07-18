@@ -469,6 +469,17 @@ public:
                      : false;
     }
 
+    [[nodiscard]] bool multilineDoc() const noexcept {
+        return _node ? (_node->flags & IDL_AST_NODE_STATE_MULTILINE_DOC_BIT) == IDL_AST_NODE_STATE_MULTILINE_DOC_BIT
+                     : false;
+    }
+
+    void setMultilineDoc() noexcept {
+        if (_node) {
+            _node->flags |= IDL_AST_NODE_STATE_MULTILINE_DOC_BIT;
+        }
+    }
+
     [[nodiscard]] std::string_view valueStr() const noexcept {
         return result()->getStr(_node->valueStr);
     }

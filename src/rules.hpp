@@ -130,6 +130,7 @@ struct AttrDocValidatorRules {
                         }
                     }
                     if (isMultiline) {
+                        node.setMultilineDoc();
                         isNewLine    = true;
                         auto prevArg = node.ctx().emptyNodeRef();
                         for (auto arg : node) {

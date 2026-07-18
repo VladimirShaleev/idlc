@@ -261,6 +261,48 @@ TEST(idlc, SpecialCharacterExpectedAfterBackslash) {
     ASSERT_EQ(messages[5],
               "warning [W2005]: Special character expected after backslash; valid spacial characters '\\\\', '\\{', "
               "'\\}', '\\[', '\\]', '\\s', '\\t', '\\n' at w2005:6:49");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto apiBrief     = findChild(ast, api, IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF);
+    auto apiDetail    = findChild(ast, api, IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL);
+    auto apiCopyright = findChild(ast, api, IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT);
+    auto apiLicense   = findChild(ast, api, IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE);
+    auto apiAuthor    = findChild(ast, api, IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR);
+    ASSERT_NE(apiBrief, HandleNone);
+    ASSERT_NE(apiDetail, HandleNone);
+    ASSERT_NE(apiCopyright, HandleNone);
+    ASSERT_NE(apiLicense, HandleNone);
+    ASSERT_NE(apiAuthor, HandleNone);
+
+    auto apiBriefArgs = getChilds(ast, apiBrief);
+    ASSERT_EQ(apiBriefArgs.size(), 25);
+    ASSERT_EQ(getStr(ast, apiBriefArgs[0]), "Brief");
+    ASSERT_EQ(getStr(ast, apiBriefArgs[1]), "   ");
+    ASSERT_EQ(getStr(ast, apiBriefArgs[2]), "\\");
+    ASSERT_EQ(getStr(ast, apiBriefArgs[3]), "  ");
+    ASSERT_EQ(getStr(ast, apiBriefArgs[4]), "\\");
+    ASSERT_EQ(getStr(ast, apiBriefArgs[5]), "atest");
+    ASSERT_EQ(getStr(ast, apiBriefArgs[6]), " ");
+    ASSERT_EQ(getDeclRef(ast, apiBriefArgs[7]), api);
+    ASSERT_EQ(getStr(ast, apiBriefArgs[8]), "\n");
+    ASSERT_EQ(getStr(ast, apiBriefArgs[9]), "   ");
+    ASSERT_EQ(getStr(ast, apiBriefArgs[10]), "te\\st");
+    ASSERT_EQ(getStr(ast, apiBriefArgs[11]), " ");
+    ASSERT_EQ(getStr(ast, apiBriefArgs[12]), "ind`ent");
+    ASSERT_EQ(getStr(ast, apiBriefArgs[13]), "\n");
+    ASSERT_EQ(getStr(ast, apiBriefArgs[14]), "   ");
+    ASSERT_EQ(getStr(ast, apiBriefArgs[15]), "test");
+    ASSERT_EQ(getStr(ast, apiBriefArgs[16]), " ");
+    ASSERT_EQ(getStr(ast, apiBriefArgs[17]), "{A}");
+    ASSERT_EQ(getStr(ast, apiBriefArgs[18]), " ");
+    ASSERT_EQ(getStr(ast, apiBriefArgs[19]), "Str[B]123");
+    ASSERT_EQ(getStr(ast, apiBriefArgs[20]), "\\");
+    ASSERT_EQ(getStr(ast, apiBriefArgs[21]), "n");
+    ASSERT_EQ(getStr(ast, apiBriefArgs[22]), "\n");
+    ASSERT_EQ(getStr(ast, apiBriefArgs[23]), "   ");
+    ASSERT_EQ(getStr(ast, apiBriefArgs[24]), "OK`");
 }
 
 TEST(idlc, SyntaxError) {

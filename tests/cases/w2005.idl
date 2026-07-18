@@ -1,0 +1,20 @@
+@ ```
+    Brief   \  \atest {Api}   
+       te\\st ind\`ent
+       test \{A\} Str\[B\]123\n
+       OK\````
+@ \eDetail\n\nTest\OK\s\s\s  123  \s\s  AAA\tBBB\ [detail]
+@    Copyright [copyright]
+@ License    [license]
+@ ```
+    Author
+  Indent
+  ``` [author]
+api Api
+
+@ Brief
+@ Detail [detail]
+enum Test
+    const Value1 @ Doc
+    const Value2 @ Doc
+    const Value3 @ Doc

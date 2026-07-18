@@ -238,6 +238,31 @@ TEST(idlc, IntegerOutOfRangeWarnAsErrors) {
     ASSERT_TRUE(checkConst(ast, secondConsts[4], 367, false, true, false));
 }
 
+TEST(idlc, SpecialCharacterExpectedAfterBackslash) {
+    const auto [result, ast, messages] = compile("w2005.idl");
+    deferred(idl_compilation_result_destroy(ast));
+    ASSERT_EQ(result, IDL_RESULT_SUCCESS);
+    ASSERT_EQ(messages.size(), 6);
+    ASSERT_EQ(messages[0],
+              "warning [W2005]: Special character expected after backslash; valid spacial characters '\\\\', '\\{', "
+              "'\\}', '\\[', '\\]', '\\`' at w2005:2:13");
+    ASSERT_EQ(messages[1],
+              "warning [W2005]: Special character expected after backslash; valid spacial characters '\\\\', '\\{', "
+              "'\\}', '\\[', '\\]', '\\`' at w2005:2:16");
+    ASSERT_EQ(messages[2],
+              "warning [W2005]: Special character expected after backslash; valid spacial characters '\\\\', '\\{', "
+              "'\\}', '\\[', '\\]', '\\`' at w2005:4:30");
+    ASSERT_EQ(messages[3],
+              "warning [W2005]: Special character expected after backslash; valid spacial characters '\\\\', '\\{', "
+              "'\\}', '\\[', '\\]', '\\s', '\\t', '\\n' at w2005:6:3");
+    ASSERT_EQ(messages[4],
+              "warning [W2005]: Special character expected after backslash; valid spacial characters '\\\\', '\\{', "
+              "'\\}', '\\[', '\\]', '\\s', '\\t', '\\n' at w2005:6:19");
+    ASSERT_EQ(messages[5],
+              "warning [W2005]: Special character expected after backslash; valid spacial characters '\\\\', '\\{', "
+              "'\\}', '\\[', '\\]', '\\s', '\\t', '\\n' at w2005:6:49");
+}
+
 TEST(idlc, SyntaxError) {
     const auto [result, ast, messages] = compile("e3001.idl");
     deferred(idl_compilation_result_destroy(ast));

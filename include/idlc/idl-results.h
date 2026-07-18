@@ -46,6 +46,7 @@ typedef enum
     IDL_STATUS_W2002    = 2002, /**< Repeated import. */
     IDL_STATUS_W2003    = 2003, /**< The constant refers to a constant declared below. */
     IDL_STATUS_W2004    = 2004, /**< Integer out of range. */
+    IDL_STATUS_W2005    = 2005, /**< Special character expected after backslash. */
     IDL_STATUS_E3001    = 3001, /**< Syntax error. */
     IDL_STATUS_E3002    = 3002, /**< Argument parsing error. */
     IDL_STATUS_E3003    = 3003, /**< The [version] attribute must have three required integer parameters, such as version(1, 2, 3) or version("string"). */

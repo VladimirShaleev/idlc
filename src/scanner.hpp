@@ -280,12 +280,54 @@ private:
         return str;
     }
 
+    std::string unescape(const std::string_view str, bool multiLine, const idl::location& loc) {
+        auto cStr = str.data();
+        std::ostringstream ss;
+        char c;
+        bool skip = false;
+        while ((c = *cStr++) != '\0') {
+            if (skip) {
+                skip = false;
+                continue;
+            }
+            char nc = *cStr;
+            if (c == '\\') {
+                if (nc != '\0') {
+                    if (nc == '{' || nc == '}' || nc == '[' || nc == ']') {
+                        continue;
+                    }
+                    if (nc == '\\') {
+                        ss << '\\';
+                        skip = true;
+                        continue;
+                    }
+                    if (nc == '`' && multiLine) {
+                        ss << '`';
+                        skip = true;
+                        continue;
+                    }
+                }
+                assert(!"unreachable code");
+            }
+            ss << c;
+        }
+        return ss.str();
+    }
+
     void setDeclaring(bool active = true) noexcept {
         _declaring = active;
     }
 
     [[nodiscard]] bool isDeclaring() const noexcept {
         return _declaring;
+    }
+
+    void setMultiline(bool multiline) noexcept {
+        _isMultiline = multiline;
+    }
+
+    [[nodiscar]] int isMultiline() const noexcept {
+        return _isMultiline;
     }
 
     void attrArg(AttrArgType type = Default) noexcept {
@@ -303,6 +345,8 @@ private:
     std::vector<std::unique_ptr<Import>> _imports{};
     std::map<std::string, std::unique_ptr<std::string>> _allImports{};
     bool _declaring{};
+    bool _isMultiline{};
+    std::optional<int> _indents{};
     AttrArgType _attrArg{};
     bool _needUpdateLoc{};
 };

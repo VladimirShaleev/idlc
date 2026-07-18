@@ -25,6 +25,8 @@ inline std::string err(Args&&... args) {
         str = fmt::format("The constant '{}' refers to a constant declared below '{}'", args...);
     } else if constexpr (Status == IDL_STATUS_W2004) {
         str = fmt::format("Integer {} with value {} out of range [{}, {}]", args...);
+    } else if constexpr (Status == IDL_STATUS_W2005) {
+        str = fmt::format("Special character expected after backslash; valid spacial characters {}", args...);
     } else if constexpr (Status == IDL_STATUS_E3001) {
         if constexpr (sizeof...(args) > 0) {
             str = fmt::format("Syntax error '{}'", args...);

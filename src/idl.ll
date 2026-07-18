@@ -8,10 +8,9 @@
     context().result()->intern({yylloc->begin.filename->c_str(), yylloc->begin.filename->length()}), \
     uint16_t(yylloc->begin.column), \
     uint16_t(yylloc->begin.line) } __VA_OPT__(,) __VA_ARGS__)
+#define yy_text_view std::string_view { YYText(), size_t(YYLeng()) } 
 using namespace std::string_literals;
 typedef idl::Parser::token token;
-std::string trim(const std::string& str);
-std::string unescape(const std::string& str);
 %}
 
 %option c++
@@ -24,14 +23,16 @@ std::string unescape(const std::string& str);
 %x ATTRSHORTARGCTX
 %x ATTRFALLBACKARGCTX
 %x DOCCTX
+%x MDOCCTX
 %x REFCTX
 %x IMPORTCTX
 
-DOCCHAR ([^ \r\n\t\{\}[\]]|\\\{|\\\}|\\\[|\\\])
-FLOAT   [-+]?[0-9]*\.[0-9]+([eE][-+]?[0-9]+)?
-INT     [-+]?[0-9]+
-SYMBOL  [a-zA-Z0-9_\-^\.@]
-SYMBOLS [a-zA-Z0-9_\-^\.@ ]
+MDOCCHAR ([^ \r\n\t\{\}[\]\\`]|\\\{|\\\}|\\\[|\\\]|\\\\|\\`)
+DOCCHAR  ([^ \r\n\t\{\}[\]\\]|\\\{|\\\}|\\\[|\\\]|\\\\)
+FLOAT    [-+]?[0-9]*\.[0-9]+([eE][-+]?[0-9]+)?
+INT      [-+]?[0-9]+
+SYMBOL   [a-zA-Z0-9_\-^\.@]
+SYMBOLS  [a-zA-Z0-9_\-^\.@ ]
 
 %%
 
@@ -72,12 +73,29 @@ SYMBOLS [a-zA-Z0-9_\-^\.@ ]
 <ATTRSHORTARGCTX,ATTRFALLBACKARGCTX>{SYMBOL}+{SYMBOLS}*{SYMBOL}+ { yylval->emplace<std::string>(YYText()); return token::INVALID_ARG; }
 <ATTRARGCTX,ATTRSHORTARGCTX,ATTRFALLBACKARGCTX>")"               { BEGIN(ATTRCTX); return YYText()[0]; }
 
-"@"                { BEGIN(DOCCTX); return isDeclaring() ? token::IDOC : token::DOC; }
-<DOCCTX>{DOCCHAR}+ { yylval->emplace<std::string>(unescape(trim(YYText()))); return token::STR; }
-<DOCCTX>"{"        { BEGIN(REFCTX); return YYText()[0]; }
-<DOCCTX>\[         { BEGIN(INITIAL); yyless(yyleng - 1); }
+@[ ]*```[ ]*\r?\n         { yylloc->lines(); BEGIN(MDOCCTX); setMultiline(true); return isDeclaring() ? token::IDOC : token::DOC; }
+<MDOCCTX>[ ]*```[ ]*\[    { setDeclaring(false); BEGIN(INITIAL); yyless(yyleng - 1); }
+<MDOCCTX>[ ]*```[ ]*\r?\n { yylloc->lines(); setDeclaring(false); BEGIN(INITIAL); }
+<MDOCCTX>\r?\n            { yylloc->lines(); yylval->emplace<std::string>("\n"); return token::STR; }
+<MDOCCTX>[ ]+\r?\n        { yylloc->lines(); yylval->emplace<std::string>("\n"); return token::STR; }
+<MDOCCTX>\t               { yylloc->lines(); yylval->emplace<std::string>("\t"); return token::STR; }
+<MDOCCTX>\\*              { log(W2005, "'\\\\', '\\{', '\\}', '\\[', '\\]', '\\`'"); yylval->emplace<std::string>(YYText()); return token::STR; }
+<MDOCCTX>[ ]+             { yylval->emplace<std::string>(YYText()); return token::STR; }
+<MDOCCTX>{MDOCCHAR}+      { yylval->emplace<std::string>(unescape(yy_text_view, true, *yylloc)); return token::STR; }
+<MDOCCTX>"{"              { BEGIN(REFCTX); return YYText()[0]; } 
+
+@[ ]*              { BEGIN(DOCCTX); setMultiline(false); return isDeclaring() ? token::IDOC : token::DOC; }
 <DOCCTX>\r?\n      { yylloc->lines(); setDeclaring(false); BEGIN(INITIAL); }
-<REFCTX>"}"        { BEGIN(DOCCTX); return YYText()[0]; }
+<DOCCTX>[ ]+\r?\n  { yylloc->lines(); setDeclaring(false); BEGIN(INITIAL); }
+<DOCCTX>[ ]+       { yylval->emplace<std::string>(" "); return token::STR; }
+<DOCCTX>(\\s)+     { yylval->emplace<std::string>(fmt::format("{:{}}", " ", YYLeng())); return token::STR; }
+<DOCCTX>(\\t)+     { yylval->emplace<std::string>(fmt::format("{:{}}", "\t", YYLeng())); return token::STR; }
+<DOCCTX>\\n        { yylval->emplace<std::string>("\n"); return token::STR; }
+<DOCCTX>\\*        { log(W2005, "'\\\\', '\\{', '\\}', '\\[', '\\]', '\\s', '\\t', '\\n'"); yylval->emplace<std::string>(YYText()); return token::STR; }
+<DOCCTX>{DOCCHAR}+ { yylval->emplace<std::string>(unescape(yy_text_view, false, *yylloc)); return token::STR; }
+<DOCCTX>"{"        { BEGIN(REFCTX); return YYText()[0]; }
+<DOCCTX>[ ]*\[     { BEGIN(INITIAL); yyless(yyleng - 1); }
+<REFCTX>"}"        { if (isMultiline()) { BEGIN(MDOCCTX); } else { BEGIN(DOCCTX); } return YYText()[0]; }
 
 import[ ]+ { BEGIN(IMPORTCTX); }
 <IMPORTCTX>.*\r?\n {
@@ -129,29 +147,4 @@ import[ ]+ { BEGIN(IMPORTCTX); }
 
 int yyFlexLexer::yylex() {
     throw std::runtime_error("Bad call to yyFlexLexer::yylex()");
-}
-
-std::string trim(const std::string& str) {
-    auto start = str.find_first_not_of(" \t\n\r");
-    if (start == std::string::npos) {
-        return "";
-    }
-    auto end = str.find_last_not_of(" \t\n\r");
-    return str.substr(start, end - start + 1);
-}
-
-std::string unescape(const std::string& str) {
-    auto cStr = str.c_str();
-    std::ostringstream ss;
-    char c;
-    while ((c = *cStr++) != '\0') {
-        char nc = *cStr;
-        if (c == '\\' && nc != '\0') {
-            if (nc == '{' || nc == '}' || nc == '[' || nc == ']') {
-                continue;
-            }
-        }
-        ss << c;
-    }
-    return ss.str();
 }

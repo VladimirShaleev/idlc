@@ -7,6 +7,28 @@ namespace idl::gen::idl {
 
 namespace {
 
+std::string escape(std::string_view str, bool multiLine = true) {
+    std::ostringstream ss;
+    for (const auto c : str) {
+        if (c == '{' || c == '}' || c == '[' || c == ']') {
+            ss << '\\' << c;
+        } else if (c == ' ' && !multiLine) {
+            ss << "\\s";
+        } else if (c == '\t') {
+            ss << "\\t";
+        } else if (c == '\\') {
+            ss << "\\\\";
+        } else if (c == '\n' && !multiLine) {
+            ss << "\\n";
+        } else if (c == '`' && multiLine) {
+            ss << "\\`";
+        } else {
+            ss << c;
+        }
+    }
+    return ss.str();
+}
+
 std::string refName(ASTNodeRef path, ASTNodeRef exclude) {
     FixedStack<ASTNodeRef, 20> pathStack;
     FixedStack<ASTNodeRef, 20> excludeStack;
@@ -307,7 +329,7 @@ struct ASTVisitor {
         std::ranges::sort(sortedDocs, {}, &std::pair<int, ASTNodeRef>::first);
         for (auto [_, doc] : sortedDocs) {
             fmt::print(out(), "{:{}}", "", state.indents * level);
-            printDocMessage(doc, level, !doc.is<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>());
+            printDocMessage(doc, level, !doc.is<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>(), false);
             fmt::print(out(), "\n");
         }
     }
@@ -316,18 +338,22 @@ struct ASTVisitor {
         if (hasIDoc) {
             if (auto detail = node.findChild<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>()) {
                 fmt::print(out(), " ");
-                printDocMessage(detail, level, false);
+                printDocMessage(detail, level, false, true);
             }
         }
     }
 
-    void printDocMessage(ASTNodeRef& node, int level, bool addAttr) {
+    void printDocMessage(ASTNodeRef& node, int level, bool addAttr, bool idoc) {
         const uint32_t start = state.indents * level + 2;
         uint32_t pos         = start;
         auto isMultiline     = false;
         for (auto data : node) {
             if (data.is<IDL_AST_NODE_TYPE_LITERAL_STR>()) {
                 auto str = data.valueStr();
+                if (str.find('\n') != std::string_view::npos) {
+                    isMultiline = true;
+                    break;
+                }
                 if (pos + str.length() > state.lineLength) {
                     isMultiline = true;
                     break;
@@ -337,18 +363,42 @@ struct ASTVisitor {
             }
         }
 
-        fmt::print(out(), "@ ");
-        auto hasPrev = false;
+        fmt::print(out(), "{:{}}@ {}", "", idoc ? 0 : state.indents * level, isMultiline ? "```\n" : "");
+        auto hasPrev   = false;
+        auto isNewLine = isMultiline;
         for (auto data : node) {
-            if (hasPrev) {
-                fmt::print(out(), " ");
+            if (isNewLine) {
+                fmt::print(out(), "{:{}}", "", state.indents * (level + 1));
             }
-            hasPrev = true;
             if (data.is<IDL_AST_NODE_TYPE_LITERAL_STR>()) {
-                fmt::print(out(), "{}", data.valueStr());
+                auto str = data.valueStr();
+                auto has = false;
+                if (str.length() && str[0] == '\n') {
+                    hasPrev   = false;
+                    isNewLine = true;
+                } else if (str.length() && str[0] == ' ') {
+                    hasPrev   = false;
+                    isNewLine = false;
+                } else {
+                    has       = true;
+                    isNewLine = false;
+                }
+                if (hasPrev) {
+                    fmt::print(out(), " ");
+                }
+                hasPrev = has;
+                fmt::print(out(), "{}", escape(data.valueStr()));
             } else if (data.is<IDL_AST_NODE_TYPE_DECL_REF>()) {
+                if (hasPrev) {
+                    fmt::print(out(), " ");
+                }
+                hasPrev   = true;
+                isNewLine = false;
                 fmt::print(out(), "{{{}}}", refName(data.resolveRef(), node.parent().parent()));
             }
+        }
+        if (isMultiline) {
+            fmt::print(out(), "```");
         }
         if (addAttr) {
             fmt::print(out(), " [{}]", attrName(node));

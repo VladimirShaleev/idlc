@@ -746,7 +746,29 @@ TEST(idlc, UnknownAttributeInDoc) {
 TEST(idlc, DocumentationStringEmpty) {
     const auto [result, ast, messages] = compile("e3016");
     deferred(idl_compilation_result_destroy(ast));
-    GTEST_FAIL();
+
+    ASSERT_EQ(result, IDL_RESULT_SUCCESS);
+    ASSERT_EQ(messages.size(), 6);
+    ASSERT_EQ(messages[0], "error [E3014]: The [brief] attribute must contain one or more arguments at e3016:1:1");
+    ASSERT_EQ(messages[1], "error [E3016]: The documentation string cannot be empty at e3016:1:1");
+    ASSERT_EQ(messages[2], "error [E3014]: The [copyright] attribute must contain one or more arguments at e3016:2:5");
+    ASSERT_EQ(messages[3], "error [E3016]: The documentation string cannot be empty at e3016:2:5");
+    ASSERT_EQ(messages[4], "error [E3014]: The [detail] attribute must contain one or more arguments at e3016:5:9");
+    ASSERT_EQ(messages[5], "error [E3016]: The documentation string cannot be empty at e3016:5:9");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto brief     = findChild(ast, api, IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF);
+    auto copyright = findChild(ast, api, IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT);
+    auto detail    = findChild(ast, api, IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL);
+    ASSERT_NE(brief, HandleNone);
+    ASSERT_NE(copyright, HandleNone);
+    ASSERT_NE(detail, HandleNone);
+
+    ASSERT_TRUE(getChilds(ast, brief).empty());
+    ASSERT_TRUE(getChilds(ast, copyright).empty());
+    ASSERT_TRUE(getChilds(ast, detail).empty());
 }
 
 TEST(idlc, MultiLineCommentMustBeSeparatedNL) {
@@ -771,7 +793,7 @@ TEST(idlc, MultiLineCommentMustBeSeparatedNL) {
 
     auto brief = findChild(ast, api, IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF);
     ASSERT_NE(brief, HandleNone);
-    
+
     ASSERT_TRUE(hasAllState(ast, brief, IDL_AST_NODE_STATE_MULTILINE_DOC_BIT));
 
     auto briefArgs = getChilds(ast, brief);

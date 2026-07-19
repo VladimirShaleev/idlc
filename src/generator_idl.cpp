@@ -265,6 +265,14 @@ struct ASTVisitor {
         printDecl(node, 1, true);
     }
 
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_STRUCT>) {
+        printDecl(node, 0, false);
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_FIELD>) {
+        printDecl(node, 1, true);
+    }
+
     template <ASTNodeType Type>
     void visit(ASTNodeRef&, Tag<Type>) noexcept {
     }

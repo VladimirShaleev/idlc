@@ -905,7 +905,7 @@ TEST(idlc, StructMustContainAtLeastOneField) {
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
-    ASSERT_EQ(messages[0], "error [E3045]: Enumeration 'Api.Test' must contain at least one constant at e3024:10:1");
+    ASSERT_EQ(messages[0], "error [E3024]: Structure 'Api.Test' must contain at least one field at e3024:10:1");
 
     auto api = idl_compilation_result_get_api(ast);
     ASSERT_NE(api, HandleNone);

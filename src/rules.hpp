@@ -62,7 +62,8 @@ struct AttrValidatorRules {
         static std::map allowed = { add<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(true),
                                     add<IDL_AST_NODE_TYPE_ATTR_CNAME>(),
                                     add<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>(),
-                                    add<IDL_AST_NODE_TYPE_ATTR_TYPE>(true) };
+                                    add<IDL_AST_NODE_TYPE_ATTR_TYPE>(true),
+                                    add<IDL_AST_NODE_TYPE_ATTR_REF>() };
         validate(node, allowed);
     }
 
@@ -716,6 +717,7 @@ struct BuildRules {
             }
             prevEnumConst = enumConst;
         }
+        node.setEvaulated();
 
         state.enums.push_back(node);
     }
@@ -732,6 +734,49 @@ struct BuildRules {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_FIELD>) {
+        auto& ctx = node.ctx();
+        if (!node.findChild<IDL_AST_NODE_TYPE_ATTR_TYPE>()) {
+            auto attrTypeHandle = ctx.result()->allocNode(node->location, IDL_AST_NODE_TYPE_ATTR_TYPE);
+            auto attrType       = ctx.getNodeRef(attrTypeHandle);
+            attrType->parent    = node.handle();
+            attrType->child     = ctx.result()->allocNode(node->location, IDL_AST_NODE_TYPE_DECL_REF);
+
+            auto declRef                 = ctx.getNodeRef(attrType->child);
+            declRef->parent              = attrTypeHandle;
+            declRef->valueDeclRef.symbol = ctx.result()->intern("Int32");
+
+            node.addChild(attrType);
+        }
+        auto type = node.declType();
+        if (!type) {
+            node.setBuildError();
+            return;
+        }
+        if (type.is<IDL_AST_NODE_TYPE_STRUCT>() && !type.evaulated()) {
+            auto attrType = node.findChild<IDL_AST_NODE_TYPE_ATTR_TYPE>();
+            auto hasRef   = !!node.findChild<IDL_AST_NODE_TYPE_ATTR_REF>();
+            if (node.parent() == type) {
+                if (!hasRef) {
+                    ctx.log<IDL_STATUS_E3033>(attrType->location, node.fullname(), type.fullname());
+                    node.setBuildError();
+                }
+            } else {
+                node.parent().setForwardDecl();
+                if (!hasRef) {
+                    ctx.log<IDL_STATUS_E3030>(attrType->location, node.fullname(), type.fullname());
+                    node.setBuildError();
+                }
+            }
+        } else if (!type.is<IDL_AST_NODE_TYPE_STRUCT>() && !type.evaulated()) {
+            node.parent().setForwardDecl();
+            auto attrType = node.findChild<IDL_AST_NODE_TYPE_ATTR_TYPE>();
+            ctx.log<IDL_STATUS_W2006>(
+                attrType->location, node.fullname(), type.accept<DeclToken>().str, type.fullname());
+        }
+        node.setEvaulated();
+        if (node->sibling == HandleNone) {
+            node.parent().setEvaulated();
+        }
     }
 
     std::optional<uint64_t> evaulateEnumConst(ASTNodeRef& enumConst) {

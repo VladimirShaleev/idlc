@@ -27,6 +27,8 @@ inline std::string err(Args&&... args) {
         str = fmt::format("Integer {} with value {} out of range [{}, {}]", args...);
     } else if constexpr (Status == IDL_STATUS_W2005) {
         str = fmt::format("Special character expected after backslash; valid spacial characters {}", args...);
+    } else if constexpr (Status == IDL_STATUS_W2006) {
+        str = fmt::format("The field '{}' type has the declaration type {} '{}' declared below", args...);
     } else if constexpr (Status == IDL_STATUS_E3001) {
         if constexpr (sizeof...(args) > 0) {
             str = fmt::format("Syntax error '{}'", args...);
@@ -91,18 +93,20 @@ inline std::string err(Args&&... args) {
     } else if constexpr (Status == IDL_STATUS_E3029) {
         str =
             fmt::format("The [cname] attribute must specify a name (\"{}\") without spaces and punctuations", args...);
-    } /*else if constexpr (Status == IDL_STATUS_E3030) {
-        str = fmt::format("TODO: empty slot");
-    } */
-    else if constexpr (Status == IDL_STATUS_E3031) {
+    } else if constexpr (Status == IDL_STATUS_E3030) {
+        str = fmt::format("This field '{}' has the type of the structure declared below '{}'; reoder declarations or "
+                          "use attribute [ref]",
+                          args...);
+    } else if constexpr (Status == IDL_STATUS_E3031) {
         str = fmt::format("Invalid tokenizer format string \"{}\", a valid string looks like (2-^3-4)", args...);
     } else if constexpr (Status == IDL_STATUS_E3032) {
         str = fmt::format(
             "Integer tokenization parameters or a tokenizer string must be passed to the attribute [tokenizer]");
-    } /*else if constexpr (Status == IDL_STATUS_E3033) {
-        str = fmt::format(
-            "TODO: empty slot");
-    }*/
+    } else if constexpr (Status == IDL_STATUS_E3033) {
+        str = fmt::format("The field '{}' type corresponds to the type of the structure '{}' in which it is contained; "
+                          "use attribute [ref]",
+                          args...);
+    }
     /*else if constexpr (Status == IDL_STATUS_E3034) {
         str = fmt::format("TODO: empty slot");
     }*/

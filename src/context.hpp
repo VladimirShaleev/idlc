@@ -192,6 +192,7 @@ public:
             } else {
                 _result->getNode(last)->sibling = node;
             }
+            getNodeRef(node).setEvaulated();
             last = node;
         };
 

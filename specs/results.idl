@@ -23,6 +23,7 @@ enum Status
     const W2003 : 2003 [tokenizer(0)] @ The constant refers to a constant declared below.
     const W2004 : 2004 [tokenizer(0)] @ Integer out of range.
     const W2005 : 2005 [tokenizer(0)] @ Special character expected after backslash.
+    const W2006 : 2006 [tokenizer(0)] @ The field type has the declaration type declared below.
 
     const E3001 : 3001 [tokenizer(0)] @ Syntax error.
     const E3002 : 3002 [tokenizer(0)] @ Argument parsing error.
@@ -53,10 +54,10 @@ enum Status
     const E3027 : 3027 [tokenizer(0)] @ The \[type\] attribute argument can only refer to symbols.
     const E3028 : 3028 [tokenizer(0)] @ The \[cname\] attribute must contain a single string literal argument.
     const E3029 : 3029 [tokenizer(0)] @ The \[cname\] attribute must specify a name without spaces and punctuations.
-    // const E3030 : 3030 [tokenizer(0)] @ TODO: empty slot
+    const E3030 : 3030 [tokenizer(0)] @ This field has the type of the structure declared below.
     const E3031 : 3031 [tokenizer(0)] @ Invalid tokenizer format string, a valid string looks like (2-^3-4).
     const E3032 : 3032 [tokenizer(0)] @ Integer tokenization parameters or a tokenizer string must be passed to the attribute \[tokenizer\].
-    // const E3033 : 3033 [tokenizer(0)] @ TODO: empty slot.
+    const E3033 : 3033 [tokenizer(0)] @ The field type corresponds to the type of the structure in which it is contained.
     // const E3034 : 3034 [tokenizer(0)] @ TODO: empty slot.
     // const E3035 : 3035 [tokenizer(0)] @ TODO: empty slot.
     const E3036 : 3036 [tokenizer(0)] @ Identifiers are case sensitive.

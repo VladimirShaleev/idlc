@@ -47,6 +47,7 @@ typedef enum
     IDL_STATUS_W2003    = 2003, /**< The constant refers to a constant declared below. */
     IDL_STATUS_W2004    = 2004, /**< Integer out of range. */
     IDL_STATUS_W2005    = 2005, /**< Special character expected after backslash. */
+    IDL_STATUS_W2006    = 2006, /**< The field type has the declaration type declared below. */
     IDL_STATUS_E3001    = 3001, /**< Syntax error. */
     IDL_STATUS_E3002    = 3002, /**< Argument parsing error. */
     IDL_STATUS_E3003    = 3003, /**< The [version] attribute must have three required integer parameters, such as version(1, 2, 3) or version("string"). */
@@ -76,8 +77,10 @@ typedef enum
     IDL_STATUS_E3027    = 3027, /**< The [type] attribute argument can only refer to symbols. */
     IDL_STATUS_E3028    = 3028, /**< The [cname] attribute must contain a single string literal argument. */
     IDL_STATUS_E3029    = 3029, /**< The [cname] attribute must specify a name without spaces and punctuations. */
+    IDL_STATUS_E3030    = 3030, /**< This field has the type of the structure declared below. */
     IDL_STATUS_E3031    = 3031, /**< Invalid tokenizer format string, a valid string looks like (2-^3-4). */
     IDL_STATUS_E3032    = 3032, /**< Integer tokenization parameters or a tokenizer string must be passed to the attribute [tokenizer]. */
+    IDL_STATUS_E3033    = 3033, /**< The field type corresponds to the type of the structure in which it is contained. */
     IDL_STATUS_E3036    = 3036, /**< Identifiers are case sensitive. */
     IDL_STATUS_E3037    = 3037, /**< Symbol definition not found. */
     IDL_STATUS_E3038    = 3038, /**< Constants can only refer to other constants when evaluated. */

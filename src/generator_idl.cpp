@@ -7,14 +7,20 @@ namespace idl::gen::idl {
 
 namespace {
 
-std::string escape(std::string_view str, bool multiLine = true) {
+std::string escapeStr(std::string_view str, bool multiLine) {
     std::ostringstream ss;
-    for (const auto c : str) {
+    bool escapeSpaces = false;
+    for (size_t i = 0; i < str.length(); ++i) {
+        auto c  = str[i];
+        auto nc = i + 1 < str.length() ? str[i + 1] : '\0';
         if (c == '{' || c == '}' || c == '[' || c == ']') {
             ss << '\\' << c;
-        } else if (c == ' ' && !multiLine) {
+        } else if (c == ' ' && nc == ' ' && !multiLine) {
             ss << "\\s";
-        } else if (c == '\t') {
+            escapeSpaces = true;
+        } else if (escapeSpaces) {
+            ss << "\\s";
+        } else if (c == '\t' && !multiLine) {
             ss << "\\t";
         } else if (c == '\\') {
             ss << "\\\\";
@@ -100,10 +106,7 @@ struct LiteralPrinter {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_LITERAL_STR>) {
-        constexpr std::string_view nonEscapedSymbols = "a-zA-Z0-9_-^.@";
-
         auto view = node.valueStr();
-
         std::string valueStr(view.data(), view.length());
         if (!addQuotes) {
             auto validSymbols = true;
@@ -158,6 +161,25 @@ struct AttrArgsGetter {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>) {
+        auto view = node.getChilds(origin);
+        if (origin) {
+            printArgs(false, view.begin(), view.end());
+        } else {
+            std::ostringstream ss;
+            auto hasPrev = false;
+            for (auto arg : view) {
+                if (hasPrev) {
+                    ss << '-';
+                }
+                if (const auto value = int64_t(arg->valueInt); value < 0) {
+                    ss << '^' << (-value);
+                } else {
+                    ss << value;
+                }
+                hasPrev = true;
+            }
+            args = ss.str();
+        }
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ATTR_VERSION>) {
@@ -344,57 +366,20 @@ struct ASTVisitor {
     }
 
     void printDocMessage(ASTNodeRef& node, int level, bool addAttr, bool idoc) {
-        const uint32_t start = state.indents * level + 2;
-        uint32_t pos         = start;
-        auto isMultiline     = false;
-        for (auto data : node) {
-            if (data.is<IDL_AST_NODE_TYPE_LITERAL_STR>()) {
-                auto str = data.valueStr();
-                if (str.find('\n') != std::string_view::npos) {
-                    isMultiline = true;
-                    break;
-                }
-                if (pos + str.length() > state.lineLength) {
-                    isMultiline = true;
-                    break;
-                }
-                pos += str.length();
-            } else if (data.is<IDL_AST_NODE_TYPE_DECL_REF>()) {
-            }
-        }
-
+        auto isMultiline = (node->flags & IDL_AST_NODE_STATE_MULTILINE_DOC_BIT) == IDL_AST_NODE_STATE_MULTILINE_DOC_BIT;
+        auto isNewLine   = isMultiline;
         fmt::print(out(), "{:{}}@ {}", "", idoc ? 0 : state.indents * level, isMultiline ? "```\n" : "");
-        auto hasPrev   = false;
-        auto isNewLine = isMultiline;
         for (auto data : node) {
-            if (isNewLine) {
+            if (isMultiline && isNewLine) {
                 fmt::print(out(), "{:{}}", "", state.indents * (level + 1));
             }
             if (data.is<IDL_AST_NODE_TYPE_LITERAL_STR>()) {
                 auto str = data.valueStr();
-                auto has = false;
-                if (str.length() && str[0] == '\n') {
-                    hasPrev   = false;
-                    isNewLine = true;
-                } else if (str.length() && str[0] == ' ') {
-                    hasPrev   = false;
-                    isNewLine = false;
-                } else {
-                    has       = true;
-                    isNewLine = false;
-                }
-                if (hasPrev) {
-                    fmt::print(out(), " ");
-                }
-                hasPrev = has;
-                fmt::print(out(), "{}", escape(data.valueStr()));
+                fmt::print(out(), "{}", escapeStr(str, isMultiline));
+                isNewLine = !str.empty() && str[0] == '\n';
             } else if (data.is<IDL_AST_NODE_TYPE_DECL_REF>()) {
-                if (hasPrev) {
-                    fmt::print(out(), " ");
-                }
-                hasPrev   = true;
-                isNewLine = false;
                 fmt::print(out(), "{{{}}}", refName(data.resolveRef(), node.parent().parent()));
+                isNewLine = false;
             }
         }
         if (isMultiline) {

@@ -61,7 +61,8 @@ struct AttrValidatorRules {
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_FIELD>) {
         static std::map allowed = { add<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(true),
                                     add<IDL_AST_NODE_TYPE_ATTR_CNAME>(),
-                                    add<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>() };
+                                    add<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>(),
+                                    add<IDL_AST_NODE_TYPE_ATTR_TYPE>(true) };
         validate(node, allowed);
     }
 

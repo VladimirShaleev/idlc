@@ -825,7 +825,30 @@ TEST(idlc, InlineDocAllowedDetailOnlyAttr) {
 TEST(idlc, FieldCanBeDefinedOnlyForStruct) {
     const auto [result, ast, messages] = compile("e3019.idl");
     deferred(idl_compilation_result_destroy(ast));
-    GTEST_FAIL();
+    ASSERT_EQ(result, IDL_RESULT_SUCCESS);
+    ASSERT_EQ(messages.size(), 1);
+    ASSERT_EQ(messages[0], "error [E3019]: A 'field' of 'Field' can be defined only for an 'struct' at e3019:12:5");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto test = findChild(ast, api, IDL_AST_NODE_TYPE_ENUM);
+    ASSERT_NE(test, HandleNone);
+
+    auto testChilds = getChilds(ast, test);
+    ASSERT_EQ(testChilds.size(), 3);
+    ASSERT_TRUE(isType(ast, testChilds[0], IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF));
+    ASSERT_TRUE(isType(ast, testChilds[1], IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL));
+    ASSERT_TRUE(isType(ast, testChilds[2], IDL_AST_NODE_TYPE_CONST));
+
+    auto srct = findChild(ast, api, IDL_AST_NODE_TYPE_STRUCT);
+    ASSERT_NE(test, HandleNone);
+
+    auto srctChilds = getChilds(ast, srct);
+    ASSERT_EQ(srctChilds.size(), 3);
+    ASSERT_TRUE(isType(ast, srctChilds[0], IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF));
+    ASSERT_TRUE(isType(ast, srctChilds[1], IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL));
+    ASSERT_TRUE(isType(ast, srctChilds[2], IDL_AST_NODE_TYPE_FIELD));
 }
 
 TEST(idlc, TabsNotAllowed) {

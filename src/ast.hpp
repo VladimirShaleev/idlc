@@ -80,7 +80,8 @@ inline bool isNodeType(const ASTNode* node, ASTNodeType type) noexcept {
             case IDL_AST_NODE_TYPE_ATTR_DOC:
                 return node->type >= IDL_AST_NODE_TYPE_ATTR_DOC && node->type < IDL_AST_NODE_TYPE_TYPE;
             case IDL_AST_NODE_TYPE_TYPE:
-                return node->type >= IDL_AST_NODE_TYPE_TYPE || node->type == IDL_AST_NODE_TYPE_ENUM;
+                return node->type >= IDL_AST_NODE_TYPE_TYPE || node->type == IDL_AST_NODE_TYPE_ENUM ||
+                       node->type == IDL_AST_NODE_TYPE_STRUCT;
             case IDL_AST_NODE_TYPE_TRIVIAL_TYPE:
                 return node->type >= IDL_AST_NODE_TYPE_TRIVIAL_TYPE;
             case IDL_AST_NODE_TYPE_INTEGER_TYPE:

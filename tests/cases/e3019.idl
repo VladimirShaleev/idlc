@@ -2,4 +2,16 @@
 @ Detail [detail]
 @ Copyright [copyright]
 @ License [license]
-api Api [author]
+@ Author [author]
+api Api
+
+@ Brief
+@ Detail [detail]
+enum Test
+    const Value @ Doc
+    field Field {Int32} @ Doc
+
+@ Brief
+@ Detail [detail]
+struct Struct
+    field Field {Int32} @ Doc

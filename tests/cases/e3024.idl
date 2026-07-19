@@ -6,5 +6,5 @@
 api Api
 
 @ Brief
-enum Test @ Detail
-    const Value [value] @ Empty value
+@ Detail [detail]
+struct Test

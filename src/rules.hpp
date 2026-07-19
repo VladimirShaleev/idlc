@@ -724,6 +724,16 @@ struct BuildRules {
         evaulateEnumConst(node);
     }
 
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_STRUCT>) {
+        if (!node.findChild<IDL_AST_NODE_TYPE_FIELD>()) {
+            node.ctx().log<IDL_STATUS_E3024>(node->location, node.fullname());
+            node.setBuildError();
+        }
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_FIELD>) {
+    }
+
     std::optional<uint64_t> evaulateEnumConst(ASTNodeRef& enumConst) {
         if (enumConst.evaulated()) {
             if (!enumConst.buildError()) {

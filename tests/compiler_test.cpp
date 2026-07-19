@@ -900,6 +900,23 @@ TEST(idlc, ConstCanBeDefinedOnlyForEnum) {
     ASSERT_EQ(value, HandleNone);
 }
 
+TEST(idlc, StructMustContainAtLeastOneField) {
+    const auto [result, ast, messages] = compile("e3024");
+    deferred(idl_compilation_result_destroy(ast));
+    ASSERT_EQ(result, IDL_RESULT_SUCCESS);
+    ASSERT_EQ(messages.size(), 1);
+    ASSERT_EQ(messages[0], "error [E3045]: Enumeration 'Api.Test' must contain at least one constant at e3024:10:1");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto test = findChild(ast, api, IDL_AST_NODE_TYPE_STRUCT);
+    ASSERT_NE(test, HandleNone);
+
+    auto fields = getChilds(ast, test, IDL_AST_NODE_TYPE_FIELD);
+    ASSERT_TRUE(fields.empty());
+}
+
 TEST(idlc, ValueAttrArgsMustBeLiteralsOrDeclReference) {
     const auto [result, ast, messages] = compile("e3025");
     deferred(idl_compilation_result_destroy(ast));

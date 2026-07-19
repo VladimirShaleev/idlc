@@ -78,10 +78,9 @@ inline std::string err(Args&&... args) {
         str = fmt::format("Failed to open file '{}'", args...);
     } else if constexpr (Status == IDL_STATUS_E3023) {
         str = fmt::format("A 'const' of '{}' can be defined only for an 'enum'", args...);
-    } /*else if constexpr (Status == IDL_STATUS_E3024) {
-        str = fmt::format("TODO: empty slot");
-    } */
-    else if constexpr (Status == IDL_STATUS_E3025) {
+    } else if constexpr (Status == IDL_STATUS_E3024) {
+        str = fmt::format("Structure '{}' must contain at least one field", args...);
+    } else if constexpr (Status == IDL_STATUS_E3025) {
         str = fmt::format("Arguments for the [value] attribute must be literals");
     } else if constexpr (Status == IDL_STATUS_E3026) {
         str = fmt::format("All literals in the [value] attribute must be of the same type");

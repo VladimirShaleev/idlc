@@ -53,7 +53,7 @@ struct ASTNode {
 
     union {
         String valueStr;
-        uint64_t valueInt;
+        int64_t valueInt;
         double valueFloat;
         bool valueBool;
         ASTName name;

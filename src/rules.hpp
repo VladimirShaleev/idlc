@@ -229,9 +229,9 @@ struct AttrArgRules {
             }
         } else if (argCount == 3 && arg0.is<IDL_AST_NODE_TYPE_LITERAL_INT>() &&
                    arg1.is<IDL_AST_NODE_TYPE_LITERAL_INT>() && arg2.is<IDL_AST_NODE_TYPE_LITERAL_INT>()) {
-            const auto major = int64_t(arg0->valueInt);
-            const auto minor = int64_t(arg1->valueInt);
-            const auto micro = int64_t(arg2->valueInt);
+            const auto major = arg0->valueInt;
+            const auto minor = arg1->valueInt;
+            const auto micro = arg2->valueInt;
             auto fail        = false;
             if (major < 0 || major > 255) {
                 ctx.log<IDL_STATUS_E3004>(node->location, major);
@@ -567,13 +567,13 @@ struct IntegerCastRules {
     void cast(ASTNodeRef& node) {
         std::string valueStr;
         if constexpr (std::numeric_limits<T>::is_signed) {
-            const auto valueInt = int64_t(value->valueInt);
+            const auto valueInt = value->valueInt;
             success = valueInt >= std::numeric_limits<T>::min() && valueInt <= std::numeric_limits<T>::max();
             if (!success) {
                 valueStr = std::to_string(valueInt);
             }
         } else {
-            const auto valueInt = value->valueInt;
+            const auto valueInt = uint64_t(value->valueInt);
             success = valueInt >= std::numeric_limits<T>::min() && valueInt <= std::numeric_limits<T>::max();
             if (!success) {
                 valueStr = std::to_string(valueInt);

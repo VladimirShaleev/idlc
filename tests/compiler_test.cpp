@@ -200,7 +200,7 @@ TEST(idlc, IntegerOutOfRange) {
     ASSERT_EQ(secondConsts.size(), 5);
     ASSERT_TRUE(checkConst(ast, secondConsts[0], 127, false, false, false));
     ASSERT_TRUE(checkConst(ast, secondConsts[1], 128, true, false, false));
-    ASSERT_TRUE(checkConst(ast, secondConsts[2], uint64_t(-130), false, false, false));
+    ASSERT_TRUE(checkConst(ast, secondConsts[2], -130, false, false, false));
     ASSERT_TRUE(checkConst(ast, secondConsts[3], 5, false, false, false));
     ASSERT_TRUE(checkConst(ast, secondConsts[4], 367, false, false, false));
 }
@@ -233,7 +233,7 @@ TEST(idlc, IntegerOutOfRangeWarnAsErrors) {
     ASSERT_EQ(secondConsts.size(), 5);
     ASSERT_TRUE(checkConst(ast, secondConsts[0], 127, false, false, false));
     ASSERT_TRUE(checkConst(ast, secondConsts[1], 128, true, true, false));
-    ASSERT_TRUE(checkConst(ast, secondConsts[2], uint64_t(-130), false, true, false));
+    ASSERT_TRUE(checkConst(ast, secondConsts[2], -130, false, true, false));
     ASSERT_TRUE(checkConst(ast, secondConsts[3], 5, false, false, false));
     ASSERT_TRUE(checkConst(ast, secondConsts[4], 367, false, true, false));
 }

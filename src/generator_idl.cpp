@@ -171,7 +171,7 @@ struct AttrArgsGetter {
                 if (hasPrev) {
                     ss << '-';
                 }
-                if (const auto value = int64_t(arg->valueInt); value < 0) {
+                if (const auto value = arg->valueInt; value < 0) {
                     ss << '^' << (-value);
                 } else {
                     ss << value;

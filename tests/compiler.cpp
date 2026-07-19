@@ -156,7 +156,7 @@ bool hasAnyState(idl_compilation_result_t result, idl_ast_node_h node, idl_ast_n
 
 bool checkConst(idl_compilation_result_t result,
                 idl_ast_node_h node,
-                uint64_t value,
+                int64_t value,
                 bool addedByCompiler,
                 bool buildFailed,
                 bool forwardDecl) {

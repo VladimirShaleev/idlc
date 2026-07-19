@@ -68,10 +68,9 @@ inline std::string err(Args&&... args) {
         str = fmt::format("The body of a multi-line comment '@ ```' must be separated by a new line");
     } else if constexpr (Status == IDL_STATUS_E3018) {
         str = fmt::format("Inline documentation only [detail] description is allowed");
-    } /*else if constexpr (Status == IDL_STATUS_E3019) {
-        str = fmt::format("TODO: empty slot");
-    }*/
-    else if constexpr (Status == IDL_STATUS_E3020) {
+    } else if constexpr (Status == IDL_STATUS_E3019) {
+        str = fmt::format("A 'field' of '{}' can be defined only for an 'struct'", args...);
+    } else if constexpr (Status == IDL_STATUS_E3020) {
         str = fmt::format("Tabs are not allowed");
     } else if constexpr (Status == IDL_STATUS_E3021) {
         str = fmt::format("could not find file '{}' for import", args...);

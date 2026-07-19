@@ -242,6 +242,12 @@ public:
                 case IDL_AST_NODE_TYPE_CONST:
                     visitor.visit(node, Tag<IDL_AST_NODE_TYPE_CONST>{});
                     break;
+                case IDL_AST_NODE_TYPE_STRUCT:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_STRUCT>{});
+                    break;
+                case IDL_AST_NODE_TYPE_FIELD:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_FIELD>{});
+                    break;
                 case IDL_AST_NODE_TYPE_DECL_REF:
                     visitor.visit(node, Tag<IDL_AST_NODE_TYPE_DECL_REF>{});
                     break;

@@ -137,6 +137,14 @@ struct DeclToken {
         str = "const";
     }
 
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_STRUCT>) {
+        str = "struct";
+    }
+
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_FIELD>) {
+        str = "field";
+    }
+
     void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_IMPORT>) {
         str = "import";
     }

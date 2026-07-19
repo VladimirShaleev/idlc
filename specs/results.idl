@@ -42,7 +42,7 @@ enum Status
     const E3016 : 3016 [tokenizer(0)] @ The documentation string cannot be empty.
     const E3017 : 3017 [tokenizer(0)] @ The body of a multi-line comment '@ ```' must be separated by a new line.
     const E3018 : 3018 [tokenizer(0)] @ Inline documentation only \[detail\] description is allowed.
-    // const E3019 : 3019 [tokenizer(0)] @ TODO: empty slot.
+    const E3019 : 3019 [tokenizer(0)] @ A 'field' can be defined only for an 'struct'.
     const E3020 : 3020 [tokenizer(0)] @ Tabs are not allowed.
     const E3021 : 3021 [tokenizer(0)] @ Could not find file for import.
     const E3022 : 3022 [tokenizer(0)] @ Failed to open file.

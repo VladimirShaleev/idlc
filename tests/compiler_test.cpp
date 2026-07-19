@@ -822,6 +822,12 @@ TEST(idlc, InlineDocAllowedDetailOnlyAttr) {
     ASSERT_TRUE(isType(ast, attrs[4], IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF));
 }
 
+TEST(idlc, FieldCanBeDefinedOnlyForStruct) {
+    const auto [result, ast, messages] = compile("e3019.idl");
+    deferred(idl_compilation_result_destroy(ast));
+    GTEST_FAIL();
+}
+
 TEST(idlc, TabsNotAllowed) {
     const auto [result, ast, messages] = compile("e3020");
     deferred(idl_compilation_result_destroy(ast));

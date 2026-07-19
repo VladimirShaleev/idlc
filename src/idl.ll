@@ -40,9 +40,11 @@ SYMBOLS  [a-zA-Z0-9_\-^\.@ ]
     yylloc->step();
 %}
 
-"api"   { setDeclaring(); return token::API; }
-"enum"  { setDeclaring(); return token::ENUM; }
-"const" { setDeclaring(); return token::CONST; }
+"api"    { setDeclaring(); return token::API; }
+"enum"   { setDeclaring(); return token::ENUM; }
+"const"  { setDeclaring(); return token::CONST; }
+"struct" { setDeclaring(); return token::STRUCT; }
+"field"  { setDeclaring(); return token::FIELD; }
 
 "["                    { BEGIN(ATTRCTX); return YYText()[0]; }
 <ATTRCTX>"("           { getAttrArg() == Default ? BEGIN(ATTRARGCTX) : getAttrArg() == ShortString ? BEGIN(ATTRSHORTARGCTX) : BEGIN(ATTRFALLBACKARGCTX); return YYText()[0]; }

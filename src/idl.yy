@@ -78,6 +78,8 @@
 %token API
 %token ENUM
 %token CONST
+%token STRUCT
+%token FIELD
 %token IMPORT
 %token POPIMPORT
 %token DOC
@@ -222,6 +224,8 @@ decl
     : API { $$ = alloc_node(@1, API); }
     | ENUM { $$ = alloc_node(@1, ENUM); }
     | CONST { $$ = alloc_node(@1, CONST); }
+    | STRUCT { $$ = alloc_node(@1, STRUCT); }
+    | FIELD { $$ = alloc_node(@1, FIELD); }
     | IMPORT { $$ = alloc_node(@1, IMPORT); }
     ;
 

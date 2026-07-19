@@ -49,6 +49,22 @@ struct AttrValidatorRules {
         validate(node, allowed);
     }
 
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_STRUCT>) {
+        static std::map allowed = { add<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>(true),
+                                    add<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(true),
+                                    add<IDL_AST_NODE_TYPE_ATTR_CNAME>(),
+                                    add<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>(),
+                                    add<IDL_AST_NODE_TYPE_ATTR_TYPE>() };
+        validate(node, allowed);
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_FIELD>) {
+        static std::map allowed = { add<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(true),
+                                    add<IDL_AST_NODE_TYPE_ATTR_CNAME>(),
+                                    add<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>() };
+        validate(node, allowed);
+    }
+
     template <ASTNodeType Type>
     void visit(ASTNodeRef& node, Tag<Type>) noexcept {
         if (node.is<IDL_AST_NODE_TYPE_DECL>()) {
@@ -486,6 +502,24 @@ struct HierarchyRules {
             parent.addChild(node);
         } else {
             node.ctx().log<IDL_STATUS_E3023>(node->location, node.name());
+            node->parent = node.ctx().result()->getApi();
+        }
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_STRUCT>) {
+        if (checkApi(node.ctx())) {
+            auto parent  = findRoot(node.ctx());
+            node->parent = parent.handle();
+            parent.addChild(node);
+        }
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_FIELD>) {
+        if (auto parent = findParent<IDL_AST_NODE_TYPE_STRUCT>(node.ctx())) {
+            node->parent = parent.handle();
+            parent.addChild(node);
+        } else {
+            node.ctx().log<IDL_STATUS_E3019>(node->location, node.name());
             node->parent = node.ctx().result()->getApi();
         }
     }

@@ -179,6 +179,9 @@ doc
     : DOC doc_nodes { $$ = alloc_node(@2, ATTR_DOC_BRIEF); rule(AttrArg, $$, $2.first, $2.last, $2.count); rule(AttrDocValidator, $$); }
     | DOC doc_nodes '[' ']' { $$ = alloc_node(@2, ATTR_DOC_BRIEF); rule(AttrArg, $$, $2.first, $2.last, $2.count); rule(AttrDocValidator, $$); log(N1002, @3); }
     | DOC doc_nodes '[' attr_item ']' { $$ = $4; rule(AttrArg, $$, $2.first, $2.last, $2.count); rule(AttrDocValidator, $$); if (isNodeType(node($4), IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF)) { log(N1003, @4); } }
+    | DOC { $$ = alloc_node(@1, ATTR_DOC_BRIEF); rule(AttrArg, $$, HandleNone, HandleNone, 0); rule(AttrDocValidator, $$); }
+    | DOC '[' ']' { $$ = alloc_node(@1, ATTR_DOC_BRIEF); rule(AttrArg, $$, HandleNone, HandleNone, 0); rule(AttrDocValidator, $$); log(N1002, @2); }
+    | DOC '[' attr_item ']' { $$ = $3; rule(AttrArg, $$, HandleNone, HandleNone, 0); rule(AttrDocValidator, $$); if (isNodeType(node($3), IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF)) { log(N1003, @3); } }
     | MDOC doc_nodes { $$ = alloc_node(@2, ATTR_DOC_BRIEF); rule(AttrArg, $$, $2.first, $2.last, $2.count); rule(AttrDocValidator, $$, true); }
     | MDOC doc_nodes '[' ']' { $$ = alloc_node(@2, ATTR_DOC_BRIEF); rule(AttrArg, $$, $2.first, $2.last, $2.count); rule(AttrDocValidator, $$, true); log(N1002, @3); }
     | MDOC doc_nodes '[' attr_item ']' { $$ = $4; rule(AttrArg, $$, $2.first, $2.last, $2.count); rule(AttrDocValidator, $$, true); if (isNodeType(node($4), IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF)) { log(N1003, @4); } }
@@ -188,6 +191,9 @@ idoc
     : IDOC doc_nodes { $$ = alloc_node(@2, ATTR_DOC_DETAIL); rule(AttrArg, $$, $2.first, $2.last, $2.count); rule(AttrDocValidator, $$); rule(AttrIDocValidator, $$); }
     | IDOC doc_nodes '[' ']' { $$ = alloc_node(@2, ATTR_DOC_DETAIL); rule(AttrArg, $$, $2.first, $2.last, $2.count); rule(AttrDocValidator, $$); rule(AttrIDocValidator, $$); log(N1002, @3); }
     | IDOC doc_nodes '[' attr_item ']' { $$ = $4; rule(AttrArg, $$, $2.first, $2.last, $2.count); rule(AttrDocValidator, $$); rule(AttrIDocValidator, $$); if (isNodeType(node($4), IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL)) { log(N1004, @4); } }
+    | IDOC { $$ = alloc_node(@1, ATTR_DOC_DETAIL); rule(AttrArg, $$, HandleNone, HandleNone, 0); rule(AttrDocValidator, $$); rule(AttrIDocValidator, $$); }
+    | IDOC '[' ']' { $$ = alloc_node(@1, ATTR_DOC_DETAIL); rule(AttrArg, $$, HandleNone, HandleNone, 0); rule(AttrDocValidator, $$); rule(AttrIDocValidator, $$); log(N1002, @2); }
+    | IDOC '[' attr_item ']' { $$ = $3; rule(AttrArg, $$, HandleNone, HandleNone, 0); rule(AttrDocValidator, $$); rule(AttrIDocValidator, $$); if (isNodeType(node($3), IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL)) { log(N1004, @3); } }
     | IMDOC doc_nodes { $$ = alloc_node(@2, ATTR_DOC_DETAIL); rule(AttrArg, $$, $2.first, $2.last, $2.count); rule(AttrDocValidator, $$, true); rule(AttrIDocValidator, $$); }
     | IMDOC doc_nodes '[' ']' { $$ = alloc_node(@2, ATTR_DOC_DETAIL); rule(AttrArg, $$, $2.first, $2.last, $2.count); rule(AttrDocValidator, $$, true); rule(AttrIDocValidator, $$); log(N1002, @3); }
     | IMDOC doc_nodes '[' attr_item ']' { $$ = $4; rule(AttrArg, $$, $2.first, $2.last, $2.count); rule(AttrDocValidator, $$, true); rule(AttrIDocValidator, $$); if (isNodeType(node($4), IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL)) { log(N1004, @4); } }

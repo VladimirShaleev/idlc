@@ -37,28 +37,28 @@ enum Status
     const E3011 : 3011 [tokenizer(0)] @ The first declaration in the description should always begin with the 'api' declaration.
     const E3012 : 3012 [tokenizer(0)] @ Symbol redefinition.
     const E3013 : 3013 [tokenizer(0)] @ Unknown attribute.
-    const E3014 : 3014 [tokenizer(0)] @ The \[brief\] attribute must contain one or more arguments.
+    const E3014 : 3014 [tokenizer(0)] @ Attribute must contain one or more arguments.
     const E3015 : 3015 [tokenizer(0)] @ Unknown attribute in the documentation.
     const E3016 : 3016 [tokenizer(0)] @ The documentation string cannot be empty.
-    const E3017 : 3017 [tokenizer(0)] @ The \[detail\] attribute must contain one or more arguments.
+    // const E3017 : 3017 [tokenizer(0)] @ TODO: empty slot.
     const E3018 : 3018 [tokenizer(0)] @ Inline documentation only \[detail\] description is allowed.
-    const E3019 : 3019 [tokenizer(0)] @ The \[author\] attribute must contain one or more arguments.
+    // const E3019 : 3019 [tokenizer(0)] @ TODO: empty slot.
     const E3020 : 3020 [tokenizer(0)] @ Tabs are not allowed.
     const E3021 : 3021 [tokenizer(0)] @ Could not find file for import.
     const E3022 : 3022 [tokenizer(0)] @ Failed to open file.
     const E3023 : 3023 [tokenizer(0)] @ A 'const' can be defined only for an 'enum'.
-    const E3024 : 3024 [tokenizer(0)] @ The \[value\] attribute must contain one or more arguments.
+    // const E3024 : 3024 [tokenizer(0)] @ TODO: empty slot.
     const E3025 : 3025 [tokenizer(0)] @ Arguments for the \[value\] attribute must be literals or declaration reference.
     const E3026 : 3026 [tokenizer(0)] @ All literals in the \[value\] attribute must be of the same type.
     const E3027 : 3027 [tokenizer(0)] @ The \[type\] attribute argument can only refer to symbols.
     const E3028 : 3028 [tokenizer(0)] @ The \[cname\] attribute must contain a single string literal argument.
     const E3029 : 3029 [tokenizer(0)] @ The \[cname\] attribute must specify a name without spaces and punctuations.
-    const E3030 : 3030 [tokenizer(0)] @ TODO: empty slot
+    // const E3030 : 3030 [tokenizer(0)] @ TODO: empty slot
     const E3031 : 3031 [tokenizer(0)] @ Invalid tokenizer format string, a valid string looks like (2-^3-4).
     const E3032 : 3032 [tokenizer(0)] @ Integer tokenization parameters or a tokenizer string must be passed to the attribute \[tokenizer\].
-    const E3033 : 3033 [tokenizer(0)] @ The \[tokeinzer\] attribute must contain one or more arguments (integers: 2, -2, 4 or string "2-^3-4").
-    const E3034 : 3034 [tokenizer(0)] @ The \[copyright\] attribute must contain one or more arguments.
-    const E3035 : 3035 [tokenizer(0)] @ The \[license\] attribute must contain one or more arguments.
+    // const E3033 : 3033 [tokenizer(0)] @ TODO: empty slot.
+    // const E3034 : 3034 [tokenizer(0)] @ TODO: empty slot.
+    // const E3035 : 3035 [tokenizer(0)] @ TODO: empty slot.
     const E3036 : 3036 [tokenizer(0)] @ Identifiers are case sensitive.
     const E3037 : 3037 [tokenizer(0)] @ Symbol definition not found.
     const E3038 : 3038 [tokenizer(0)] @ Constants can only refer to other constants when evaluated.

@@ -105,15 +105,19 @@ struct AttrValidatorRules {
 };
 
 struct AttrDocValidatorRules {
+    explicit AttrDocValidatorRules(bool multiline = false) noexcept : multiline(multiline) {
+    }
+
     template <ASTNodeType Type>
     void visit(ASTNodeRef& node, Tag<Type>) {
         if (node.is<IDL_AST_NODE_TYPE_ATTR>()) {
             if (node.is<IDL_AST_NODE_TYPE_ATTR_DOC>()) {
                 if (!node.hasChilds()) {
                     node.ctx().log<IDL_STATUS_E3016>(node->location);
-                } else if (node.multilineDoc()) {
-                    auto minIndents  = std::numeric_limits<size_t>::max();
-                    auto isNewLine   = true;
+                } else if (multiline) {
+                    node.setMultilineDoc();
+                    auto minIndents = std::numeric_limits<size_t>::max();
+                    auto isNewLine  = true;
                     for (auto arg : node) {
                         if (arg.is<IDL_AST_NODE_TYPE_LITERAL_STR>()) {
                             auto str = arg.valueStr();
@@ -123,7 +127,7 @@ struct AttrDocValidatorRules {
                                 }
                                 isNewLine = false;
                             } else if (str.length() == 1 && str[0] == '\n') {
-                                isNewLine   = true;
+                                isNewLine = true;
                             }
                         }
                     }
@@ -162,6 +166,8 @@ struct AttrDocValidatorRules {
             }
         }
     }
+
+    bool multiline{};
 };
 
 struct AttrIDocValidatorRules {
@@ -279,7 +285,7 @@ struct AttrArgRules {
         if (argCount > 0) {
             node->child = argFrist;
         } else {
-            node.ctx().log<IDL_STATUS_E3019>(node->location);
+            node.ctx().log<IDL_STATUS_E3014>(node->location, node.accept<AttrName>().str, "");
         }
     }
 
@@ -287,7 +293,7 @@ struct AttrArgRules {
         if (argCount > 0) {
             node->child = argFrist;
         } else {
-            node.ctx().log<IDL_STATUS_E3014>(node->location);
+            node.ctx().log<IDL_STATUS_E3014>(node->location, node.accept<AttrName>().str, "");
         }
     }
 
@@ -295,7 +301,7 @@ struct AttrArgRules {
         if (argCount > 0) {
             node->child = argFrist;
         } else {
-            node.ctx().log<IDL_STATUS_E3017>(node->location);
+            node.ctx().log<IDL_STATUS_E3014>(node->location, node.accept<AttrName>().str, "");
         }
     }
 
@@ -303,7 +309,7 @@ struct AttrArgRules {
         if (argCount > 0) {
             node->child = argFrist;
         } else {
-            node.ctx().log<IDL_STATUS_E3034>(node->location);
+            node.ctx().log<IDL_STATUS_E3014>(node->location, node.accept<AttrName>().str, "");
         }
     }
 
@@ -311,7 +317,7 @@ struct AttrArgRules {
         if (argCount > 0) {
             node->child = argFrist;
         } else {
-            node.ctx().log<IDL_STATUS_E3035>(node->location);
+            node.ctx().log<IDL_STATUS_E3014>(node->location, node.accept<AttrName>().str, "");
         }
     }
 
@@ -348,7 +354,7 @@ struct AttrArgRules {
                 }
             }
         } else {
-            node.ctx().log<IDL_STATUS_E3024>(node->location);
+            node.ctx().log<IDL_STATUS_E3014>(node->location, node.accept<AttrName>().str, "");
         }
     }
 
@@ -423,7 +429,8 @@ struct AttrArgRules {
                 }
             }
         } else {
-            ctx.log<IDL_STATUS_E3033>(node->location);
+            ctx.log<IDL_STATUS_E3014>(
+                node->location, node.accept<AttrName>().str, " (integers: 2, -2, 4 or string \"2-^3-4\")");
         }
     }
 

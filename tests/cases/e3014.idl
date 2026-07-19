@@ -1,5 +1,5 @@
-@ Detail [detail]
-@ Copyright [copyright]
-@ License [license]
-@ Author [author]
-api Api [brief] 
+api Api [brief,detail,copyright,license,author,tokenizer] 
+
+@ Brief
+enum Test @ Detail
+    const Value [value] @ Empty value

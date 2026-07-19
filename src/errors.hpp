@@ -59,18 +59,20 @@ inline std::string err(Args&&... args) {
     } else if constexpr (Status == IDL_STATUS_E3013) {
         str = fmt::format("Unknown attribute [{}]", args...);
     } else if constexpr (Status == IDL_STATUS_E3014) {
-        str = fmt::format("The [brief] attribute must contain one or more arguments");
+        str = fmt::format("The [{}] attribute must contain one or more arguments{}", args...);
     } else if constexpr (Status == IDL_STATUS_E3015) {
         str = fmt::format("Unknown attribute in the documentation [{}]", args...);
     } else if constexpr (Status == IDL_STATUS_E3016) {
         str = fmt::format("The documentation string cannot be empty");
-    } else if constexpr (Status == IDL_STATUS_E3017) {
-        str = fmt::format("The [detail] attribute must contain one or more arguments");
-    } else if constexpr (Status == IDL_STATUS_E3018) {
+    } /*else if constexpr (Status == IDL_STATUS_E3017) {
+        str = fmt::format("TODO: empty slot");
+    }*/
+    else if constexpr (Status == IDL_STATUS_E3018) {
         str = fmt::format("Inline documentation only [detail] description is allowed");
-    } else if constexpr (Status == IDL_STATUS_E3019) {
-        str = fmt::format("The [author] attribute must contain one or more arguments");
-    } else if constexpr (Status == IDL_STATUS_E3020) {
+    } /*else if constexpr (Status == IDL_STATUS_E3019) {
+        str = fmt::format("TODO: empty slot");
+    }*/
+    else if constexpr (Status == IDL_STATUS_E3020) {
         str = fmt::format("Tabs are not allowed");
     } else if constexpr (Status == IDL_STATUS_E3021) {
         str = fmt::format("could not find file '{}' for import", args...);
@@ -78,9 +80,10 @@ inline std::string err(Args&&... args) {
         str = fmt::format("Failed to open file '{}'", args...);
     } else if constexpr (Status == IDL_STATUS_E3023) {
         str = fmt::format("A 'const' of '{}' can be defined only for an 'enum'", args...);
-    } else if constexpr (Status == IDL_STATUS_E3024) {
-        str = fmt::format("The [value] attribute must contain one or more arguments");
-    } else if constexpr (Status == IDL_STATUS_E3025) {
+    } /*else if constexpr (Status == IDL_STATUS_E3024) {
+        str = fmt::format("TODO: empty slot");
+    } */
+    else if constexpr (Status == IDL_STATUS_E3025) {
         str = fmt::format("Arguments for the [value] attribute must be literals");
     } else if constexpr (Status == IDL_STATUS_E3026) {
         str = fmt::format("All literals in the [value] attribute must be of the same type");
@@ -91,21 +94,24 @@ inline std::string err(Args&&... args) {
     } else if constexpr (Status == IDL_STATUS_E3029) {
         str =
             fmt::format("The [cname] attribute must specify a name (\"{}\") without spaces and punctuations", args...);
-    } else if constexpr (Status == IDL_STATUS_E3030) {
+    } /*else if constexpr (Status == IDL_STATUS_E3030) {
         str = fmt::format("TODO: empty slot");
-    } else if constexpr (Status == IDL_STATUS_E3031) {
+    } */
+    else if constexpr (Status == IDL_STATUS_E3031) {
         str = fmt::format("Invalid tokenizer format string \"{}\", a valid string looks like (2-^3-4)", args...);
     } else if constexpr (Status == IDL_STATUS_E3032) {
         str = fmt::format(
             "Integer tokenization parameters or a tokenizer string must be passed to the attribute [tokenizer]");
-    } else if constexpr (Status == IDL_STATUS_E3033) {
+    } /*else if constexpr (Status == IDL_STATUS_E3033) {
         str = fmt::format(
-            "The [tokenizer] attribute must contain one or more arguments (integers: 2, -2, 4 or string \"2-^3-4\")");
-    } else if constexpr (Status == IDL_STATUS_E3034) {
-        str = fmt::format("The [copyright] attribute must contain one or more arguments");
-    } else if constexpr (Status == IDL_STATUS_E3035) {
-        str = fmt::format("The [license] attribute must contain one or more arguments");
-    } else if constexpr (Status == IDL_STATUS_E3036) {
+            "TODO: empty slot");
+    }*/
+    /*else if constexpr (Status == IDL_STATUS_E3034) {
+        str = fmt::format("TODO: empty slot");
+    }*/
+    /* else if constexpr (Status == IDL_STATUS_E3035) {
+    str = fmt::format("TODO: empty slot");
+}*/ else if constexpr (Status == IDL_STATUS_E3036) {
         str = fmt::format("Identifiers are case sensitive, error in '{}', but expected '{}'", args...);
     } else if constexpr (Status == IDL_STATUS_E3037) {
         str = fmt::format("Symbol definition '{}' not found", args...);

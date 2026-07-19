@@ -298,6 +298,16 @@ TEST(idlc, SpecialCharacterExpectedAfterBackslash) {
     ASSERT_NE(value1Detail, HandleNone);
     ASSERT_NE(value2Detail, HandleNone);
     ASSERT_NE(value3Detail, HandleNone);
+    ASSERT_TRUE(hasAllState(ast, apiBrief, IDL_AST_NODE_STATE_MULTILINE_DOC_BIT));
+    ASSERT_FALSE(hasAllState(ast, apiDetail, IDL_AST_NODE_STATE_MULTILINE_DOC_BIT));
+    ASSERT_FALSE(hasAllState(ast, apiCopyright, IDL_AST_NODE_STATE_MULTILINE_DOC_BIT));
+    ASSERT_FALSE(hasAllState(ast, apiLicense, IDL_AST_NODE_STATE_MULTILINE_DOC_BIT));
+    ASSERT_TRUE(hasAllState(ast, apiAuthor, IDL_AST_NODE_STATE_MULTILINE_DOC_BIT));
+    ASSERT_FALSE(hasAllState(ast, testBrief, IDL_AST_NODE_STATE_MULTILINE_DOC_BIT));
+    ASSERT_FALSE(hasAllState(ast, testDetail, IDL_AST_NODE_STATE_MULTILINE_DOC_BIT));
+    ASSERT_FALSE(hasAllState(ast, value1Detail, IDL_AST_NODE_STATE_MULTILINE_DOC_BIT));
+    ASSERT_TRUE(hasAllState(ast, value2Detail, IDL_AST_NODE_STATE_MULTILINE_DOC_BIT));
+    ASSERT_FALSE(hasAllState(ast, value3Detail, IDL_AST_NODE_STATE_MULTILINE_DOC_BIT));
 
     auto apiBriefArgs = getChilds(ast, apiBrief);
     ASSERT_EQ(apiBriefArgs.size(), 25);
@@ -405,7 +415,7 @@ TEST(idlc, SpecialCharacterExpectedAfterBackslash) {
     ASSERT_EQ(getDeclRef(ast, value2DetailArgs[19]), value2);
     ASSERT_EQ(getStr(ast, value2DetailArgs[20]), ".");
     ASSERT_EQ(getStr(ast, value2DetailArgs[21]), "\n");
-    
+
     auto value3DetailArgs = getChilds(ast, value3Detail);
     ASSERT_EQ(value3DetailArgs.size(), 3);
     ASSERT_EQ(getStr(ast, value3DetailArgs[0]), "Test");
@@ -647,26 +657,50 @@ TEST(idlc, UnknownAttribute) {
     ASSERT_TRUE(isType(ast, attrs[5], IDL_AST_NODE_TYPE_ATTR_VERSION));
 }
 
-TEST(idlc, BriefAttrMustContainOneOrMoreArgs) {
+TEST(idlc, AttrMustContainOneOrMoreArgs) {
     const auto [result, ast, messages] = compile("e3014.idl");
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
-    ASSERT_EQ(messages.size(), 1);
-    ASSERT_EQ(messages[0], "error [E3014]: The [brief] attribute must contain one or more arguments at e3014:5:10");
+    ASSERT_EQ(messages.size(), 7);
+    ASSERT_EQ(messages[0], "error [E3014]: The [brief] attribute must contain one or more arguments at e3014:1:7");
+    ASSERT_EQ(messages[1], "error [E3014]: The [detail] attribute must contain one or more arguments at e3014:1:13");
+    ASSERT_EQ(messages[2], "error [E3014]: The [copyright] attribute must contain one or more arguments at e3014:1:20");
+    ASSERT_EQ(messages[3], "error [E3014]: The [license] attribute must contain one or more arguments at e3014:1:30");
+    ASSERT_EQ(messages[4], "error [E3014]: The [author] attribute must contain one or more arguments at e3014:1:38");
+    ASSERT_EQ(messages[5],
+              "error [E3014]: The [tokenizer] attribute must contain one or more arguments (integers: 2, -2, 4 or "
+              "string \"2-^3-4\") at e3014:1:45");
+    ASSERT_EQ(messages[6], "error [E3014]: The [value] attribute must contain one or more arguments at e3014:5:18");
 
     auto api = idl_compilation_result_get_api(ast);
     ASSERT_NE(api, HandleNone);
 
     auto attrs = getAttrs(ast, api);
-    ASSERT_EQ(attrs.size(), 5);
-    ASSERT_TRUE(isType(ast, attrs[0], IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL));
-    ASSERT_TRUE(isType(ast, attrs[1], IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT));
-    ASSERT_TRUE(isType(ast, attrs[2], IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE));
-    ASSERT_TRUE(isType(ast, attrs[3], IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR));
-    ASSERT_TRUE(isType(ast, attrs[4], IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF));
+    ASSERT_EQ(attrs.size(), 6);
+    ASSERT_TRUE(isType(ast, attrs[0], IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF));
+    ASSERT_TRUE(isType(ast, attrs[1], IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL));
+    ASSERT_TRUE(isType(ast, attrs[2], IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT));
+    ASSERT_TRUE(isType(ast, attrs[3], IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE));
+    ASSERT_TRUE(isType(ast, attrs[4], IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR));
+    ASSERT_TRUE(isType(ast, attrs[5], IDL_AST_NODE_TYPE_ATTR_TOKENIZER));
+    ASSERT_TRUE(getChilds(ast, attrs[0]).empty());
+    ASSERT_TRUE(getChilds(ast, attrs[1]).empty());
+    ASSERT_TRUE(getChilds(ast, attrs[2]).empty());
+    ASSERT_TRUE(getChilds(ast, attrs[3]).empty());
+    ASSERT_TRUE(getChilds(ast, attrs[4]).empty());
+    ASSERT_TRUE(getChilds(ast, attrs[5]).empty());
 
-    auto args = getChilds(ast, attrs[4]);
-    ASSERT_TRUE(args.empty());
+    auto test = findChild(ast, api, IDL_AST_NODE_TYPE_ENUM);
+    ASSERT_NE(test, HandleNone);
+
+    auto value = findChild(ast, test, IDL_AST_NODE_TYPE_CONST);
+    ASSERT_NE(value, HandleNone);
+
+    auto attrValue = findChild(ast, value, IDL_AST_NODE_TYPE_ATTR_VALUE);
+    ASSERT_NE(attrValue, HandleNone);
+
+    auto attrValueArgs = getChilds(ast, attrValue);
+    ASSERT_TRUE(attrValueArgs.empty());
 }
 
 TEST(idlc, UnknownAttributeInDoc) {
@@ -715,28 +749,6 @@ TEST(idlc, DocumentationStringEmpty) {
     GTEST_FAIL();
 }
 
-TEST(idlc, DetailAttrMustContainOneOrMoreArgs) {
-    const auto [result, ast, messages] = compile("e3017");
-    deferred(idl_compilation_result_destroy(ast));
-    ASSERT_EQ(result, IDL_RESULT_SUCCESS);
-    ASSERT_EQ(messages.size(), 1);
-    ASSERT_EQ(messages[0], "error [E3017]: The [detail] attribute must contain one or more arguments at e3017:5:10");
-
-    auto api = idl_compilation_result_get_api(ast);
-    ASSERT_NE(api, HandleNone);
-
-    auto attrs = getAttrs(ast, api);
-    ASSERT_EQ(attrs.size(), 5);
-    ASSERT_TRUE(isType(ast, attrs[0], IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF));
-    ASSERT_TRUE(isType(ast, attrs[1], IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT));
-    ASSERT_TRUE(isType(ast, attrs[2], IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE));
-    ASSERT_TRUE(isType(ast, attrs[3], IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR));
-    ASSERT_TRUE(isType(ast, attrs[4], IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL));
-
-    auto args = getChilds(ast, attrs[4]);
-    ASSERT_TRUE(args.empty());
-}
-
 TEST(idlc, InlineDocAllowedDetailOnlyAttr) {
     const auto [result, ast, messages] = compile("e3018");
     deferred(idl_compilation_result_destroy(ast));
@@ -754,28 +766,6 @@ TEST(idlc, InlineDocAllowedDetailOnlyAttr) {
     ASSERT_TRUE(isType(ast, attrs[2], IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE));
     ASSERT_TRUE(isType(ast, attrs[3], IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR));
     ASSERT_TRUE(isType(ast, attrs[4], IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF));
-}
-
-TEST(idlc, AuthorAttrMustContainOneOrMoreArgs) {
-    const auto [result, ast, messages] = compile("e3019.idl");
-    deferred(idl_compilation_result_destroy(ast));
-    ASSERT_EQ(result, IDL_RESULT_SUCCESS);
-    ASSERT_EQ(messages.size(), 1);
-    ASSERT_EQ(messages[0], "error [E3019]: The [author] attribute must contain one or more arguments at e3019:5:10");
-
-    auto api = idl_compilation_result_get_api(ast);
-    ASSERT_NE(api, HandleNone);
-
-    auto attrs = getAttrs(ast, api);
-    ASSERT_EQ(attrs.size(), 5);
-    ASSERT_TRUE(isType(ast, attrs[0], IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF));
-    ASSERT_TRUE(isType(ast, attrs[1], IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL));
-    ASSERT_TRUE(isType(ast, attrs[2], IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT));
-    ASSERT_TRUE(isType(ast, attrs[3], IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE));
-    ASSERT_TRUE(isType(ast, attrs[4], IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR));
-
-    auto args = getChilds(ast, attrs[4]);
-    ASSERT_TRUE(args.empty());
 }
 
 TEST(idlc, TabsNotAllowed) {
@@ -825,29 +815,6 @@ TEST(idlc, ConstCanBeDefinedOnlyForEnum) {
 
     auto value = findChild(ast, api, IDL_AST_NODE_TYPE_CONST);
     ASSERT_EQ(value, HandleNone);
-}
-
-TEST(idlc, ValueAttrMustContainOneOrMoreArgs) {
-    const auto [result, ast, messages] = compile("e3024");
-    deferred(idl_compilation_result_destroy(ast));
-    ASSERT_EQ(result, IDL_RESULT_SUCCESS);
-    ASSERT_EQ(messages.size(), 1);
-    ASSERT_EQ(messages[0], "error [E3024]: The [value] attribute must contain one or more arguments at e3024:10:18");
-
-    auto api = idl_compilation_result_get_api(ast);
-    ASSERT_NE(api, HandleNone);
-
-    auto test = findChild(ast, api, IDL_AST_NODE_TYPE_ENUM);
-    ASSERT_NE(test, HandleNone);
-
-    auto value = findChild(ast, test, IDL_AST_NODE_TYPE_CONST);
-    ASSERT_NE(value, HandleNone);
-
-    auto attrValue = findChild(ast, value, IDL_AST_NODE_TYPE_ATTR_VALUE);
-    ASSERT_NE(attrValue, HandleNone);
-
-    auto attrValueArgs = getChilds(ast, attrValue);
-    ASSERT_TRUE(attrValueArgs.empty());
 }
 
 TEST(idlc, ValueAttrArgsMustBeLiteralsOrDeclReference) {
@@ -1014,59 +981,6 @@ TEST(idlc, IntTokenizationParamsOrFmtStringMustBePassedToTokenizerAttr) {
         auto attrArgs = getChilds(ast, attr);
         ASSERT_TRUE(attrArgs.empty());
     }
-}
-
-TEST(idlc, TokenizerAttrMustContainOneOrMoreArgs) {
-    const auto [result, ast, messages] = compile("e3033");
-    deferred(idl_compilation_result_destroy(ast));
-    ASSERT_EQ(result, IDL_RESULT_SUCCESS);
-    ASSERT_EQ(messages.size(), 1);
-    ASSERT_EQ(messages[0],
-              "error [E3033]: The [tokenizer] attribute must contain one or more arguments (integers: 2, -2, 4 or "
-              "string \"2-^3-4\") at e3033:6:10");
-
-    auto api = idl_compilation_result_get_api(ast);
-    ASSERT_NE(api, HandleNone);
-
-    auto attrs = getAttrs(ast, api, AttrFilterNonDoc);
-    for (auto attr : attrs) {
-        auto attrArgs = getChilds(ast, attr);
-        ASSERT_TRUE(attrArgs.empty());
-    }
-}
-
-TEST(idlc, CopyrightAttrMustContainOneOrMoreArgs) {
-    const auto [result, ast, messages] = compile("e3034");
-    deferred(idl_compilation_result_destroy(ast));
-    ASSERT_EQ(result, IDL_RESULT_SUCCESS);
-    ASSERT_EQ(messages.size(), 1);
-    ASSERT_EQ(messages[0], "error [E3034]: The [copyright] attribute must contain one or more arguments at e3034:5:10");
-
-    auto api = idl_compilation_result_get_api(ast);
-    ASSERT_NE(api, HandleNone);
-
-    auto copyright = findChild(ast, api, IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT);
-    ASSERT_NE(copyright, HandleNone);
-
-    auto copyrightArgs = getChilds(ast, copyright);
-    ASSERT_TRUE(copyrightArgs.empty());
-}
-
-TEST(idlc, LicenseAttrMustContainOneOrMoreArgs) {
-    const auto [result, ast, messages] = compile("e3035");
-    deferred(idl_compilation_result_destroy(ast));
-    ASSERT_EQ(result, IDL_RESULT_SUCCESS);
-    ASSERT_EQ(messages.size(), 1);
-    ASSERT_EQ(messages[0], "error [E3035]: The [license] attribute must contain one or more arguments at e3035:5:10");
-
-    auto api = idl_compilation_result_get_api(ast);
-    ASSERT_NE(api, HandleNone);
-
-    auto license = findChild(ast, api, IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE);
-    ASSERT_NE(license, HandleNone);
-
-    auto licenseArgs = getChilds(ast, license);
-    ASSERT_TRUE(licenseArgs.empty());
 }
 
 TEST(idlc, IdentifiersCaseSensitive) {

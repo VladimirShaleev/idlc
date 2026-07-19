@@ -1,7 +1,7 @@
 @ ```
     Brief   \  \atest {Api}   
        te\\st ind\`ent
-       test \{A\} Str\[B\]123\n
+       test	\{A\} Str\[B\]123\n
        OK\````
 @ \eDetail\n\nTest\OK\s\s\s  123  \s\s  AAA\tBBB\ [detail]
 @    Copyright [copyright]

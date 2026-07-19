@@ -78,7 +78,7 @@ SYMBOLS  [a-zA-Z0-9_\-^\.@ ]
 <MDOCCTX>[ ]*```[ ]*\r?\n { yylloc->lines(); setDeclaring(false); BEGIN(INITIAL); }
 <MDOCCTX>\r?\n            { yylloc->lines(); yylval->emplace<std::string>("\n"); return token::STR; }
 <MDOCCTX>[ ]+\r?\n        { yylloc->lines(); yylval->emplace<std::string>("\n"); return token::STR; }
-<MDOCCTX>\t               { yylloc->lines(); yylval->emplace<std::string>("\t"); return token::STR; }
+<MDOCCTX>\t               { yylval->emplace<std::string>("\t"); return token::STR; }
 <MDOCCTX>\\*              { log(W2005, "'\\\\', '\\{', '\\}', '\\[', '\\]', '\\`'"); yylval->emplace<std::string>(YYText()); return token::STR; }
 <MDOCCTX>[ ]+             { yylval->emplace<std::string>(YYText()); return token::STR; }
 <MDOCCTX>{MDOCCHAR}+      { yylval->emplace<std::string>(unescape(yy_text_view, true, *yylloc)); return token::STR; }

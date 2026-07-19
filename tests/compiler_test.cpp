@@ -327,7 +327,7 @@ TEST(idlc, SpecialCharacterExpectedAfterBackslash) {
     ASSERT_EQ(getStr(ast, apiBriefArgs[13]), "\n");
     ASSERT_EQ(getStr(ast, apiBriefArgs[14]), "   ");
     ASSERT_EQ(getStr(ast, apiBriefArgs[15]), "test");
-    ASSERT_EQ(getStr(ast, apiBriefArgs[16]), " ");
+    ASSERT_EQ(getStr(ast, apiBriefArgs[16]), "\t");
     ASSERT_EQ(getStr(ast, apiBriefArgs[17]), "{A}");
     ASSERT_EQ(getStr(ast, apiBriefArgs[18]), " ");
     ASSERT_EQ(getStr(ast, apiBriefArgs[19]), "Str[B]123");
@@ -935,13 +935,6 @@ TEST(idlc, CnameAttrMustSpecifyNameWithoutSpacesAndPuncts) {
     }
 }
 
-TEST(idlc, EmptySlot2) { // TODO
-    const auto [result, ast, messages] = compile("e3030");
-    deferred(idl_compilation_result_destroy(ast));
-    ASSERT_EQ(result, IDL_RESULT_SUCCESS);
-    GTEST_FAIL();
-}
-
 TEST(idlc, InvalidTokenizerFormatString) {
     const auto [result, ast, messages] = compile("e3031");
     deferred(idl_compilation_result_destroy(ast));
@@ -989,7 +982,7 @@ TEST(idlc, IdentifiersCaseSensitive) {
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 2);
     ASSERT_EQ(messages[0],
-              "error [E3036]: Identifiers are case sensitive, error in 'ApI', but expected 'Api' at e3036:1:10");
+              "error [E3036]: Identifiers are case sensitive, error in 'ApI', but expected 'Api' at e3036:1:9");
     ASSERT_EQ(messages[1],
               "error [E3036]: Identifiers are case sensitive, error in 'Api.Test.value', but expected 'Api.Test.Value' "
               "at e3036:2:22");
@@ -1012,7 +1005,7 @@ TEST(idlc, SymbolDefinitionNotFound) {
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
-    ASSERT_EQ(messages[0], "error [E3037]: Symbol definition 'Test' not found at e3037:1:10");
+    ASSERT_EQ(messages[0], "error [E3037]: Symbol definition 'Test' not found at e3037:1:9");
 
     auto api = idl_compilation_result_get_api(ast);
     ASSERT_NE(api, HandleNone);

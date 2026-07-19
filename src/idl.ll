@@ -79,6 +79,7 @@ SYMBOLS  [a-zA-Z0-9_\-^\.@ ]
 <MDOCCTX>\r?\n            { yylloc->lines(); yylval->emplace<std::string>("\n"); return token::STR; }
 <MDOCCTX>[ ]+\r?\n        { yylloc->lines(); yylval->emplace<std::string>("\n"); return token::STR; }
 <MDOCCTX>\t               { yylval->emplace<std::string>("\t"); return token::STR; }
+<MDOCCTX>\\\\             { yylval->emplace<std::string>("\\"); return token::STR; }
 <MDOCCTX>\\*              { log(W2005, "'\\\\', '\\{', '\\}', '\\[', '\\]', '\\`'"); yylval->emplace<std::string>(YYText()); return token::STR; }
 <MDOCCTX>[ ]+             { yylval->emplace<std::string>(YYText()); return token::STR; }
 <MDOCCTX>{MDOCCHAR}+      { yylval->emplace<std::string>(unescape(yy_text_view, true, *yylloc)); return token::STR; }
@@ -91,6 +92,7 @@ SYMBOLS  [a-zA-Z0-9_\-^\.@ ]
 <DOCCTX>(\\s)+     { yylval->emplace<std::string>(fmt::format("{:{}}", " ", YYLeng() / 2)); return token::STR; }
 <DOCCTX>(\\t)+     { yylval->emplace<std::string>(fmt::format("{:{}}", "\t", YYLeng() / 2)); return token::STR; }
 <DOCCTX>\\n        { yylval->emplace<std::string>("\n"); return token::STR; }
+<DOCCTX>\\\\       { yylval->emplace<std::string>("\\"); return token::STR; }
 <DOCCTX>\\*        { log(W2005, "'\\\\', '\\{', '\\}', '\\[', '\\]', '\\s', '\\t', '\\n'"); yylval->emplace<std::string>(YYText()); return token::STR; }
 <DOCCTX>{DOCCHAR}+ { yylval->emplace<std::string>(unescape(yy_text_view, false, *yylloc)); return token::STR; }
 <DOCCTX>"{"        { BEGIN(REFCTX); return YYText()[0]; }

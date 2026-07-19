@@ -749,6 +749,38 @@ TEST(idlc, DocumentationStringEmpty) {
     GTEST_FAIL();
 }
 
+TEST(idlc, MultiLineCommentMustBeSeparatedNL) {
+    const auto [result, ast, messages] = compile("e3017");
+    deferred(idl_compilation_result_destroy(ast));
+
+    ASSERT_EQ(result, IDL_RESULT_SUCCESS);
+    ASSERT_EQ(messages.size(), 1);
+    ASSERT_EQ(messages[0],
+              "error [E3017]: The body of a multi-line comment '@ ```' must be separated by a new line at e3017:1:1");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto attrs = getAttrs(ast, api);
+    ASSERT_EQ(attrs.size(), 5);
+    ASSERT_TRUE(isType(ast, attrs[0], IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF));
+    ASSERT_TRUE(isType(ast, attrs[1], IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL));
+    ASSERT_TRUE(isType(ast, attrs[2], IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT));
+    ASSERT_TRUE(isType(ast, attrs[3], IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE));
+    ASSERT_TRUE(isType(ast, attrs[4], IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR));
+
+    auto brief = findChild(ast, api, IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF);
+    ASSERT_NE(brief, HandleNone);
+    
+    ASSERT_TRUE(hasAllState(ast, brief, IDL_AST_NODE_STATE_MULTILINE_DOC_BIT));
+
+    auto briefArgs = getChilds(ast, brief);
+    ASSERT_EQ(briefArgs.size(), 3);
+    ASSERT_EQ(getStr(ast, briefArgs[0]), "Brief");
+    ASSERT_EQ(getStr(ast, briefArgs[1]), "\n");
+    ASSERT_EQ(getStr(ast, briefArgs[2]), "Test");
+}
+
 TEST(idlc, InlineDocAllowedDetailOnlyAttr) {
     const auto [result, ast, messages] = compile("e3018");
     deferred(idl_compilation_result_destroy(ast));

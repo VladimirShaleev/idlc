@@ -74,6 +74,7 @@ SYMBOLS  [a-zA-Z0-9_\-^\.@ ]
 <ATTRARGCTX,ATTRSHORTARGCTX,ATTRFALLBACKARGCTX>")"               { BEGIN(ATTRCTX); return YYText()[0]; }
 
 @[ ]*```[ ]*\r?\n         { yylloc->lines(); BEGIN(MDOCCTX); setMultiline(true); return isDeclaring() ? token::IMDOC : token::MDOC; }
+@[ ]*```                  { log(E3017); BEGIN(MDOCCTX); setMultiline(true); return isDeclaring() ? token::IMDOC : token::MDOC; }
 <MDOCCTX>[ ]*```[ ]*\[    { setDeclaring(false); BEGIN(INITIAL); yyless(yyleng - 1); }
 <MDOCCTX>[ ]*```[ ]*\r?\n { yylloc->lines(); setDeclaring(false); BEGIN(INITIAL); }
 <MDOCCTX>\r?\n            { yylloc->lines(); yylval->emplace<std::string>("\n"); return token::STR; }

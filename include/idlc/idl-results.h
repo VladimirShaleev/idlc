@@ -63,6 +63,7 @@ typedef enum
     IDL_STATUS_E3014    = 3014, /**< Attribute must contain one or more arguments. */
     IDL_STATUS_E3015    = 3015, /**< Unknown attribute in the documentation. */
     IDL_STATUS_E3016    = 3016, /**< The documentation string cannot be empty. */
+    IDL_STATUS_E3017    = 3017, /**< The body of a multi-line comment '@ ```' must be separated by a new line. */
     IDL_STATUS_E3018    = 3018, /**< Inline documentation only [detail] description is allowed. */
     IDL_STATUS_E3020    = 3020, /**< Tabs are not allowed. */
     IDL_STATUS_E3021    = 3021, /**< Could not find file for import. */

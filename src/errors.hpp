@@ -64,10 +64,9 @@ inline std::string err(Args&&... args) {
         str = fmt::format("Unknown attribute in the documentation [{}]", args...);
     } else if constexpr (Status == IDL_STATUS_E3016) {
         str = fmt::format("The documentation string cannot be empty");
-    } /*else if constexpr (Status == IDL_STATUS_E3017) {
-        str = fmt::format("TODO: empty slot");
-    }*/
-    else if constexpr (Status == IDL_STATUS_E3018) {
+    } else if constexpr (Status == IDL_STATUS_E3017) {
+        str = fmt::format("The body of a multi-line comment '@ ```' must be separated by a new line");
+    } else if constexpr (Status == IDL_STATUS_E3018) {
         str = fmt::format("Inline documentation only [detail] description is allowed");
     } /*else if constexpr (Status == IDL_STATUS_E3019) {
         str = fmt::format("TODO: empty slot");

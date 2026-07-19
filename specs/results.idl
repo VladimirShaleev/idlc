@@ -40,7 +40,7 @@ enum Status
     const E3014 : 3014 [tokenizer(0)] @ Attribute must contain one or more arguments.
     const E3015 : 3015 [tokenizer(0)] @ Unknown attribute in the documentation.
     const E3016 : 3016 [tokenizer(0)] @ The documentation string cannot be empty.
-    // const E3017 : 3017 [tokenizer(0)] @ TODO: empty slot.
+    const E3017 : 3017 [tokenizer(0)] @ The body of a multi-line comment '@ ```' must be separated by a new line.
     const E3018 : 3018 [tokenizer(0)] @ Inline documentation only \[detail\] description is allowed.
     // const E3019 : 3019 [tokenizer(0)] @ TODO: empty slot.
     const E3020 : 3020 [tokenizer(0)] @ Tabs are not allowed.

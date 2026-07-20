@@ -62,7 +62,8 @@ struct AttrValidatorRules {
         static std::map allowed = {
             add<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(true), add<IDL_AST_NODE_TYPE_ATTR_CNAME>(),
             add<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>(),      add<IDL_AST_NODE_TYPE_ATTR_TYPE>(true),
-            add<IDL_AST_NODE_TYPE_ATTR_VALUE>(),          add<IDL_AST_NODE_TYPE_ATTR_REF>()
+            add<IDL_AST_NODE_TYPE_ATTR_VALUE>(),          add<IDL_AST_NODE_TYPE_ATTR_REF>(),
+            add<IDL_AST_NODE_TYPE_ATTR_ARRAY>()
         };
         validate(node, allowed);
     }
@@ -449,6 +450,16 @@ struct AttrArgRules {
         } else {
             ctx.log<IDL_STATUS_E3014>(
                 node->location, node.accept<AttrName>().str, " (integers: 2, -2, 4 or string \"2-^3-4\")");
+        }
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ATTR_ARRAY>) {
+        auto& ctx = node.ctx();
+        if (argCount > 0) {
+        } else {
+            ctx.log<IDL_STATUS_E3050>(node->location,
+                                      node.accept<AttrName>().str,
+                                      " (fixed-size integer or reference to an integer field/arg specifying the size)");
         }
     }
 

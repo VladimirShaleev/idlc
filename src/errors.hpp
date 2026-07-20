@@ -144,6 +144,8 @@ inline std::string err(Args&&... args) {
     } else if constexpr (Status == IDL_STATUS_E3049) {
         str = fmt::format(
             "Cannot assign a constant '{}' of '{}' type to a field with a different enumeration type '{}'", args...);
+    } else if constexpr (Status == IDL_STATUS_E3050) {
+        str = fmt::format("The [{}] attribute must contain one argument{}", args...);
     } else {
         assert(!"Unknown status code");
     }

@@ -162,6 +162,10 @@ struct AttrName {
         str = "tokenizer";
     }
 
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_ARRAY>) {
+        str = "array";
+    }
+
     void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_SINGLE>) {
         str = "single";
     }

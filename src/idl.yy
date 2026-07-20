@@ -99,6 +99,7 @@
 %token ATTRTYPE
 %token ATTRCNAME
 %token ATTRTOKENIZER
+%token ATTRARRAY
 %token ATTRSINGLE
 %token ATTRREF
 
@@ -251,6 +252,7 @@ attr_item
     | ATTRTYPE      { $$ = alloc_node(@1, ATTR_TYPE); }
     | ATTRCNAME     { $$ = alloc_node(@1, ATTR_CNAME); }
     | ATTRTOKENIZER { $$ = alloc_node(@1, ATTR_TOKENIZER); }
+    | ATTRARRAY     { $$ = alloc_node(@1, ATTR_ARRAY); }
     | ATTRSINGLE    { $$ = alloc_node(@1, ATTR_SINGLE); }
     | ATTRHEX       { $$ = alloc_node(@1, ATTR_HEX); }
     | ATTRREF       { $$ = alloc_node(@1, ATTR_REF); }

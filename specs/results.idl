@@ -76,6 +76,7 @@ enum Status
     const E3047 : 3047 [tokenizer(0)] @ The name or type must start with a capital letter.
     const E3048 : 3048 [tokenizer(0)] @ Only literals and compile-time expressions (enumeration constants) can be used as default values.
     const E3049 : 3049 [tokenizer(0)] @ Cannot assign a constant of this type to a field with a different enumeration type.
+    const E3050 : 3050 [tokenizer(0)] @ Attribute must contain one argument.
 
 @ Compilation message.
 @ Detailed description of warning or compilation error. [detail]

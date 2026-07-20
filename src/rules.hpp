@@ -455,7 +455,22 @@ struct AttrArgRules {
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ATTR_ARRAY>) {
         auto& ctx = node.ctx();
-        if (argCount > 0) {
+        auto arg0 = ctx.getNodeRef(argFrist);
+        if (argCount == 1 && (arg0.is<IDL_AST_NODE_TYPE_LITERAL_INT, IDL_AST_NODE_TYPE_LITERAL_STR>())) {
+            if (arg0.is<IDL_AST_NODE_TYPE_LITERAL_INT>()) {
+                if (arg0->valueInt > 0) {
+                    node->child = argFrist;
+                } else {
+                    ctx.log<IDL_STATUS_E3051>(node->location);
+                }
+            } else {
+                arg0.setReplacedByCompiler();
+                auto declRefHandle           = ctx.result()->allocNode(arg0->location, IDL_AST_NODE_TYPE_DECL_REF);
+                auto declRef                 = ctx.getNodeRef(declRefHandle);
+                declRef->valueDeclRef.symbol = arg0->valueStr;
+                arg0->sibling                = declRefHandle;
+                node->child                  = argFrist;
+            }
         } else {
             ctx.log<IDL_STATUS_E3050>(node->location,
                                       node.accept<AttrName>().str,
@@ -879,6 +894,14 @@ struct BuildRules {
             ctx.log<IDL_STATUS_E3034>(attrType->location, node.fullname());
             node.setBuildError();
         } else if (auto valueAttr = node.findChild<IDL_AST_NODE_TYPE_ATTR_VALUE>()) {
+            auto attrArray = node.findChild<IDL_AST_NODE_TYPE_ATTR_ARRAY>();
+            if (auto declRef = attrArray.findChild<IDL_AST_NODE_TYPE_DECL_REF>()) {
+                if (auto decl = declRef.resolveRef(); decl.declType().is<IDL_AST_NODE_TYPE_INTEGER_TYPE>() &&
+                                                      decl != node && decl.parent() == node.parent()) {
+                } else if (decl) {
+                    ctx.log<IDL_STATUS_E3052>(node->location, decl.fullname());
+                }
+            }
             int countArgs = 0;
             auto skipNext = false;
             for (auto value : valueAttr) {

@@ -100,6 +100,8 @@ typedef enum
     IDL_STATUS_E3048    = 3048, /**< Only literals and compile-time expressions (enumeration constants) can be used as default values. */
     IDL_STATUS_E3049    = 3049, /**< Cannot assign a constant of this type to a field with a different enumeration type. */
     IDL_STATUS_E3050    = 3050, /**< Attribute must contain one argument. */
+    IDL_STATUS_E3051    = 3051, /**< The array size must be positive. */
+    IDL_STATUS_E3052    = 3052, /**< The array must refer to an integer value within the scope where it is declared. */
     IDL_STATUS_MAX_ENUM = 0x7FFFFFFF /**< Max value of enum (not used) */
 } idl_status_t;
 

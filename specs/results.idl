@@ -77,6 +77,8 @@ enum Status
     const E3048 : 3048 [tokenizer(0)] @ Only literals and compile-time expressions (enumeration constants) can be used as default values.
     const E3049 : 3049 [tokenizer(0)] @ Cannot assign a constant of this type to a field with a different enumeration type.
     const E3050 : 3050 [tokenizer(0)] @ Attribute must contain one argument.
+    const E3051 : 3051 [tokenizer(0)] @ The array size must be positive.
+    const E3052 : 3052 [tokenizer(0)] @ The array must refer to an integer value within the scope where it is declared.
 
 @ Compilation message.
 @ Detailed description of warning or compilation error. [detail]

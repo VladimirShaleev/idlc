@@ -146,6 +146,10 @@ inline std::string err(Args&&... args) {
             "Cannot assign a constant '{}' of '{}' type to a field with a different enumeration type '{}'", args...);
     } else if constexpr (Status == IDL_STATUS_E3050) {
         str = fmt::format("The [{}] attribute must contain one argument{}", args...);
+    } else if constexpr (Status == IDL_STATUS_E3051) {
+        str = fmt::format("The array size must be positive");
+    } else if constexpr (Status == IDL_STATUS_E3052) {
+        str = fmt::format("The array must refer to an integer value within the scope where it is declared, '{}' is invalid", args...);
     } else {
         assert(!"Unknown status code");
     }

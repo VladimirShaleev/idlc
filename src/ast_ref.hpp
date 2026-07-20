@@ -516,6 +516,9 @@ public:
         return ASTNodeRef(*_ctx);
     }
 
+    template <idl_ast_node_type_t Type>
+    ASTNodeRef addDeclType();
+
     template <ASTNodeType Type>
     [[nodiscard]] static ASTNodeRef byType(Context& ctx) noexcept {
         static ASTNode node{};

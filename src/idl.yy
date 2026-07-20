@@ -153,22 +153,22 @@ stack_decls
     ;
 
 def_with_attrs
-    : def_with_type { $$ = $1; }
-    | def_with_type '[' attr_list ']' { $$ = $1; add_child($$, $3.first); }
-    | def_with_type idoc { $$ = $1; add_child($$, $2); }
-    | def_with_type '[' attr_list ']' idoc { $$ = $1; add_child($$, $3.first); add_child($$, $5); }
-    | def_with_type '[' ']' { $$ = $1; log(N1002, @2); }
-    | def_with_type '[' ']' idoc { $$ = $1; add_child($$, $4); log(N1002, @2); }
-    ;
-
-def_with_type
     : def_with_value { $$ = $1; }
-    | def_with_value '{' arg_item '}' { $$ = $1; auto type = alloc_node(@3, ATTR_TYPE); rule(AttrArg, type, $3, $3, 1); add_child($$, type);}
+    | def_with_value '[' attr_list ']' { $$ = $1; add_child($$, $3.first); }
+    | def_with_value idoc { $$ = $1; add_child($$, $2); }
+    | def_with_value '[' attr_list ']' idoc { $$ = $1; add_child($$, $3.first); add_child($$, $5); }
+    | def_with_value '[' ']' { $$ = $1; log(N1002, @2); }
+    | def_with_value '[' ']' idoc { $$ = $1; add_child($$, $4); log(N1002, @2); }
     ;
 
 def_with_value
+    : def_with_type { $$ = $1; }
+    | def_with_type ':' arg_list { $$ = $1; auto val = alloc_node(@3, ATTR_VALUE); rule(AttrArg, val, $3.first, $3.last, $3.count); add_child($$, val); }
+    ;
+
+def_with_type
     : def { $$ = $1; }
-    | def ':' arg_list { $$ = $1; auto val = alloc_node(@3, ATTR_VALUE); rule(AttrArg, val, $3.first, $3.last, $3.count); add_child($$, val); }
+    | def '{' arg_item '}' { $$ = $1; auto type = alloc_node(@3, ATTR_TYPE); rule(AttrArg, type, $3, $3, 1); add_child($$, type);}
     ;
 
 def

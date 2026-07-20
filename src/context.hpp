@@ -147,6 +147,14 @@ public:
         return emptyNodeRef();
     }
 
+    template <idl_ast_node_type_t Type>
+    [[nodiscard]] ASTNodeRef getTrivial() noexcept {
+        if (auto it = _trivials.find(Type); it != _trivials.end()) {
+            return getNodeRef(it->second);
+        }
+        return emptyNodeRef();
+    }
+
     void addImport(std::string name) {
         _imports.insert(lower(name));
     }
@@ -193,6 +201,8 @@ public:
                 _result->getNode(last)->sibling = node;
             }
             getNodeRef(node).setEvaulated();
+            _trivials[Tag<Type>::type] = node;
+
             last = node;
         };
 
@@ -254,6 +264,7 @@ private:
     CompilationResultBase* _result;
     std::unordered_set<std::string> _imports{};
     std::unordered_map<String, ASTNodeHandle> _symbols{};
+    std::map<idl_ast_node_type_t, ASTNodeHandle> _trivials{};
 };
 
 inline CompilationResultBase* ASTNodeRef::result() noexcept {
@@ -284,6 +295,27 @@ inline ASTNodeRef ASTNodeRef::resolveRef(bool onlyType) {
         }
     }
     return ASTNodeRef(*_ctx, (*this)->valueDeclRef.handle);
+}
+
+template <idl_ast_node_type_t Type>
+inline ASTNodeRef ASTNodeRef::addDeclType() {
+    assert(_node);
+    assert(is<IDL_AST_NODE_TYPE_DECL>());
+
+    auto type           = _ctx->getTrivial<Type>();
+    auto attrTypeHandle = _ctx->result()->allocNode(_node->location, IDL_AST_NODE_TYPE_ATTR_TYPE);
+    auto attrType       = _ctx->getNodeRef(attrTypeHandle);
+    attrType->parent    = handle();
+    attrType->child     = _ctx->result()->allocNode(_node->location, IDL_AST_NODE_TYPE_DECL_REF);
+
+    auto declRef                 = _ctx->getNodeRef(attrType->child);
+    declRef->parent              = attrTypeHandle;
+    declRef->valueDeclRef.symbol = type->name.fullname;
+    declRef->valueDeclRef.handle = type.handle();
+    declRef.setEvaulated();
+
+    addChild(attrType);
+    return type;
 }
 
 } // namespace idl

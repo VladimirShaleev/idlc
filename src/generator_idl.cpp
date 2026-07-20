@@ -3,6 +3,8 @@
 #include "visitors.hpp"
 #include "writer.hpp"
 
+using namespace std::string_literals;
+
 namespace idl::gen::idl {
 
 namespace {
@@ -135,7 +137,10 @@ struct LiteralPrinter {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_LITERAL_FLOAT>) {
-        str = std::to_string(node->valueFloat);
+        str = fmt::format("{:g}", node->valueFloat);
+        if (str.find_last_of('.') == std::string::npos) {
+            str += ".0"s;
+        }
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_DECL_REF>) {
@@ -144,6 +149,7 @@ struct LiteralPrinter {
 
     template <ASTNodeType Type>
     void visit(ASTNodeRef&, Tag<Type>) noexcept {
+        assert(!"unknown literal type");
     }
 
     bool addQuotes;
@@ -304,8 +310,8 @@ struct ASTVisitor {
     void printValue(ASTNodeRef& node) {
         if (auto attrValue = node.findChild<IDL_AST_NODE_TYPE_ATTR_VALUE>(state.origin)) {
             auto hasPrev = false;
-            for (auto value : attrValue) {
-                if (value.addedByCompiler()) {
+            for (auto value : attrValue.getChilds(state.origin)) {
+                if (value.addedByCompiler() && value.parent().parent().is<IDL_AST_NODE_TYPE_CONST>()) {
                     continue;
                 }
                 auto valStr = value.accept<LiteralPrinter>(true, node.parent()).str;

@@ -58,7 +58,7 @@ enum Status
     const E3031 : 3031 [tokenizer(0)] @ Invalid tokenizer format string, a valid string looks like (2-^3-4).
     const E3032 : 3032 [tokenizer(0)] @ Integer tokenization parameters or a tokenizer string must be passed to the attribute \[tokenizer\].
     const E3033 : 3033 [tokenizer(0)] @ The field type corresponds to the type of the structure in which it is contained.
-    // const E3034 : 3034 [tokenizer(0)] @ TODO: empty slot.
+    const E3034 : 3034 [tokenizer(0)] @ The field cannot be of type 'Void'.
     // const E3035 : 3035 [tokenizer(0)] @ TODO: empty slot.
     const E3036 : 3036 [tokenizer(0)] @ Identifiers are case sensitive.
     const E3037 : 3037 [tokenizer(0)] @ Symbol definition not found.

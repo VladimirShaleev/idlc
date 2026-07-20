@@ -59,11 +59,11 @@ struct AttrValidatorRules {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_FIELD>) {
-        static std::map allowed = { add<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(true),
-                                    add<IDL_AST_NODE_TYPE_ATTR_CNAME>(),
-                                    add<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>(),
-                                    add<IDL_AST_NODE_TYPE_ATTR_TYPE>(true),
-                                    add<IDL_AST_NODE_TYPE_ATTR_REF>() };
+        static std::map allowed = {
+            add<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(true), add<IDL_AST_NODE_TYPE_ATTR_CNAME>(),
+            add<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>(),      add<IDL_AST_NODE_TYPE_ATTR_TYPE>(true),
+            add<IDL_AST_NODE_TYPE_ATTR_VALUE>(),          add<IDL_AST_NODE_TYPE_ATTR_REF>()
+        };
         validate(node, allowed);
     }
 
@@ -625,6 +625,101 @@ struct IntegerCastRules {
     bool success{ true };
 };
 
+struct FloatCastRules {
+    explicit FloatCastRules(ASTNodeRef& value) noexcept : value(value) {
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_FLOAT_32>) {
+        cast<float>(node);
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_FLOAT_64>) {
+        cast<double>(node);
+    }
+
+    template <ASTNodeType Type>
+    void visit(ASTNodeRef&, Tag<Type>) noexcept {
+        assert(!"only float types");
+    }
+
+    template <typename T>
+    void cast(ASTNodeRef& node) {
+        std::string valueStr;
+        const auto valueFloat = value->valueFloat;
+        success = valueFloat >= std::numeric_limits<T>::min() && valueFloat <= std::numeric_limits<T>::max();
+        if (!success) {
+            valueStr = fmt::format("{:g}", valueFloat);
+            // node.ctx().log<IDL_STATUS_W2004>(
+            //    value->location, node.name(), valueStr, std::numeric_limits<T>::min(), std::numeric_limits<T>::max());
+        }
+    }
+
+    ASTNodeRef& value;
+    bool success{ true };
+};
+
+struct DefaultValueRules {
+    explicit DefaultValueRules(ASTNodeRef& type) noexcept : type(type) {
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_LITERAL_STR>) {
+        if (!type.is<IDL_AST_NODE_TYPE_STR>()) {
+            // log
+            success = false;
+        }
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_LITERAL_INT>) {
+        if (!type.is<IDL_AST_NODE_TYPE_INTEGER_TYPE>()) {
+            // log
+            success = false;
+        } else if (type.is<IDL_AST_NODE_TYPE_FLOAT_TYPE>()) {
+            auto& ctx = node.ctx();
+            node.setReplacedByCompiler();
+            auto nodeFloatHandle  = ctx.result()->allocNode(node->location, IDL_AST_NODE_TYPE_LITERAL_FLOAT);
+            auto nodeFloat        = ctx.getNodeRef(nodeFloatHandle);
+            nodeFloat->valueFloat = (double) node->valueInt;
+            nodeFloat->parent     = node->parent;
+            nodeFloat->sibling    = node->sibling;
+            node->sibling         = nodeFloatHandle;
+            skipNext              = true;
+            if (!type.accept<FloatCastRules>(nodeFloat).success) {
+                // log
+                success = false;
+            }
+        } else if (!type.accept<IntegerCastRules>(node).success) {
+            // log
+            success = false;
+        }
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_LITERAL_BOOL>) {
+        if (!type.is<IDL_AST_NODE_TYPE_BOOL>()) {
+            // log
+            success = false;
+        }
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_LITERAL_FLOAT>) {
+        if (!type.is<IDL_AST_NODE_TYPE_FLOAT_TYPE>()) {
+            // log
+            success = false;
+        } else if (!type.accept<FloatCastRules>(node).success) {
+            // log
+            success = false;
+        }
+    }
+
+    template <ASTNodeType Type>
+    void visit(ASTNodeRef&, Tag<Type>) noexcept {
+        assert(!"only literal types");
+    }
+
+    ASTNodeRef& type;
+    bool success{ true };
+    bool skipNext{};
+};
+
 struct BuildRules {
     struct State {
         bool prevE3041;
@@ -680,16 +775,7 @@ struct BuildRules {
                 ctx.log<IDL_STATUS_E3044>(node->location, node.fullname());
             }
         } else {
-            auto attrTypeHandle = ctx.result()->allocNode(node->location, IDL_AST_NODE_TYPE_ATTR_TYPE);
-            auto attrType       = ctx.getNodeRef(attrTypeHandle);
-            attrType->parent    = node.handle();
-            attrType->child     = ctx.result()->allocNode(node->location, IDL_AST_NODE_TYPE_DECL_REF);
-
-            auto declRef                 = ctx.getNodeRef(attrType->child);
-            declRef->parent              = attrTypeHandle;
-            declRef->valueDeclRef.symbol = ctx.result()->intern("Int32");
-
-            node.addChild(attrType);
+            node.addDeclType<IDL_AST_NODE_TYPE_INT_32>();
         }
 
         if (!node.findChild<IDL_AST_NODE_TYPE_CONST>()) {
@@ -736,25 +822,16 @@ struct BuildRules {
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_FIELD>) {
         auto& ctx = node.ctx();
         if (!node.findChild<IDL_AST_NODE_TYPE_ATTR_TYPE>()) {
-            auto attrTypeHandle = ctx.result()->allocNode(node->location, IDL_AST_NODE_TYPE_ATTR_TYPE);
-            auto attrType       = ctx.getNodeRef(attrTypeHandle);
-            attrType->parent    = node.handle();
-            attrType->child     = ctx.result()->allocNode(node->location, IDL_AST_NODE_TYPE_DECL_REF);
-
-            auto declRef                 = ctx.getNodeRef(attrType->child);
-            declRef->parent              = attrTypeHandle;
-            declRef->valueDeclRef.symbol = ctx.result()->intern("Int32");
-
-            node.addChild(attrType);
+            node.addDeclType<IDL_AST_NODE_TYPE_INT_32>();
         }
         auto type = node.declType();
         if (!type) {
             node.setBuildError();
             return;
         }
+        auto attrType = node.findChild<IDL_AST_NODE_TYPE_ATTR_TYPE>();
         if (type.is<IDL_AST_NODE_TYPE_STRUCT>() && !type.evaulated()) {
-            auto attrType = node.findChild<IDL_AST_NODE_TYPE_ATTR_TYPE>();
-            auto hasRef   = !!node.findChild<IDL_AST_NODE_TYPE_ATTR_REF>();
+            auto hasRef = !!node.findChild<IDL_AST_NODE_TYPE_ATTR_REF>();
             if (node.parent() == type) {
                 if (!hasRef) {
                     ctx.log<IDL_STATUS_E3033>(attrType->location, node.fullname(), type.fullname());
@@ -769,9 +846,24 @@ struct BuildRules {
             }
         } else if (!type.is<IDL_AST_NODE_TYPE_STRUCT>() && !type.evaulated()) {
             node.parent().setForwardDecl();
-            auto attrType = node.findChild<IDL_AST_NODE_TYPE_ATTR_TYPE>();
             ctx.log<IDL_STATUS_W2006>(
                 attrType->location, node.fullname(), type.accept<DeclToken>().str, type.fullname());
+        } else if (type.is<IDL_AST_NODE_TYPE_VOID>()) {
+            ctx.log<IDL_STATUS_E3034>(attrType->location, node.fullname());
+            node.setBuildError();
+        } else if (auto valueAttr = node.findChild<IDL_AST_NODE_TYPE_ATTR_VALUE>()) {
+            int countArgs = 0;
+            auto skipNext = false;
+            for (auto value : valueAttr) {
+                if (!skipNext) {
+                    auto result = value.accept<DefaultValueRules>(type);
+                    skipNext    = result.skipNext;
+                    ++countArgs;
+                    if (!result.success) {
+                        node.setBuildError();
+                    }
+                }
+            }
         }
         node.setEvaulated();
         if (node->sibling == HandleNone) {

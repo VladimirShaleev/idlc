@@ -106,10 +106,9 @@ inline std::string err(Args&&... args) {
         str = fmt::format("The field '{}' type corresponds to the type of the structure '{}' in which it is contained; "
                           "use attribute [ref]",
                           args...);
+    } else if constexpr (Status == IDL_STATUS_E3034) {
+        str = fmt::format("The field '{}' cannot be of type 'Void'", args...);
     }
-    /*else if constexpr (Status == IDL_STATUS_E3034) {
-        str = fmt::format("TODO: empty slot");
-    }*/
     /* else if constexpr (Status == IDL_STATUS_E3035) {
     str = fmt::format("TODO: empty slot");
 }*/ else if constexpr (Status == IDL_STATUS_E3036) {

@@ -48,6 +48,8 @@ typedef enum
     IDL_STATUS_W2004    = 2004, /**< Integer out of range. */
     IDL_STATUS_W2005    = 2005, /**< Special character expected after backslash. */
     IDL_STATUS_W2006    = 2006, /**< The field type has the declaration type declared below. */
+    IDL_STATUS_W2007    = 2007, /**< Implicit conversion from an integer type to a floating-point type. */
+    IDL_STATUS_W2008    = 2008, /**< Float out of range. */
     IDL_STATUS_E3001    = 3001, /**< Syntax error. */
     IDL_STATUS_E3002    = 3002, /**< Argument parsing error. */
     IDL_STATUS_E3003    = 3003, /**< The [version] attribute must have three required integer parameters, such as version(1, 2, 3) or version("string"). */
@@ -82,6 +84,7 @@ typedef enum
     IDL_STATUS_E3032    = 3032, /**< Integer tokenization parameters or a tokenizer string must be passed to the attribute [tokenizer]. */
     IDL_STATUS_E3033    = 3033, /**< The field type corresponds to the type of the structure in which it is contained. */
     IDL_STATUS_E3034    = 3034, /**< The field cannot be of type 'Void'. */
+    IDL_STATUS_E3035    = 3035, /**< It is not possible to assign a literal to this type. */
     IDL_STATUS_E3036    = 3036, /**< Identifiers are case sensitive. */
     IDL_STATUS_E3037    = 3037, /**< Symbol definition not found. */
     IDL_STATUS_E3038    = 3038, /**< Constants can only refer to other constants when evaluated. */
@@ -94,6 +97,8 @@ typedef enum
     IDL_STATUS_E3045    = 3045, /**< Enumeration must contain at least one constant. */
     IDL_STATUS_E3046    = 3046, /**< Unknown error. */
     IDL_STATUS_E3047    = 3047, /**< The name or type must start with a capital letter. */
+    IDL_STATUS_E3048    = 3048, /**< Only literals and compile-time expressions (enumeration constants) can be used as default values. */
+    IDL_STATUS_E3049    = 3049, /**< Cannot assign a constant of this type to a field with a different enumeration type. */
     IDL_STATUS_MAX_ENUM = 0x7FFFFFFF /**< Max value of enum (not used) */
 } idl_status_t;
 

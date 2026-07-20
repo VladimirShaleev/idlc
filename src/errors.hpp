@@ -29,6 +29,10 @@ inline std::string err(Args&&... args) {
         str = fmt::format("Special character expected after backslash; valid spacial characters {}", args...);
     } else if constexpr (Status == IDL_STATUS_W2006) {
         str = fmt::format("The field '{}' type has the declaration type {} '{}' declared below", args...);
+    } else if constexpr (Status == IDL_STATUS_W2007) {
+        str = fmt::format("Implicit conversion from an integer type to a floating-point type");
+    } else if constexpr (Status == IDL_STATUS_W2008) {
+        str = fmt::format("Float {} with value {} out of range [{}, {}]", args...);
     } else if constexpr (Status == IDL_STATUS_E3001) {
         if constexpr (sizeof...(args) > 0) {
             str = fmt::format("Syntax error '{}'", args...);
@@ -108,10 +112,9 @@ inline std::string err(Args&&... args) {
                           args...);
     } else if constexpr (Status == IDL_STATUS_E3034) {
         str = fmt::format("The field '{}' cannot be of type 'Void'", args...);
-    }
-    /* else if constexpr (Status == IDL_STATUS_E3035) {
-    str = fmt::format("TODO: empty slot");
-}*/ else if constexpr (Status == IDL_STATUS_E3036) {
+    } else if constexpr (Status == IDL_STATUS_E3035) {
+        str = fmt::format("It is not possible to assign {} literal to this type '{}'", args...);
+    } else if constexpr (Status == IDL_STATUS_E3036) {
         str = fmt::format("Identifiers are case sensitive, error in '{}', but expected '{}'", args...);
     } else if constexpr (Status == IDL_STATUS_E3037) {
         str = fmt::format("Symbol definition '{}' not found", args...);
@@ -135,6 +138,12 @@ inline std::string err(Args&&... args) {
         str = fmt::format("Unknown error");
     } else if constexpr (Status == IDL_STATUS_E3047) {
         str = fmt::format("The name or type must start with a capital letter '{}'", args...);
+    } else if constexpr (Status == IDL_STATUS_E3048) {
+        str = fmt::format(
+            "Only literals and compile-time expressions (enumeration constants) can be used as default values");
+    } else if constexpr (Status == IDL_STATUS_E3049) {
+        str = fmt::format(
+            "Cannot assign a constant '{}' of '{}' type to a field with a different enumeration type '{}'", args...);
     } else {
         assert(!"Unknown status code");
     }

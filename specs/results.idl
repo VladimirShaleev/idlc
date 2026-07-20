@@ -24,6 +24,8 @@ enum Status
     const W2004 : 2004 [tokenizer(0)] @ Integer out of range.
     const W2005 : 2005 [tokenizer(0)] @ Special character expected after backslash.
     const W2006 : 2006 [tokenizer(0)] @ The field type has the declaration type declared below.
+    const W2007 : 2007 [tokenizer(0)] @ Implicit conversion from an integer type to a floating-point type.
+    const W2008 : 2008 [tokenizer(0)] @ Float out of range.
 
     const E3001 : 3001 [tokenizer(0)] @ Syntax error.
     const E3002 : 3002 [tokenizer(0)] @ Argument parsing error.
@@ -59,7 +61,7 @@ enum Status
     const E3032 : 3032 [tokenizer(0)] @ Integer tokenization parameters or a tokenizer string must be passed to the attribute \[tokenizer\].
     const E3033 : 3033 [tokenizer(0)] @ The field type corresponds to the type of the structure in which it is contained.
     const E3034 : 3034 [tokenizer(0)] @ The field cannot be of type 'Void'.
-    // const E3035 : 3035 [tokenizer(0)] @ TODO: empty slot.
+    const E3035 : 3035 [tokenizer(0)] @ It is not possible to assign a literal to this type.
     const E3036 : 3036 [tokenizer(0)] @ Identifiers are case sensitive.
     const E3037 : 3037 [tokenizer(0)] @ Symbol definition not found.
     const E3038 : 3038 [tokenizer(0)] @ Constants can only refer to other constants when evaluated.
@@ -72,6 +74,8 @@ enum Status
     const E3045 : 3045 [tokenizer(0)] @ Enumeration must contain at least one constant.
     const E3046 : 3046 [tokenizer(0)] @ Unknown error.
     const E3047 : 3047 [tokenizer(0)] @ The name or type must start with a capital letter.
+    const E3048 : 3048 [tokenizer(0)] @ Only literals and compile-time expressions (enumeration constants) can be used as default values.
+    const E3049 : 3049 [tokenizer(0)] @ Cannot assign a constant of this type to a field with a different enumeration type.
 
 @ Compilation message.
 @ Detailed description of warning or compilation error. [detail]

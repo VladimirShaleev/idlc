@@ -649,8 +649,8 @@ struct FloatCastRules {
         success = valueFloat >= std::numeric_limits<T>::min() && valueFloat <= std::numeric_limits<T>::max();
         if (!success) {
             valueStr = fmt::format("{:g}", valueFloat);
-            // node.ctx().log<IDL_STATUS_W2004>(
-            //    value->location, node.name(), valueStr, std::numeric_limits<T>::min(), std::numeric_limits<T>::max());
+            node.ctx().log<IDL_STATUS_W2008>(
+                value->location, node.name(), valueStr, std::numeric_limits<T>::min(), std::numeric_limits<T>::max());
         }
     }
 
@@ -664,16 +664,13 @@ struct DefaultValueRules {
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_LITERAL_STR>) {
         if (!type.is<IDL_AST_NODE_TYPE_STR>()) {
-            // log
+            node.ctx().log<IDL_STATUS_E3035>(node->location, "string", type.fullname());
             success = false;
         }
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_LITERAL_INT>) {
-        if (!type.is<IDL_AST_NODE_TYPE_INTEGER_TYPE>()) {
-            // log
-            success = false;
-        } else if (type.is<IDL_AST_NODE_TYPE_FLOAT_TYPE>()) {
+        if (type.is<IDL_AST_NODE_TYPE_FLOAT_TYPE>()) {
             auto& ctx = node.ctx();
             node.setReplacedByCompiler();
             auto nodeFloatHandle  = ctx.result()->allocNode(node->location, IDL_AST_NODE_TYPE_LITERAL_FLOAT);
@@ -683,29 +680,43 @@ struct DefaultValueRules {
             nodeFloat->sibling    = node->sibling;
             node->sibling         = nodeFloatHandle;
             skipNext              = true;
+            ctx.log<IDL_STATUS_W2007>(node->location);
             if (!type.accept<FloatCastRules>(nodeFloat).success) {
-                // log
                 success = false;
             }
+        } else if (!type.is<IDL_AST_NODE_TYPE_INTEGER_TYPE>()) {
+            node.ctx().log<IDL_STATUS_E3035>(node->location, "integer", type.fullname());
+            success = false;
         } else if (!type.accept<IntegerCastRules>(node).success) {
-            // log
             success = false;
         }
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_LITERAL_BOOL>) {
         if (!type.is<IDL_AST_NODE_TYPE_BOOL>()) {
-            // log
+            node.ctx().log<IDL_STATUS_E3035>(node->location, "booleans", type.fullname());
             success = false;
         }
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_LITERAL_FLOAT>) {
         if (!type.is<IDL_AST_NODE_TYPE_FLOAT_TYPE>()) {
-            // log
+            node.ctx().log<IDL_STATUS_E3035>(node->location, "float-point", type.fullname());
             success = false;
         } else if (!type.accept<FloatCastRules>(node).success) {
-            // log
+            success = false;
+        }
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_DECL_REF>) {
+        if (auto ref = node.resolveRef(); !ref.is<IDL_AST_NODE_TYPE_CONST>()) {
+            node.ctx().log<IDL_STATUS_E3048>(node->location);
+            success = false;
+        } else if (!type.is<IDL_AST_NODE_TYPE_ENUM>()) {
+            node.ctx().log<IDL_STATUS_E3035>(node->location, "enum const", type.fullname());
+            success = false;
+        } else if (type != ref.parent()) {
+            node.ctx().log<IDL_STATUS_E3049>(node->location, ref.name(), ref.parent().fullname(), type.fullname());
             success = false;
         }
     }
@@ -829,6 +840,8 @@ struct BuildRules {
             node.setBuildError();
             return;
         }
+        const auto warnAsErrors = ctx.options() ? ctx.options()->getWarningsAsErrors() : false;
+
         auto attrType = node.findChild<IDL_AST_NODE_TYPE_ATTR_TYPE>();
         if (type.is<IDL_AST_NODE_TYPE_STRUCT>() && !type.evaulated()) {
             auto hasRef = !!node.findChild<IDL_AST_NODE_TYPE_ATTR_REF>();
@@ -848,6 +861,9 @@ struct BuildRules {
             node.parent().setForwardDecl();
             ctx.log<IDL_STATUS_W2006>(
                 attrType->location, node.fullname(), type.accept<DeclToken>().str, type.fullname());
+            if (warnAsErrors) {
+                node.setBuildError();
+            }
         } else if (type.is<IDL_AST_NODE_TYPE_VOID>()) {
             ctx.log<IDL_STATUS_E3034>(attrType->location, node.fullname());
             node.setBuildError();

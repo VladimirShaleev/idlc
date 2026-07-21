@@ -29,6 +29,10 @@ enum AttrFilter {
 
 [[nodiscard]] idl_ast_node_h findChild(idl_compilation_result_t result, idl_ast_node_h node, idl_ast_node_type_t type);
 
+[[nodiscard]] idl_ast_node_h findChild(idl_compilation_result_t result,
+                                       idl_ast_node_h node,
+                                       const std::string& declName);
+
 [[nodiscard]] std::vector<idl_ast_node_h> getChilds(idl_compilation_result_t result, idl_ast_node_h node);
 
 [[nodiscard]] std::vector<idl_ast_node_h> getChilds(idl_compilation_result_t result,
@@ -54,7 +58,9 @@ enum AttrFilter {
 
 [[nodiscard]] std::string getStr(idl_compilation_result_t result, idl_ast_node_h node);
 
-[[nodiscard]] uint64_t getInt(idl_compilation_result_t result, idl_ast_node_h node);
+[[nodiscard]] int64_t getInt(idl_compilation_result_t result, idl_ast_node_h node);
+
+[[nodiscard]] double getFloat(idl_compilation_result_t result, idl_ast_node_h node);
 
 [[nodiscard]] idl_ast_node_h getDeclRef(idl_compilation_result_t result, idl_ast_node_h node);
 

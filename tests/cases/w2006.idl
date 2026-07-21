@@ -1,0 +1,33 @@
+@ Brief
+@ Detail [detail]
+@ Copyright [copyright]
+@ License [license]
+@ Author [author]
+api Api
+
+@ Brief
+@ Detail [detail]
+struct RefStruct
+    field Field {Int32} @ Doc
+
+@ Brief
+@ Detail [detail]
+struct Test
+    field Field1 {Float32} @ Doc
+    field Field2 {RefStruct} @ DOc
+    field Field3 {En} @ Doc
+    field Field4 {OtherTest} [ref] @ Doc
+
+@ Brief
+@ Detail [detail]
+enum En {Int8}
+    const Value1 @ Doc
+    const Value2 @ Doc
+    const Value3 @ Doc
+    const Value4 @ Doc
+    const Value5 @ Doc
+
+@ Brief
+@ Detail [detail]
+struct OtherTest
+    field Field {Int32} @ Doc

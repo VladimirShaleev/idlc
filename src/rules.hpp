@@ -893,46 +893,7 @@ struct BuildRules {
             ctx.log<IDL_STATUS_E3034>(attrType->location, node.fullname());
             node.setBuildError();
         } else if (auto valueAttr = node.findChild<IDL_AST_NODE_TYPE_ATTR_VALUE>()) {
-            auto attrArray = node.findChild<IDL_AST_NODE_TYPE_ATTR_ARRAY>();
-            if (auto declRef = attrArray.findChild<IDL_AST_NODE_TYPE_DECL_REF>()) {
-                if (auto decl = declRef.resolveRef()) {
-                    if (decl == node) {
-                        ctx.log<IDL_STATUS_E3054>(node->location, "field", node.fullname());
-                        node.setBuildError();
-                    } else if (decl.parent() != node.parent()) {
-                        ctx.log<IDL_STATUS_E3053>(node->location, "field", node.fullname());
-                        node.setBuildError();
-                    } else if (!decl.declType().is<IDL_AST_NODE_TYPE_INTEGER_TYPE>()) {
-                        ctx.log<IDL_STATUS_E3052>(node->location, "field", decl.fullname(), decl.declType().fullname());
-                        node.setBuildError();
-                    }
-                } else {
-                    node.setBuildError();
-                }
-            }
-            int countArgs = 0;
-            auto skipNext = false;
-            for (auto value : valueAttr) {
-                if (!skipNext) {
-                    auto result = value.accept<DefaultValueRules>(type);
-                    skipNext    = result.skipNext;
-                    ++countArgs;
-                    if (!result.success) {
-                        node.setBuildError();
-                    }
-                }
-            }
-            if (countArgs > 1) {
-                auto isEnumFlags = type.is<IDL_AST_NODE_TYPE_ENUM>() && type.findChild<IDL_AST_NODE_TYPE_ATTR_FLAGS>();
-                if (!isEnumFlags && !attrArray) {
-                    if (type.is<IDL_AST_NODE_TYPE_ENUM>()) {
-                        ctx.log<IDL_STATUS_E3056>(node->location, "field", node.fullname());
-                    } else {
-                        ctx.log<IDL_STATUS_E3055>(node->location, "field", node.fullname());
-                    }
-                    node.setBuildError();
-                }
-            }
+            checkDefaultValue(node, type, valueAttr, "field");
         }
         node.setEvaulated();
         if (node->sibling == HandleNone) {
@@ -1071,6 +1032,50 @@ struct BuildRules {
 
         enumConst.setEvaulated();
         return enumConst.buildError() ? std::nullopt : std::make_optional(attrValue->valueInt);
+    }
+
+    void checkDefaultValue(ASTNodeRef& node, ASTNodeRef& type, ASTNodeRef& valueAttr, std::string_view declaration) {
+        auto& ctx      = node.ctx();
+        auto attrArray = node.findChild<IDL_AST_NODE_TYPE_ATTR_ARRAY>();
+        if (auto declRef = attrArray.findChild<IDL_AST_NODE_TYPE_DECL_REF>()) {
+            if (auto decl = declRef.resolveRef()) {
+                if (decl == node) {
+                    ctx.log<IDL_STATUS_E3054>(node->location, declaration, node.fullname());
+                    node.setBuildError();
+                } else if (decl.parent() != node.parent()) {
+                    ctx.log<IDL_STATUS_E3053>(node->location, declaration, node.fullname());
+                    node.setBuildError();
+                } else if (!decl.declType().is<IDL_AST_NODE_TYPE_INTEGER_TYPE>()) {
+                    ctx.log<IDL_STATUS_E3052>(node->location, declaration, decl.fullname(), decl.declType().fullname());
+                    node.setBuildError();
+                }
+            } else {
+                node.setBuildError();
+            }
+        }
+        int countArgs = 0;
+        auto skipNext = false;
+        for (auto value : valueAttr) {
+            if (!skipNext) {
+                auto result = value.accept<DefaultValueRules>(type);
+                skipNext    = result.skipNext;
+                ++countArgs;
+                if (!result.success) {
+                    node.setBuildError();
+                }
+            }
+        }
+        if (countArgs > 1) {
+            auto isEnumFlags = type.is<IDL_AST_NODE_TYPE_ENUM>() && type.findChild<IDL_AST_NODE_TYPE_ATTR_FLAGS>();
+            if (!isEnumFlags && !attrArray) {
+                if (type.is<IDL_AST_NODE_TYPE_ENUM>()) {
+                    ctx.log<IDL_STATUS_E3056>(node->location, "field", node.fullname());
+                } else {
+                    ctx.log<IDL_STATUS_E3055>(node->location, "field", node.fullname());
+                }
+                node.setBuildError();
+            }
+        }
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_DECL_REF>) {

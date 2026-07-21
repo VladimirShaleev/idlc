@@ -1,0 +1,13 @@
+@ Brief
+@ Detail [detail]
+@ Copyright [copyright]
+@ License [license]
+@ Author [author]
+api Api
+
+@ Brief
+@ Detail [detail]
+struct Test
+    field Field1 {Float32} : 3.5 @ Doc
+    field Field2 {Uint32} : 4 @ DOc
+    field Field3 {Float32} : 300 @ Doc

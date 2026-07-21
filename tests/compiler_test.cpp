@@ -423,6 +423,60 @@ TEST(idlc, SpecialCharacterExpectedAfterBackslash) {
     ASSERT_EQ(getStr(ast, value3DetailArgs[2]), "OK.");
 }
 
+TEST(idlc, FieldTypeHasDeclTypeDeclaredBelow) {
+    const auto [result, ast, messages] = compile("w2006.idl");
+    deferred(idl_compilation_result_destroy(ast));
+    ASSERT_EQ(result, IDL_RESULT_SUCCESS);
+    ASSERT_EQ(messages.size(), 1);
+    ASSERT_EQ(messages[0],
+              "warning [W2006]: The field 'Api.Test.Field3' type has the declaration type enum 'Api.En' declared below "
+              "at w2006:18:19");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto test = findChild(ast, api, "Test");
+    ASSERT_NE(test, HandleNone);
+
+    ASSERT_TRUE(hasAllState(ast, test, IDL_AST_NODE_STATE_EVAULATED_BIT | IDL_AST_NODE_STATE_FORWARD_DECL_BIT));
+}
+
+TEST(idlc, ImplicitConversionFromIntToFloat) {
+    const auto [result, ast, messages] = compile("w2007.idl");
+    deferred(idl_compilation_result_destroy(ast));
+    ASSERT_EQ(result, IDL_RESULT_SUCCESS);
+    ASSERT_EQ(messages.size(), 1);
+    ASSERT_EQ(messages[0],
+              "warning [W2007]: Implicit conversion from an integer type to a floating-point type at w2007:13:30");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto test = findChild(ast, api, IDL_AST_NODE_TYPE_STRUCT);
+    ASSERT_NE(test, HandleNone);
+
+    auto fields = getChilds(ast, test, IDL_AST_NODE_TYPE_FIELD);
+    ASSERT_EQ(fields.size(), 3);
+
+    auto fieldAttrValue0 = findChild(ast, fields[0], IDL_AST_NODE_TYPE_ATTR_VALUE);
+    auto fieldAttrValue1 = findChild(ast, fields[1], IDL_AST_NODE_TYPE_ATTR_VALUE);
+    auto fieldAttrValue2 = findChild(ast, fields[2], IDL_AST_NODE_TYPE_ATTR_VALUE);
+    ASSERT_NE(fieldAttrValue0, HandleNone);
+    ASSERT_NE(fieldAttrValue1, HandleNone);
+    ASSERT_NE(fieldAttrValue2, HandleNone);
+
+    auto value0 = findChild(ast, fieldAttrValue0, IDL_AST_NODE_TYPE_LITERAL_FLOAT);
+    auto value1 = findChild(ast, fieldAttrValue1, IDL_AST_NODE_TYPE_LITERAL_INT);
+    auto value2 = findChild(ast, fieldAttrValue2, IDL_AST_NODE_TYPE_LITERAL_FLOAT);
+    ASSERT_NE(value0, HandleNone);
+    ASSERT_NE(value1, HandleNone);
+    ASSERT_NE(value2, HandleNone);
+
+    ASSERT_DOUBLE_EQ(getFloat(ast, value0), 3.5);
+    ASSERT_EQ(getInt(ast, value1), 4);
+    ASSERT_DOUBLE_EQ(getFloat(ast, value2), 300.0);
+}
+
 TEST(idlc, SyntaxError) {
     const auto [result, ast, messages] = compile("e3001.idl");
     deferred(idl_compilation_result_destroy(ast));

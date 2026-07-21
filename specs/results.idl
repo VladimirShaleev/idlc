@@ -208,7 +208,7 @@ interface CompilationResult
     @ TODO
     @ TODO. [detail]
     @ TODO. [return]
-    method GetNodeValueInt {Uint64}
+    method GetNodeValueInt {Int64}
         arg CompilationResult {CompilationResult} [this] @ Target compilation result instance.
         arg Node {ASTNode} @ TODO
 

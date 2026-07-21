@@ -96,6 +96,15 @@ idl_ast_node_h findChild(idl_compilation_result_t result, idl_ast_node_h node, i
     return HandleNone;
 }
 
+idl_ast_node_h findChild(idl_compilation_result_t result, idl_ast_node_h node, const std::string& declName) {
+    const auto childs = getChilds(result, node);
+
+    auto it = std::find_if(childs.begin(), childs.end(), [result, &declName](idl_ast_node_h handle) {
+        return getStr(result, handle) == declName;
+    });
+    return it != childs.end() ? *it : HandleNone;
+}
+
 std::vector<idl_ast_node_h> getChilds(idl_compilation_result_t result, idl_ast_node_h node) {
     std::vector<idl_ast_node_h> childs;
     auto curr = idl_compilation_result_get_child_node(result, node);
@@ -211,8 +220,12 @@ std::string getStr(idl_compilation_result_t result, idl_ast_node_h node) {
     return str ? std::string(str) : ""s;
 }
 
-uint64_t getInt(idl_compilation_result_t result, idl_ast_node_h node) {
+int64_t getInt(idl_compilation_result_t result, idl_ast_node_h node) {
     return idl_compilation_result_get_node_value_int(result, node);
+}
+
+double getFloat(idl_compilation_result_t result, idl_ast_node_h node) {
+    return idl_compilation_result_get_node_value_float(result, node);
 }
 
 idl_ast_node_h getDeclRef(idl_compilation_result_t result, idl_ast_node_h node) {

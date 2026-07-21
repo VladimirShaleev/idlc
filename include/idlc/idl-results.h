@@ -316,7 +316,7 @@ idl_compilation_result_get_node_value_str(idl_compilation_result_t compilation_r
  * @return    TODO.
  * @ingroup   functions
  */
-idl_api idl_uint64_t
+idl_api idl_sint64_t
 idl_compilation_result_get_node_value_int(idl_compilation_result_t compilation_result,
                                           idl_ast_node_h node);
 

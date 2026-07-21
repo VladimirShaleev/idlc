@@ -457,7 +457,7 @@ idl_utf8_t idl_compilation_result_get_node_value_str(idl_compilation_result_t co
     return compilation_result->as<idl::CompilationResultBase>()->getNodeValueStr(node);
 }
 
-idl_uint64_t idl_compilation_result_get_node_value_int(idl_compilation_result_t compilation_result,
+idl_sint64_t idl_compilation_result_get_node_value_int(idl_compilation_result_t compilation_result,
                                                        idl_ast_node_h node) {
     assert(compilation_result);
     return compilation_result->as<idl::CompilationResultBase>()->getNodeValueInt(node);

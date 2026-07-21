@@ -129,13 +129,15 @@ public:
     }
 
     [[nodiscard]] idl_utf8_t getNodeValueStr(idl_ast_node_h node) const noexcept {
-        if (isNodeType(node, IDL_AST_NODE_TYPE_DECL) || isNodeType(node, IDL_AST_NODE_TYPE_LITERAL_STR)) {
+        if (isNodeType(node, IDL_AST_NODE_TYPE_LITERAL_STR)) {
             return _stringPool[_nodes[node.handle].valueStr].data();
+        } else if (isNodeType(node, IDL_AST_NODE_TYPE_DECL)) {
+            return _stringPool[_nodes[node.handle].name.name].data();
         }
         return "";
     }
 
-    [[nodiscard]] idl_uint64_t getNodeValueInt(idl_ast_node_h node) const noexcept {
+    [[nodiscard]] idl_sint64_t getNodeValueInt(idl_ast_node_h node) const noexcept {
         if (isNodeType(node, IDL_AST_NODE_TYPE_LITERAL_INT) ||
             (isNodeType(node, IDL_AST_NODE_TYPE_ATTR_VALUE) &&
              isNodeType(getParentNode(node), IDL_AST_NODE_TYPE_CONST))) {

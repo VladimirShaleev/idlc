@@ -7,7 +7,7 @@ namespace idl {
 
 struct AttrValidatorRules {
     struct AttrInfo {
-        std::string name;
+        std::string_view name;
         bool recommended;
     };
 
@@ -79,8 +79,7 @@ struct AttrValidatorRules {
     }
 
     void validate(ASTNodeRef& node, const std::map<ASTNodeType, AttrInfo>& allowed) {
-        auto fieldNames =
-            allowed | std::views::values | std::views::transform([](const AttrInfo& info) -> const std::string& {
+        auto fieldNames = allowed | std::views::values | std::views::transform([](const AttrInfo& info) {
             return info.name;
         });
 
@@ -115,7 +114,7 @@ struct AttrValidatorRules {
     }
 
     template <ASTNodeType Type>
-    std::string getName() {
+    std::string_view getName() {
         return ASTNodeRef::byType<Type>(ctx).template accept<AttrName>().str;
     }
 
@@ -897,10 +896,10 @@ struct BuildRules {
                 node.setBuildError();
             }
         } else if (type.is<IDL_AST_NODE_TYPE_VOID>()) {
-            ctx.log<IDL_STATUS_E3034>(attrType->location, node.fullname());
+            ctx.log<IDL_STATUS_E3034>(attrType->location, node.accept<DeclToken>().str, node.fullname());
             node.setBuildError();
         } else if (auto valueAttr = node.findChild<IDL_AST_NODE_TYPE_ATTR_VALUE>()) {
-            checkDefaultValue(node, type, valueAttr, "field");
+            checkDefaultValue(node, type, valueAttr);
         }
         node.setEvaulated();
         if (node->sibling == HandleNone) {
@@ -1041,9 +1040,10 @@ struct BuildRules {
         return enumConst.buildError() ? std::nullopt : std::make_optional(attrValue->valueInt);
     }
 
-    void checkDefaultValue(ASTNodeRef& node, ASTNodeRef& type, ASTNodeRef& valueAttr, std::string_view declaration) {
-        auto& ctx      = node.ctx();
-        auto attrArray = node.findChild<IDL_AST_NODE_TYPE_ATTR_ARRAY>();
+    void checkDefaultValue(ASTNodeRef& node, ASTNodeRef& type, ASTNodeRef& valueAttr) {
+        auto declaration = node.accept<DeclToken>().str;
+        auto& ctx        = node.ctx();
+        auto attrArray   = node.findChild<IDL_AST_NODE_TYPE_ATTR_ARRAY>();
         if (auto declRef = attrArray.findChild<IDL_AST_NODE_TYPE_DECL_REF>()) {
             if (auto decl = declRef.resolveRef()) {
                 if (decl == node) {
@@ -1076,9 +1076,9 @@ struct BuildRules {
             auto isEnumFlags = type.is<IDL_AST_NODE_TYPE_ENUM>() && type.findChild<IDL_AST_NODE_TYPE_ATTR_FLAGS>();
             if (!isEnumFlags && !attrArray) {
                 if (type.is<IDL_AST_NODE_TYPE_ENUM>()) {
-                    ctx.log<IDL_STATUS_E3056>(node->location, "field", node.fullname());
+                    ctx.log<IDL_STATUS_E3056>(node->location, declaration, node.fullname());
                 } else {
-                    ctx.log<IDL_STATUS_E3055>(node->location, "field", node.fullname());
+                    ctx.log<IDL_STATUS_E3055>(node->location, declaration, node.fullname());
                 }
                 node.setBuildError();
             }

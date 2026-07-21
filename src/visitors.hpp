@@ -154,7 +154,7 @@ struct DeclToken {
         assert(!"declaration name is missing");
     }
 
-    std::string str;
+    std::string_view str;
 };
 
 struct AttrName {
@@ -223,7 +223,7 @@ struct AttrName {
         assert(!"attribute name is missing");
     }
 
-    std::string str;
+    std::string_view str;
 };
 
 } // namespace idl

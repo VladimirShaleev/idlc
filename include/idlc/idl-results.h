@@ -82,7 +82,7 @@ typedef enum
     IDL_STATUS_E3031    = 3031, /**< Invalid tokenizer format string, a valid string looks like (2-^3-4). */
     IDL_STATUS_E3032    = 3032, /**< Integer tokenization parameters or a tokenizer string must be passed to the attribute [tokenizer]. */
     IDL_STATUS_E3033    = 3033, /**< The field type corresponds to the type of the structure in which it is contained. */
-    IDL_STATUS_E3034    = 3034, /**< The field cannot be of type 'Void'. */
+    IDL_STATUS_E3034    = 3034, /**< The declaration cannot be of type 'Void'. */
     IDL_STATUS_E3035    = 3035, /**< It is not possible to assign a literal to this type. */
     IDL_STATUS_E3036    = 3036, /**< Identifiers are case sensitive. */
     IDL_STATUS_E3037    = 3037, /**< Symbol definition not found. */

@@ -448,11 +448,11 @@ struct ASTVisitor {
         return filename;
     }
 
-    static std::string token(ASTNodeRef& node) {
+    static std::string_view token(ASTNodeRef& node) {
         return node.accept<DeclToken>().str;
     }
 
-    static std::string attrName(ASTNodeRef& node) {
+    static std::string_view attrName(ASTNodeRef& node) {
         return node.accept<AttrName>().str;
     }
 

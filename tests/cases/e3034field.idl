@@ -9,10 +9,5 @@ api Api
 @ Detail [detail]
 struct Test
     field Field1 {Float32} @ Doc
-    field Field2 {OtherStruct} @ DOc
+    field Field2 {Void} @ DOc
     field Field3 {Int32} @ Doc
-
-@ Brief
-@ Detail [detail]
-struct OtherStruct
-    field Field {Int32} @ Doc

@@ -1136,7 +1136,24 @@ TEST(idlc, CnameAttrMustSpecifyNameWithoutSpacesAndPuncts) {
 TEST(idlc, FieldHasTypeOfStructDeclaredBelow) {
     const auto [result, ast, messages] = compile("e3030");
     deferred(idl_compilation_result_destroy(ast));
-    GTEST_FAIL();
+    ASSERT_EQ(result, IDL_RESULT_SUCCESS);
+    ASSERT_EQ(messages.size(), 1);
+    ASSERT_EQ(messages[0],
+              "error [E3030]: This field 'Api.Test.Field2' has the type of the structure declared below "
+              "'Api.OtherStruct'; reoder declarations or use attribute [ref] at e3030:12:19");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto test = findChild(ast, api, "Test");
+    ASSERT_NE(test, HandleNone);
+    ASSERT_TRUE(hasAllState(ast, test, IDL_AST_NODE_STATE_FORWARD_DECL_BIT));
+
+    auto fields = getChilds(ast, test, IDL_AST_NODE_TYPE_FIELD);
+    ASSERT_EQ(fields.size(), 3);
+    ASSERT_FALSE(hasAnyState(ast, fields[0], IDL_AST_NODE_STATE_BUILD_ERROR_BIT));
+    ASSERT_TRUE(hasAllState(ast, fields[1], IDL_AST_NODE_STATE_BUILD_ERROR_BIT));
+    ASSERT_FALSE(hasAnyState(ast, fields[2], IDL_AST_NODE_STATE_BUILD_ERROR_BIT));
 }
 
 TEST(idlc, InvalidTokenizerFormatString) {
@@ -1183,13 +1200,45 @@ TEST(idlc, IntTokenizationParamsOrFmtStringMustBePassedToTokenizerAttr) {
 TEST(idlc, FieldTypeCorrespondsToTypeOfStructInWhichItIsContained) {
     const auto [result, ast, messages] = compile("e3033");
     deferred(idl_compilation_result_destroy(ast));
-    GTEST_FAIL();
+    ASSERT_EQ(result, IDL_RESULT_SUCCESS);
+    ASSERT_EQ(messages.size(), 1);
+    ASSERT_EQ(messages[0],
+              "error [E3033]: The field 'Api.Test.Field2' type corresponds to the type of the structure 'Api.Test' in "
+              "which it is contained; use attribute [ref] at e3033:12:19");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto test = findChild(ast, api, IDL_AST_NODE_TYPE_STRUCT);
+    ASSERT_NE(test, HandleNone);
+    ASSERT_FALSE(hasAnyState(ast, test, IDL_AST_NODE_STATE_FORWARD_DECL_BIT));
+
+    auto fields = getChilds(ast, test, IDL_AST_NODE_TYPE_FIELD);
+    ASSERT_EQ(fields.size(), 3);
+    ASSERT_FALSE(hasAnyState(ast, fields[0], IDL_AST_NODE_STATE_BUILD_ERROR_BIT));
+    ASSERT_TRUE(hasAllState(ast, fields[1], IDL_AST_NODE_STATE_BUILD_ERROR_BIT));
+    ASSERT_FALSE(hasAnyState(ast, fields[2], IDL_AST_NODE_STATE_BUILD_ERROR_BIT));
 }
 
 TEST(idlc, FieldCannotBeOfTypeVoid) {
-    const auto [result, ast, messages] = compile("e3034");
+    const auto [result, ast, messages] = compile("e3034field");
     deferred(idl_compilation_result_destroy(ast));
-    GTEST_FAIL();
+    ASSERT_EQ(result, IDL_RESULT_SUCCESS);
+    ASSERT_EQ(messages.size(), 1);
+    ASSERT_EQ(messages[0], "error [E3034]: The field 'Api.Test.Field2' cannot be of type 'Void' at e3034field:12:19");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto test = findChild(ast, api, IDL_AST_NODE_TYPE_STRUCT);
+    ASSERT_NE(test, HandleNone);
+    ASSERT_FALSE(hasAnyState(ast, test, IDL_AST_NODE_STATE_FORWARD_DECL_BIT));
+
+    auto fields = getChilds(ast, test, IDL_AST_NODE_TYPE_FIELD);
+    ASSERT_EQ(fields.size(), 3);
+    ASSERT_FALSE(hasAnyState(ast, fields[0], IDL_AST_NODE_STATE_BUILD_ERROR_BIT));
+    ASSERT_TRUE(hasAllState(ast, fields[1], IDL_AST_NODE_STATE_BUILD_ERROR_BIT));
+    ASSERT_FALSE(hasAnyState(ast, fields[2], IDL_AST_NODE_STATE_BUILD_ERROR_BIT));
 }
 
 TEST(idlc, IsNotPossibleToAssignLiteralToType) {

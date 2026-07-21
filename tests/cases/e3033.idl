@@ -3,4 +3,11 @@
 @ Copyright [copyright]
 @ License [license]
 @ Author [author]
-api Api [tokenizer]
+api Api
+
+@ Brief
+@ Detail [detail]
+struct Test
+    field Field1 {Float32} @ Doc
+    field Field2 {Test} @ DOc
+    field Field3 {Int32} @ Doc

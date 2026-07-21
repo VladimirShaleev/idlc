@@ -109,7 +109,7 @@ inline std::string err(Args&&... args) {
                           "use attribute [ref]",
                           args...);
     } else if constexpr (Status == IDL_STATUS_E3034) {
-        str = fmt::format("The field '{}' cannot be of type 'Void'", args...);
+        str = fmt::format("The {} '{}' cannot be of type 'Void'", args...);
     } else if constexpr (Status == IDL_STATUS_E3035) {
         str = fmt::format("It is not possible to assign {} literal to this type '{}'", args...);
     } else if constexpr (Status == IDL_STATUS_E3036) {

@@ -687,7 +687,9 @@ struct FloatCastRules {
 };
 
 struct DefaultValueRules {
-    explicit DefaultValueRules(ASTNodeRef& type) noexcept : type(type) {
+    explicit DefaultValueRules(ASTNodeRef& type, std::string_view declaration) noexcept :
+        type(type),
+        declaration(declaration) {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_LITERAL_STR>) {
@@ -744,7 +746,8 @@ struct DefaultValueRules {
             node.ctx().log<IDL_STATUS_E3035>(node->location, "enum const", type.fullname());
             success = false;
         } else if (type != ref.parent()) {
-            node.ctx().log<IDL_STATUS_E3049>(node->location, ref.name(), ref.parent().fullname(), type.fullname());
+            node.ctx().log<IDL_STATUS_E3049>(
+                node->location, ref.name(), ref.parent().fullname(), declaration, type.fullname());
             success = false;
         }
     }
@@ -755,6 +758,7 @@ struct DefaultValueRules {
     }
 
     ASTNodeRef& type;
+    std::string_view declaration;
     bool success{ true };
     bool skipNext{};
 };
@@ -1060,7 +1064,7 @@ struct BuildRules {
         auto skipNext = false;
         for (auto value : valueAttr) {
             if (!skipNext) {
-                auto result = value.accept<DefaultValueRules>(type);
+                auto result = value.accept<DefaultValueRules>(type, declaration);
                 skipNext    = result.skipNext;
                 ++countArgs;
                 if (!result.success && ctx.options() ? ctx.options()->getWarningsAsErrors() : false) {

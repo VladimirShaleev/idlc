@@ -1133,6 +1133,12 @@ TEST(idlc, CnameAttrMustSpecifyNameWithoutSpacesAndPuncts) {
     }
 }
 
+TEST(idlc, FieldHasTypeOfStructDeclaredBelow) {
+    const auto [result, ast, messages] = compile("e3030");
+    deferred(idl_compilation_result_destroy(ast));
+    GTEST_FAIL();
+}
+
 TEST(idlc, InvalidTokenizerFormatString) {
     const auto [result, ast, messages] = compile("e3031");
     deferred(idl_compilation_result_destroy(ast));
@@ -1172,6 +1178,24 @@ TEST(idlc, IntTokenizationParamsOrFmtStringMustBePassedToTokenizerAttr) {
         auto attrArgs = getChilds(ast, attr);
         ASSERT_TRUE(attrArgs.empty());
     }
+}
+
+TEST(idlc, FieldTypeCorrespondsToTypeOfStructInWhichItIsContained) {
+    const auto [result, ast, messages] = compile("e3033");
+    deferred(idl_compilation_result_destroy(ast));
+    GTEST_FAIL();
+}
+
+TEST(idlc, FieldCannotBeOfTypeVoid) {
+    const auto [result, ast, messages] = compile("e3034");
+    deferred(idl_compilation_result_destroy(ast));
+    GTEST_FAIL();
+}
+
+TEST(idlc, IsNotPossibleToAssignLiteralToType) {
+    const auto [result, ast, messages] = compile("e3035");
+    deferred(idl_compilation_result_destroy(ast));
+    GTEST_FAIL();
 }
 
 TEST(idlc, IdentifiersCaseSensitive) {
@@ -1439,6 +1463,60 @@ TEST(idlc, NameOrTypeMustStartWithCapitalLetter) {
     ASSERT_EQ(getStr(ast, enums[0]), "tEst");
     ASSERT_EQ(getStr(ast, findChild(ast, enums[1], IDL_AST_NODE_TYPE_CONST)), "fail");
     ASSERT_EQ(getStr(ast, enums[2]), "0Other");
+}
+
+TEST(idlc, OnlyLiteralsAndCompileTimeExprEnumConstCanBeUsedAsDefaultValues) {
+    const auto [result, ast, messages] = compile("e3048");
+    deferred(idl_compilation_result_destroy(ast));
+    GTEST_FAIL();
+}
+
+TEST(idlc, CannotAssignConstOfTypeToDeclWithDifferentEnumType) {
+    const auto [result, ast, messages] = compile("e3049");
+    deferred(idl_compilation_result_destroy(ast));
+    GTEST_FAIL();
+}
+
+TEST(idlc, AttributeMustContainOneArgument) {
+    const auto [result, ast, messages] = compile("e3050");
+    deferred(idl_compilation_result_destroy(ast));
+    GTEST_FAIL();
+}
+
+TEST(idlc, ArraySizeArgumentMustBePositive) {
+    const auto [result, ast, messages] = compile("e3051");
+    deferred(idl_compilation_result_destroy(ast));
+    GTEST_FAIL();
+}
+
+TEST(idlc, ArrayAttrMustReferToIntegerDecl) {
+    const auto [result, ast, messages] = compile("e3052");
+    deferred(idl_compilation_result_destroy(ast));
+    GTEST_FAIL();
+}
+
+TEST(idlc, RefToTheArraySizeMustBeInTheSameScope) {
+    const auto [result, ast, messages] = compile("e3053");
+    deferred(idl_compilation_result_destroy(ast));
+    GTEST_FAIL();
+}
+
+TEST(idlc, ArraySizeRefCannotReferToItsOwnDeclaration) {
+    const auto [result, ast, messages] = compile("e3054");
+    deferred(idl_compilation_result_destroy(ast));
+    GTEST_FAIL();
+}
+
+TEST(idlc, MultipleDefaultValuesCanBeAssignedOnlyToArray) {
+    const auto [result, ast, messages] = compile("e3055");
+    deferred(idl_compilation_result_destroy(ast));
+    GTEST_FAIL();
+}
+
+TEST(idlc, MultipleEnumConstsCanBeAssignedOnlyToFlagEnum) {
+    const auto [result, ast, messages] = compile("e3056");
+    deferred(idl_compilation_result_destroy(ast));
+    GTEST_FAIL();
 }
 
 TEST(idlc, ResultCode) {

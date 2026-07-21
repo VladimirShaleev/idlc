@@ -141,7 +141,7 @@ inline std::string err(Args&&... args) {
             "Only literals and compile-time expressions (enumeration constants) can be used as default values");
     } else if constexpr (Status == IDL_STATUS_E3049) {
         str = fmt::format(
-            "Cannot assign a constant '{}' of '{}' type to a field with a different enumeration type '{}'", args...);
+            "Cannot assign a constant '{}' of '{}' type to {} with a different enumeration type '{}'", args...);
     } else if constexpr (Status == IDL_STATUS_E3050) {
         str = fmt::format("The [{}] attribute must contain one argument{}", args...);
     } else if constexpr (Status == IDL_STATUS_E3051) {

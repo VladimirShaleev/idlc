@@ -74,13 +74,13 @@ enum Status
     const E3046 : 3046 [tokenizer(0)] @ Unknown error.
     const E3047 : 3047 [tokenizer(0)] @ The name or type must start with a capital letter.
     const E3048 : 3048 [tokenizer(0)] @ Only literals and compile-time expressions (enumeration constants) can be used as default values.
-    const E3049 : 3049 [tokenizer(0)] @ Cannot assign a constant of this type to a field with a different enumeration type.
+    const E3049 : 3049 [tokenizer(0)] @ Cannot assign a constant of this type to a declaration with a different enumeration type.
     const E3050 : 3050 [tokenizer(0)] @ Attribute must contain one argument.
     const E3051 : 3051 [tokenizer(0)] @ The \[array\] size argument must be positive.
     const E3052 : 3052 [tokenizer(0)] @ The \[array\] attribute must refer to an integer declaration.
     const E3053 : 3053 [tokenizer(0)] @ The reference to the array size must be in the same scope.
     const E3054 : 3054 [tokenizer(0)] @ An array size reference cannot refer to its own declaration.
-    const E3055 : 3055 [tokenizer(0)] @ Multiple default values ​​can be assigned only to an array.
+    const E3055 : 3055 [tokenizer(0)] @ Multiple default values can be assigned only to an array.
     const E3056 : 3056 [tokenizer(0)] @ Multiple enumeration constants can be assigned only to a flag enumeration.
 
 @ Compilation message.

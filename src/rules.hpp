@@ -896,10 +896,19 @@ struct BuildRules {
         } else if (auto valueAttr = node.findChild<IDL_AST_NODE_TYPE_ATTR_VALUE>()) {
             auto attrArray = node.findChild<IDL_AST_NODE_TYPE_ATTR_ARRAY>();
             if (auto declRef = attrArray.findChild<IDL_AST_NODE_TYPE_DECL_REF>()) {
-                if (auto decl = declRef.resolveRef(); decl.declType().is<IDL_AST_NODE_TYPE_INTEGER_TYPE>() &&
-                                                      decl != node && decl.parent() == node.parent()) {
-                } else if (decl) {
-                    ctx.log<IDL_STATUS_E3052>(node->location, decl.fullname());
+                if (auto decl = declRef.resolveRef()) {
+                    if (decl == node) {
+                        ctx.log<IDL_STATUS_E3054>(node->location, "field", node.fullname());
+                        node.setBuildError();
+                    } else if (decl.parent() != node.parent()) {
+                        ctx.log<IDL_STATUS_E3053>(node->location, "field", node.fullname());
+                        node.setBuildError();
+                    } else if (!decl.declType().is<IDL_AST_NODE_TYPE_INTEGER_TYPE>()) {
+                        ctx.log<IDL_STATUS_E3052>(node->location, "field", decl.fullname(), decl.declType().fullname());
+                        node.setBuildError();
+                    }
+                } else {
+                    node.setBuildError();
                 }
             }
             int countArgs = 0;
@@ -912,6 +921,17 @@ struct BuildRules {
                     if (!result.success) {
                         node.setBuildError();
                     }
+                }
+            }
+            if (countArgs > 0) {
+                auto isEnumFlags = type.is<IDL_AST_NODE_TYPE_ENUM>() && type.findChild<IDL_AST_NODE_TYPE_ATTR_FLAGS>();
+                if (!isEnumFlags && !attrArray) {
+                    if (type.is<IDL_AST_NODE_TYPE_ENUM>()) {
+                        ctx.log<IDL_STATUS_E3056>(node->location, "field", node.fullname());
+                    } else {
+                        ctx.log<IDL_STATUS_E3055>(node->location, "field", node.fullname());
+                    }
+                    node.setBuildError();
                 }
             }
         }

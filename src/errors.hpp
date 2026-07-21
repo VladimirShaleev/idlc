@@ -147,9 +147,19 @@ inline std::string err(Args&&... args) {
     } else if constexpr (Status == IDL_STATUS_E3050) {
         str = fmt::format("The [{}] attribute must contain one argument{}", args...);
     } else if constexpr (Status == IDL_STATUS_E3051) {
-        str = fmt::format("The array size must be positive");
+        str = fmt::format("The [array] size argument must be positive");
     } else if constexpr (Status == IDL_STATUS_E3052) {
-        str = fmt::format("The array must refer to an integer value within the scope where it is declared, '{}' is invalid", args...);
+        str = fmt::format(
+            "The [array] attribute must refer to an integer {0}, but the reference to the {0} '{1}' has the type '{2}'",
+            args...);
+    } else if constexpr (Status == IDL_STATUS_E3053) {
+        str = fmt::format("The reference to the array size must be in the same scope as {} '{}'", args...);
+    } else if constexpr (Status == IDL_STATUS_E3054) {
+        str = fmt::format("An array size reference cannot refer to its own {} '{}'", args...);
+    } else if constexpr (Status == IDL_STATUS_E3055) {
+        str = fmt::format("Multiple default values can be assigned to {} '{}' only to an array", args...);
+    } else if constexpr (Status == IDL_STATUS_E3056) {
+        str = fmt::format("Multiple enumeration constants can be assigned to {} '{}' only to a flag enumeration", args...);
     } else {
         assert(!"Unknown status code");
     }

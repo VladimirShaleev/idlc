@@ -923,7 +923,7 @@ struct BuildRules {
                     }
                 }
             }
-            if (countArgs > 0) {
+            if (countArgs > 1) {
                 auto isEnumFlags = type.is<IDL_AST_NODE_TYPE_ENUM>() && type.findChild<IDL_AST_NODE_TYPE_ATTR_FLAGS>();
                 if (!isEnumFlags && !attrArray) {
                     if (type.is<IDL_AST_NODE_TYPE_ENUM>()) {

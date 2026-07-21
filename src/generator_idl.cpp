@@ -42,7 +42,7 @@ std::string refName(ASTNodeRef path, ASTNodeRef exclude) {
     FixedStack<ASTNodeRef, 20> excludeStack;
     auto fillStack = [](auto& stack, auto node) {
         while (node) {
-            if (node.is<IDL_AST_NODE_TYPE_DECL>() && !node.is<IDL_AST_NODE_TYPE_IMPORT>()) {
+            if (node.template is<IDL_AST_NODE_TYPE_DECL>() && !node.template is<IDL_AST_NODE_TYPE_IMPORT>()) {
                 stack.push(node);
             }
             node = node.parent();
@@ -220,7 +220,7 @@ struct AttrArgsGetter {
                 fmt::print(ss, ", ");
             }
             hasPrev = true;
-            fmt::print(ss, "{}", (*it).accept<LiteralPrinter>(addQuotes, (*it).parent()).str);
+            fmt::print(ss, "{}", (*it).template accept<LiteralPrinter>(addQuotes, (*it).parent()).str);
         }
         args = ss.str();
     }
@@ -323,8 +323,8 @@ struct ASTVisitor {
 
     void printAttrs(ASTNodeRef& node) {
         auto attrs = node.attrs(state.origin) | std::views::filter([](const auto& attr) {
-            return attr.is<IDL_AST_NODE_TYPE_ATTR>() && !attr.is<IDL_AST_NODE_TYPE_ATTR_DOC>() &&
-                   !attr.is<IDL_AST_NODE_TYPE_ATTR_VALUE>() && !attr.is<IDL_AST_NODE_TYPE_ATTR_TYPE>();
+            return attr.template is<IDL_AST_NODE_TYPE_ATTR>() && !attr.template is<IDL_AST_NODE_TYPE_ATTR_DOC>() &&
+                   !attr.template is<IDL_AST_NODE_TYPE_ATTR_VALUE>() && !attr.template is<IDL_AST_NODE_TYPE_ATTR_TYPE>();
         });
 
         bool hasPrev = false;
@@ -352,10 +352,10 @@ struct ASTVisitor {
 
     void printDoc(ASTNodeRef& node, int level, bool hasIDoc) {
         auto docs = node.attrs() | std::views::filter([hasIDoc](const auto& attr) {
-            if (hasIDoc && attr.is<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>()) {
+            if (hasIDoc && attr.template is<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>()) {
                 return false;
             }
-            return attr.is<IDL_AST_NODE_TYPE_ATTR_DOC>();
+            return attr.template is<IDL_AST_NODE_TYPE_ATTR_DOC>();
         }) | std::views::transform([](const auto& attr) {
             const auto priority = const_cast<ASTNodeRef&>(attr).accept<PriorityDocAttr>().prior;
             return std::make_pair(priority, attr);

@@ -11,7 +11,7 @@ struct AttrValidatorRules {
         bool recommended;
     };
 
-    AttrValidatorRules(Context& ctx) noexcept : ctx(ctx), options(options) {
+    AttrValidatorRules(Context& ctx) noexcept : ctx(ctx) {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_API>) {
@@ -116,11 +116,10 @@ struct AttrValidatorRules {
 
     template <ASTNodeType Type>
     std::string getName() {
-        return ASTNodeRef::byType<Type>(ctx).accept<AttrName>().str;
+        return ASTNodeRef::byType<Type>(ctx).template accept<AttrName>().str;
     }
 
     Context& ctx;
-    const Options* options;
 };
 
 struct AttrDocValidatorRules {
@@ -346,7 +345,7 @@ struct AttrArgRules {
             node->child = argFrist;
             auto view   = node | std::views::all;
             auto it     = std::ranges::find_if(view, [](const auto& val) {
-                return val.is<IDL_AST_NODE_TYPE_LITERAL>();
+                return val.template is<IDL_AST_NODE_TYPE_LITERAL>();
             });
             ASTNodeType type;
             if (it == view.end()) {
@@ -409,7 +408,7 @@ struct AttrArgRules {
             node->child = argFrist;
 
             auto isAllIntegers = std::all_of(node.begin(), node.end(), [this](auto arg) {
-                return arg.is<IDL_AST_NODE_TYPE_LITERAL_INT>();
+                return arg.template is<IDL_AST_NODE_TYPE_LITERAL_INT>();
             });
             if (!isAllIntegers) {
                 auto arg0 = ctx.getNodeRef(argFrist);
@@ -766,12 +765,12 @@ struct BuildRules {
             for (auto enumNode : enums) {
                 auto& ctx   = enumNode.ctx();
                 auto consts = enumNode.getChilds() | std::views::filter([](const auto& child) {
-                    return child.is<IDL_AST_NODE_TYPE_CONST>();
+                    return child.template is<IDL_AST_NODE_TYPE_CONST>();
                 });
                 for (auto constNode : consts) {
                     auto prevChild = ctx.emptyNodeRef();
                     for (auto child : constNode) {
-                        if (child.is<IDL_AST_NODE_TYPE_DECL_PREV_SIBLING_REF>()) {
+                        if (child.template is<IDL_AST_NODE_TYPE_DECL_PREV_SIBLING_REF>()) {
                             break;
                         }
                         prevChild = child;
@@ -821,7 +820,7 @@ struct BuildRules {
         }
 
         auto enumConsts = node | std::views::filter([](const auto& child) {
-            return child.is<IDL_AST_NODE_TYPE_CONST>();
+            return child.template is<IDL_AST_NODE_TYPE_CONST>();
         });
 
         ASTNodeRef prevEnumConst = ctx.emptyNodeRef();
@@ -1116,10 +1115,10 @@ struct BuildRules {
             if (top.findChild<IDL_AST_NODE_TYPE_ATTR_VALUE>()) {
                 auto declRefs =
                     top.findChild<IDL_AST_NODE_TYPE_ATTR_VALUE>() | std::views::filter([this](const auto& value) {
-                    return value.is<IDL_AST_NODE_TYPE_DECL_REF>();
+                    return value.template is<IDL_AST_NODE_TYPE_DECL_REF>();
                 });
                 for (auto ref : declRefs) {
-                    if (auto decl = ref.resolveRef(); decl.is<IDL_AST_NODE_TYPE_CONST>()) {
+                    if (auto decl = ref.resolveRef(); decl.template is<IDL_AST_NODE_TYPE_CONST>()) {
                         if (!cameFrom.contains(decl.handle().handle)) {
                             cameFrom[decl.handle().handle] = top;
                         } else if (decl == target) {

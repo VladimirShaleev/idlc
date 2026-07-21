@@ -326,7 +326,7 @@ private:
         _isMultiline = multiline;
     }
 
-    [[nodiscar]] int isMultiline() const noexcept {
+    [[nodiscard]] int isMultiline() const noexcept {
         return _isMultiline;
     }
 

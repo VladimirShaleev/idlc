@@ -161,7 +161,7 @@ bool checkConst(idl_compilation_result_t result,
                 bool buildFailed,
                 bool forwardDecl) {
     if (node == HandleNone) {
-        false;
+        return false;
     }
 
     if (!hasAllState(result,

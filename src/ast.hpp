@@ -10,7 +10,7 @@ typedef idl_ast_node_h ASTNodeHandle;
 typedef idl_ast_node_type_t ASTNodeType;
 typedef idl_ast_node_state_flags_t ASTNodeFlags;
 
-static constexpr ASTNodeType IDL_AST_NODE_TYPE_DECL_PREV_SIBLING_REF = ASTNodeType(-1);
+static constexpr ASTNodeType IDL_AST_NODE_TYPE_DECL_PREV_SIBLING_REF = ASTNodeType(IDL_AST_NODE_TYPE_MAX_ENUM - 1);
 
 static constexpr ASTNodeHandle HandleNone{ 0xFFFF };
 

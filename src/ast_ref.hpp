@@ -210,7 +210,7 @@ public:
         auto view = *this | std::views::all;
 
         auto it = std::ranges::find_if(view, [originalNode](const auto& child) {
-            return child.isSaveNode(originalNode) && child.is<Type>();
+            return child.isSaveNode(originalNode) && child.template is<Type>();
         });
 
         return it != view.end() ? *it : ASTNodeRef(*_ctx);
@@ -218,7 +218,7 @@ public:
 
     [[nodiscard]] auto attrs(bool originalNodes = false) const noexcept {
         return getChilds(originalNodes) | std::views::filter([](const auto& child) {
-            return child.is<IDL_AST_NODE_TYPE_ATTR>();
+            return child.template is<IDL_AST_NODE_TYPE_ATTR>();
         });
     }
 

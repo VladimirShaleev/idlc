@@ -723,7 +723,7 @@ struct DefaultValueRules {
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_LITERAL_BOOL>) {
         if (!type.is<IDL_AST_NODE_TYPE_BOOL>()) {
-            node.ctx().log<IDL_STATUS_E3035>(node->location, "booleans", type.fullname());
+            node.ctx().log<IDL_STATUS_E3035>(node->location, "boolean", type.fullname());
             success = false;
         }
     }
@@ -1067,7 +1067,7 @@ struct BuildRules {
                 auto result = value.accept<DefaultValueRules>(type, declaration);
                 skipNext    = result.skipNext;
                 ++countArgs;
-                if (!result.success && ctx.options() ? ctx.options()->getWarningsAsErrors() : false) {
+                if (!result.success) {
                     node.setBuildError();
                 }
             }

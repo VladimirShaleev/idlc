@@ -1,5 +1,28 @@
 @ Brief
 @ Detail [detail]
 @ Copyright [copyright]
+@ License [license]
 @ Author [author]
-api Api [license]
+api Api
+
+@ Brief
+@ Detail [detail]
+enum En
+    const Value1 @ Doc
+    const Value2 @ Doc
+
+
+@ Brief
+@ Detail [detail]
+struct Test
+    field Field1 {Str} : "test string" @ Doc
+    field Field2 {Int32} : 5 @ DOc
+    field Field3 {Bool} : true @ Doc
+    field Field4 {Float32} : -2.54 @ Doc
+    field Field5 {En} : En.Value2 @ Doc
+    
+    field Field6 {Int32} : "invalid literal type" @ Doc
+    field Field7 {Bool} : 7 @ Doc
+    field Field8 {Str} : true @ Doc
+    field Field9 {Int32} : 3.7 @ Doc
+    field Field10 {Int32} : En.Value2 @ Doc

@@ -1244,7 +1244,47 @@ TEST(idlc, FieldCannotBeOfTypeVoid) {
 TEST(idlc, IsNotPossibleToAssignLiteralToType) {
     const auto [result, ast, messages] = compile("e3035");
     deferred(idl_compilation_result_destroy(ast));
-    GTEST_FAIL();
+    ASSERT_EQ(result, IDL_RESULT_SUCCESS);
+    ASSERT_EQ(messages.size(), 5);
+    ASSERT_EQ(messages[0],
+              "error [E3035]: It is not possible to assign string literal to type 'Api.Int32' at e3035:24:28");
+    ASSERT_EQ(messages[1],
+              "error [E3035]: It is not possible to assign integer literal to type 'Api.Bool' at e3035:25:27");
+    ASSERT_EQ(messages[2],
+              "error [E3035]: It is not possible to assign boolean literal to type 'Api.Str' at e3035:26:26");
+    ASSERT_EQ(messages[3],
+              "error [E3035]: It is not possible to assign float-point literal to type 'Api.Int32' at e3035:27:28");
+    ASSERT_EQ(messages[4],
+              "error [E3035]: It is not possible to assign enum const literal to type 'Api.Int32' at e3035:28:29");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto value2 = findChild(ast, findChild(ast, api, IDL_AST_NODE_TYPE_ENUM), "Value2");
+    ASSERT_NE(value2, HandleNone);
+
+    auto test = findChild(ast, api, IDL_AST_NODE_TYPE_STRUCT);
+    ASSERT_NE(test, HandleNone);
+
+    auto index = 0;
+    auto values =
+        getChilds(ast, test, IDL_AST_NODE_TYPE_FIELD) | std::views::transform([ast, &index](const auto& field) {
+        auto state = index++ < 5 ? IDL_AST_NODE_STATE_NONE_BIT : IDL_AST_NODE_STATE_BUILD_ERROR_BIT;
+        EXPECT_TRUE(hasAllState(ast, field, state));
+        auto attrValue = findChild(ast, field, IDL_AST_NODE_TYPE_ATTR_VALUE);
+        EXPECT_NE(attrValue, HandleNone);
+        auto args = getChilds(ast, attrValue);
+        EXPECT_EQ(args.size(), 1);
+        return getLiteral(ast, args[0]);
+    });
+
+    std::vector<Literal> expected = { "test string",          5, true, -2.54, value2,
+                                      "invalid literal type", 7, true, 3.7,   value2 };
+
+    std::vector<Literal> actual;
+    actual.assign(values.begin(), values.end());
+
+    ASSERT_EQ(actual, expected);
 }
 
 TEST(idlc, IdentifiersCaseSensitive) {

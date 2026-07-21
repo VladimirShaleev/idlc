@@ -220,6 +220,10 @@ std::string getStr(idl_compilation_result_t result, idl_ast_node_h node) {
     return str ? std::string(str) : ""s;
 }
 
+bool getBool(idl_compilation_result_t result, idl_ast_node_h node) {
+    return idl_compilation_result_get_node_value_bool(result, node);
+}
+
 int64_t getInt(idl_compilation_result_t result, idl_ast_node_h node) {
     return idl_compilation_result_get_node_value_int(result, node);
 }
@@ -230,4 +234,19 @@ double getFloat(idl_compilation_result_t result, idl_ast_node_h node) {
 
 idl_ast_node_h getDeclRef(idl_compilation_result_t result, idl_ast_node_h node) {
     return idl_compilation_result_get_node_value_decl_ref(result, node);
+}
+
+Literal getLiteral(idl_compilation_result_t result, idl_ast_node_h node) {
+    if (isType(result, node, IDL_AST_NODE_TYPE_LITERAL_STR)) {
+        return getStr(result, node);
+    } else if (isType(result, node, IDL_AST_NODE_TYPE_LITERAL_INT)) {
+        return getInt(result, node);
+    } else if (isType(result, node, IDL_AST_NODE_TYPE_LITERAL_BOOL)) {
+        return getBool(result, node);
+    } else if (isType(result, node, IDL_AST_NODE_TYPE_LITERAL_FLOAT)) {
+        return getFloat(result, node);
+    } else if (isType(result, node, IDL_AST_NODE_TYPE_DECL_REF)) {
+        return getDeclRef(result, node);
+    }
+    throw std::runtime_error("unreachable code");
 }

@@ -111,7 +111,7 @@ inline std::string err(Args&&... args) {
     } else if constexpr (Status == IDL_STATUS_E3034) {
         str = fmt::format("The {} '{}' cannot be of type 'Void'", args...);
     } else if constexpr (Status == IDL_STATUS_E3035) {
-        str = fmt::format("It is not possible to assign {} literal to this type '{}'", args...);
+        str = fmt::format("It is not possible to assign {} literal to type '{}'", args...);
     } else if constexpr (Status == IDL_STATUS_E3036) {
         str = fmt::format("Identifiers are case sensitive, error in '{}', but expected '{}'", args...);
     } else if constexpr (Status == IDL_STATUS_E3037) {

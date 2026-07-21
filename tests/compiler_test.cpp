@@ -172,14 +172,58 @@ TEST(idlc, ConstantForwardRefers) {
     ASSERT_TRUE(checkConst(ast, testConsts[3], 5, false, false, false));
 }
 
+TEST(idlc, FloatOutOfRange) {
+    const auto [result, ast, messages] = compile("w2004float.idl", true);
+    deferred(idl_compilation_result_destroy(ast));
+    ASSERT_EQ(result, IDL_RESULT_SUCCESS);
+    ASSERT_EQ(messages.size(), 2);
+    ASSERT_EQ(messages[0],
+              "error [W2004]: Float32 with value 3.50282e+38 out of range [-3.4028235e+38, 3.4028235e+38] at "
+              "w2004float:12:30");
+    ASSERT_EQ(messages[1],
+              "error [W2004]: Float32 with value -3.70282e+38 out of range [-3.4028235e+38, 3.4028235e+38] at "
+              "w2004float:13:30");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto test = findChild(ast, api, IDL_AST_NODE_TYPE_STRUCT);
+    ASSERT_NE(test, HandleNone);
+    ASSERT_TRUE(hasAllState(ast, test, IDL_AST_NODE_STATE_EVAULATED_BIT));
+
+    auto fields = getChilds(ast, test, IDL_AST_NODE_TYPE_FIELD);
+    ASSERT_EQ(fields.size(), 3);
+    ASSERT_TRUE(hasAllState(ast, fields[0], IDL_AST_NODE_STATE_EVAULATED_BIT));
+    ASSERT_TRUE(hasAllState(ast, fields[1], IDL_AST_NODE_STATE_EVAULATED_BIT | IDL_AST_NODE_STATE_BUILD_ERROR_BIT));
+    ASSERT_TRUE(hasAllState(ast, fields[2], IDL_AST_NODE_STATE_EVAULATED_BIT | IDL_AST_NODE_STATE_BUILD_ERROR_BIT));
+
+    auto attrValue0 = findChild(ast, fields[0], IDL_AST_NODE_TYPE_ATTR_VALUE);
+    auto attrValue1 = findChild(ast, fields[1], IDL_AST_NODE_TYPE_ATTR_VALUE);
+    auto attrValue2 = findChild(ast, fields[2], IDL_AST_NODE_TYPE_ATTR_VALUE);
+    ASSERT_NE(attrValue0, HandleNone);
+    ASSERT_NE(attrValue1, HandleNone);
+    ASSERT_NE(attrValue1, HandleNone);
+
+    auto value0 = findChild(ast, attrValue0, IDL_AST_NODE_TYPE_LITERAL_FLOAT);
+    auto value1 = findChild(ast, attrValue1, IDL_AST_NODE_TYPE_LITERAL_FLOAT);
+    auto value2 = findChild(ast, attrValue2, IDL_AST_NODE_TYPE_LITERAL_FLOAT);
+    ASSERT_NE(value0, HandleNone);
+    ASSERT_NE(value1, HandleNone);
+    ASSERT_NE(value2, HandleNone);
+
+    ASSERT_DOUBLE_EQ(getFloat(ast, value0), 32.73);
+    ASSERT_DOUBLE_EQ(getFloat(ast, value1), 3.5028235e+38);
+    ASSERT_DOUBLE_EQ(getFloat(ast, value2), -3.7028235e+38);
+}
+
 TEST(idlc, IntegerOutOfRange) {
-    const auto [result, ast, messages] = compile("w2004.idl");
+    const auto [result, ast, messages] = compile("w2004int.idl");
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 3);
-    ASSERT_EQ(messages[0], "warning [W2004]: Integer Int8 with value 128 out of range [-128, 127] at w2004:19:5");
-    ASSERT_EQ(messages[1], "warning [W2004]: Integer Int8 with value -130 out of range [-128, 127] at w2004:20:20");
-    ASSERT_EQ(messages[2], "warning [W2004]: Integer Int8 with value 367 out of range [-128, 127] at w2004:22:20");
+    ASSERT_EQ(messages[0], "warning [W2004]: Int8 with value 128 out of range [-128, 127] at w2004int:19:5");
+    ASSERT_EQ(messages[1], "warning [W2004]: Int8 with value -130 out of range [-128, 127] at w2004int:20:20");
+    ASSERT_EQ(messages[2], "warning [W2004]: Int8 with value 367 out of range [-128, 127] at w2004int:22:20");
     ASSERT_FALSE(idl_compilation_result_has_notes(ast));
     ASSERT_TRUE(idl_compilation_result_has_warnings(ast));
     ASSERT_FALSE(idl_compilation_result_has_errors(ast));
@@ -206,13 +250,13 @@ TEST(idlc, IntegerOutOfRange) {
 }
 
 TEST(idlc, IntegerOutOfRangeWarnAsErrors) {
-    const auto [result, ast, messages] = compile("w2004.idl", true);
+    const auto [result, ast, messages] = compile("w2004int.idl", true);
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 3);
-    ASSERT_EQ(messages[0], "error [W2004]: Integer Int8 with value 128 out of range [-128, 127] at w2004:19:5");
-    ASSERT_EQ(messages[1], "error [W2004]: Integer Int8 with value -130 out of range [-128, 127] at w2004:20:20");
-    ASSERT_EQ(messages[2], "error [W2004]: Integer Int8 with value 367 out of range [-128, 127] at w2004:22:20");
+    ASSERT_EQ(messages[0], "error [W2004]: Int8 with value 128 out of range [-128, 127] at w2004int:19:5");
+    ASSERT_EQ(messages[1], "error [W2004]: Int8 with value -130 out of range [-128, 127] at w2004int:20:20");
+    ASSERT_EQ(messages[2], "error [W2004]: Int8 with value 367 out of range [-128, 127] at w2004int:22:20");
     ASSERT_FALSE(idl_compilation_result_has_notes(ast));
     ASSERT_FALSE(idl_compilation_result_has_warnings(ast));
     ASSERT_TRUE(idl_compilation_result_has_errors(ast));

@@ -1,0 +1,13 @@
+@ Brief
+@ Detail [detail]
+@ Copyright [copyright]
+@ License [license]
+@ Author [author]
+api Api
+
+@ Brief
+@ Detail [detail]
+struct Test
+    field Field1 {Float32} : 32.73 @ Doc
+    field Field2 {Float32} : 3.5028235e+38 @ DOc
+    field Field3 {Float32} : -3.7028235e+38 @ Doc

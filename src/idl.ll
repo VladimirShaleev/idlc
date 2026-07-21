@@ -4,11 +4,14 @@
 #define YY_NO_UNISTD_H
 #define YY_DECL int idl::Scanner::yylex(idl::Parser::semantic_type* yylval, idl::Parser::location_type* yylloc)
 #define YY_USER_ACTION action(*yylloc);
-#define log(status, ...) context().log<IDL_STATUS_##status>({ \
+#define ast_location { \
     context().result()->intern({yylloc->begin.filename->c_str(), yylloc->begin.filename->length()}), \
     uint16_t(yylloc->begin.column), \
-    uint16_t(yylloc->begin.line) } __VA_OPT__(,) __VA_ARGS__)
+    uint16_t(yylloc->begin.line) }
+#define log(status, ...) context().log<IDL_STATUS_##status>(ast_location __VA_OPT__(,) __VA_ARGS__)
 #define yy_text_view std::string_view { YYText(), size_t(YYLeng()) } 
+#define parse_float(str) parseFloat(ast_location, str)
+#define parse_int(str) parseInt(ast_location, str)
 using namespace std::string_literals;
 typedef idl::Parser::token token;
 %}
@@ -71,8 +74,8 @@ SYMBOLS  [a-zA-Z0-9_\-^\.@ ]
 <ATTRARGCTX,ATTRFALLBACKARGCTX>" "                               { }
 <ATTRARGCTX,ATTRFALLBACKARGCTX>true|false                        { yylval->emplace<bool>(YYText()[0] == 't'); return token::BOOL; }
 <ATTRARGCTX>[a-z_]{SYMBOL}*                                      { yylval->emplace<std::string>(YYText()); return token::INVALID_ARG; }
-<ATTRFALLBACKARGCTX>{FLOAT}                                      { yylval->emplace<double>(std::stof(YYText())); return token::FLOAT; }
-<ATTRFALLBACKARGCTX>{INT}                                        { yylval->emplace<int64_t>(std::stoll(YYText())); return token::INT; }
+<ATTRFALLBACKARGCTX>{FLOAT}                                      { yylval->emplace<double>(parse_float(YYText())); return token::FLOAT; }
+<ATTRFALLBACKARGCTX>{INT}                                        { yylval->emplace<int64_t>(parse_int(YYText())); return token::INT; }
 <ATTRSHORTARGCTX,ATTRFALLBACKARGCTX>{SYMBOL}+                    { yylval->emplace<std::string>(YYText()); return token::STR; }
 <ATTRSHORTARGCTX,ATTRFALLBACKARGCTX>{SYMBOL}+{SYMBOLS}*{SYMBOL}+ { yylval->emplace<std::string>(YYText()); return token::INVALID_ARG; }
 <ATTRARGCTX,ATTRSHORTARGCTX,ATTRFALLBACKARGCTX>")"               { BEGIN(ATTRCTX); return YYText()[0]; }
@@ -138,8 +141,8 @@ import[ ]+ { BEGIN(IMPORTCTX); }
 <*>[A-Z][a-zA-Z0-9]*   { yylval->emplace<std::string>(YYText()); return token::ID; }
 <*>[A-Z][a-zA-Z0-9\.]* { yylval->emplace<std::string>(YYText()); return token::REF; }
 <*>true|false          { yylval->emplace<bool>(YYText()[0] == 't'); return token::BOOL; }
-<*>{FLOAT}             { yylval->emplace<double>(std::stof(YYText())); return token::FLOAT; }
-<*>{INT}               { yylval->emplace<int64_t>(std::stoll(YYText())); return token::INT; }
+<*>{FLOAT}             { yylval->emplace<double>(parse_float(YYText())); return token::FLOAT; }
+<*>{INT}               { yylval->emplace<int64_t>(parse_int(YYText())); return token::INT; }
 <*>{SYMBOL}+           { yylval->emplace<std::string>(YYText()); return token::INVALID_ID; }
 <*>\"(\\.|[^\\"\n])*\" { std::string str = YYText(); str = str.substr(1, str.length() - 2); yylval->emplace<std::string>(str); return token::STR; }
 <*>\"(\\.|[^\\"\n])*   { std::string str = YYText(); log(E3009, str.substr(0, str.length() - 1)); }

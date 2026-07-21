@@ -671,11 +671,14 @@ struct FloatCastRules {
     void cast(ASTNodeRef& node) {
         std::string valueStr;
         const auto valueFloat = value->valueFloat;
-        success = valueFloat >= std::numeric_limits<T>::min() && valueFloat <= std::numeric_limits<T>::max();
+        success = valueFloat >= std::numeric_limits<T>::lowest() && valueFloat <= std::numeric_limits<T>::max();
         if (!success) {
             valueStr = fmt::format("{:g}", valueFloat);
-            node.ctx().log<IDL_STATUS_W2008>(
-                value->location, node.name(), valueStr, std::numeric_limits<T>::min(), std::numeric_limits<T>::max());
+            node.ctx().log<IDL_STATUS_W2004>(value->location,
+                                             node.name(),
+                                             valueStr,
+                                             std::numeric_limits<T>::lowest(),
+                                             std::numeric_limits<T>::max());
         }
     }
 
@@ -1060,7 +1063,7 @@ struct BuildRules {
                 auto result = value.accept<DefaultValueRules>(type);
                 skipNext    = result.skipNext;
                 ++countArgs;
-                if (!result.success) {
+                if (!result.success && ctx.options() ? ctx.options()->getWarningsAsErrors() : false) {
                     node.setBuildError();
                 }
             }

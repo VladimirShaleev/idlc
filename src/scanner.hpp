@@ -147,7 +147,29 @@ public:
         }
     }
 
-    int lineIndent = -1;
+    double parseFloat(const ASTLocation location, const char* str) noexcept {
+        try {
+            return std::stod(str);
+        } catch (const std::out_of_range& e) {
+            context().log<IDL_STATUS_W2004>(
+                location, "Float", str, std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max());
+        } catch (...) {
+            context().log<IDL_STATUS_E3046>(location);
+        }
+        return 0.0;
+    }
+
+    int64_t parseInt(const ASTLocation location, const char* str) noexcept {
+        try {
+            return std::stoll(str);
+        } catch (const std::out_of_range& e) {
+            context().log<IDL_STATUS_W2004>(
+                location, "Integer", str, std::numeric_limits<int64_t>::min(), std::numeric_limits<int64_t>::max());
+        } catch (...) {
+            context().log<IDL_STATUS_E3046>(location);
+        }
+        return 0;
+    }
 
 private:
     enum AttrArgType {
@@ -346,7 +368,6 @@ private:
     std::map<std::string, std::unique_ptr<std::string>> _allImports{};
     bool _declaring{};
     bool _isMultiline{};
-    std::optional<int> _indents{};
     AttrArgType _attrArg{};
     bool _needUpdateLoc{};
 };

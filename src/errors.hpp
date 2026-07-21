@@ -24,15 +24,13 @@ inline std::string err(Args&&... args) {
     } else if constexpr (Status == IDL_STATUS_W2003) {
         str = fmt::format("The constant '{}' refers to a constant declared below '{}'", args...);
     } else if constexpr (Status == IDL_STATUS_W2004) {
-        str = fmt::format("Integer {} with value {} out of range [{}, {}]", args...);
+        str = fmt::format("{} with value {} out of range [{}, {}]", args...);
     } else if constexpr (Status == IDL_STATUS_W2005) {
         str = fmt::format("Special character expected after backslash; valid spacial characters {}", args...);
     } else if constexpr (Status == IDL_STATUS_W2006) {
         str = fmt::format("The field '{}' type has the declaration type {} '{}' declared below", args...);
     } else if constexpr (Status == IDL_STATUS_W2007) {
         str = fmt::format("Implicit conversion from an integer type to a floating-point type");
-    } else if constexpr (Status == IDL_STATUS_W2008) {
-        str = fmt::format("Float {} with value {} out of range [{}, {}]", args...);
     } else if constexpr (Status == IDL_STATUS_E3001) {
         if constexpr (sizeof...(args) > 0) {
             str = fmt::format("Syntax error '{}'", args...);
@@ -159,7 +157,8 @@ inline std::string err(Args&&... args) {
     } else if constexpr (Status == IDL_STATUS_E3055) {
         str = fmt::format("Multiple default values can be assigned to {} '{}' only to an array", args...);
     } else if constexpr (Status == IDL_STATUS_E3056) {
-        str = fmt::format("Multiple enumeration constants can be assigned to {} '{}' only to a flag enumeration", args...);
+        str = fmt::format("Multiple enumeration constants can be assigned to {} '{}' only to a flag enumeration",
+                          args...);
     } else {
         assert(!"Unknown status code");
     }

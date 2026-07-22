@@ -1597,7 +1597,41 @@ TEST(idlc, OnlyLiteralsAndCompileTimeExprEnumConstCanBeUsedAsDefaultValues) {
 TEST(idlc, CannotAssignConstOfTypeToDeclWithDifferentEnumType) {
     const auto [result, ast, messages] = compile("e3049");
     deferred(idl_compilation_result_destroy(ast));
-    GTEST_FAIL();
+    ASSERT_EQ(result, IDL_RESULT_SUCCESS);
+    ASSERT_EQ(messages.size(), 1);
+    ASSERT_EQ(messages[0],
+              "error [E3049]: Cannot assign a constant 'Value2' of 'Api.En2' type to field with a different "
+              "enumeration type 'Api.En1' at e3049:24:26");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto test = findChild(ast, api, IDL_AST_NODE_TYPE_STRUCT);
+    ASSERT_NE(test, HandleNone);
+
+    auto fields = getChilds(ast, test, IDL_AST_NODE_TYPE_FIELD);
+    ASSERT_EQ(fields.size(), 2);
+    ASSERT_FALSE(hasAnyState(ast, fields[0], IDL_AST_NODE_STATE_BUILD_ERROR_BIT));
+    ASSERT_TRUE(hasAnyState(ast, fields[1], IDL_AST_NODE_STATE_BUILD_ERROR_BIT));
+
+    auto attrValue0 = findChild(ast, fields[0], IDL_AST_NODE_TYPE_ATTR_VALUE);
+    auto attrValue1 = findChild(ast, fields[1], IDL_AST_NODE_TYPE_ATTR_VALUE);
+    ASSERT_NE(attrValue0, HandleNone);
+    ASSERT_NE(attrValue1, HandleNone);
+
+    auto args0 = getChilds(ast, attrValue0);
+    auto args1 = getChilds(ast, attrValue1);
+    ASSERT_EQ(args0.size(), 1);
+    ASSERT_EQ(args1.size(), 1);
+
+    auto actual0 = getLiteral(ast, args0.front());
+    auto actual1 = getLiteral(ast, args1.front());
+
+    Literal expected0 = 4;
+    Literal expected1 = findChild(ast, findChild(ast, api, "En2"), "Value2");
+
+    ASSERT_EQ(actual0, expected0);
+    ASSERT_EQ(actual1, expected1);
 }
 
 TEST(idlc, AttributeMustContainOneArgument) {

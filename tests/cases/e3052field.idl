@@ -1,0 +1,15 @@
+@ Brief
+@ Detail [detail]
+@ Copyright [copyright]
+@ License [license]
+@ Author [author]
+api Api
+
+@ Brief
+@ Detail [detail]
+struct Test
+    field Arr {Float32} [array(Count)] @ Doc
+    field Count {Float32} @ Doc
+
+    field Arr2 {Float32} [array(Count2)] @ Doc
+    field Count2 {Int16} [array(1)] @ Doc

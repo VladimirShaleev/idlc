@@ -898,9 +898,8 @@ struct BuildRules {
         } else if (type.is<IDL_AST_NODE_TYPE_VOID>()) {
             ctx.log<IDL_STATUS_E3034>(attrType->location, node.accept<DeclToken>().str, node.fullname());
             node.setBuildError();
-        } else if (auto valueAttr = node.findChild<IDL_AST_NODE_TYPE_ATTR_VALUE>()) {
-            checkDefaultValue(node, type, valueAttr);
         }
+        assingValue(node, type);
         node.setEvaulated();
         if (node->sibling == HandleNone) {
             node.parent().setEvaulated();
@@ -1040,7 +1039,8 @@ struct BuildRules {
         return enumConst.buildError() ? std::nullopt : std::make_optional(attrValue->valueInt);
     }
 
-    void checkDefaultValue(ASTNodeRef& node, ASTNodeRef& type, ASTNodeRef& valueAttr) {
+    void assingValue(ASTNodeRef& node, ASTNodeRef& type) {
+        auto valueAttr   = node.findChild<IDL_AST_NODE_TYPE_ATTR_VALUE>();
         auto declaration = node.accept<DeclToken>().str;
         auto& ctx        = node.ctx();
         auto attrArray   = node.findChild<IDL_AST_NODE_TYPE_ATTR_ARRAY>();
@@ -1052,8 +1052,11 @@ struct BuildRules {
                 } else if (decl.parent() != node.parent()) {
                     ctx.log<IDL_STATUS_E3053>(node->location, declaration, node.fullname());
                     node.setBuildError();
-                } else if (!decl.declType().is<IDL_AST_NODE_TYPE_INTEGER_TYPE>()) {
-                    ctx.log<IDL_STATUS_E3052>(node->location, declaration, decl.fullname(), decl.declType().fullname());
+                } else if (!decl.declType().is<IDL_AST_NODE_TYPE_INTEGER_TYPE>() ||
+                           decl.findChild<IDL_AST_NODE_TYPE_ATTR_ARRAY>()) {
+                    std::string_view typeArray = decl.findChild<IDL_AST_NODE_TYPE_ATTR_ARRAY>() ? "array of " : "";
+                    ctx.log<IDL_STATUS_E3052>(
+                        node->location, declaration, decl.fullname(), typeArray, decl.declType().fullname());
                     node.setBuildError();
                 }
             } else {

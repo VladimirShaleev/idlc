@@ -1689,10 +1689,31 @@ TEST(idlc, ArraySizeArgumentMustBePositive) {
     ASSERT_EQ(arg1, Literal(3));
 }
 
-TEST(idlc, ArrayAttrMustReferToIntegerDecl) {
-    const auto [result, ast, messages] = compile("e3052");
+TEST(idlc, ArrayAttrMustReferToIntField) {
+    const auto [result, ast, messages] = compile("e3052field");
     deferred(idl_compilation_result_destroy(ast));
-    GTEST_FAIL();
+    ASSERT_EQ(result, IDL_RESULT_SUCCESS);
+    ASSERT_EQ(messages.size(), 2);
+    ASSERT_EQ(messages[0],
+              "error [E3052]: The [array] attribute must refer to an integer field, but the reference to the field "
+              "'Api.Test.Count' has the type 'Api.Float32' at e3052field:11:5");
+    ASSERT_EQ(messages[1],
+              "error [E3052]: The [array] attribute must refer to an integer field, but the reference to the field "
+              "'Api.Test.Count2' has the type array of 'Api.Int16' at e3052field:14:5");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto test = findChild(ast, api, IDL_AST_NODE_TYPE_STRUCT);
+    ASSERT_NE(test, HandleNone);
+
+    auto fields = getChilds(ast, test, IDL_AST_NODE_TYPE_FIELD);
+    ASSERT_EQ(fields.size(), 4);
+
+    ASSERT_TRUE(hasAnyState(ast, fields[0], IDL_AST_NODE_STATE_BUILD_ERROR_BIT));
+    ASSERT_FALSE(hasAnyState(ast, fields[1], IDL_AST_NODE_STATE_BUILD_ERROR_BIT));
+    ASSERT_TRUE(hasAnyState(ast, fields[2], IDL_AST_NODE_STATE_BUILD_ERROR_BIT));
+    ASSERT_FALSE(hasAnyState(ast, fields[3], IDL_AST_NODE_STATE_BUILD_ERROR_BIT));
 }
 
 TEST(idlc, RefToTheArraySizeMustBeInTheSameScope) {

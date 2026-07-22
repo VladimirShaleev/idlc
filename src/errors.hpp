@@ -148,7 +148,7 @@ inline std::string err(Args&&... args) {
         str = fmt::format("The [array] size argument must be positive");
     } else if constexpr (Status == IDL_STATUS_E3052) {
         str = fmt::format(
-            "The [array] attribute must refer to an integer {0}, but the reference to the {0} '{1}' has the type '{2}'",
+            "The [array] attribute must refer to an integer {0}, but the reference to the {0} '{1}' has the type {2}'{3}'",
             args...);
     } else if constexpr (Status == IDL_STATUS_E3053) {
         str = fmt::format("The reference to the array size must be in the same scope as {} '{}'", args...);

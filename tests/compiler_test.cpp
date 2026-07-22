@@ -1637,13 +1637,56 @@ TEST(idlc, CannotAssignConstOfTypeToDeclWithDifferentEnumType) {
 TEST(idlc, AttributeMustContainOneArgument) {
     const auto [result, ast, messages] = compile("e3050");
     deferred(idl_compilation_result_destroy(ast));
-    GTEST_FAIL();
+    ASSERT_EQ(result, IDL_RESULT_SUCCESS);
+    ASSERT_EQ(messages.size(), 2);
+    ASSERT_EQ(messages[0],
+              "error [E3050]: The [array] attribute must contain one argument (fixed-size integer or reference to an "
+              "integer field/arg specifying the size) at e3050:12:27");
+    ASSERT_EQ(messages[1],
+              "error [E3050]: The [array] attribute must contain one argument (fixed-size integer or reference to an "
+              "integer field/arg specifying the size) at e3050:13:27");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto test = findChild(ast, api, IDL_AST_NODE_TYPE_STRUCT);
+    ASSERT_NE(test, HandleNone);
+
+    auto fields = getChilds(ast, test, IDL_AST_NODE_TYPE_FIELD);
+    ASSERT_EQ(fields.size(), 3);
+    ASSERT_EQ(findChild(ast, fields[0], IDL_AST_NODE_TYPE_ATTR_ARRAY), HandleNone);
+    ASSERT_NE(findChild(ast, fields[1], IDL_AST_NODE_TYPE_ATTR_ARRAY), HandleNone);
+    ASSERT_NE(findChild(ast, fields[2], IDL_AST_NODE_TYPE_ATTR_ARRAY), HandleNone);
 }
 
 TEST(idlc, ArraySizeArgumentMustBePositive) {
     const auto [result, ast, messages] = compile("e3051");
     deferred(idl_compilation_result_destroy(ast));
-    GTEST_FAIL();
+    ASSERT_EQ(result, IDL_RESULT_SUCCESS);
+    ASSERT_EQ(messages.size(), 2);
+    ASSERT_EQ(messages[0], "error [E3051]: The [array] size argument must be positive at e3051:11:27");
+    ASSERT_EQ(messages[1], "error [E3051]: The [array] size argument must be positive at e3051:13:27");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto test = findChild(ast, api, IDL_AST_NODE_TYPE_STRUCT);
+    ASSERT_NE(test, HandleNone);
+
+    auto fields = getChilds(ast, test, IDL_AST_NODE_TYPE_FIELD);
+    ASSERT_EQ(fields.size(), 3);
+
+    auto arr0 = findChild(ast, fields[0], IDL_AST_NODE_TYPE_ATTR_ARRAY);
+    auto arr1 = findChild(ast, fields[1], IDL_AST_NODE_TYPE_ATTR_ARRAY);
+    auto arr2 = findChild(ast, fields[2], IDL_AST_NODE_TYPE_ATTR_ARRAY);
+    ASSERT_NE(arr0, HandleNone);
+    ASSERT_NE(arr1, HandleNone);
+    ASSERT_NE(arr2, HandleNone);
+
+    auto arg1 = getLiteral(ast, findChild(ast, arr1, IDL_AST_NODE_TYPE_LITERAL));
+    ASSERT_TRUE(getChilds(ast, arr0).empty());
+    ASSERT_TRUE(getChilds(ast, arr2).empty());
+    ASSERT_EQ(arg1, Literal(3));
 }
 
 TEST(idlc, ArrayAttrMustReferToIntegerDecl) {

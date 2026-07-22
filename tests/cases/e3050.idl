@@ -4,3 +4,10 @@
 @ License [license]
 @ Author [author]
 api Api
+
+@ Brief
+@ Detail [detail]
+struct Test
+    field Field1 {Int32} : 4 @ Doc
+    field Field2 {Int32} [array(3.5)] @ Doc
+    field Field3 {Int32} [array(4, 5)] @ Doc

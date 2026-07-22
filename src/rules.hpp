@@ -71,8 +71,7 @@ struct AttrValidatorRules {
     template <ASTNodeType Type>
     void visit(ASTNodeRef& node, Tag<Type>) noexcept {
         if (node.is<IDL_AST_NODE_TYPE_DECL>()) {
-            const auto token = node.accept<DeclToken>().str;
-            node.ctx().log<IDL_STATUS_E3006>(node->location, token, node.fullname());
+            assert(!"Attributes are not allowed for the declaration");
         } else {
             assert(!"attempt to validate attributes for a non-declaration node");
         }

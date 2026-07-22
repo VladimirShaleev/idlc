@@ -46,9 +46,10 @@ inline std::string err(Args&&... args) {
         str = fmt::format("Version values must be between 0 and 255, while the argument is {}", args...);
     } else if constexpr (Status == IDL_STATUS_E3005) {
         str = fmt::format("Invalid attribute [{}] for {} '{}' declaration, allowed attributes are {}", args...);
-    } else if constexpr (Status == IDL_STATUS_E3006) {
+    } /*else if constexpr (Status == IDL_STATUS_E3006) {
         str = fmt::format("Attributes are not allowed for the {} '{}' declaration", args...);
-    } else if constexpr (Status == IDL_STATUS_E3007) {
+    } */
+    else if constexpr (Status == IDL_STATUS_E3007) {
         str = fmt::format("Attribute duplication for attribute [{}] in {} '{}'", args...);
     } else if constexpr (Status == IDL_STATUS_E3008) {
         str = fmt::format("The attribute [{}] must not have arguments", args...);
@@ -140,16 +141,16 @@ inline std::string err(Args&&... args) {
         str = fmt::format(
             "Only literals and compile-time expressions (enumeration constants) can be used as default values");
     } else if constexpr (Status == IDL_STATUS_E3049) {
-        str = fmt::format(
-            "Cannot assign a constant '{}' of '{}' type to {} with a different enumeration type '{}'", args...);
+        str = fmt::format("Cannot assign a constant '{}' of '{}' type to {} with a different enumeration type '{}'",
+                          args...);
     } else if constexpr (Status == IDL_STATUS_E3050) {
         str = fmt::format("The [{}] attribute must contain one argument{}", args...);
     } else if constexpr (Status == IDL_STATUS_E3051) {
         str = fmt::format("The [array] size argument must be positive");
     } else if constexpr (Status == IDL_STATUS_E3052) {
-        str = fmt::format(
-            "The [array] attribute must refer to an integer {0}, but the reference to the {0} '{1}' has the type {2}'{3}'",
-            args...);
+        str = fmt::format("The [array] attribute must refer to an integer {0}, but the reference to the {0} '{1}' has "
+                          "the type {2}'{3}'",
+                          args...);
     } else if constexpr (Status == IDL_STATUS_E3053) {
         str = fmt::format("The reference to the array size must be in the same scope as {} '{}'", args...);
     } else if constexpr (Status == IDL_STATUS_E3054) {

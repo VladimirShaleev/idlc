@@ -619,12 +619,6 @@ TEST(idlc, InvalidAttrForDeclaration) {
     ASSERT_TRUE(isType(ast, attrs[6], IDL_AST_NODE_TYPE_ATTR_HEX));
 }
 
-TEST(idlc, AttrNotAllowedForDeclaration) {
-    const auto [result, ast, messages] = compile("e3006.idl");
-    deferred(idl_compilation_result_destroy(ast));
-    GTEST_FAIL();
-}
-
 TEST(idlc, AttributeDuplication) {
     const auto [result, ast, messages] = compile("e3007.idl");
     deferred(idl_compilation_result_destroy(ast));

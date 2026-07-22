@@ -1,0 +1,16 @@
+@ Brief
+@ Detail [detail]
+@ Copyright [copyright]
+@ License [license]
+@ Author [author]
+api Api
+
+@ Brief
+@ Detail [detail]
+struct OtherStruct
+    field Count {Float32} @ Doc
+
+@ Brief
+@ Detail [detail]
+struct Test
+    field Arr {Float32} [array(OtherStruct.Count)] @ Doc

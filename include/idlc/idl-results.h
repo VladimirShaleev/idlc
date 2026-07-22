@@ -54,6 +54,7 @@ typedef enum
     IDL_STATUS_E3003    = 3003, /**< The [version] attribute must have three required integer parameters, such as version(1, 2, 3) or version("string"). */
     IDL_STATUS_E3004    = 3004, /**< Version values must be between 0 and 255. */
     IDL_STATUS_E3005    = 3005, /**< An invalid attribute was specified for the declaration. */
+    IDL_STATUS_E3006    = 3006, /**< The number of default values for the declaration exceeds the array size. */
     IDL_STATUS_E3007    = 3007, /**< Attribute duplication. */
     IDL_STATUS_E3008    = 3008, /**< The attribute must not have arguments. */
     IDL_STATUS_E3009    = 3009, /**< String closing character not found. */

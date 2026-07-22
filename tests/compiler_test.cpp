@@ -619,6 +619,27 @@ TEST(idlc, InvalidAttrForDeclaration) {
     ASSERT_TRUE(isType(ast, attrs[6], IDL_AST_NODE_TYPE_ATTR_HEX));
 }
 
+TEST(idlc, NumberOfValuesForFieldExceedsTheArraySize) {
+    const auto [result, ast, messages] = compile("e3006field");
+    deferred(idl_compilation_result_destroy(ast));
+    ASSERT_EQ(result, IDL_RESULT_SUCCESS);
+    ASSERT_EQ(messages.size(), 1);
+    ASSERT_EQ(messages[0],
+              "error [E3006]: The number of default values (4) for the field 'Api.Test.Field2' exceeds the array size "
+              "(3) at e3006field:20:5");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto test = findChild(ast, api, IDL_AST_NODE_TYPE_STRUCT);
+    ASSERT_NE(test, HandleNone);
+
+    auto fields = getChilds(ast, test, IDL_AST_NODE_TYPE_FIELD);
+    ASSERT_EQ(fields.size(), 2);
+    ASSERT_FALSE(hasAnyState(ast, fields[0], IDL_AST_NODE_STATE_BUILD_ERROR_BIT));
+    ASSERT_TRUE(hasAnyState(ast, fields[1], IDL_AST_NODE_STATE_BUILD_ERROR_BIT));
+}
+
 TEST(idlc, AttributeDuplication) {
     const auto [result, ast, messages] = compile("e3007.idl");
     deferred(idl_compilation_result_destroy(ast));

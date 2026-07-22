@@ -46,10 +46,9 @@ inline std::string err(Args&&... args) {
         str = fmt::format("Version values must be between 0 and 255, while the argument is {}", args...);
     } else if constexpr (Status == IDL_STATUS_E3005) {
         str = fmt::format("Invalid attribute [{}] for {} '{}' declaration, allowed attributes are {}", args...);
-    } /*else if constexpr (Status == IDL_STATUS_E3006) {
-        str = fmt::format("Attributes are not allowed for the {} '{}' declaration", args...);
-    } */
-    else if constexpr (Status == IDL_STATUS_E3007) {
+    } else if constexpr (Status == IDL_STATUS_E3006) {
+        str = fmt::format("The number of default values ({}) for the {} '{}' exceeds the array size ({})", args...);
+    } else if constexpr (Status == IDL_STATUS_E3007) {
         str = fmt::format("Attribute duplication for attribute [{}] in {} '{}'", args...);
     } else if constexpr (Status == IDL_STATUS_E3008) {
         str = fmt::format("The attribute [{}] must not have arguments", args...);

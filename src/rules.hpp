@@ -1084,6 +1084,11 @@ struct BuildRules {
                 }
                 node.setBuildError();
             }
+            if (auto fixedSize = attrArray.findChild<IDL_AST_NODE_TYPE_LITERAL_INT>();
+                fixedSize && fixedSize->valueInt < countArgs) {
+                ctx.log<IDL_STATUS_E3006>(node->location, countArgs, declaration, node.fullname(), fixedSize->valueInt);
+                node.setBuildError();
+            }
         }
     }
 

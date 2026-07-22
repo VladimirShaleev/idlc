@@ -31,7 +31,7 @@ enum Status
     const E3003 : 3003 [tokenizer(0)] @ The \[version\] attribute must have three required integer parameters, such as version(1, 2, 3) or version("string").
     const E3004 : 3004 [tokenizer(0)] @ Version values must be between 0 and 255.
     const E3005 : 3005 [tokenizer(0)] @ An invalid attribute was specified for the declaration.
-    // const E3006 : 3006 [tokenizer(0)] @ TODO: empty slot
+    const E3006 : 3006 [tokenizer(0)] @ The number of default values for the declaration exceeds the array size.
     const E3007 : 3007 [tokenizer(0)] @ Attribute duplication.
     const E3008 : 3008 [tokenizer(0)] @ The attribute must not have arguments.
     const E3009 : 3009 [tokenizer(0)] @ String closing character not found.

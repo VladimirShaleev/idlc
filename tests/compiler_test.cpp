@@ -1710,7 +1710,7 @@ TEST(idlc, ArrayAttrMustReferToIntField) {
     ASSERT_FALSE(hasAnyState(ast, fields[3], IDL_AST_NODE_STATE_BUILD_ERROR_BIT));
 }
 
-TEST(idlc, RefToTheArraySizeMustBeInTheSameScope) {
+TEST(idlc, RefToTheFieldArraySizeMustBeInTheSameScope) {
     const auto [result, ast, messages] = compile("e3053field");
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
@@ -1733,7 +1733,20 @@ TEST(idlc, RefToTheArraySizeMustBeInTheSameScope) {
 TEST(idlc, ArraySizeRefCannotReferToItsOwnDeclaration) {
     const auto [result, ast, messages] = compile("e3054");
     deferred(idl_compilation_result_destroy(ast));
-    GTEST_FAIL();
+    ASSERT_EQ(result, IDL_RESULT_SUCCESS);
+    ASSERT_EQ(messages.size(), 1);
+    ASSERT_EQ(messages[0],
+              "error [E3054]: An array size reference cannot refer to its own field 'Api.Test.Arr' at e3054:11:5");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto test = findChild(ast, api, IDL_AST_NODE_TYPE_STRUCT);
+    ASSERT_NE(test, HandleNone);
+
+    auto fields = getChilds(ast, test, IDL_AST_NODE_TYPE_FIELD);
+    ASSERT_EQ(fields.size(), 1);
+    ASSERT_TRUE(hasAnyState(ast, fields[0], IDL_AST_NODE_STATE_BUILD_ERROR_BIT));
 }
 
 TEST(idlc, MultipleDefaultValuesCanBeAssignedOnlyToArray) {

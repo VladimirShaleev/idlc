@@ -1771,9 +1771,26 @@ TEST(idlc, MultipleDefaultValuesCanBeAssignedOnlyToArray) {
 }
 
 TEST(idlc, MultipleEnumConstsCanBeAssignedOnlyToFlagEnum) {
-    const auto [result, ast, messages] = compile("e3056");
+    const auto [result, ast, messages] = compile("e3056field");
     deferred(idl_compilation_result_destroy(ast));
-    GTEST_FAIL();
+    ASSERT_EQ(result, IDL_RESULT_SUCCESS);
+    ASSERT_EQ(messages.size(), 1);
+    ASSERT_EQ(messages[0],
+              "error [E3056]: Multiple enumeration constants can be assigned to field 'Api.Test.Field4' only to a flag "
+              "enumeration at e3056field:26:5");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto test = findChild(ast, api, "Test");
+    ASSERT_NE(test, HandleNone);
+
+    auto fields = getChilds(ast, test, IDL_AST_NODE_TYPE_FIELD);
+    ASSERT_EQ(fields.size(), 4);
+    ASSERT_FALSE(hasAnyState(ast, fields[0], IDL_AST_NODE_STATE_BUILD_ERROR_BIT));
+    ASSERT_FALSE(hasAnyState(ast, fields[1], IDL_AST_NODE_STATE_BUILD_ERROR_BIT));
+    ASSERT_FALSE(hasAnyState(ast, fields[2], IDL_AST_NODE_STATE_BUILD_ERROR_BIT));
+    ASSERT_TRUE(hasAnyState(ast, fields[3], IDL_AST_NODE_STATE_BUILD_ERROR_BIT));
 }
 
 TEST(idlc, ResultCode) {

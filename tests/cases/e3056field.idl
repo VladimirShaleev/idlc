@@ -1,0 +1,26 @@
+@ Brief
+@ Detail [detail]
+@ Copyright [copyright]
+@ License [license]
+@ Author [author]
+api Api
+
+@ Brief
+@ Detail [detail]
+enum En
+    const Value1 : 1 @ Doc
+    const Value2 : 2 @ Doc
+
+@ Brief
+@ Detail [detail]
+enum EnFlags [flags]
+    const Value1 : 1 @ Doc
+    const Value2 : 2 @ Doc
+
+@ Brief
+@ Detail [detail]
+struct Test
+    field Field1 {En} : En.Value1, En.Value2 [array(3)] @ Doc
+    field Field2 {EnFlags} : EnFlags.Value1, EnFlags.Value2 @ Doc
+    field Field3 {EnFlags} : EnFlags.Value1, EnFlags.Value2 [array(3)] @ Doc
+    field Field4 {En} : En.Value1, En.Value2 @ Doc

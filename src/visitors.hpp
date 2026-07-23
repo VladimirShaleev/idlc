@@ -149,6 +149,10 @@ struct DeclToken {
         str = "func";
     }
 
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ARG>) {
+        str = "arg";
+    }
+
     void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_IMPORT>) {
         str = "import";
     }

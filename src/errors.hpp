@@ -159,6 +159,8 @@ inline std::string err(Args&&... args) {
     } else if constexpr (Status == IDL_STATUS_E3056) {
         str = fmt::format("Multiple enumeration constants can be assigned to {} '{}' only to a flag enumeration",
                           args...);
+    } else if constexpr (Status == IDL_STATUS_E3057) {
+        str = fmt::format("A 'arg' of '{}' can be defined only for 'func', 'method' and 'callback'", args...);
     } else {
         assert(!"Unknown status code");
     }

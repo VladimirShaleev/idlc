@@ -49,6 +49,7 @@ SYMBOLS  [a-zA-Z0-9_\-^\.@ ]
 "struct" { setDeclaring(); return token::STRUCT; }
 "field"  { setDeclaring(); return token::FIELD; }
 "func"   { setDeclaring(); return token::FUNC; }
+"arg"    { setDeclaring(); return token::ARG; }
 
 "["                    { BEGIN(ATTRCTX); return YYText()[0]; }
 <ATTRCTX>"("           { getAttrArg() == Default ? BEGIN(ATTRARGCTX) : getAttrArg() == ShortString ? BEGIN(ATTRSHORTARGCTX) : BEGIN(ATTRFALLBACKARGCTX); return YYText()[0]; }

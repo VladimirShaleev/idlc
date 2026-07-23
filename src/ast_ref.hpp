@@ -251,6 +251,9 @@ public:
                 case IDL_AST_NODE_TYPE_FUNC:
                     visitor.visit(node, Tag<IDL_AST_NODE_TYPE_FUNC>{});
                     break;
+                case IDL_AST_NODE_TYPE_ARG:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ARG>{});
+                    break;
                 case IDL_AST_NODE_TYPE_DECL_REF:
                     visitor.visit(node, Tag<IDL_AST_NODE_TYPE_DECL_REF>{});
                     break;

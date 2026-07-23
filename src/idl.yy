@@ -81,6 +81,7 @@
 %token STRUCT
 %token FIELD
 %token FUNC
+%token ARG
 %token IMPORT
 %token POPIMPORT
 %token DOC
@@ -232,6 +233,7 @@ decl
     | STRUCT { $$ = alloc_node(@1, STRUCT); }
     | FIELD { $$ = alloc_node(@1, FIELD); }
     | FUNC { $$ = alloc_node(@1, FUNC); }
+    | ARG { $$ = alloc_node(@1, ARG); }
     | IMPORT { $$ = alloc_node(@1, IMPORT); }
     ;
 

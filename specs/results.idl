@@ -82,6 +82,7 @@ enum Status
     const E3054 : 3054 [tokenizer(0)] @ An array size reference cannot refer to its own declaration.
     const E3055 : 3055 [tokenizer(0)] @ Multiple default values can be assigned only to an array.
     const E3056 : 3056 [tokenizer(0)] @ Multiple enumeration constants can be assigned only to a flag enumeration.
+    const E3057 : 3057 [tokenizer(0)] @ A 'arg' can be defined for 'func', 'method' and 'callback'.
 
 @ Compilation message.
 @ Detailed description of warning or compilation error. [detail]

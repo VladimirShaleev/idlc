@@ -105,6 +105,7 @@ typedef enum
     IDL_STATUS_E3054    = 3054, /**< An array size reference cannot refer to its own declaration. */
     IDL_STATUS_E3055    = 3055, /**< Multiple default values can be assigned only to an array. */
     IDL_STATUS_E3056    = 3056, /**< Multiple enumeration constants can be assigned only to a flag enumeration. */
+    IDL_STATUS_E3057    = 3057, /**< A 'arg' can be defined for 'func', 'method' and 'callback'. */
     IDL_STATUS_MAX_ENUM = 0x7FFFFFFF /**< Max value of enum (not used) */
 } idl_status_t;
 

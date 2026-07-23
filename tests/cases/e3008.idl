@@ -9,3 +9,8 @@ api Api
 @ Detail [detail]
 enum Test [hex(123, 4.3)]
     const Value @ Doc
+
+@ Brief
+@ Detail [detail]
+struct Struct
+    field Field {Int32} [const(1, 2)] @ Doc

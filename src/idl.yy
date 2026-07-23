@@ -102,6 +102,7 @@
 %token ATTRARRAY
 %token ATTRSINGLE
 %token ATTRREF
+%token ATTRCONST
 
 %token <std::string> ID
 %token <std::string> REF
@@ -256,6 +257,7 @@ attr_item
     | ATTRSINGLE    { $$ = alloc_node(@1, ATTR_SINGLE); }
     | ATTRHEX       { $$ = alloc_node(@1, ATTR_HEX); }
     | ATTRREF       { $$ = alloc_node(@1, ATTR_REF); }
+    | ATTRCONST     { $$ = alloc_node(@1, ATTR_CONST); }
     | ATTRBRIEF     { $$ = alloc_node(@1, ATTR_DOC_BRIEF); }
     | ATTRDETAIL    { $$ = alloc_node(@1, ATTR_DOC_DETAIL); }
     | INVALID_ATTR  { $$ = HandleNone; log(E3013, @1, $1); }

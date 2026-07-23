@@ -218,6 +218,10 @@ struct AttrName {
         str = "ref";
     }
 
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_CONST>) {
+        str = "const";
+    }
+
     template <ASTNodeType Type>
     void visit(ASTNodeRef&, Tag<Type>) noexcept {
         assert(!"attribute name is missing");

@@ -666,9 +666,10 @@ TEST(idlc, AttributeMustNotHaveArguments) {
     const auto [result, ast, messages] = compile("e3008.idl");
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
-    ASSERT_EQ(messages.size(), 2);
+    ASSERT_EQ(messages.size(), 3);
     ASSERT_EQ(messages[0], "error [E3008]: The attribute [hex] must not have arguments at e3008:10:12");
     ASSERT_EQ(messages[1], "error [E3008]: The attribute [const] must not have arguments at e3008:16:26");
+    ASSERT_EQ(messages[2], "error [E3008]: The attribute [optional] must not have arguments at e3008:16:39");
 
     auto api = idl_compilation_result_get_api(ast);
     ASSERT_NE(api, HandleNone);
@@ -689,6 +690,10 @@ TEST(idlc, AttributeMustNotHaveArguments) {
     auto cnst = findChild(ast, field, IDL_AST_NODE_TYPE_ATTR_CONST);
     ASSERT_NE(cnst, HandleNone);
     ASSERT_TRUE(getChilds(ast, cnst).empty());
+    
+    auto optional = findChild(ast, field, IDL_AST_NODE_TYPE_ATTR_OPTIONAL);
+    ASSERT_NE(optional, HandleNone);
+    ASSERT_TRUE(getChilds(ast, optional).empty());
 }
 
 TEST(idlc, StringClosingCharacter) {

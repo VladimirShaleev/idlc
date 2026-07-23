@@ -63,7 +63,8 @@ struct AttrValidatorRules {
             add<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(true), add<IDL_AST_NODE_TYPE_ATTR_CNAME>(),
             add<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>(),      add<IDL_AST_NODE_TYPE_ATTR_TYPE>(true),
             add<IDL_AST_NODE_TYPE_ATTR_VALUE>(),          add<IDL_AST_NODE_TYPE_ATTR_REF>(),
-            add<IDL_AST_NODE_TYPE_ATTR_ARRAY>(),          add<IDL_AST_NODE_TYPE_ATTR_CONST>()
+            add<IDL_AST_NODE_TYPE_ATTR_ARRAY>(),          add<IDL_AST_NODE_TYPE_ATTR_CONST>(),
+            add<IDL_AST_NODE_TYPE_ATTR_OPTIONAL>()
         };
         validate(node, allowed);
     }

@@ -293,6 +293,9 @@ public:
                 case IDL_AST_NODE_TYPE_ATTR_CONST:
                     visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_CONST>{});
                     break;
+                case IDL_AST_NODE_TYPE_ATTR_OPTIONAL:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_OPTIONAL>{});
+                    break;
                 case IDL_AST_NODE_TYPE_ATTR_VERSION:
                     visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_VERSION>{});
                     break;

@@ -704,7 +704,7 @@ TEST(idlc, StringClosingCharacter) {
     ASSERT_EQ(
         messages[0],
         "error [E3009]: String closing character not found in string: \"Lost closing character)])] at e3009:5:17");
-    ASSERT_EQ(messages[1], "error [E3001]: Syntax error at e3009:5:45");
+    ASSERT_EQ(messages[1], "error [E3001]: Syntax error at e3009:5:44");
 
     auto api = idl_compilation_result_get_api(ast);
     ASSERT_EQ(api, HandleNone);

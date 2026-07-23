@@ -1185,8 +1185,8 @@ struct BuildRules {
 
             buffer.clear();
             if (top.findChild<IDL_AST_NODE_TYPE_ATTR_VALUE>()) {
-                auto declRefs =
-                    top.findChild<IDL_AST_NODE_TYPE_ATTR_VALUE>() | std::views::filter([this](const auto& value) {
+                auto attrValue = top.findChild<IDL_AST_NODE_TYPE_ATTR_VALUE>();
+                auto declRefs  = attrValue | std::views::filter([this](const ASTNodeRef& value) {
                     return value.template is<IDL_AST_NODE_TYPE_DECL_REF>();
                 });
                 for (auto ref : declRefs) {

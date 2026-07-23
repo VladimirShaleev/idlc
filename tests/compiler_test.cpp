@@ -690,7 +690,7 @@ TEST(idlc, AttributeMustNotHaveArguments) {
     auto cnst = findChild(ast, field, IDL_AST_NODE_TYPE_ATTR_CONST);
     ASSERT_NE(cnst, HandleNone);
     ASSERT_TRUE(getChilds(ast, cnst).empty());
-    
+
     auto optional = findChild(ast, field, IDL_AST_NODE_TYPE_ATTR_OPTIONAL);
     ASSERT_NE(optional, HandleNone);
     ASSERT_TRUE(getChilds(ast, optional).empty());
@@ -1295,9 +1295,9 @@ TEST(idlc, IsNotPossibleToAssignLiteralToType) {
     auto test = findChild(ast, api, IDL_AST_NODE_TYPE_STRUCT);
     ASSERT_NE(test, HandleNone);
 
-    auto index = 0;
-    auto values =
-        getChilds(ast, test, IDL_AST_NODE_TYPE_FIELD) | std::views::transform([ast, &index](const auto& field) {
+    auto index  = 0;
+    auto fields = getChilds(ast, test, IDL_AST_NODE_TYPE_FIELD);
+    auto values = fields | std::views::transform([ast, &index](const auto& field) {
         auto state = index++ < 5 ? IDL_AST_NODE_STATE_NONE_BIT : IDL_AST_NODE_STATE_BUILD_ERROR_BIT;
         EXPECT_TRUE(hasAllState(ast, field, state));
         auto attrValue = findChild(ast, field, IDL_AST_NODE_TYPE_ATTR_VALUE);

@@ -13,4 +13,4 @@ enum Test [hex(123, 4.3)]
 @ Brief
 @ Detail [detail]
 struct Struct
-    field Field {Int32} [const(1, 2)] @ Doc
+    field Field {Int32} [const(1, 2), optional("test")] @ Doc

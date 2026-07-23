@@ -911,14 +911,6 @@ struct BuildRules {
             node.setBuildError();
             return;
         }
-        // if (!node.findChild<IDL_AST_NODE_TYPE_ATTR_REF>() && node.findChild<IDL_AST_NODE_TYPE_ATTR_OPTIONAL>()) {
-        //     auto attrOptHandle = ctx.result()->allocNode(node->location, IDL_AST_NODE_TYPE_ATTR_OPTIONAL);
-        //     auto attrOpt       = ctx.getNodeRef(attrOptHandle);
-        //     attrOpt->parent    = node.handle();
-        //     attrOpt->child     = ctx.result()->allocNode(node->location, IDL_AST_NODE_TYPE_LITERAL_INT);
-        //     attrOpt->valueInt  = 0;
-        //     node.addChild(attrOpt);
-        // }
         const auto warnAsErrors = ctx.options() ? ctx.options()->getWarningsAsErrors() : false;
 
         auto attrType = node.findChild<IDL_AST_NODE_TYPE_ATTR_TYPE>();
@@ -951,6 +943,18 @@ struct BuildRules {
         node.setEvaulated();
         if (node->sibling == HandleNone) {
             node.parent().setEvaulated();
+        }
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_FUNC>) {
+        auto& ctx = node.ctx();
+        if (!node.findChild<IDL_AST_NODE_TYPE_ATTR_TYPE>()) {
+            node.addDeclType<IDL_AST_NODE_TYPE_VOID>();
+        }
+        auto type = node.declType();
+        if (!type) {
+            node.setBuildError();
+            return;
         }
     }
 

@@ -310,6 +310,9 @@ struct ASTVisitor {
                 if (node.is<IDL_AST_NODE_TYPE_ENUM>() && type.is<IDL_AST_NODE_TYPE_INT_32>() && !state.origin) {
                     return;
                 }
+                if (node.is<IDL_AST_NODE_TYPE_FUNC>() && type.is<IDL_AST_NODE_TYPE_VOID>() && !state.origin) {
+                    return;
+                }
                 fmt::print(out(), " {{{}}}", type.name());
             }
         }
@@ -332,7 +335,8 @@ struct ASTVisitor {
     void printAttrs(ASTNodeRef& node) {
         auto attrs = node.attrs(state.origin) | std::views::filter([](const auto& attr) {
             return attr.template is<IDL_AST_NODE_TYPE_ATTR>() && !attr.template is<IDL_AST_NODE_TYPE_ATTR_DOC>() &&
-                   !attr.template is<IDL_AST_NODE_TYPE_ATTR_VALUE>() && !attr.template is<IDL_AST_NODE_TYPE_ATTR_TYPE>();
+                   !attr.template is<IDL_AST_NODE_TYPE_ATTR_VALUE>() &&
+                   !attr.template is<IDL_AST_NODE_TYPE_ATTR_TYPE>();
         });
 
         bool hasPrev = false;

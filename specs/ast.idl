@@ -8,6 +8,7 @@ enum ASTNodeType [tokenizer(3-4)]
     const Const @ TODO
     const Struct @ TODO
     const Field @ TODO
+    const Func @ TODO
 
     const DeclRef @ TODO
 

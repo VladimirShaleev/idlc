@@ -80,6 +80,7 @@
 %token CONST
 %token STRUCT
 %token FIELD
+%token FUNC
 %token IMPORT
 %token POPIMPORT
 %token DOC
@@ -230,6 +231,7 @@ decl
     | CONST { $$ = alloc_node(@1, CONST); }
     | STRUCT { $$ = alloc_node(@1, STRUCT); }
     | FIELD { $$ = alloc_node(@1, FIELD); }
+    | FUNC { $$ = alloc_node(@1, FUNC); }
     | IMPORT { $$ = alloc_node(@1, IMPORT); }
     ;
 

@@ -160,13 +160,19 @@ struct CName {
 };
 
 struct CLiteral {
+    explicit CLiteral(bool hex = false) noexcept : hex(hex) {
+    }
+
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_LITERAL_STR>) {
         auto view = node.valueStr();
         str.assign(view.begin(), view.end());
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_LITERAL_INT>) {
-        str = std::to_string(node->valueInt);
+        str = hex ? fmt::format("{:#X}", node->valueInt) : std::to_string(node->valueInt);
+        if (hex) {
+            str[1] = 'x';
+        }
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_DECL_REF>) {
@@ -179,6 +185,7 @@ struct CLiteral {
     }
 
     std::string str;
+    bool hex;
 };
 
 struct PriorityDocAttr {

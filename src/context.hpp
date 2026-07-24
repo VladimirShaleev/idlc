@@ -9,6 +9,13 @@
 
 namespace idl {
 
+struct DeclRef {
+    DeclRef(std::string_view name) noexcept : name(name) {
+    }
+
+    std::string_view name;
+};
+
 class Context final {
 public:
     Context(Options* options, CompilationResultBase* result) noexcept : _options(options), _result(result) {
@@ -221,6 +228,48 @@ public:
         addBuiltin("Float64", "64 bit float point.", Tag<IDL_AST_NODE_TYPE_FLOAT_64>{});
         addBuiltin("Str", "utf8 string.", Tag<IDL_AST_NODE_TYPE_STR>{});
         addBuiltin("Data", "pointer to data.", Tag<IDL_AST_NODE_TYPE_DATA>{});
+    }
+
+    template <ASTNodeType Type>
+    ASTNodeRef addNode(ASTNodeRef node) {
+        auto childHandle = result()->allocNode(node->location, Type);
+        auto child       = getNodeRef(childHandle);
+        child->parent    = node.handle();
+        node.addChild(child);
+        return child;
+    }
+
+    template <ASTNodeType Type, typename... Args>
+    ASTNodeRef addNode(ASTNodeRef node, Args... args) {
+        assert(node.is<IDL_AST_NODE_TYPE_DECL>());
+        auto child = addNode<Type>(node);
+        (addLiteral(child, std::forward<Args>(args)), ...);
+        return child;
+    }
+
+    void addLiteral(ASTNodeRef node, std::string_view value) {
+        auto literal      = addNode<IDL_AST_NODE_TYPE_LITERAL_STR>(node);
+        literal->valueStr = result()->intern(value);
+    }
+
+    void addLiteral(ASTNodeRef node, int64_t value) {
+        auto literal      = addNode<IDL_AST_NODE_TYPE_LITERAL_INT>(node);
+        literal->valueInt = value;
+    }
+
+    void addLiteral(ASTNodeRef node, double value) {
+        auto literal        = addNode<IDL_AST_NODE_TYPE_LITERAL_FLOAT>(node);
+        literal->valueFloat = value;
+    }
+
+    void addLiteral(ASTNodeRef node, bool value) {
+        auto literal       = addNode<IDL_AST_NODE_TYPE_LITERAL_BOOL>(node);
+        literal->valueBool = value;
+    }
+
+    void addLiteral(ASTNodeRef node, DeclRef value) {
+        auto declRef                 = addNode<IDL_AST_NODE_TYPE_DECL_REF>(node);
+        declRef->valueDeclRef.symbol = result()->intern(value.name);
     }
 
     template <idl_status_t Status, typename... Args>

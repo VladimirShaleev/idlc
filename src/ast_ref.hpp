@@ -179,6 +179,10 @@ public:
         return ASTNodeRef(*_ctx, _node ? _node->parent : HandleNone);
     }
 
+    [[nodiscard]] ASTNodeRef firstChild() const noexcept {
+        return ASTNodeRef(*_ctx, _node ? _node->child : HandleNone);
+    }
+
     [[nodiscard]] ASTNodeHandle handle() const noexcept {
         return _handle;
     }
@@ -298,6 +302,9 @@ public:
                     break;
                 case IDL_AST_NODE_TYPE_ATTR_CONST:
                     visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_CONST>{});
+                    break;
+                case IDL_AST_NODE_TYPE_ATTR_MAX_ENUM:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_MAX_ENUM>{});
                     break;
                 case IDL_AST_NODE_TYPE_ATTR_OPTIONAL:
                     visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_OPTIONAL>{});

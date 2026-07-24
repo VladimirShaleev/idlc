@@ -1087,6 +1087,20 @@ struct BuildRules {
             state.prevE3041 = false;
         }
 
+        if (enumConst->sibling == HandleNone) {
+            auto maxEnum       = ctx.addNode<IDL_AST_NODE_TYPE_CONST>(enumConst.parent());
+            maxEnum->name.name = ctx.result()->intern("MaxEnum");
+
+            using namespace std::string_view_literals;
+            ctx.addNode<IDL_AST_NODE_TYPE_ATTR_MAX_ENUM>(maxEnum);
+            ctx.addNode<IDL_AST_NODE_TYPE_ATTR_VALUE>(maxEnum, int64_t(0x7FFFFFFF));
+            ctx.addNode<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(
+                maxEnum, "Max"sv, " "sv, "value"sv, " "sv, "of"sv, " "sv, "enum"sv, " "sv, "(not"sv, " "sv, "used)"sv);
+
+            maxEnum.setEvaulated();
+            ctx.addSymbol(maxEnum.handle());
+        }
+
         enumConst.setEvaulated();
         return enumConst.buildError() ? std::nullopt : std::make_optional(attrValue->valueInt);
     }

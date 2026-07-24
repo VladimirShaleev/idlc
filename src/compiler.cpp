@@ -6,6 +6,10 @@ namespace idl::gen::idl {
 void generate(Writer& writer);
 }
 
+namespace idl::gen::c {
+void generate(Writer& writer);
+}
+
 // void generateC(idl::Context& ctx,
 //                const std::filesystem::path& out,
 //                idl_write_callback_t writer,
@@ -87,7 +91,7 @@ public:
                     gen::idl::generate(writer);
                     break;
                 case IDL_GENERATOR_C:
-                    // generateC(context, output, writer, writerData, std::span{ additions.data(), additions.size() });
+                    gen::c::generate(writer);
                     break;
                 case IDL_GENERATOR_JAVA_SCRIPT:
 #ifdef IDLC_SUPPORTED_JS

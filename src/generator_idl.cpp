@@ -73,34 +73,6 @@ std::string refName(ASTNodeRef path, ASTNodeRef exclude) {
     return ss.str();
 }
 
-struct PriorityDocAttr {
-    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>) {
-        prior = 0;
-    }
-
-    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>) {
-        prior = 1;
-    }
-
-    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR>) {
-        prior = 2;
-    }
-
-    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT>) {
-        prior = 3;
-    }
-
-    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE>) {
-        prior = 4;
-    }
-
-    template <ASTNodeType Type>
-    void visit(ASTNodeRef&, Tag<Type>) noexcept {
-    }
-
-    int prior{ 1000 };
-};
-
 struct LiteralPrinter {
     explicit LiteralPrinter(bool addQuotes, ASTNodeRef currDepth) noexcept :
         addQuotes(addQuotes),

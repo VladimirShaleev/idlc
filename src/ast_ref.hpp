@@ -227,7 +227,7 @@ public:
     template <typename Visitor, typename... Args>
     Visitor accept(Args&&... args) {
         Visitor visitor(std::forward<Args>(args)...);
-        auto& node = *this;
+        ASTNodeRef node = *this;
         if (node) {
             switch (node->type) {
                 case IDL_AST_NODE_TYPE_API:

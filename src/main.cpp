@@ -175,6 +175,9 @@ int main(int argc, char* argv[]) {
     idl_idl_options_t idlOptions{};
     idlOptions.prefered_original_style = idlOriginal ? 1 : 0;
 
+    idl_c_options_t cOptions{};
+    cOptions.add_doc_groups = 1;
+
     idl_options_set_debug_mode(options, 0);
     idl_options_set_warnings_as_errors(options, warnAsErr ? 1 : 0);
     idl_options_set_output_dir(options, outputDir.c_str());
@@ -185,6 +188,7 @@ int main(int argc, char* argv[]) {
     idl_options_set_output_files(options, format);
     idl_options_set_bool_type(options, boolType);
     idl_options_set_idl_options(options, &idlOptions);
+    idl_options_set_c_options(options, &cOptions);
     idl_compiler_t compiler{};
     idl_compiler_create(&compiler);
     if (code != IDL_RESULT_SUCCESS) {

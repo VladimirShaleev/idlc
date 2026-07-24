@@ -6,9 +6,19 @@
 namespace idl {
 
 struct CName {
-    /*void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ENUM>) {
+    CName(bool includeImports = false, char separator = '_', std::optional<bool> isUpper = std::nullopt) noexcept :
+        includeImports(includeImports),
+        separator(separator),
+        isUpper(isUpper) {
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_IMPORT>) {
+        str = cname(node, false);
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ENUM>) {
         str = cname(node);
-        if (ctx.findChild<IDL_AST_NODE_TYPE_ATTR_FLAGS>(node)) {
+        if (node.findChild<IDL_AST_NODE_TYPE_ATTR_FLAGS>()) {
             str += "_flags";
         }
         str += "_t";
@@ -16,11 +26,17 @@ struct CName {
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_CONST>) {
         str = cname(node, true);
-        if (ctx.findChild<IDL_AST_NODE_TYPE_ATTR_FLAGS>(node->parent)) {
+        if (node.parent().findChild<IDL_AST_NODE_TYPE_ATTR_FLAGS>()) {
             str += "_BIT";
         }
     }
 
+    template <ASTNodeType Type>
+    void visit(ASTNodeRef& node, Tag<Type>) noexcept {
+        str = cname(node);
+    }
+
+    /*
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_VOID>) {
         str = ctx.useStdTypes() ? "void" : cname(node) + "_t";
     }
@@ -97,7 +113,7 @@ struct CName {
     std::string cnameDecl(ASTNodeRef& decl, bool upper) {
         assert(decl.is<IDL_AST_NODE_TYPE_DECL>());
         if (auto attr = decl.findChild<IDL_AST_NODE_TYPE_ATTR_CNAME>()) {
-            auto str = attr.name();
+            auto str = decl.ctx().getNodeRef(attr->child).valueStr();
             return { str.data(), str.length() };
         }
         std::vector<int> nums{};
@@ -107,21 +123,90 @@ struct CName {
             });
             nums.assign(view.begin(), view.end());
         }
-        auto str = decl.name();
+        auto screaming = isUpper ? isUpper.value() : upper;
+        auto str       = decl.name();
         return convert({ str.data(), str.length() },
-                       upper ? Case::ScreamingSnakeCase : Case::SnakeCase,
+                       screaming ? Case::ScreamingSnakeCase : Case::SnakeCase,
                        nums.empty() ? nullptr : &nums);
     }
 
-    std::string cname(ASTNodeRef& decl, bool upper = false) {
-        auto name = cnameDecl(decl, upper);
-        if (auto parent = decl.parent(); parent.is<IDL_AST_NODE_TYPE_DECL>()) {
-            return cname(parent, upper) + '_' + name;
+    std::string cname(ASTNodeRef decl, bool upper = false) {
+        FixedStack<std::string, 20> names;
+        while (decl) {
+            if (decl.is<IDL_AST_NODE_TYPE_DECL>()) {
+                if (includeImports || !decl.is<IDL_AST_NODE_TYPE_IMPORT>()) {
+                    names.push(cnameDecl(decl, upper));
+                }
+            }
+            decl = decl.parent();
         }
-        return name;
+        auto first = true;
+        std::ostringstream ss;
+        while (!names.empty()) {
+            if (!first) {
+                ss << separator;
+            }
+            ss << names.top();
+            names.pop();
+            first = false;
+        }
+        return ss.str();
     }
 
     std::string str;
+    bool includeImports;
+    char separator;
+    std::optional<bool> isUpper;
+};
+
+struct CLiteral {
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_LITERAL_STR>) {
+        auto view = node.valueStr();
+        str.assign(view.begin(), view.end());
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_LITERAL_INT>) {
+        str = std::to_string(node->valueInt);
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_DECL_REF>) {
+        str = node.resolveRef().accept<CName>().str;
+    }
+
+    template <ASTNodeType Type>
+    void visit(ASTNodeRef&, Tag<Type>) noexcept {
+        assert(!"literal is missing");
+    }
+
+    std::string str;
+};
+
+struct PriorityDocAttr {
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>) {
+        prior = 0;
+    }
+
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>) {
+        prior = 1;
+    }
+
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR>) {
+        prior = 2;
+    }
+
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT>) {
+        prior = 3;
+    }
+
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE>) {
+        prior = 4;
+    }
+
+    template <ASTNodeType Type>
+    void visit(ASTNodeRef&, Tag<Type>) noexcept {
+    }
+
+    int prior{ 1000 };
 };
 
 struct DeclToken {

@@ -235,18 +235,22 @@ TEST(idlc, IntegerOutOfRange) {
     ASSERT_EQ(enums.size(), 2);
 
     auto firstConsts = getChilds(ast, enums[0], IDL_AST_NODE_TYPE_CONST);
-    ASSERT_EQ(firstConsts.size(), 3);
+    ASSERT_EQ(firstConsts.size(), 4);
     ASSERT_TRUE(checkConst(ast, firstConsts[0], 100, false, false, false));
     ASSERT_TRUE(checkConst(ast, firstConsts[1], 300, false, false, false));
     ASSERT_TRUE(checkConst(ast, firstConsts[2], 367, false, false, false));
+    ASSERT_TRUE(checkConst(ast, firstConsts[3], 0x7fffffff, true, false, false));
+    ASSERT_NE(findChild(ast, firstConsts[3], IDL_AST_NODE_TYPE_ATTR_MAX_ENUM), HandleNone);
 
     auto secondConsts = getChilds(ast, enums[1], IDL_AST_NODE_TYPE_CONST);
-    ASSERT_EQ(secondConsts.size(), 5);
+    ASSERT_EQ(secondConsts.size(), 6);
     ASSERT_TRUE(checkConst(ast, secondConsts[0], 127, false, false, false));
     ASSERT_TRUE(checkConst(ast, secondConsts[1], 128, true, false, false));
     ASSERT_TRUE(checkConst(ast, secondConsts[2], -130, false, false, false));
     ASSERT_TRUE(checkConst(ast, secondConsts[3], 5, false, false, false));
     ASSERT_TRUE(checkConst(ast, secondConsts[4], 367, false, false, false));
+    ASSERT_TRUE(checkConst(ast, secondConsts[5], 0x7fffffff, true, false, false));
+    ASSERT_NE(findChild(ast, secondConsts[5], IDL_AST_NODE_TYPE_ATTR_MAX_ENUM), HandleNone);
 }
 
 TEST(idlc, IntegerOutOfRangeWarnAsErrors) {
@@ -268,18 +272,22 @@ TEST(idlc, IntegerOutOfRangeWarnAsErrors) {
     ASSERT_EQ(enums.size(), 2);
 
     auto firstConsts = getChilds(ast, enums[0], IDL_AST_NODE_TYPE_CONST);
-    ASSERT_EQ(firstConsts.size(), 3);
+    ASSERT_EQ(firstConsts.size(), 4);
     ASSERT_TRUE(checkConst(ast, firstConsts[0], 100, false, false, false));
     ASSERT_TRUE(checkConst(ast, firstConsts[1], 300, false, false, false));
     ASSERT_TRUE(checkConst(ast, firstConsts[2], 367, false, false, false));
+    ASSERT_TRUE(checkConst(ast, firstConsts[3], 0x7fffffff, true, false, false));
+    ASSERT_NE(findChild(ast, firstConsts[3], IDL_AST_NODE_TYPE_ATTR_MAX_ENUM), HandleNone);
 
     auto secondConsts = getChilds(ast, enums[1], IDL_AST_NODE_TYPE_CONST);
-    ASSERT_EQ(secondConsts.size(), 5);
+    ASSERT_EQ(secondConsts.size(), 6);
     ASSERT_TRUE(checkConst(ast, secondConsts[0], 127, false, false, false));
     ASSERT_TRUE(checkConst(ast, secondConsts[1], 128, true, true, false));
     ASSERT_TRUE(checkConst(ast, secondConsts[2], -130, false, true, false));
     ASSERT_TRUE(checkConst(ast, secondConsts[3], 5, false, false, false));
     ASSERT_TRUE(checkConst(ast, secondConsts[4], 367, false, true, false));
+    ASSERT_TRUE(checkConst(ast, secondConsts[5], 0x7fffffff, true, false, false));
+    ASSERT_NE(findChild(ast, secondConsts[5], IDL_AST_NODE_TYPE_ATTR_MAX_ENUM), HandleNone);
 }
 
 TEST(idlc, SpecialCharacterExpectedAfterBackslash) {

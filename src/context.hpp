@@ -13,7 +13,10 @@ struct DeclRef {
     DeclRef(std::string_view name) noexcept : name(name) {
     }
 
-    std::string_view name;
+    DeclRef(String name) noexcept : name(name) {
+    }
+
+    std::variant<std::string_view, String> name;
 };
 
 class Context final {
@@ -269,7 +272,9 @@ public:
 
     void addLiteral(ASTNodeRef node, DeclRef value) {
         auto declRef                 = addNode<IDL_AST_NODE_TYPE_DECL_REF>(node);
-        declRef->valueDeclRef.symbol = result()->intern(value.name);
+        declRef->valueDeclRef.symbol = std::holds_alternative<String>(value.name)
+                                           ? std::get<String>(value.name)
+                                           : result()->intern(std::get<std::string_view>(value.name));
     }
 
     template <idl_status_t Status, typename... Args>

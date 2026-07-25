@@ -222,8 +222,8 @@ struct AttrIDocValidatorRules {
 };
 
 struct AttrArgRules {
-    AttrArgRules(ASTNodeHandle argFrist, ASTNodeHandle argLast, size_t argCount) noexcept :
-        argFrist(argFrist),
+    AttrArgRules(ASTNodeHandle argFirst, ASTNodeHandle argLast, size_t argCount) noexcept :
+        argFirst(argFirst),
         argLast(argLast),
         argCount(argCount) {
     }
@@ -231,7 +231,7 @@ struct AttrArgRules {
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ATTR_VERSION>) {
         const auto optionVersion = node.ctx().options() ? node.ctx().options()->getVersion() : nullptr;
         auto& ctx                = node.ctx();
-        auto arg0                = ctx.getNodeRef(argFrist);
+        auto arg0                = ctx.getNodeRef(argFirst);
         auto arg1                = arg0 ? ctx.getNodeRef(arg0->sibling) : ctx.emptyNodeRef();
         auto arg2                = arg1 ? ctx.getNodeRef(arg1->sibling) : ctx.emptyNodeRef();
         if (optionVersion) {
@@ -252,19 +252,11 @@ struct AttrArgRules {
                 fail = true;
             }
             if (!fail) {
-                auto nodeMajor = ctx.result()->allocNode(node->location, IDL_AST_NODE_TYPE_LITERAL_INT);
-                auto nodeMinor = ctx.result()->allocNode(node->location, IDL_AST_NODE_TYPE_LITERAL_INT);
-                auto nodeMicro = ctx.result()->allocNode(node->location, IDL_AST_NODE_TYPE_LITERAL_INT);
-
-                ctx.result()->getNode(nodeMajor)->valueInt = optionVersion->major;
-                ctx.result()->getNode(nodeMinor)->valueInt = optionVersion->minor;
-                ctx.result()->getNode(nodeMicro)->valueInt = optionVersion->micro;
-                ctx.result()->getNode(nodeMajor)->sibling  = nodeMinor;
-                ctx.result()->getNode(nodeMinor)->sibling  = nodeMicro;
-                ctx.result()->getNode(nodeMicro)->sibling  = argFrist;
+                node->child = argFirst;
                 arg0.setReplacedByCompiler();
-
-                node->child = nodeMajor;
+                ctx.addLiteral(node, int64_t(optionVersion->major));
+                ctx.addLiteral(node, int64_t(optionVersion->minor));
+                ctx.addLiteral(node, int64_t(optionVersion->micro));
             }
         } else if (argCount == 3 && arg0.is<IDL_AST_NODE_TYPE_LITERAL_INT>() &&
                    arg1.is<IDL_AST_NODE_TYPE_LITERAL_INT>() && arg2.is<IDL_AST_NODE_TYPE_LITERAL_INT>()) {
@@ -285,7 +277,7 @@ struct AttrArgRules {
                 fail = true;
             }
             if (!fail) {
-                node->child = argFrist;
+                node->child = argFirst;
             }
         } else if (argCount == 1 && arg0.is<IDL_AST_NODE_TYPE_LITERAL_STR>()) {
             static const std::regex semverRegex(R"((0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*))");
@@ -298,23 +290,15 @@ struct AttrArgRules {
                 const auto minor = std::stoll(matches[2].str());
                 const auto micro = std::stoll(matches[3].str());
                 if (major <= 255 && minor <= 255 && micro <= 255) {
-                    auto nodeMajor = ctx.result()->allocNode(node->location, IDL_AST_NODE_TYPE_LITERAL_INT);
-                    auto nodeMinor = ctx.result()->allocNode(node->location, IDL_AST_NODE_TYPE_LITERAL_INT);
-                    auto nodeMicro = ctx.result()->allocNode(node->location, IDL_AST_NODE_TYPE_LITERAL_INT);
-
-                    ctx.result()->getNode(nodeMajor)->valueInt = major;
-                    ctx.result()->getNode(nodeMinor)->valueInt = minor;
-                    ctx.result()->getNode(nodeMicro)->valueInt = micro;
-                    ctx.result()->getNode(nodeMajor)->sibling  = nodeMinor;
-                    ctx.result()->getNode(nodeMinor)->sibling  = nodeMicro;
-                    ctx.result()->getNode(nodeMicro)->sibling  = argFrist;
+                    node->child = argFirst;
                     arg0.setReplacedByCompiler();
-
-                    node->child = nodeMajor;
+                    ctx.addLiteral(node, int64_t(major));
+                    ctx.addLiteral(node, int64_t(minor));
+                    ctx.addLiteral(node, int64_t(micro));
                     return;
                 }
             }
-            node->child = argFrist;
+            node->child = argFirst;
         } else {
             ctx.log<IDL_STATUS_E3003>(node->location);
         }
@@ -322,7 +306,7 @@ struct AttrArgRules {
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR>) {
         if (argCount > 0) {
-            node->child = argFrist;
+            node->child = argFirst;
         } else {
             node.ctx().log<IDL_STATUS_E3014>(node->location, node.accept<AttrName>().str, "");
         }
@@ -330,7 +314,7 @@ struct AttrArgRules {
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>) {
         if (argCount > 0) {
-            node->child = argFrist;
+            node->child = argFirst;
         } else {
             node.ctx().log<IDL_STATUS_E3014>(node->location, node.accept<AttrName>().str, "");
         }
@@ -338,7 +322,7 @@ struct AttrArgRules {
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>) {
         if (argCount > 0) {
-            node->child = argFrist;
+            node->child = argFirst;
         } else {
             node.ctx().log<IDL_STATUS_E3014>(node->location, node.accept<AttrName>().str, "");
         }
@@ -346,7 +330,7 @@ struct AttrArgRules {
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT>) {
         if (argCount > 0) {
-            node->child = argFrist;
+            node->child = argFirst;
         } else {
             node.ctx().log<IDL_STATUS_E3014>(node->location, node.accept<AttrName>().str, "");
         }
@@ -354,7 +338,7 @@ struct AttrArgRules {
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE>) {
         if (argCount > 0) {
-            node->child = argFrist;
+            node->child = argFirst;
         } else {
             node.ctx().log<IDL_STATUS_E3014>(node->location, node.accept<AttrName>().str, "");
         }
@@ -362,8 +346,8 @@ struct AttrArgRules {
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ATTR_VALUE>) {
         if (argCount > 0) {
-            auto arg0   = node.ctx().getNodeRef(argFrist);
-            node->child = argFrist;
+            auto arg0   = node.ctx().getNodeRef(argFirst);
+            node->child = argFirst;
             auto view   = node | std::views::all;
             auto it     = std::ranges::find_if(view, [](const auto& val) {
                 return val.template is<IDL_AST_NODE_TYPE_LITERAL>();
@@ -398,9 +382,9 @@ struct AttrArgRules {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ATTR_TYPE>) {
-        auto arg0 = node.ctx().getNodeRef(argFrist);
+        auto arg0 = node.ctx().getNodeRef(argFirst);
         if (argCount == 1 && arg0.is<IDL_AST_NODE_TYPE_DECL_REF>()) {
-            node->child = argFrist;
+            node->child = argFirst;
         } else {
             node.ctx().log<IDL_STATUS_E3027>(node->location);
         }
@@ -408,7 +392,7 @@ struct AttrArgRules {
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ATTR_CNAME>) {
         auto& ctx = node.ctx();
-        auto arg0 = ctx.getNodeRef(argFrist);
+        auto arg0 = ctx.getNodeRef(argFirst);
         if (argCount == 1 && arg0.is<IDL_AST_NODE_TYPE_LITERAL_STR>()) {
             auto name = arg0.valueStr();
             if (std::any_of(name.begin(), name.end(), [](auto ch) {
@@ -416,7 +400,7 @@ struct AttrArgRules {
             })) {
                 ctx.log<IDL_STATUS_E3029>(node->location, name);
             } else {
-                node->child = argFrist;
+                node->child = argFirst;
             }
         } else {
             ctx.log<IDL_STATUS_E3028>(node->location);
@@ -426,13 +410,13 @@ struct AttrArgRules {
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>) {
         auto& ctx = node.ctx();
         if (argCount > 0) {
-            node->child = argFrist;
+            node->child = argFirst;
 
             auto isAllIntegers = std::all_of(node.begin(), node.end(), [this](auto arg) {
                 return arg.template is<IDL_AST_NODE_TYPE_LITERAL_INT>();
             });
             if (!isAllIntegers) {
-                auto arg0 = ctx.getNodeRef(argFrist);
+                auto arg0 = ctx.getNodeRef(argFirst);
                 if (argCount == 1 && arg0.is<IDL_AST_NODE_TYPE_LITERAL_STR>()) {
                     static std::regex pattern(R"(\^?\d+(-\^?\d+)*)");
                     auto strView = arg0.valueStr();
@@ -441,23 +425,15 @@ struct AttrArgRules {
                     if (std::regex_match(str, pattern)) {
                         std::stringstream ss(str);
                         std::string token;
-                        ASTNode* lastNum = nullptr;
-                        while (std::getline(ss, token, '-')) {
-                            auto num = ctx.result()->allocNode(node->location, IDL_AST_NODE_TYPE_LITERAL_INT);
-                            if (token[0] == '^') {
-                                ctx.result()->getNode(num)->valueInt = -std::stoi(token.substr(1));
-                            } else {
-                                ctx.result()->getNode(num)->valueInt = std::stoi(token);
-                            }
-                            if (!lastNum) {
-                                node->child = num;
-                            } else {
-                                lastNum->sibling = num;
-                            }
-                            lastNum = ctx.result()->getNode(num);
-                        }
-                        lastNum->sibling = argFrist;
+                        node->child = argFirst;
                         arg0.setReplacedByCompiler();
+                        while (std::getline(ss, token, '-')) {
+                            if (token[0] == '^') {
+                                ctx.addLiteral(node, int64_t(-std::stoi(token.substr(1))));
+                            } else {
+                                ctx.addLiteral(node, int64_t(std::stoi(token)));
+                            }
+                        }
                     } else {
                         ctx.log<IDL_STATUS_E3031>(node->location, str);
                         node->child = HandleNone;
@@ -475,21 +451,18 @@ struct AttrArgRules {
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ATTR_ARRAY>) {
         auto& ctx = node.ctx();
-        auto arg0 = ctx.getNodeRef(argFrist);
+        auto arg0 = ctx.getNodeRef(argFirst);
         if (argCount == 1 && (arg0.is<IDL_AST_NODE_TYPE_LITERAL_INT, IDL_AST_NODE_TYPE_LITERAL_STR>())) {
             if (arg0.is<IDL_AST_NODE_TYPE_LITERAL_INT>()) {
                 if (arg0->valueInt > 0) {
-                    node->child = argFrist;
+                    node->child = argFirst;
                 } else {
                     ctx.log<IDL_STATUS_E3051>(node->location);
                 }
             } else {
                 arg0.setReplacedByCompiler();
-                auto declRefHandle           = ctx.result()->allocNode(arg0->location, IDL_AST_NODE_TYPE_DECL_REF);
-                auto declRef                 = ctx.getNodeRef(declRefHandle);
-                declRef->valueDeclRef.symbol = arg0->valueStr;
-                arg0->sibling                = declRefHandle;
-                node->child                  = argFrist;
+                node->child = argFirst;
+                ctx.addLiteral(node, DeclRef(arg0->valueStr));
             }
         } else {
             ctx.log<IDL_STATUS_E3050>(node->location,
@@ -506,7 +479,7 @@ struct AttrArgRules {
         }
     }
 
-    ASTNodeHandle argFrist;
+    ASTNodeHandle argFirst;
     ASTNodeHandle argLast;
     size_t argCount;
 };
@@ -837,13 +810,11 @@ struct BuildRules {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_API>) {
-        if (node.ctx().options() && node.ctx().options()->getOutputFiles() != IDL_OUTPUT_FILES_DEFAULT) {
-            const auto format = node.ctx().options()->getOutputFiles();
+        auto& ctx = node.ctx();
+        if (ctx.options() && ctx.options()->getOutputFiles() != IDL_OUTPUT_FILES_DEFAULT) {
+            const auto format = ctx.options()->getOutputFiles();
             if (format == IDL_OUTPUT_FILES_SINGLE && !node.findChild<IDL_AST_NODE_TYPE_ATTR_SINGLE>()) {
-                auto attrSinglehandle = node.ctx().result()->allocNode(node->location, IDL_AST_NODE_TYPE_ATTR_SINGLE);
-                auto attrSingle       = node.ctx().getNodeRef(attrSinglehandle);
-                attrSingle->parent    = node.handle();
-                node.addChild(attrSingle);
+                ctx.addNode<IDL_AST_NODE_TYPE_ATTR_SINGLE>(node);
             } else if (format == IDL_OUTPUT_FILES_MULTI && node.findChild<IDL_AST_NODE_TYPE_ATTR_SINGLE>()) {
                 node.findChild<IDL_AST_NODE_TYPE_ATTR_SINGLE>().setReplacedByCompiler();
             }
@@ -872,16 +843,11 @@ struct BuildRules {
         ASTNodeRef prevEnumConst = ctx.emptyNodeRef();
         for (auto enumConst : enumConsts) {
             if (prevEnumConst) {
-                auto prevSiblingHandle =
-                    ctx.result()->allocNode(enumConst->location, IDL_AST_NODE_TYPE_DECL_PREV_SIBLING_REF);
-                auto prevSibling    = ctx.getNodeRef(prevSiblingHandle);
-                prevSibling->parent = enumConst.handle();
+                auto prevSibling = ctx.addNode<IDL_AST_NODE_TYPE_DECL_PREV_SIBLING_REF>(enumConst);
 
                 prevSibling->valueDeclRef.symbol = prevEnumConst->valueStr;
                 prevSibling->valueDeclRef.handle = prevEnumConst.handle();
                 prevSibling.setEvaulated();
-
-                enumConst.addChild(prevSibling);
             }
             prevEnumConst = enumConst;
         }
@@ -980,7 +946,8 @@ struct BuildRules {
 
         auto type = enumConst.parent().declType();
 
-        if (auto attrValue = enumConst.findChild<IDL_AST_NODE_TYPE_ATTR_VALUE>()) {
+        auto attrValue = enumConst.findChild<IDL_AST_NODE_TYPE_ATTR_VALUE>();
+        if (attrValue) {
             attrValue->valueInt = 0;
             for (auto value : attrValue) {
                 if (value.is<IDL_AST_NODE_TYPE_LITERAL_INT>()) {
@@ -1047,13 +1014,7 @@ struct BuildRules {
                 attrValue->valueInt |= evaulatedValue;
             }
         } else {
-            auto attrValueHandle = ctx.result()->allocNode(enumConst->location, IDL_AST_NODE_TYPE_ATTR_VALUE);
-            attrValue            = ctx.getNodeRef(attrValueHandle);
-            attrValue->parent    = enumConst.handle();
-            attrValue->child     = ctx.result()->allocNode(enumConst->location, IDL_AST_NODE_TYPE_LITERAL_INT);
-            attrValue->valueInt  = 0;
-
-            ctx.result()->getNode(attrValue->child)->parent = attrValueHandle;
+            attrValue = ctx.addNode<IDL_AST_NODE_TYPE_ATTR_VALUE>(enumConst, int64_t(0));
             if (prevEnumConst) {
                 assert(prevEnumConst.evaulated());
                 if (prevEnumConst.buildError()) {
@@ -1069,12 +1030,8 @@ struct BuildRules {
             } else {
                 attrValue->valueInt = 0;
             }
-            enumConst.addChild(attrValue);
         }
-
-        auto attrValue = enumConst.findChild<IDL_AST_NODE_TYPE_ATTR_VALUE>();
         assert(attrValue);
-
         const auto warnAsErrors = ctx.options() ? ctx.options()->getWarningsAsErrors() : false;
         if (!type.is<IDL_AST_NODE_TYPE_INTEGER_TYPE>()) {
             attrValue->valueInt = 0;
@@ -1091,9 +1048,11 @@ struct BuildRules {
             auto maxEnum       = ctx.addNode<IDL_AST_NODE_TYPE_CONST>(enumConst.parent());
             maxEnum->name.name = ctx.result()->intern("MaxEnum");
 
+            auto value = int64_t(0x7FFFFFFF);
+
             using namespace std::string_view_literals;
+            ctx.addNode<IDL_AST_NODE_TYPE_ATTR_VALUE>(maxEnum, value)->valueInt = value;
             ctx.addNode<IDL_AST_NODE_TYPE_ATTR_MAX_ENUM>(maxEnum);
-            ctx.addNode<IDL_AST_NODE_TYPE_ATTR_VALUE>(maxEnum, int64_t(0x7FFFFFFF));
             ctx.addNode<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(
                 maxEnum, "Max"sv, " "sv, "value"sv, " "sv, "of"sv, " "sv, "enum"sv, " "sv, "(not"sv, " "sv, "used)"sv);
 

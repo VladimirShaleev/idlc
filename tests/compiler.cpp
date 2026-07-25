@@ -45,7 +45,7 @@ std::tuple<idl_result_t, idl_compilation_result_t, std::vector<std::string>> com
 
     idl_compilation_result_t result{};
     idl_compilation_result_t* resultPtr = returnMessages ? &result : nullptr;
-    code = idl_compiler_compile(compiler, IDL_GENERATOR_C, testCase.data(), 0, nullptr, options, resultPtr);
+    code = idl_compiler_compile(compiler, IDL_GENERATOR_NONE, testCase.data(), 0, nullptr, options, resultPtr);
 
     std::vector<std::string> results;
     if (returnMessages) {
@@ -181,9 +181,12 @@ bool checkConst(idl_compilation_result_t result,
         return false;
     }
 
+    auto isMaxEnum = findChild(result, node, IDL_AST_NODE_TYPE_ATTR_MAX_ENUM) != HandleNone;
+
     if (hasAnyState(result,
                     node,
-                    IDL_AST_NODE_STATE_ADDED_BY_COMPILER_BIT | IDL_AST_NODE_STATE_REPLACED_BY_COMPILER_BIT |
+                    (isMaxEnum ? IDL_AST_NODE_STATE_NONE_BIT : IDL_AST_NODE_STATE_ADDED_BY_COMPILER_BIT) |
+                        IDL_AST_NODE_STATE_REPLACED_BY_COMPILER_BIT |
                         (buildFailed ? IDL_AST_NODE_STATE_NONE_BIT : IDL_AST_NODE_STATE_BUILD_ERROR_BIT) |
                         (forwardDecl ? IDL_AST_NODE_STATE_NONE_BIT : IDL_AST_NODE_STATE_FORWARD_DECL_BIT))) {
         return false;

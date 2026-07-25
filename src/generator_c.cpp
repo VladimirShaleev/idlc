@@ -148,7 +148,7 @@ struct ASTVisitor {
         if (state.addDocGroups && !group.empty()) {
             docs.emplace_back("ingroup", group);
         }
-        size_t maxLen = std::ranges::max(docs | std::views::transform([](const auto& c) {
+        size_t maxLen = docs.empty() ? 0 : std::ranges::max(docs | std::views::transform([](const auto& c) {
             return c.first.length();
         }));
 
@@ -283,10 +283,10 @@ struct ASTVisitor {
 } // namespace
 
 void generate(Writer& writer) {
-    constexpr auto filters =
-        ASTNodeRef::SkipDocs | ASTNodeRef::SkipAttrs | ASTNodeRef::SkipLiterals | ASTNodeRef::SkipTrivials;
-    uint32_t indents  = 4;
-    bool addDocGroups = false;
+    constexpr auto filters = ASTNodeRef::SkipDocs | ASTNodeRef::SkipAttrBuiltins | ASTNodeRef::SkipAttrs |
+                             ASTNodeRef::SkipLiterals | ASTNodeRef::SkipTrivials;
+    uint32_t indents       = 4;
+    bool addDocGroups      = false;
     std::stack<ASTVisitor::Include> includes;
     if (auto options = writer.options()) {
         indents       = options->getIndents();

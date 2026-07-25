@@ -31,7 +31,6 @@ enum ASTNodeType [tokenizer(3-4)]
     const AttrRef @ TODO
     const AttrConst @ TODO
     const AttrOptional @ TODO
-    const AttrMaxEnum @ TODO
     const AttrVersion @ TODO
 
     const AttrDoc @ TODO
@@ -41,6 +40,9 @@ enum ASTNodeType [tokenizer(3-4)]
     const AttrDocCopyright @ TODO
     const AttrDocLicense @ TODO
 
+    const AttrBuiltin @ TODO
+    const AttrMaxEnum @ TODO
+    
     const Type @ TODO
     const TrivialType @ TODO
     const Void @ TODO

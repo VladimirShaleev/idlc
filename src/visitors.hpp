@@ -326,6 +326,10 @@ struct AttrName {
         str = "optional";
     }
 
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_MAX_ENUM>) {
+        str = "maxenum";
+    }
+
     template <ASTNodeType Type>
     void visit(ASTNodeRef&, Tag<Type>) noexcept {
         assert(!"attribute name is missing");

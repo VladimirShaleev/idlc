@@ -378,14 +378,15 @@ public:
     }
 
     enum Filter {
-        None         = 0,
-        SkipDocs     = 1 << 0,
-        SkipAttrs    = 1 << 1,
-        SkipDecls    = 1 << 2,
-        SkipImports  = 1 << 3,
-        SkipLiterals = 1 << 4,
-        SkipTrivials = 1 << 5,
-        OriginalIdl  = 1 << 6
+        None             = 0,
+        SkipDocs         = 1 << 0,
+        SkipAttrs        = 1 << 1,
+        SkipAttrBuiltins = 1 << 2,
+        SkipDecls        = 1 << 3,
+        SkipImports      = 1 << 4,
+        SkipLiterals     = 1 << 5,
+        SkipTrivials     = 1 << 6,
+        OriginalIdl      = 1 << 7
     };
 
     template <typename Visitor, typename... Args>
@@ -401,6 +402,9 @@ public:
             stack.pop();
 
             if ((filters & SkipAttrs) == SkipAttrs && node.is<IDL_AST_NODE_TYPE_ATTR>()) {
+                continue;
+            }
+            if ((filters & SkipAttrBuiltins) == SkipAttrBuiltins && node.is<IDL_AST_NODE_TYPE_ATTR_BUILTIN>()) {
                 continue;
             }
             if ((filters & SkipDocs) == SkipDocs && node.is<IDL_AST_NODE_TYPE_ATTR_DOC>()) {

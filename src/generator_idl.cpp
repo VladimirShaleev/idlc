@@ -446,8 +446,9 @@ struct ASTVisitor {
 } // namespace
 
 void generate(Writer& writer) {
-    auto origin  = false;
-    auto filters = ASTNodeRef::SkipDocs | ASTNodeRef::SkipAttrs | ASTNodeRef::SkipLiterals | ASTNodeRef::SkipTrivials;
+    auto origin         = false;
+    auto filters        = ASTNodeRef::SkipDocs | ASTNodeRef::SkipAttrBuiltins | ASTNodeRef::SkipAttrs |
+                          ASTNodeRef::SkipLiterals | ASTNodeRef::SkipTrivials;
     uint32_t indents    = 4;
     uint32_t lineLength = 120;
     if (auto options = writer.options()) {

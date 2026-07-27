@@ -11,10 +11,6 @@ namespace idl {
 
 class CompilationResultBase : public _idl_compilation_result {
 public:
-    CompilationResultBase() {
-        _nodes.reserve(1024);
-    }
-
     [[nodiscard]] bool hasNotes() const noexcept {
         return _hasNotes;
     }
@@ -39,8 +35,14 @@ public:
     }
 
     [[nodiscard]] ASTNodeHandle allocNode(const ASTLocation& loc, ASTNodeType type, bool addedByCompiler = true) {
-        auto index = _nodes.size();
-        auto& node = _nodes.emplace_back();
+        auto index = _nodeCount++;
+
+        if (index % maxNodesInBucket == 0) {
+            _nodes.push_back({});
+            _nodes.back().resize(maxNodesInBucket);
+        }
+        auto& backet = _nodes.back();
+        auto& node   = backet[index % maxNodesInBucket];
 
         node.location = loc;
         node.type     = type;
@@ -53,15 +55,17 @@ public:
     }
 
     [[nodiscard]] ASTNode* getNode(ASTNodeHandle node) noexcept {
-        if (node.handle < _nodes.size() && node != HandleNone) {
-            return &_nodes[node.handle];
+        if (node.handle < _nodeCount && node != HandleNone) {
+            auto& bucket = _nodes[node.handle / maxNodesInBucket];
+            return &bucket[node.handle % maxNodesInBucket];
         }
         return nullptr;
     }
 
     [[nodiscard]] const ASTNode* getNode(ASTNodeHandle node) const noexcept {
-        if (node.handle < _nodes.size() && node != HandleNone) {
-            return &_nodes[node.handle];
+        if (node.handle < _nodeCount && node != HandleNone) {
+            auto& bucket = _nodes[node.handle / maxNodesInBucket];
+            return &bucket[node.handle % maxNodesInBucket];
         }
         return nullptr;
     }
@@ -130,9 +134,9 @@ public:
 
     [[nodiscard]] idl_utf8_t getNodeValueStr(idl_ast_node_h node) const noexcept {
         if (isNodeType(node, IDL_AST_NODE_TYPE_LITERAL_STR)) {
-            return _stringPool[_nodes[node.handle].valueStr].data();
+            return _stringPool[getNode(node)->valueStr].data();
         } else if (isNodeType(node, IDL_AST_NODE_TYPE_DECL)) {
-            return _stringPool[_nodes[node.handle].name.name].data();
+            return _stringPool[getNode(node)->name.name].data();
         }
         return "";
     }
@@ -141,28 +145,28 @@ public:
         if (isNodeType(node, IDL_AST_NODE_TYPE_LITERAL_INT) ||
             (isNodeType(node, IDL_AST_NODE_TYPE_ATTR_VALUE) &&
              isNodeType(getParentNode(node), IDL_AST_NODE_TYPE_CONST))) {
-            return _nodes[node.handle].valueInt;
+            return getNode(node)->valueInt;
         }
         return 0;
     }
 
     [[nodiscard]] idl_float64_t getNodeValueFloat(idl_ast_node_h node) const noexcept {
         if (isNodeType(node, IDL_AST_NODE_TYPE_LITERAL_FLOAT)) {
-            return _nodes[node.handle].valueFloat;
+            return getNode(node)->valueFloat;
         }
         return 0.0;
     }
 
     [[nodiscard]] idl_bool_t getNodeValueBool(idl_ast_node_h node) const noexcept {
         if (isNodeType(node, IDL_AST_NODE_TYPE_LITERAL_BOOL)) {
-            return _nodes[node.handle].valueBool;
+            return getNode(node)->valueBool;
         }
         return false;
     }
 
     [[nodiscard]] idl_ast_node_h getNodeValueDeclRef(idl_ast_node_h node) const noexcept {
         if (isNodeType(node, IDL_AST_NODE_TYPE_DECL_REF)) {
-            return _nodes[node.handle].valueDeclRef.handle;
+            return getNode(node)->valueDeclRef.handle;
         }
         return HandleNone;
     }
@@ -181,12 +185,15 @@ protected:
     }
 
 private:
+    static constexpr size_t maxNodesInBucket = 1024;
+
     bool _hasNotes{};
     bool _hasWarnings{};
     bool _hasErrors{};
     StringPool _stringPool;
     ASTNodeHandle _api{ HandleNone };
-    std::vector<ASTNode> _nodes{};
+    std::vector<std::vector<ASTNode>> _nodes{};
+    size_t _nodeCount{};
 };
 
 class CompilationResult final : public CompilationResultBase {

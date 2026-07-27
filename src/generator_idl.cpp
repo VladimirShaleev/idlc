@@ -305,10 +305,10 @@ struct ASTVisitor {
     }
 
     void printAttrs(ASTNodeRef& node) {
-        auto attrs = node.attrs(state.origin) | std::views::filter([](const auto& attr) {
-            return attr.template is<IDL_AST_NODE_TYPE_ATTR>() && !attr.template is<IDL_AST_NODE_TYPE_ATTR_DOC>() &&
-                   !attr.template is<IDL_AST_NODE_TYPE_ATTR_VALUE>() &&
-                   !attr.template is<IDL_AST_NODE_TYPE_ATTR_TYPE>();
+        auto attrs = node.getAttrs(state.origin) | std::views::filter([](const auto& attr) {
+            return attr.template is<IDL_AST_NODE_TYPE_ATTR>() && !attr.template is<IDL_AST_NODE_TYPE_ATTR_DOC,
+                                                                                   IDL_AST_NODE_TYPE_ATTR_VALUE,
+                                                                                   IDL_AST_NODE_TYPE_ATTR_TYPE>();
         });
 
         bool hasPrev = false;
@@ -335,7 +335,7 @@ struct ASTVisitor {
     }
 
     void printDoc(ASTNodeRef& node, int level, bool hasIDoc) {
-        auto docs = node.attrs() | std::views::filter([hasIDoc](const auto& attr) {
+        auto docs = node.getAttrs() | std::views::filter([hasIDoc](const auto& attr) {
             if (hasIDoc && attr.template is<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>()) {
                 return false;
             }
@@ -367,7 +367,7 @@ struct ASTVisitor {
         auto isMultiline = (node->flags & IDL_AST_NODE_STATE_MULTILINE_DOC_BIT) == IDL_AST_NODE_STATE_MULTILINE_DOC_BIT;
         auto isNewLine   = isMultiline;
         fmt::print(out(), "{:{}}@ {}", "", idoc ? 0 : state.indents * level, isMultiline ? "```\n" : "");
-        for (auto data : node) {
+        for (auto data : node.getChilds(state.origin)) {
             if (isMultiline && isNewLine) {
                 fmt::print(out(), "{:{}}", "", state.indents * (level + 1));
             }

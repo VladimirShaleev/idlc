@@ -118,7 +118,7 @@ struct CName {
         }
         std::vector<int> nums{};
         if (auto attr = decl.findChild<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>()) {
-            auto view = attr | std::views::transform([](const auto& arg) {
+            auto view = attr.getChilds() | std::views::transform([](const auto& arg) {
                 return int(arg->valueInt);
             });
             nums.assign(view.begin(), view.end());

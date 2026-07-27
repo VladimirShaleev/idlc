@@ -107,7 +107,7 @@ void printDoxygen(State& state, int level, std::span<DoxygenDoc> docs) {
                 strings.back() << arg;
             } else {
                 ASTNodeRef node(arg);
-                for (auto literal : node) {
+                for (auto literal : node.getChilds()) {
                     auto str = literal.template accept<CLiteral>().str;
                     if (str[0] == '\n') {
                         strings.push_back({});
@@ -133,10 +133,10 @@ void printDoxygen(State& state, int level, std::span<DoxygenDoc> docs) {
 }
 
 void fillDocMap(ASTNodeRef node, std::map<int, ASTNodeRef>& docs) {
-    for (auto attr : node.attrs()) {
-        if (attr.is<IDL_AST_NODE_TYPE_ATTR_DOC>() && !attr.is<IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE>()) {
-            auto priority  = attr.accept<PriorityDocAttr>().prior;
-            docs[priority] = attr;
+    for (auto doc : node.getChilds<IDL_AST_NODE_TYPE_ATTR_DOC>()) {
+        if (!doc.is<IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE>()) {
+            auto priority  = doc.accept<PriorityDocAttr>().prior;
+            docs[priority] = doc;
         }
     }
 }
@@ -269,7 +269,7 @@ struct ASTVisitor {
     void printIDoc(ASTNodeRef node) {
         auto detail = node.findChild<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>();
         std::ostringstream ss;
-        for (auto literal : detail) {
+        for (auto literal : detail.getChilds()) {
             ss << literal.template accept<CLiteral>().str;
         }
         fmt::print(out(), " /**< {} */", ss.str());
@@ -354,7 +354,7 @@ struct ASTVisitor {
         if (attrDocDetail.multilineDoc()) {
             return true;
         }
-        for (auto arg : attrDocDetail) {
+        for (auto arg : attrDocDetail.getChilds()) {
             if (arg.is<IDL_AST_NODE_TYPE_LITERAL_STR>() && arg.valueStr()[0] == '\n') {
                 return true;
             }

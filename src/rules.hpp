@@ -107,7 +107,7 @@ struct AttrValidatorRules {
 
         auto names = fmt::format("{}", fmt::join(fieldNames, ", "));
         std::set<ASTNodeType> uniqueAttrs;
-        for (auto attr : node.attrs()) {
+        for (auto attr : node.getAttrs()) {
             if (!allowed.contains(attr.type())) {
                 const auto name  = attr.accept<AttrName>().str;
                 const auto token = node.accept<DeclToken>().str;
@@ -1010,7 +1010,6 @@ struct BuildRules {
                 attrValue->valueInt |= evaulatedValue;
             }
         } else {
-            attrValue = ctx.addNode<IDL_AST_NODE_TYPE_ATTR_VALUE>(enumConst, int64_t(0));
             if (prevEnumConst) {
                 assert(prevEnumConst.evaulated());
                 if (prevEnumConst.buildError()) {
@@ -1018,12 +1017,16 @@ struct BuildRules {
                         state.prevE3041 = true;
                         ctx.log<IDL_STATUS_E3041>(enumConst->location, enumConst.fullname());
                     }
+                    attrValue           = ctx.addNode<IDL_AST_NODE_TYPE_ATTR_VALUE>(enumConst, int64_t(0));
+                    attrValue->valueInt = 0;
                     enumConst.setBuildError();
                 } else {
                     auto prevEvaulatedValue = prevEnumConst.findChild<IDL_AST_NODE_TYPE_ATTR_VALUE>()->valueInt;
-                    attrValue->valueInt     = prevEvaulatedValue + 1;
+                    attrValue = ctx.addNode<IDL_AST_NODE_TYPE_ATTR_VALUE>(enumConst, int64_t(prevEvaulatedValue + 1));
+                    attrValue->valueInt = int64_t(prevEvaulatedValue + 1);
                 }
             } else {
+                attrValue           = ctx.addNode<IDL_AST_NODE_TYPE_ATTR_VALUE>(enumConst, int64_t(0));
                 attrValue->valueInt = 0;
             }
         }
@@ -1040,7 +1043,7 @@ struct BuildRules {
             state.prevE3041 = false;
         }
 
-        if (enumConst->sibling == HandleNone) {
+        if (!enumConst.nextSibling<IDL_AST_NODE_TYPE_CONST>()) {
             auto maxEnum       = ctx.addNode<IDL_AST_NODE_TYPE_CONST>(enumConst.parent());
             maxEnum->name.name = ctx.result()->intern("MaxEnum");
 

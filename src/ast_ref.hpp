@@ -179,10 +179,6 @@ public:
         return ASTNodeRef(*_ctx, _node ? _node->parent : HandleNone);
     }
 
-    [[nodiscard]] ASTNodeRef firstChild() const noexcept {
-        return ASTNodeRef(*_ctx, _node ? _node->child : HandleNone);
-    }
-
     [[nodiscard]] ASTNodeHandle handle() const noexcept {
         return _handle;
     }
@@ -190,6 +186,14 @@ public:
     [[nodiscard]] auto getChilds(bool originalNodes = false) const noexcept {
         return *this | std::views::filter([originalNodes](const auto& child) {
             return child.isSaveNode(originalNodes);
+        });
+    }
+
+    template <ASTNodeType... Type>
+    [[nodiscard]] auto getChilds(bool originalNodes = false) const noexcept {
+        auto view = getChilds(originalNodes);
+        return view | std::views::filter([originalNodes](const auto& child) {
+            return child.template is<Type...>();
         });
     }
 
@@ -209,18 +213,38 @@ public:
         }
     }
 
-    template <ASTNodeType Type>
+    template <ASTNodeType... Type>
     [[nodiscard]] ASTNodeRef findChild(bool originalNode = false) const noexcept {
         auto view = *this | std::views::all;
 
         auto it = std::ranges::find_if(view, [originalNode](const auto& child) {
-            return child.isSaveNode(originalNode) && child.template is<Type>();
+            return child.isSaveNode(originalNode) && child.template is<Type...>();
         });
 
         return it != view.end() ? *it : ASTNodeRef(*_ctx);
     }
 
-    [[nodiscard]] auto attrs(bool originalNodes = false) const noexcept {
+    [[nodiscard]] ASTNodeRef nextSibling(bool originalNode = false) const noexcept {
+        if (!_node) {
+            return ASTNodeRef(*_ctx);
+        }
+        auto next = ASTNodeRef(*_ctx, _node->sibling);
+        while (next && !next.isSaveNode(originalNode)) {
+            next = ASTNodeRef(*_ctx, next->sibling);
+        }
+        return next;
+    }
+
+    template <ASTNodeType... Type>
+    [[nodiscard]] ASTNodeRef nextSibling(bool originalNode = false) const noexcept {
+        auto next = nextSibling(originalNode);
+        while (next && !next.template is<Type...>()) {
+            next = next.nextSibling(originalNode);
+        }
+        return next;
+    }
+
+    [[nodiscard]] auto getAttrs(bool originalNodes = false) const noexcept {
         return getChilds(originalNodes) | std::views::filter([](const auto& child) {
             return child.template is<IDL_AST_NODE_TYPE_ATTR>();
         });
@@ -404,7 +428,7 @@ public:
             if ((filters & SkipAttrs) == SkipAttrs && node.is<IDL_AST_NODE_TYPE_ATTR>()) {
                 continue;
             }
-            if ((filters & SkipAttrBuiltins) == SkipAttrBuiltins && node.is<IDL_AST_NODE_TYPE_ATTR_BUILTIN>()) {
+            if ((filters & SkipAttrBuiltins) == SkipAttrBuiltins && node.findChild<IDL_AST_NODE_TYPE_ATTR_BUILTIN>()) {
                 continue;
             }
             if ((filters & SkipDocs) == SkipDocs && node.is<IDL_AST_NODE_TYPE_ATTR_DOC>()) {

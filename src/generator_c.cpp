@@ -9,6 +9,36 @@ namespace idl::gen::c {
 
 namespace {
 
+struct State;
+
+struct Include {
+    State& state;
+    Output output;
+    ASTNodeRef import;
+    std::string includeGuard;
+    bool hasPrevDecl;
+
+    void printHeader();
+    ~Include();
+};
+
+struct State {
+    Writer& writer;
+    uint32_t indents;
+    bool addDocGroups;
+    bool single;
+    std::stack<Include> includes;
+
+    std::ostream& out() noexcept {
+        return includes.top().output.stream();
+    }
+};
+
+struct DoxygenDoc {
+    std::string_view doxygen;
+    std::variant<ASTNodeRef, std::string_view, std::string> doc;
+};
+
 struct DoxygenVisitor {
     void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>) {
         str = "brief"sv;
@@ -27,7 +57,7 @@ struct DoxygenVisitor {
     }
 
     void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE>) {
-        str = "copyright"sv;
+        str = ""sv;
     }
 
     template <ASTNodeType Type>
@@ -37,31 +67,114 @@ struct DoxygenVisitor {
     std::string_view str;
 };
 
+struct DoxygenGroupVisitor {
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_API>) {
+        str = "files"sv;
+    }
+
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_IMPORT>) {
+        str = "files"sv;
+    }
+
+    template <ASTNodeType Type>
+    void visit(ASTNodeRef&, Tag<Type>) noexcept {
+    }
+
+    std::string_view str;
+};
+
+void printDoxygen(State& state, int level, std::span<DoxygenDoc> docs) {
+    if (docs.empty()) {
+        return;
+    }
+    auto& out          = state.out();
+    const auto indents = state.indents * level;
+    const auto maxLen  = std::ranges::max(docs | std::views::transform([](const auto& doc) {
+        return doc.doxygen.length();
+    }));
+    fmt::print(out, "{:{}}/**\n", "", indents);
+    for (const auto& [doxygen, doc] : docs) {
+        std::vector<std::ostringstream> strings;
+        strings.push_back({});
+        std::visit([&](const auto& arg) {
+            using Type = std::remove_cvref_t<decltype(arg)>;
+            if constexpr (std::is_same_v<std::string, Type> || std::is_same_v<std::string_view, Type>) {
+                strings.back() << arg;
+            } else {
+                ASTNodeRef node(arg);
+                for (auto literal : node) {
+                    auto str = literal.template accept<CLiteral>().str;
+                    if (str[0] == '\n') {
+                        strings.push_back({});
+                    } else {
+                        strings.back() << str;
+                    }
+                }
+            }
+        }, doc);
+        fmt::print(out, "{:{}} * @{:{}} ", "", indents, doxygen, maxLen);
+        for (auto it = strings.begin(); it != strings.end(); ++it) {
+            if (it != strings.begin()) {
+                fmt::print(out, "{:{}} *  {:{}} ", "", indents, " ", maxLen);
+            }
+            fmt::print(out, "{}\n", it->str());
+        }
+    }
+    fmt::print(out, "{:{}} */\n", "", indents);
+}
+
+void fillDocMap(ASTNodeRef node, std::map<int, ASTNodeRef>& docs) {
+    for (auto attr : node.attrs()) {
+        if (attr.is<IDL_AST_NODE_TYPE_ATTR_DOC>() && !attr.is<IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE>()) {
+            auto priority  = attr.accept<PriorityDocAttr>().prior;
+            docs[priority] = attr;
+        }
+    }
+}
+
+template <typename... Node>
+void printDoc(State& state, int level, Node... node) {
+    std::map<int, ASTNodeRef> docs;
+    (fillDocMap(node, docs), ...);
+
+    std::vector<DoxygenDoc> doxygen;
+    doxygen.reserve(docs.size() + 2);
+    if ((node.is<IDL_AST_NODE_TYPE_API, IDL_AST_NODE_TYPE_IMPORT>() || ...)) {
+        const auto filename = state.includes.top().output.filename().string();
+        doxygen.emplace_back("file"sv, filename);
+    }
+    for (auto [_, doc] : docs) {
+        auto doxygenStr = doc.accept<DoxygenVisitor>().str;
+        doxygen.emplace_back(doxygenStr, doc);
+    }
+
+    if (state.addDocGroups) {
+        auto group = (node.accept<DoxygenGroupVisitor>().str, ...);
+        doxygen.emplace_back("ingroup"sv, group);
+    }
+
+    printDoxygen(state, level, doxygen);
+}
+
+void Include::printHeader() {
+    printDoc(state, 0, state.writer.api(), import);
+    fmt::print(output.stream(), "#ifndef {0}\n#define {0}\n", includeGuard);
+}
+
+Include::~Include() {
+    fmt::print(output.stream(), "#endif /* {} */\n", includeGuard);
+}
+
 struct ASTVisitor {
-    struct Include {
-        Output output;
-        ASTNodeRef import;
-        std::string includeGuard;
-        bool hasPrevDecl;
-    };
-
-    struct State {
-        Writer& writer;
-        uint32_t indents;
-        bool addDocGroups;
-        bool single;
-        std::stack<Include>& includes;
-    };
-
     ASTVisitor(State& state) noexcept : state(state) {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_API>) {
-        pushImport(node);
         if (node.findChild<IDL_AST_NODE_TYPE_ATTR_SINGLE>()) {
             state.single = true;
         }
-        popImport(node);
+        addPlatformFile(node);
+        pushImport(node);
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_IMPORT>) {
@@ -89,7 +202,7 @@ struct ASTVisitor {
         if (state.includes.top().hasPrevDecl) {
             fmt::print(out(), "\n");
         }
-        printDoc(node, 0, "enums");
+        printDoc(state, 0, node);
         fmt::print(out(), "typedef enum\n{{\n");
         for (auto it = consts.begin(); it != consts.end(); ++it) {
             const auto& [name, c] = *it;
@@ -110,7 +223,7 @@ struct ASTVisitor {
                 if (!isFirst) {
                     fmt::print(out(), "\n");
                 }
-                printDoc(c, 1, "");
+                printDoc(state, 1, c);
             }
             fmt::print(out(), "{:{}}{:{}} = {}{}", " ", state.indents, name, maxLen, values, !!maxEnum ? "" : ",");
             if (!isMultiline) {
@@ -124,64 +237,6 @@ struct ASTVisitor {
 
     template <ASTNodeType Type>
     void visit(ASTNodeRef&, Tag<Type>) noexcept {
-    }
-
-    void printDoc(ASTNodeRef node, int level, std::string_view group) {
-        auto attrs = node.attrs();
-        auto view  = attrs | std::views::filter([](const auto& attr) {
-            return attr.template is<IDL_AST_NODE_TYPE_ATTR_DOC>();
-        }) | std::views::transform([](auto doc) {
-            auto priority = doc.accept<PriorityDocAttr>().prior;
-            return std::make_pair(priority, doc);
-        });
-        std::vector<std::pair<int, ASTNodeRef>> sortedDocs{};
-        sortedDocs.assign(view.begin(), view.end());
-        std::ranges::sort(sortedDocs, {}, &std::pair<int, ASTNodeRef>::first);
-
-        auto docView = sortedDocs | std::views::transform([](auto doc) {
-            return std::make_pair(doc.second.accept<DoxygenVisitor>().str, doc.second);
-        });
-
-        std::vector<std::pair<std::string, std::variant<ASTNodeRef, std::string_view>>> docs;
-        docs.assign(docView.begin(), docView.end());
-
-        if (state.addDocGroups && !group.empty()) {
-            docs.emplace_back("ingroup", group);
-        }
-        size_t maxLen = docs.empty() ? 0 : std::ranges::max(docs | std::views::transform([](const auto& c) {
-            return c.first.length();
-        }));
-
-        const auto indents = state.indents * level;
-        fmt::print(out(), "{:{}}/**\n", "", indents);
-        for (const auto& [doxygen, doc] : docs) {
-            std::vector<std::ostringstream> strings;
-            strings.push_back({});
-            std::visit([&](const auto& arg) {
-                using Type = std::remove_cvref_t<decltype(arg)>;
-                if constexpr (std::is_same_v<std::string_view, Type>) {
-                    strings.back() << arg;
-                } else {
-                    ASTNodeRef node(arg);
-                    for (auto literal : node) {
-                        auto str = literal.template accept<CLiteral>().str;
-                        if (str[0] == '\n') {
-                            strings.push_back({});
-                        } else {
-                            strings.back() << str;
-                        }
-                    }
-                }
-            }, doc);
-            fmt::print(out(), "{:{}} * @{:{}} ", "", indents, doxygen, maxLen);
-            for (auto it = strings.begin(); it != strings.end(); ++it) {
-                if (it != strings.begin()) {
-                    fmt::print(out(), "{:{}} *  {:{}} ", "", indents, " ", maxLen);
-                }
-                fmt::print(out(), "{}\n", it->str());
-            }
-        }
-        fmt::print(out(), "{:{}} */\n", "", indents);
     }
 
     void printIDoc(ASTNodeRef node) {
@@ -218,20 +273,36 @@ struct ASTVisitor {
         return result;
     }
 
-    std::ostream& out() noexcept {
-        return state.includes.top().output.stream();
+    void addPlatformFile(ASTNodeRef node) {
+        pushImport(node, "platform");
     }
 
-    void pushImport(ASTNodeRef& node) {
-        auto isImport = node.is<IDL_AST_NODE_TYPE_IMPORT>();
-        if (isImport && state.single) {
+    std::ostream& out() noexcept {
+        return state.out();
+    }
+
+    void pushImport(ASTNodeRef& node, std::string_view postfix = ""sv) {
+        if (state.single && !state.includes.empty()) {
             return;
         }
-        const auto name = includeFullame(node);
-        state.includes.emplace(state.writer.createOutput(filename(name)),
+        std::string name;
+        std::string includeGuard;
+        if (!postfix.empty() && !state.single) {
+            std::string postfixUpper(postfix.data(), postfix.length());
+            postfixUpper = convert(postfixUpper, Case::ScreamingSnakeCase);
+            name         = includeFullame(node, false, '-', postfix);
+            includeGuard = includeFullame(node, true, '_', postfixUpper, 'H');
+        } else {
+            name         = includeFullame(node, false, '-');
+            includeGuard = includeFullame(node, true, '_', 'H');
+        }
+        auto isImport = node.is<IDL_AST_NODE_TYPE_IMPORT>();
+        state.includes.emplace(state,
+                               state.writer.createOutput(filename(name)),
                                isImport ? node : node.ctx().emptyNodeRef(),
-                               includeGuard(name),
+                               includeGuard,
                                false);
+        state.includes.top().printHeader();
     }
 
     void popImport(ASTNodeRef& node) {
@@ -269,12 +340,14 @@ struct ASTVisitor {
         return filename;
     }
 
-    static std::string includeGuard(const std::string& name) {
-        return convert(name, Case::ScreamingSnakeCase) + "_H";
-    }
-
-    static std::string includeFullame(ASTNodeRef& node) {
-        return node.accept<CName>(true, '-').str;
+    template <typename... Postfix>
+    static std::string includeFullame(ASTNodeRef& node, bool isUpper, char infix, Postfix&&... postfix) {
+        std::ostringstream ss;
+        ss << node.accept<CName>(true, infix, isUpper).str;
+        if (sizeof...(postfix) > 0) {
+            ((ss << infix, ss << postfix), ...);
+        }
+        return ss.str();
     }
 
     State& state;
@@ -287,13 +360,12 @@ void generate(Writer& writer) {
                              ASTNodeRef::SkipLiterals | ASTNodeRef::SkipTrivials;
     uint32_t indents       = 4;
     bool addDocGroups      = false;
-    std::stack<ASTVisitor::Include> includes;
     if (auto options = writer.options()) {
         indents       = options->getIndents();
         auto cOptions = options->getCOptions();
         addDocGroups  = cOptions.add_doc_groups;
     }
-    ASTVisitor::State state{ writer, indents, addDocGroups, false, std::ref(includes) };
+    State state{ writer, indents, addDocGroups };
     writer.api().acceptRecursive<ASTVisitor>(filters, std::ref(state));
 }
 

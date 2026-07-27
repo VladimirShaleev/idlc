@@ -169,9 +169,33 @@ struct CLiteral {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_LITERAL_INT>) {
-        str = hex ? fmt::format("{:#X}", node->valueInt) : std::to_string(node->valueInt);
+        auto type = node.ctx().emptyNodeRef();
+        auto curr = node;
+        while (curr) {
+            if (type = curr.declType()) {
+                break;
+            }
+            curr = curr.parent();
+        }
+        if (!type) {
+            type = node.ctx().getTrivial<IDL_AST_NODE_TYPE_INT_64>();
+        }
+
+        auto isUnsigned = false;
+        if (type.is<IDL_AST_NODE_TYPE_INTEGER_TYPE>()) {
+            isUnsigned = type.is<IDL_AST_NODE_TYPE_UINT_8>() || type.is<IDL_AST_NODE_TYPE_UINT_16>() ||
+                         type.is<IDL_AST_NODE_TYPE_UINT_32>() || type.is<IDL_AST_NODE_TYPE_UINT_64>();
+        }
+
+        if (isUnsigned) {
+            str = hex ? fmt::format("{:#X}", uint64_t(node->valueInt)) : std::to_string(uint64_t(node->valueInt));
+        } else {
+            str = hex ? fmt::format("{:#X}", node->valueInt) : std::to_string(node->valueInt);
+        }
         if (hex) {
-            str[1] = 'x';
+            if (auto pos = str.find_first_of('X'); pos != std::string::npos) {
+                str[pos] = 'x';
+            }
         }
     }
 
@@ -189,28 +213,33 @@ struct CLiteral {
 };
 
 struct PriorityDocAttr {
-    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>) {
-        prior = 0;
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF> tag) {
+        setPriority(tag);
     }
 
-    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>) {
-        prior = 1;
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL> tag) {
+        setPriority(tag);
     }
 
-    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR>) {
-        prior = 2;
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR> tag) {
+        setPriority(tag);
     }
 
-    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT>) {
-        prior = 3;
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT> tag) {
+        setPriority(tag);
     }
 
-    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE>) {
-        prior = 4;
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE> tag) {
+        setPriority(tag);
     }
 
     template <ASTNodeType Type>
     void visit(ASTNodeRef&, Tag<Type>) noexcept {
+    }
+
+    template <ASTNodeType Type>
+    void setPriority(Tag<Type> tag) noexcept {
+        prior = int(decltype(tag)::type);
     }
 
     int prior{ 1000 };

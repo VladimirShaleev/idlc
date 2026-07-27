@@ -119,6 +119,7 @@ import[ ]+ { BEGIN(IMPORTCTX); }
         lastString = importName.substr(firstSpace + 1);
         importName = importName.substr(0, firstSpace);
     }
+    trim(importName);
     yylloc->lines();
     import(*yylloc, importName);
     BEGIN(INITIAL);

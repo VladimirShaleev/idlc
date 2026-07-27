@@ -15,6 +15,29 @@ enum struct Case {
     SpaceCase
 };
 
+inline std::string& ltrim(std::string& str) {
+    str.erase(str.begin(), std::find_if_not(str.begin(), str.end(), [](auto ch) {
+        return std::isspace(ch);
+    }));
+    return str;
+}
+
+inline std::string& rtrim(std::string& str) {
+    str.erase(std::find_if_not(str.rbegin(),
+                               str.rend(),
+                               [](auto ch) {
+        return std::isspace(ch);
+    }).base(),
+              str.end());
+    return str;
+}
+
+inline std::string& trim(std::string& str) {
+    ltrim(str);
+    rtrim(str);
+    return str;
+}
+
 inline std::string& lower(std::string& str) {
     std::transform(str.cbegin(), str.cend(), str.begin(), [](auto c) {
         return std::tolower(c);

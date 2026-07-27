@@ -296,10 +296,7 @@ private:
 
     static std::string lowercase(const std::filesystem::path& path) {
         auto str = std::filesystem::path{ path }.make_preferred().string();
-        std::transform(str.begin(), str.end(), str.begin(), [](auto c) {
-            return std::tolower(c);
-        });
-        return str;
+        return lower(str);
     }
 
     std::string unescape(const std::string_view str, bool multiLine, const idl::location& loc) {

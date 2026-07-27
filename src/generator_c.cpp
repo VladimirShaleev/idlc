@@ -16,6 +16,7 @@ struct Include {
     Output output;
     ASTNodeRef import;
     std::string includeGuard;
+    bool main;
     bool hasPrevDecl;
 
     void printHeader();
@@ -56,10 +57,6 @@ struct DoxygenVisitor {
         str = "copyright"sv;
     }
 
-    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE>) {
-        str = ""sv;
-    }
-
     template <ASTNodeType Type>
     void visit(ASTNodeRef&, Tag<Type>) noexcept {
     }
@@ -74,6 +71,14 @@ struct DoxygenGroupVisitor {
 
     void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_IMPORT>) {
         str = "files"sv;
+    }
+
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ENUM>) {
+        str = "enums"sv;
+    }
+
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_STRUCT>) {
+        str = "structs"sv;
     }
 
     template <ASTNodeType Type>
@@ -112,10 +117,14 @@ void printDoxygen(State& state, int level, std::span<DoxygenDoc> docs) {
                 }
             }
         }, doc);
-        fmt::print(out, "{:{}} * @{:{}} ", "", indents, doxygen, maxLen);
+        if (doxygen.empty()) {
+            fmt::print(out, "{:{}} *\n{:{}} * {:{}} ", "", indents, "", indents, "", 3);
+        } else {
+            fmt::print(out, "{:{}} * @{:{}} ", "", indents, doxygen, maxLen);
+        }
         for (auto it = strings.begin(); it != strings.end(); ++it) {
             if (it != strings.begin()) {
-                fmt::print(out, "{:{}} *  {:{}} ", "", indents, " ", maxLen);
+                fmt::print(out, "{:{}} *  {:{}} ", "", indents, " ", doxygen.empty() ? 2 : maxLen);
             }
             fmt::print(out, "{}\n", it->str());
         }
@@ -138,7 +147,7 @@ void printDoc(State& state, int level, Node... node) {
     (fillDocMap(node, docs), ...);
 
     std::vector<DoxygenDoc> doxygen;
-    doxygen.reserve(docs.size() + 2);
+    doxygen.reserve(docs.size() + 3);
     if ((node.is<IDL_AST_NODE_TYPE_API, IDL_AST_NODE_TYPE_IMPORT>() || ...)) {
         const auto filename = state.includes.top().output.filename().string();
         doxygen.emplace_back("file"sv, filename);
@@ -148,9 +157,27 @@ void printDoc(State& state, int level, Node... node) {
         doxygen.emplace_back(doxygenStr, doc);
     }
 
+    const auto isApiNode  = ((!node || node.is<IDL_AST_NODE_TYPE_API>()) && ...);
+    const auto addLicense = state.includes.top().main && isApiNode;
+    if (addLicense) {
+        if (auto license = state.writer.api().findChild<IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE>()) {
+            doxygen.emplace_back(""sv, license);
+        }
+    }
+
     if (state.addDocGroups) {
-        auto group = (node.accept<DoxygenGroupVisitor>().str, ...);
-        doxygen.emplace_back("ingroup"sv, group);
+        std::string_view groups[] = { node.accept<DoxygenGroupVisitor>().str... };
+
+        auto group = std::find_if(std::rbegin(groups), std::rend(groups), [](auto a) {
+            return !a.empty();
+        });
+
+        auto it = std::find_if(doxygen.begin(), doxygen.end(), [](const auto& d) {
+            return std::holds_alternative<ASTNodeRef>(d.doc) &&
+                   std::get<ASTNodeRef>(d.doc).is<IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT>();
+        });
+
+        doxygen.insert(it, { "ingroup"sv, *group });
     }
 
     printDoxygen(state, level, doxygen);
@@ -174,7 +201,7 @@ struct ASTVisitor {
             state.single = true;
         }
         addPlatformFile(node);
-        pushImport(node);
+        pushImport(node, ""sv, true);
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_IMPORT>) {
@@ -281,7 +308,7 @@ struct ASTVisitor {
         return state.out();
     }
 
-    void pushImport(ASTNodeRef& node, std::string_view postfix = ""sv) {
+    void pushImport(ASTNodeRef& node, std::string_view postfix = ""sv, bool main = false) {
         if (state.single && !state.includes.empty()) {
             return;
         }
@@ -301,6 +328,7 @@ struct ASTVisitor {
                                state.writer.createOutput(filename(name)),
                                isImport ? node : node.ctx().emptyNodeRef(),
                                includeGuard,
+                               main,
                                false);
         state.includes.top().printHeader();
     }

@@ -161,13 +161,11 @@ struct AttrDocValidatorRules {
                         if (arg.is<IDL_AST_NODE_TYPE_LITERAL_STR>()) {
                             auto str = arg.valueStr();
                             if (isNewLine) {
-                                if (str.length() && str[0] == ' ') {
+                                if (!str.empty() && str[0] == ' ') {
                                     minIndents = std::min(minIndents, str.length());
                                 }
-                                isNewLine = false;
-                            } else if (str.length() == 1 && str[0] == '\n') {
-                                isNewLine = true;
                             }
+                            isNewLine = str.empty() || str[0] == '\n';
                         }
                     }
                     isNewLine    = true;
@@ -176,7 +174,7 @@ struct AttrDocValidatorRules {
                         if (arg.is<IDL_AST_NODE_TYPE_LITERAL_STR>()) {
                             auto str = arg.valueStr();
                             if (isNewLine) {
-                                if (str.length() && str[0] == ' ') {
+                                if (!str.empty() && str[0] == ' ') {
                                     auto substr = str.substr(minIndents);
                                     if (substr.empty()) {
                                         if (prevArg) {
@@ -191,10 +189,8 @@ struct AttrDocValidatorRules {
                                         arg->valueStr = node.result()->intern(substr);
                                     }
                                 }
-                                isNewLine = false;
-                            } else if (str.length() == 1 && str[0] == '\n') {
-                                isNewLine = true;
                             }
+                            isNewLine = str.empty() || str[0] == '\n';
                         }
                         prevArg = arg;
                     }

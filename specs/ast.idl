@@ -41,7 +41,7 @@ enum ASTNodeType [tokenizer(3-4)]
     const AttrDocLicense @ TODO
 
     const AttrBuiltin @ TODO
-    const AttrMaxEnum @ TODO
+    const AttrBuiltinMaxEnum @ TODO
     
     const Type @ TODO
     const TrivialType @ TODO

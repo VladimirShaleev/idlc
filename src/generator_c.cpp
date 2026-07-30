@@ -3,6 +3,7 @@
 #include "visitors.hpp"
 #include "writer.hpp"
 
+using namespace std::string_literals;
 using namespace std::string_view_literals;
 
 namespace idl::gen::c {
@@ -11,13 +12,36 @@ namespace {
 
 struct State;
 
+struct ASTNodeMapCmp {
+    bool operator()(ASTNodeRef n1, ASTNodeRef n2) const {
+        auto priority1 = n1.accept<PriorityDocAttr>().prior;
+        auto priority2 = n2.accept<PriorityDocAttr>().prior;
+        return priority1 < priority2;
+    }
+};
+
+using OverridDoc = std::map<ASTNodeRef, std::string, ASTNodeMapCmp>;
+
+enum Macro {
+    ImportApi,
+    StaticBuild,
+    PlatformWindows,
+    PlatformIos,
+    PlatformMacOs,
+    PlatformAndroid,
+    PlatformLinux,
+    PlatformWeb,
+    Constexpr,
+    Constexpr14
+};
+
 struct Include {
     State& state;
     Output output;
     ASTNodeRef import;
     std::string includeGuard;
+    OverridDoc overrideDoc;
     bool main;
-    bool hasPrevDecl;
 
     void printHeader();
     ~Include();
@@ -29,6 +53,7 @@ struct State {
     bool addDocGroups;
     bool single;
     std::stack<Include> includes;
+    std::array<std::string, magic_enum::enum_count<Macro>()> macros;
 
     std::ostream& out() noexcept {
         return includes.top().output.stream();
@@ -104,7 +129,18 @@ void printDoxygen(State& state, int level, std::span<DoxygenDoc> docs) {
         std::visit([&](const auto& arg) {
             using Type = std::remove_cvref_t<decltype(arg)>;
             if constexpr (std::is_same_v<std::string, Type> || std::is_same_v<std::string_view, Type>) {
-                strings.back() << arg;
+                auto hasPrevLine = false;
+                for (const auto row : arg | std::views::split('\n')) {
+                    std::string_view line(row.begin(), row.end());
+                    if (!line.empty() && line.back() == '\r') {
+                        line = line.substr(0, line.length() - 1);
+                    }
+                    if (hasPrevLine) {
+                        strings.push_back({});
+                    }
+                    strings.back() << line;
+                    hasPrevLine = true;
+                }
             } else {
                 ASTNodeRef node(arg);
                 for (auto literal : node.getChilds()) {
@@ -132,29 +168,36 @@ void printDoxygen(State& state, int level, std::span<DoxygenDoc> docs) {
     fmt::print(out, "{:{}} */\n", "", indents);
 }
 
-void fillDocMap(ASTNodeRef node, std::map<int, ASTNodeRef>& docs) {
+void fillDocMap(ASTNodeRef node, std::map<int, DoxygenDoc>& docs) {
     for (auto doc : node.getChilds<IDL_AST_NODE_TYPE_ATTR_DOC>()) {
         if (!doc.is<IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE>()) {
-            auto priority  = doc.accept<PriorityDocAttr>().prior;
-            docs[priority] = doc;
+            auto priority   = doc.accept<PriorityDocAttr>().prior;
+            auto doxygenStr = doc.accept<DoxygenVisitor>().str;
+            docs[priority]  = { doxygenStr, doc };
         }
     }
 }
 
 template <typename... Node>
-void printDoc(State& state, int level, Node... node) {
-    std::map<int, ASTNodeRef> docs;
-    (fillDocMap(node, docs), ...);
+void printDoc(State& state, const OverridDoc& overrideDoc, int level, Node... node) {
+    std::map<int, DoxygenDoc> sortedDocs;
+    (fillDocMap(node, sortedDocs), ...);
+
+    for (const auto& [node, str] : overrideDoc) {
+        ASTNodeRef ref    = node;
+        auto prior        = ref.accept<PriorityDocAttr>().prior;
+        auto doxygenStr   = ref.accept<DoxygenVisitor>().str;
+        sortedDocs[prior] = { doxygenStr, str };
+    }
 
     std::vector<DoxygenDoc> doxygen;
-    doxygen.reserve(docs.size() + 3);
+    doxygen.reserve(sortedDocs.size() + 3);
     if ((node.is<IDL_AST_NODE_TYPE_API, IDL_AST_NODE_TYPE_IMPORT>() || ...)) {
         const auto filename = state.includes.top().output.filename().string();
         doxygen.emplace_back("file"sv, filename);
     }
-    for (auto [_, doc] : docs) {
-        auto doxygenStr = doc.accept<DoxygenVisitor>().str;
-        doxygen.emplace_back(doxygenStr, doc);
+    for (auto [_, doc] : sortedDocs) {
+        doxygen.emplace_back(doc.doxygen, doc.doc);
     }
 
     const auto isApiNode  = ((!node || node.is<IDL_AST_NODE_TYPE_API>()) && ...);
@@ -184,12 +227,12 @@ void printDoc(State& state, int level, Node... node) {
 }
 
 void Include::printHeader() {
-    printDoc(state, 0, state.writer.api(), import);
+    printDoc(state, state.includes.top().overrideDoc, 0, state.writer.api(), import);
     fmt::print(output.stream(), "#ifndef {0}\n#define {0}\n", includeGuard);
 }
 
 Include::~Include() {
-    fmt::print(output.stream(), "#endif /* {} */\n", includeGuard);
+    fmt::print(output.stream(), "\n#endif /* {} */\n", includeGuard);
 }
 
 struct ASTVisitor {
@@ -200,6 +243,7 @@ struct ASTVisitor {
         if (node.findChild<IDL_AST_NODE_TYPE_ATTR_SINGLE>()) {
             state.single = true;
         }
+        addMacros(node);
         addPlatformFile(node);
         pushImport(node, ""sv, true);
     }
@@ -226,15 +270,13 @@ struct ASTVisitor {
             return c.first.length();
         }));
 
-        if (state.includes.top().hasPrevDecl) {
-            fmt::print(out(), "\n");
-        }
-        printDoc(state, 0, node);
+        fmt::print(out(), "\n");
+        printDoc(state, {}, 0, node);
         fmt::print(out(), "typedef enum\n{{\n");
         for (auto it = consts.begin(); it != consts.end(); ++it) {
             const auto& [name, c] = *it;
 
-            auto maxEnum   = c.findChild<IDL_AST_NODE_TYPE_ATTR_MAX_ENUM>();
+            auto maxEnum   = c.findChild<IDL_AST_NODE_TYPE_ATTR_BUILTIN_MAX_ENUM>();
             auto isHex     = hex || !!maxEnum;
             auto forward   = c.forwardDecl();
             auto isFirst   = it == consts.begin();
@@ -250,7 +292,7 @@ struct ASTVisitor {
                 if (!isFirst) {
                     fmt::print(out(), "\n");
                 }
-                printDoc(state, 1, c);
+                printDoc(state, {}, 1, c);
             }
             fmt::print(out(), "{:{}}{:{}} = {}{}", " ", state.indents, name, maxLen, values, !!maxEnum ? "" : ",");
             if (!isMultiline) {
@@ -259,7 +301,6 @@ struct ASTVisitor {
             fmt::print(out(), "\n");
         }
         fmt::print(out(), "}} {};\n", node.accept<CName>().str);
-        state.includes.top().hasPrevDecl = true;
     }
 
     template <ASTNodeType Type>
@@ -300,15 +341,47 @@ struct ASTVisitor {
         return result;
     }
 
+    void addMacros(ASTNodeRef node) {
+        state.macros[ImportApi]       = includeFullame(node, false, '_', "api"sv);
+        state.macros[StaticBuild]     = includeFullame(node, true, '_', "STATIC"sv, "BUILD"sv);
+        state.macros[PlatformWindows] = includeFullame(node, true, '_', "PLATFORM"sv, "WINDOWS"sv);
+        state.macros[PlatformIos]     = includeFullame(node, true, '_', "PLATFORM"sv, "IOS"sv);
+        state.macros[PlatformMacOs]   = includeFullame(node, true, '_', "PLATFORM"sv, "MAC"sv, "OS"sv);
+        state.macros[PlatformAndroid] = includeFullame(node, true, '_', "PLATFORM"sv, "ANDROID"sv);
+        state.macros[PlatformLinux]   = includeFullame(node, true, '_', "PLATFORM"sv, "LINUX"sv);
+        state.macros[PlatformWeb]     = includeFullame(node, true, '_', "PLATFORM"sv, "WEB"sv);
+        state.macros[Constexpr]       = includeFullame(node, true, '_', "CONSTEXPR"sv);
+        state.macros[Constexpr14]     = includeFullame(node, true, '_', "CONSTEXPR"sv, "14"sv);
+    }
+
     void addPlatformFile(ASTNodeRef node) {
-        pushImport(node, "platform");
+        auto brief   = ASTNodeRef::byType<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>(node.ctx());
+        auto detial  = ASTNodeRef::byType<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(node.ctx());
+        auto apiName = state.writer.api().name();
+
+        OverridDoc doc;
+        doc[brief] = "Platform-specific definitions and utilities."s;
+        doc[detial] = R"(This header provides cross-platform macros, type definitions, and utility
+macros for the )"s + std::string(apiName.data(), apiName.length()) +
+                      R"( library. It handles:
+  - Platform detection (Windows, macOS, iOS, Android, Linux, Web)
+  - Symbol visibility control (DLL import/export on Windows)
+  - C/C++ interoperability
+  - Type definitions for consistent data sizes across platforms
+  - Bit flag operations for enumerations (C++ only).
+)"s;
+
+        pushImport(node, "platform", false, doc);
     }
 
     std::ostream& out() noexcept {
         return state.out();
     }
 
-    void pushImport(ASTNodeRef& node, std::string_view postfix = ""sv, bool main = false) {
+    void pushImport(ASTNodeRef& node,
+                    std::string_view postfix      = ""sv,
+                    bool main                     = false,
+                    const OverridDoc& overrideDoc = {}) {
         if (state.single && !state.includes.empty()) {
             return;
         }
@@ -328,8 +401,8 @@ struct ASTVisitor {
                                state.writer.createOutput(filename(name)),
                                isImport ? node : node.ctx().emptyNodeRef(),
                                includeGuard,
-                               main,
-                               false);
+                               overrideDoc,
+                               main);
         state.includes.top().printHeader();
     }
 

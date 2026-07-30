@@ -100,6 +100,9 @@ public:
         auto nameLower    = concat(buffer2, name, "", name.length(), '\0');
         auto symbolFinded = false;
         auto curr         = decl;
+        while (curr.is<IDL_AST_NODE_TYPE_IMPORT>()) {
+            curr = curr.parent();
+        }
         while (curr) {
             auto currFullname = curr.fullname();
             auto fullname     = concat(buffer, currFullname, nameLower, currFullname.length());
@@ -182,13 +185,15 @@ public:
     }
 
     void initBuiltins(ASTNodeRef node) {
+        using namespace std::string_view_literals;
+
         _result->setApi(node.handle());
 
-        const auto loc     = ASTLocation{ _result->intern("<builtin>"), 1, 1 };
+        const auto loc     = ASTLocation{ _result->intern("<builtin>"sv), 1, 1 };
         ASTNodeHandle last = HandleNone;
 
         auto addBuiltin = [this, api = node, &loc, &last]<ASTNodeType Type>(
-                              std::string_view name, const std::string& detail, Tag<Type>) mutable {
+                              std::string_view name, std::string_view detail, Tag<Type>) mutable {
             auto node                         = _result->allocNode(loc, Tag<Type>::type);
             _result->getNode(node)->name.name = _result->intern(name);
             _result->getNode(node)->parent    = api.handle();
@@ -216,21 +221,21 @@ public:
             last = node;
         };
 
-        addBuiltin("Void", "void type.", Tag<IDL_AST_NODE_TYPE_VOID>{});
-        addBuiltin("Char", "symbol type.", Tag<IDL_AST_NODE_TYPE_CHAR>{});
-        addBuiltin("Bool", "boolean type.", Tag<IDL_AST_NODE_TYPE_BOOL>{});
-        addBuiltin("Int8", "8 bit signed integer.", Tag<IDL_AST_NODE_TYPE_INT_8>{});
-        addBuiltin("Uint8", "8 bit unsigned integer.", Tag<IDL_AST_NODE_TYPE_UINT_8>{});
-        addBuiltin("Int16", "16 bit signed integer.", Tag<IDL_AST_NODE_TYPE_INT_16>{});
-        addBuiltin("Uint16", "16 bit unsigned integer.", Tag<IDL_AST_NODE_TYPE_UINT_16>{});
-        addBuiltin("Int32", "32 bit signed integer.", Tag<IDL_AST_NODE_TYPE_INT_32>{});
-        addBuiltin("Uint32", "32 bit unsigned integer.", Tag<IDL_AST_NODE_TYPE_UINT_32>{});
-        addBuiltin("Int64", "64 bit signed integer.", Tag<IDL_AST_NODE_TYPE_INT_64>{});
-        addBuiltin("Uint64", "64 bit unsigned integer.", Tag<IDL_AST_NODE_TYPE_UINT_64>{});
-        addBuiltin("Float32", "32 bit float point.", Tag<IDL_AST_NODE_TYPE_FLOAT_32>{});
-        addBuiltin("Float64", "64 bit float point.", Tag<IDL_AST_NODE_TYPE_FLOAT_64>{});
-        addBuiltin("Str", "utf8 string.", Tag<IDL_AST_NODE_TYPE_STR>{});
-        addBuiltin("Data", "pointer to data.", Tag<IDL_AST_NODE_TYPE_DATA>{});
+        addBuiltin("Void"sv, "void type."sv, Tag<IDL_AST_NODE_TYPE_VOID>{});
+        addBuiltin("Char"sv, "symbol type."sv, Tag<IDL_AST_NODE_TYPE_CHAR>{});
+        addBuiltin("Bool"sv, "boolean type."sv, Tag<IDL_AST_NODE_TYPE_BOOL>{});
+        addBuiltin("Int8"sv, "8 bit signed integer."sv, Tag<IDL_AST_NODE_TYPE_INT_8>{});
+        addBuiltin("Uint8"sv, "8 bit unsigned integer."sv, Tag<IDL_AST_NODE_TYPE_UINT_8>{});
+        addBuiltin("Int16"sv, "16 bit signed integer."sv, Tag<IDL_AST_NODE_TYPE_INT_16>{});
+        addBuiltin("Uint16"sv, "16 bit unsigned integer."sv, Tag<IDL_AST_NODE_TYPE_UINT_16>{});
+        addBuiltin("Int32"sv, "32 bit signed integer."sv, Tag<IDL_AST_NODE_TYPE_INT_32>{});
+        addBuiltin("Uint32"sv, "32 bit unsigned integer."sv, Tag<IDL_AST_NODE_TYPE_UINT_32>{});
+        addBuiltin("Int64"sv, "64 bit signed integer."sv, Tag<IDL_AST_NODE_TYPE_INT_64>{});
+        addBuiltin("Uint64"sv, "64 bit unsigned integer."sv, Tag<IDL_AST_NODE_TYPE_UINT_64>{});
+        addBuiltin("Float32"sv, "32 bit float point."sv, Tag<IDL_AST_NODE_TYPE_FLOAT_32>{});
+        addBuiltin("Float64"sv, "64 bit float point."sv, Tag<IDL_AST_NODE_TYPE_FLOAT_64>{});
+        addBuiltin("Str"sv, "utf8 string."sv, Tag<IDL_AST_NODE_TYPE_STR>{});
+        addBuiltin("Data"sv, "pointer to data."sv, Tag<IDL_AST_NODE_TYPE_DATA>{});
     }
 
     template <ASTNodeType Type>

@@ -1051,7 +1051,7 @@ struct BuildRules {
 
             using namespace std::string_view_literals;
             ctx.addNode<IDL_AST_NODE_TYPE_ATTR_VALUE>(maxEnum, value)->valueInt = value;
-            ctx.addNode<IDL_AST_NODE_TYPE_ATTR_MAX_ENUM>(maxEnum);
+            ctx.addNode<IDL_AST_NODE_TYPE_ATTR_BUILTIN_MAX_ENUM>(maxEnum);
             ctx.addNode<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(
                 maxEnum, "Max"sv, " "sv, "value"sv, " "sv, "of"sv, " "sv, "enum"sv, " "sv, "(not"sv, " "sv, "used)"sv);
 

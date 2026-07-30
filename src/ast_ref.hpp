@@ -327,8 +327,8 @@ public:
                 case IDL_AST_NODE_TYPE_ATTR_CONST:
                     visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_CONST>{});
                     break;
-                case IDL_AST_NODE_TYPE_ATTR_MAX_ENUM:
-                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_MAX_ENUM>{});
+                case IDL_AST_NODE_TYPE_ATTR_BUILTIN_MAX_ENUM:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_BUILTIN_MAX_ENUM>{});
                     break;
                 case IDL_AST_NODE_TYPE_ATTR_OPTIONAL:
                     visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_OPTIONAL>{});

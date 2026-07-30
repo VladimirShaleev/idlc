@@ -26,8 +26,8 @@ enum Macro {
     ImportApi,
     StaticBuild,
     PlatformWindows,
-    PlatformIos,
-    PlatformMacOs,
+    PlatformIOS,
+    PlatformMacOS,
     PlatformAndroid,
     PlatformLinux,
     PlatformWeb,
@@ -216,8 +216,7 @@ void printDoc(State& state, const OverridDoc& overrideDoc, int level, Node... no
         });
 
         auto it = std::find_if(doxygen.begin(), doxygen.end(), [](const auto& d) {
-            return std::holds_alternative<ASTNodeRef>(d.doc) &&
-                   std::get<ASTNodeRef>(d.doc).is<IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT>();
+            return std::holds_alternative<ASTNodeRef>(d.doc) && std::get<ASTNodeRef>(d.doc).is<IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT>();
         });
 
         doxygen.insert(it, { "ingroup"sv, *group });
@@ -345,8 +344,8 @@ struct ASTVisitor {
         state.macros[ImportApi]       = includeFullame(node, false, '_', "api"sv);
         state.macros[StaticBuild]     = includeFullame(node, true, '_', "STATIC"sv, "BUILD"sv);
         state.macros[PlatformWindows] = includeFullame(node, true, '_', "PLATFORM"sv, "WINDOWS"sv);
-        state.macros[PlatformIos]     = includeFullame(node, true, '_', "PLATFORM"sv, "IOS"sv);
-        state.macros[PlatformMacOs]   = includeFullame(node, true, '_', "PLATFORM"sv, "MAC"sv, "OS"sv);
+        state.macros[PlatformIOS]     = includeFullame(node, true, '_', "PLATFORM"sv, "IOS"sv);
+        state.macros[PlatformMacOS]   = includeFullame(node, true, '_', "PLATFORM"sv, "MAC"sv, "OS"sv);
         state.macros[PlatformAndroid] = includeFullame(node, true, '_', "PLATFORM"sv, "ANDROID"sv);
         state.macros[PlatformLinux]   = includeFullame(node, true, '_', "PLATFORM"sv, "LINUX"sv);
         state.macros[PlatformWeb]     = includeFullame(node, true, '_', "PLATFORM"sv, "WEB"sv);
@@ -360,7 +359,7 @@ struct ASTVisitor {
         auto apiName = state.writer.api().name();
 
         OverridDoc doc;
-        doc[brief] = "Platform-specific definitions and utilities."s;
+        doc[brief]  = "Platform-specific definitions and utilities."s;
         doc[detial] = R"(This header provides cross-platform macros, type definitions, and utility
 macros for the )"s + std::string(apiName.data(), apiName.length()) +
                       R"( library. It handles:
@@ -372,21 +371,64 @@ macros for the )"s + std::string(apiName.data(), apiName.length()) +
 )"s;
 
         pushImport(node, "platform", false, doc);
+
+        fmt::print(out(), "\n");
+        fmt::print(out(), "/**\n");
+        fmt::print(out(), " * @def     {}\n", state.macros[ImportApi]);
+        fmt::print(out(), " * @brief   Controls symbol visibility for shared library builds.\n");
+        fmt::print(out(), " * @details This macro is used to control symbol visibility when building or using the library.\n");
+        fmt::print(out(), " *          On Windows (**MSVC**) with dynamic linking (non-static build), it expands to `__declspec(dllimport)`.\n");
+        fmt::print(out(), " *          In all other cases (static builds or non-Windows platforms), it expands to nothing.\n");
+        fmt::print(out(), " *          This allows proper importing of symbols from DLLs on Windows platforms.\n");
+        fmt::print(out(), " * @note    Define `{}` for static library configuration.\n", state.macros[StaticBuild]);
+        fmt::print(out(), " * @ingroup macros\n");
+        fmt::print(out(), " */\n");
+        fmt::print(out(), "\n");
+        fmt::print(out(), "#ifndef {}\n", state.macros[ImportApi]);
+        fmt::print(out(), "# if defined(_MSC_VER) && !defined({})\n", state.macros[StaticBuild]);
+        fmt::print(out(), "#  define {} __declspec(dllimport)\n", state.macros[ImportApi]);
+        fmt::print(out(), "# else\n");
+        fmt::print(out(), "#  define {}\n", state.macros[ImportApi]);
+        fmt::print(out(), "# endif\n");
+        fmt::print(out(), "#endif\n");
+        fmt::print(out(), "\n");
+        fmt::print(out(), "#if defined(_WIN32) && !defined({})\n", state.macros[PlatformWindows]);
+        fmt::print(out(), "# define {}\n", state.macros[PlatformWindows]);
+        fmt::print(out(), "#elif defined(__APPLE__)\n");
+        fmt::print(out(), "# include <TargetConditionals.h>\n");
+        fmt::print(out(), "# include <unistd.h>\n");
+        fmt::print(out(), "# if TARGET_OS_IPHONE && !defined({})\n", state.macros[PlatformIOS]);
+        fmt::print(out(), "#  define {}\n", state.macros[PlatformIOS]);
+        fmt::print(out(), "# elif TARGET_IPHONE_SIMULATOR && !defined(IDL_PLATFORM_IOS)\n");
+        fmt::print(out(), "#  define {}\n", state.macros[PlatformIOS]);
+        fmt::print(out(), "# elif TARGET_OS_MAC && !defined({})\n", state.macros[PlatformMacOS]);
+        fmt::print(out(), "#  define {}\n", state.macros[PlatformMacOS]);
+        fmt::print(out(), "# else\n");
+        fmt::print(out(), "#  error unsupported Apple platform\n");
+        fmt::print(out(), "# endif\n");
+        fmt::print(out(), "#elif defined(__ANDROID__) && !defined({})\n", state.macros[PlatformAndroid]);
+        fmt::print(out(), "# define {}\n", state.macros[PlatformAndroid]);
+        fmt::print(out(), "#elif defined(__linux__) && !defined({})\n", state.macros[PlatformLinux]);
+        fmt::print(out(), "# define {}\n", state.macros[PlatformLinux]);
+        fmt::print(out(), "#elif defined(__EMSCRIPTEN__) && !defined({})\n", state.macros[PlatformWeb]);
+        fmt::print(out(), "# define {}\n", state.macros[PlatformWeb]);
+        fmt::print(out(), "#else\n");
+        fmt::print(out(), "# error unsupported platform\n");
+        fmt::print(out(), "#endif\n");
     }
 
     std::ostream& out() noexcept {
         return state.out();
     }
 
-    void pushImport(ASTNodeRef& node,
-                    std::string_view postfix      = ""sv,
-                    bool main                     = false,
-                    const OverridDoc& overrideDoc = {}) {
+    void pushImport(ASTNodeRef& node, std::string_view postfix = ""sv, bool main = false, const OverridDoc& overrideDoc = {}) {
         if (state.single && !state.includes.empty()) {
             return;
         }
         std::string name;
         std::string includeGuard;
+        OverridDoc overrideDocStub;
+        const OverridDoc* doc = &overrideDoc;
         if (!postfix.empty() && !state.single) {
             std::string postfixUpper(postfix.data(), postfix.length());
             postfixUpper = convert(postfixUpper, Case::ScreamingSnakeCase);
@@ -395,14 +437,11 @@ macros for the )"s + std::string(apiName.data(), apiName.length()) +
         } else {
             name         = includeFullame(node, false, '-');
             includeGuard = includeFullame(node, true, '_', 'H');
+            doc          = &overrideDocStub;
         }
         auto isImport = node.is<IDL_AST_NODE_TYPE_IMPORT>();
-        state.includes.emplace(state,
-                               state.writer.createOutput(filename(name)),
-                               isImport ? node : node.ctx().emptyNodeRef(),
-                               includeGuard,
-                               overrideDoc,
-                               main);
+        state.includes.emplace(
+            state, state.writer.createOutput(filename(name)), isImport ? node : node.ctx().emptyNodeRef(), includeGuard, *doc, main || state.single);
         state.includes.top().printHeader();
     }
 
@@ -457,10 +496,10 @@ macros for the )"s + std::string(apiName.data(), apiName.length()) +
 } // namespace
 
 void generate(Writer& writer) {
-    constexpr auto filters = ASTNodeRef::SkipDocs | ASTNodeRef::SkipAttrBuiltins | ASTNodeRef::SkipAttrs |
-                             ASTNodeRef::SkipLiterals | ASTNodeRef::SkipTrivials;
-    uint32_t indents       = 4;
-    bool addDocGroups      = false;
+    constexpr auto filters =
+        ASTNodeRef::SkipDocs | ASTNodeRef::SkipAttrBuiltins | ASTNodeRef::SkipAttrs | ASTNodeRef::SkipLiterals | ASTNodeRef::SkipTrivials;
+    uint32_t indents  = 4;
+    bool addDocGroups = false;
     if (auto options = writer.options()) {
         indents       = options->getIndents();
         auto cOptions = options->getCOptions();

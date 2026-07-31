@@ -54,8 +54,7 @@ void addOutputFiles(argparse::ArgumentParser& program, const std::map<std::strin
     arg.help(help.str());
 }
 
-idl_generator_t getGeneratorArg(argparse::ArgumentParser& program,
-                                const std::map<std::string, idl_generator_t>& generators) {
+idl_generator_t getGeneratorArg(argparse::ArgumentParser& program, const std::map<std::string, idl_generator_t>& generators) {
     if (!program.is_used("--generator")) {
         return IDL_GENERATOR_C;
     }
@@ -63,8 +62,7 @@ idl_generator_t getGeneratorArg(argparse::ArgumentParser& program,
     return generators.at(gen);
 }
 
-idl_bool_type_t getBoolTypesArg(argparse::ArgumentParser& program,
-                                const std::map<std::string, idl_bool_type_t>& types) {
+idl_bool_type_t getBoolTypesArg(argparse::ArgumentParser& program, const std::map<std::string, idl_bool_type_t>& types) {
     if (!program.is_used("--bool")) {
         return IDL_BOOL_TYPE_DEFAULT;
     }
@@ -72,8 +70,7 @@ idl_bool_type_t getBoolTypesArg(argparse::ArgumentParser& program,
     return types.at(type);
 }
 
-idl_output_files_t getOutputFilesArg(argparse::ArgumentParser& program,
-                                     const std::map<std::string, idl_output_files_t>& formats) {
+idl_output_files_t getOutputFilesArg(argparse::ArgumentParser& program, const std::map<std::string, idl_output_files_t>& formats) {
     if (!program.is_used("--output-files")) {
         return IDL_OUTPUT_FILES_DEFAULT;
     }
@@ -176,6 +173,7 @@ int main(int argc, char* argv[]) {
     idlOptions.prefered_original_style = idlOriginal ? 1 : 0;
 
     idl_c_options_t cOptions{};
+    cOptions.add_doc        = 0;
     cOptions.add_doc_groups = 1;
 
     idl_options_set_debug_mode(options, 0);
@@ -211,16 +209,11 @@ int main(int argc, char* argv[]) {
             messages.resize(count);
             idl_compilation_result_get_messages(result, &count, messages.data());
             for (const auto& message : messages) {
-                std::cerr << (message.status >= IDL_STATUS_E3001
-                                  ? "error"
-                                  : (message.status >= IDL_STATUS_W2001 ? "warning" : "note"));
-                std::cerr << " ["
-                          << (message.status >= IDL_STATUS_E3001 ? 'E'
-                                                                 : (message.status >= IDL_STATUS_W2001 ? 'W' : 'N'));
+                std::cerr << (message.status >= IDL_STATUS_E3001 ? "error" : (message.status >= IDL_STATUS_W2001 ? "warning" : "note"));
+                std::cerr << " [" << (message.status >= IDL_STATUS_E3001 ? 'E' : (message.status >= IDL_STATUS_W2001 ? 'W' : 'N'));
                 std::cerr << (int) message.status << "]: " << message.message;
                 if (message.line > 0) {
-                    std::cerr << " at " << message.filename << ':' << message.line << ':' << message.column << '.'
-                              << std::endl;
+                    std::cerr << " at " << message.filename << ':' << message.line << ':' << message.column << '.' << std::endl;
                 }
             }
         }

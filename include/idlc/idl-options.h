@@ -81,6 +81,7 @@ typedef struct
  */
 typedef struct
 {
+    idl_bool_t add_doc; /**< Add Doxygen documentation. */
     idl_bool_t add_doc_groups; /**< Add Doxygen groups. */
 } idl_c_options_t;
 

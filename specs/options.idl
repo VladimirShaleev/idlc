@@ -35,6 +35,7 @@ struct IdlOptions
 @ C Options.
 @ Specific options for C. [detail]
 struct COptions [tokenizer(1)]
+    field AddDoc {Bool} @ Add Doxygen documentation.
     field AddDocGroups {Bool} @ Add Doxygen groups.
 
 @ Callback to get sources.

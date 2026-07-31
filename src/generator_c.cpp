@@ -50,7 +50,10 @@ struct Include {
 struct State {
     Writer& writer;
     uint32_t indents;
+    bool addDoc;
     bool addDocGroups;
+    bool stdTypes;
+    idl_bool_type_t boolType;
     bool single;
     std::stack<Include> includes;
     std::array<std::string, magic_enum::enum_count<Macro>()> macros;
@@ -144,7 +147,7 @@ void printDoxygen(State& state, int level, std::span<DoxygenDoc> docs) {
             } else {
                 ASTNodeRef node(arg);
                 for (auto literal : node.getChilds()) {
-                    auto str = literal.template accept<CLiteral>().str;
+                    auto str = literal.template accept<CLiteral>(state.stdTypes, state.boolType).str;
                     if (str[0] == '\n') {
                         strings.push_back({});
                     } else {
@@ -180,6 +183,10 @@ void fillDocMap(ASTNodeRef node, std::map<int, DoxygenDoc>& docs) {
 
 template <typename... Node>
 void printDoc(State& state, const OverridDoc& overrideDoc, int level, Node... node) {
+    if (!state.addDoc) {
+        return;
+    }
+
     std::map<int, DoxygenDoc> sortedDocs;
     (fillDocMap(node, sortedDocs), ...);
 
@@ -258,8 +265,8 @@ struct ASTVisitor {
         auto childs = node.getChilds();
         auto view   = childs | std::views::filter([](const auto& child) {
             return child.is<IDL_AST_NODE_TYPE_CONST>();
-        }) | std::views::transform([](auto c) {
-            return std::make_pair(c.accept<CName>().str, c);
+        }) | std::views::transform([this](auto c) {
+            return std::make_pair(c.accept<CName>(state.stdTypes, state.boolType).str, c);
         });
 
         std::vector<std::pair<std::string, ASTNodeRef>> consts;
@@ -280,8 +287,8 @@ struct ASTVisitor {
             auto forward   = c.forwardDecl();
             auto isFirst   = it == consts.begin();
             auto attrValue = c.findChild<IDL_AST_NODE_TYPE_ATTR_VALUE>();
-            auto args      = attrValue | std::views::transform([isHex](auto arg) {
-                return arg.accept<CLiteral>(isHex).str;
+            auto args      = attrValue | std::views::transform([this, isHex](auto arg) {
+                return arg.accept<CLiteral>(state.stdTypes, state.boolType, isHex).str;
             });
 
             auto values = forward ? std::to_string(evaulateConst(c)) : fmt::format("{}", fmt::join(args, " | "));
@@ -299,7 +306,7 @@ struct ASTVisitor {
             }
             fmt::print(out(), "\n");
         }
-        fmt::print(out(), "}} {};\n", node.accept<CName>().str);
+        fmt::print(out(), "}} {};\n", node.accept<CName>(state.stdTypes, state.boolType).str);
     }
 
     template <ASTNodeType Type>
@@ -307,10 +314,13 @@ struct ASTVisitor {
     }
 
     void printIDoc(ASTNodeRef node) {
+        if (!state.addDoc) {
+            return;
+        }
         auto detail = node.findChild<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>();
         std::ostringstream ss;
         for (auto literal : detail.getChilds()) {
-            ss << literal.template accept<CLiteral>().str;
+            ss << literal.template accept<CLiteral>(state.stdTypes, state.boolType).str;
         }
         fmt::print(out(), " /**< {} */", ss.str());
     }
@@ -341,16 +351,16 @@ struct ASTVisitor {
     }
 
     void addMacros(ASTNodeRef node) {
-        state.macros[ImportApi]       = includeFullame(node, false, '_', "api"sv);
-        state.macros[StaticBuild]     = includeFullame(node, true, '_', "STATIC"sv, "BUILD"sv);
-        state.macros[PlatformWindows] = includeFullame(node, true, '_', "PLATFORM"sv, "WINDOWS"sv);
-        state.macros[PlatformIOS]     = includeFullame(node, true, '_', "PLATFORM"sv, "IOS"sv);
-        state.macros[PlatformMacOS]   = includeFullame(node, true, '_', "PLATFORM"sv, "MAC"sv, "OS"sv);
-        state.macros[PlatformAndroid] = includeFullame(node, true, '_', "PLATFORM"sv, "ANDROID"sv);
-        state.macros[PlatformLinux]   = includeFullame(node, true, '_', "PLATFORM"sv, "LINUX"sv);
-        state.macros[PlatformWeb]     = includeFullame(node, true, '_', "PLATFORM"sv, "WEB"sv);
-        state.macros[Constexpr]       = includeFullame(node, true, '_', "CONSTEXPR"sv);
-        state.macros[Constexpr14]     = includeFullame(node, true, '_', "CONSTEXPR"sv, "14"sv);
+        state.macros[ImportApi]       = getFullname(node, false, '_', "api"sv);
+        state.macros[StaticBuild]     = getFullname(node, true, '_', "STATIC"sv, "BUILD"sv);
+        state.macros[PlatformWindows] = getFullname(node, true, '_', "PLATFORM"sv, "WINDOWS"sv);
+        state.macros[PlatformIOS]     = getFullname(node, true, '_', "PLATFORM"sv, "IOS"sv);
+        state.macros[PlatformMacOS]   = getFullname(node, true, '_', "PLATFORM"sv, "MAC"sv, "OS"sv);
+        state.macros[PlatformAndroid] = getFullname(node, true, '_', "PLATFORM"sv, "ANDROID"sv);
+        state.macros[PlatformLinux]   = getFullname(node, true, '_', "PLATFORM"sv, "LINUX"sv);
+        state.macros[PlatformWeb]     = getFullname(node, true, '_', "PLATFORM"sv, "WEB"sv);
+        state.macros[Constexpr]       = getFullname(node, true, '_', "CONSTEXPR"sv);
+        state.macros[Constexpr14]     = getFullname(node, true, '_', "CONSTEXPR"sv, "14"sv);
     }
 
     void addPlatformFile(ASTNodeRef node) {
@@ -373,17 +383,21 @@ macros for the )"s + std::string(apiName.data(), apiName.length()) +
         pushImport(node, "platform", false, doc);
 
         fmt::print(out(), "\n");
-        fmt::print(out(), "/**\n");
-        fmt::print(out(), " * @def     {}\n", state.macros[ImportApi]);
-        fmt::print(out(), " * @brief   Controls symbol visibility for shared library builds.\n");
-        fmt::print(out(), " * @details This macro is used to control symbol visibility when building or using the library.\n");
-        fmt::print(out(), " *          On Windows (**MSVC**) with dynamic linking (non-static build), it expands to `__declspec(dllimport)`.\n");
-        fmt::print(out(), " *          In all other cases (static builds or non-Windows platforms), it expands to nothing.\n");
-        fmt::print(out(), " *          This allows proper importing of symbols from DLLs on Windows platforms.\n");
-        fmt::print(out(), " * @note    Define `{}` for static library configuration.\n", state.macros[StaticBuild]);
-        fmt::print(out(), " * @ingroup macros\n");
-        fmt::print(out(), " */\n");
-        fmt::print(out(), "\n");
+        if (state.addDoc) {
+            fmt::print(out(), "/**\n");
+            fmt::print(out(), " * @def     {}\n", state.macros[ImportApi]);
+            fmt::print(out(), " * @brief   Controls symbol visibility for shared library builds.\n");
+            fmt::print(out(), " * @details This macro is used to control symbol visibility when building or using the library.\n");
+            fmt::print(out(), " *          On Windows (**MSVC**) with dynamic linking (non-static build), it expands to `__declspec(dllimport)`.\n");
+            fmt::print(out(), " *          In all other cases (static builds or non-Windows platforms), it expands to nothing.\n");
+            fmt::print(out(), " *          This allows proper importing of symbols from DLLs on Windows platforms.\n");
+            fmt::print(out(), " * @note    Define `{}` for static library configuration.\n", state.macros[StaticBuild]);
+            if (state.addDocGroups) {
+                fmt::print(out(), " * @ingroup macros\n");
+            }
+            fmt::print(out(), " */\n");
+            fmt::print(out(), "\n");
+        }
         fmt::print(out(), "#ifndef {}\n", state.macros[ImportApi]);
         fmt::print(out(), "# if defined(_MSC_VER) && !defined({})\n", state.macros[StaticBuild]);
         fmt::print(out(), "#  define {} __declspec(dllimport)\n", state.macros[ImportApi]);
@@ -414,7 +428,61 @@ macros for the )"s + std::string(apiName.data(), apiName.length()) +
         fmt::print(out(), "# define {}\n", state.macros[PlatformWeb]);
         fmt::print(out(), "#else\n");
         fmt::print(out(), "# error unsupported platform\n");
-        fmt::print(out(), "#endif\n");
+        fmt::print(out(), "#endif\n\n");
+
+        if (state.stdTypes) {
+            fmt::print(out(), "#include <stdint.h>\n");
+            if (state.boolType == IDL_BOOL_TYPE_STD_BOOL) {
+                fmt::print(out(), "#include <stdbool.h>\n");
+            }
+        } else {
+            if (state.addDoc && state.addDocGroups) {
+                fmt::print(out(), "/**\n");
+                fmt::print(out(), " * @addtogroup types Types\n");
+                fmt::print(out(), " * @{{\n");
+                fmt::print(out(), " */\n");
+                fmt::print(out(), "\n");
+                fmt::print(out(), "/**\n");
+                fmt::print(out(), " * @name  Platform-independent type definitions.\n");
+                fmt::print(out(), " * @brief Fixed-size types guaranteed to work across all supported platforms.\n");
+                fmt::print(out(), " * @{{\n");
+                fmt::print(out(), " */\n");
+            }
+            fmt::print(out(), "#include <stdint.h>\n");
+            if (state.boolType == IDL_BOOL_TYPE_STD_BOOL) {
+                fmt::print(out(), "#include <stdbool.h>\n");
+            }
+
+            std::vector<std::tuple<std::string_view, std::string, ASTNodeRef>> types;
+            for (auto type : node.getChilds<IDL_AST_NODE_TYPE_TRIVIAL_TYPE>()) {
+                if (!type.is<IDL_AST_NODE_TYPE_VOID>()) {
+                    types.emplace_back(type.accept<CNativeType>(state.boolType).str, type.accept<CName>(state.stdTypes, state.boolType).str, type);
+                }
+            }
+
+            const auto nativeMaxLen = std::ranges::max(types | std::views::transform([](const auto& type) {
+                return std::get<0>(type).length();
+            }));
+
+            const auto maxLen = std::ranges::max(types | std::views::transform([](const auto& type) {
+                return std::get<1>(type).length();
+            }));
+
+            for (const auto& [native, type, node] : types) {
+                fmt::print(out(), "typedef {:{}} {};", native, nativeMaxLen, type);
+                if (state.addDoc) {
+                    fmt::print(out(), "{:>{}}", "", maxLen - type.length());
+                    printIDoc(node);
+                }
+                fmt::print(out(), "\n");
+            }
+
+            if (state.addDoc && state.addDocGroups) {
+                fmt::print(out(), "/** @}} */\n");
+                fmt::print(out(), "\n");
+                fmt::print(out(), "/** @}} */\n");
+            }
+        }
     }
 
     std::ostream& out() noexcept {
@@ -432,11 +500,11 @@ macros for the )"s + std::string(apiName.data(), apiName.length()) +
         if (!postfix.empty() && !state.single) {
             std::string postfixUpper(postfix.data(), postfix.length());
             postfixUpper = convert(postfixUpper, Case::ScreamingSnakeCase);
-            name         = includeFullame(node, false, '-', postfix);
-            includeGuard = includeFullame(node, true, '_', postfixUpper, 'H');
+            name         = getFullname(node, false, '-', postfix);
+            includeGuard = getFullname(node, true, '_', postfixUpper, 'H');
         } else {
-            name         = includeFullame(node, false, '-');
-            includeGuard = includeFullame(node, true, '_', 'H');
+            name         = getFullname(node, false, '-');
+            includeGuard = getFullname(node, true, '_', 'H');
             doc          = &overrideDocStub;
         }
         auto isImport = node.is<IDL_AST_NODE_TYPE_IMPORT>();
@@ -481,9 +549,9 @@ macros for the )"s + std::string(apiName.data(), apiName.length()) +
     }
 
     template <typename... Postfix>
-    static std::string includeFullame(ASTNodeRef& node, bool isUpper, char infix, Postfix&&... postfix) {
+    std::string getFullname(ASTNodeRef& node, bool isUpper, char infix, Postfix&&... postfix) {
         std::ostringstream ss;
-        ss << node.accept<CName>(true, infix, isUpper).str;
+        ss << node.accept<CName>(state.stdTypes, state.boolType, true, infix, isUpper).str;
         if (sizeof...(postfix) > 0) {
             ((ss << infix, ss << postfix), ...);
         }
@@ -498,14 +566,20 @@ macros for the )"s + std::string(apiName.data(), apiName.length()) +
 void generate(Writer& writer) {
     constexpr auto filters =
         ASTNodeRef::SkipDocs | ASTNodeRef::SkipAttrBuiltins | ASTNodeRef::SkipAttrs | ASTNodeRef::SkipLiterals | ASTNodeRef::SkipTrivials;
-    uint32_t indents  = 4;
-    bool addDocGroups = false;
+    uint32_t indents         = 4;
+    bool addDoc              = false;
+    bool addDocGroups        = false;
+    bool stdTypes            = false;
+    idl_bool_type_t boolType = IDL_BOOL_TYPE_DEFAULT;
     if (auto options = writer.options()) {
         indents       = options->getIndents();
         auto cOptions = options->getCOptions();
+        addDoc        = cOptions.add_doc;
         addDocGroups  = cOptions.add_doc_groups;
+        stdTypes      = options->getStdTypes();
+        boolType      = options->getBoolType();
     }
-    State state{ writer, indents, addDocGroups };
+    State state{ writer, indents, addDoc, addDocGroups, stdTypes, boolType };
     writer.api().acceptRecursive<ASTVisitor>(filters, std::ref(state));
 }
 

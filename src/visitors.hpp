@@ -5,8 +5,100 @@
 
 namespace idl {
 
+struct CNativeType {
+    explicit CNativeType(idl_bool_type_t boolType) noexcept : boolType(boolType) {
+    }
+
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_VOID>) noexcept {
+        str = "void";
+    }
+
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_DATA>) noexcept {
+        str = "void*";
+    }
+
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_CHAR>) noexcept {
+        str = "char";
+    }
+
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_STR>) noexcept {
+        str = "const char*";
+    }
+
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_BOOL>) noexcept {
+        switch (boolType) {
+            case IDL_BOOL_TYPE_INT_32:
+                str = "int32_t";
+                break;
+            case IDL_BOOL_TYPE_DEFAULT:
+            case IDL_BOOL_TYPE_INT_8:
+                str = "int8_t";
+                break;
+            case IDL_BOOL_TYPE_STD_BOOL:
+                str = "bool";
+                break;
+            default:
+                assert(!"unreachable code");
+        }
+    }
+
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_INT_8>) noexcept {
+        str = "int8_t";
+    }
+
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_UINT_8>) noexcept {
+        str = "uint8_t";
+    }
+
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_INT_16>) noexcept {
+        str = "int16_t";
+    }
+
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_UINT_16>) noexcept {
+        str = "uint16_t";
+    }
+
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_INT_32>) noexcept {
+        str = "int32_t";
+    }
+
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_UINT_32>) noexcept {
+        str = "uint32_t";
+    }
+
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_INT_64>) noexcept {
+        str = "int64_t";
+    }
+
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_UINT_64>) noexcept {
+        str = "uint64_t";
+    }
+
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_FLOAT_32>) noexcept {
+        str = "float";
+    }
+
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_FLOAT_64>) noexcept {
+        str = "double";
+    }
+
+    template <ASTNodeType Type>
+    void visit(ASTNodeRef&, Tag<Type>) noexcept {
+        assert(!"unreachable code");
+    }
+
+    idl_bool_type_t boolType;
+    std::string_view str;
+};
+
 struct CName {
-    CName(bool includeImports = false, char separator = '_', std::optional<bool> isUpper = std::nullopt) noexcept :
+    CName(bool stdTypes,
+          idl_bool_type_t boolType,
+          bool includeImports         = false,
+          char separator              = '_',
+          std::optional<bool> isUpper = std::nullopt) noexcept :
+        stdTypes(stdTypes),
+        boolType(boolType),
         includeImports(includeImports),
         separator(separator),
         isUpper(isUpper) {
@@ -31,84 +123,62 @@ struct CName {
         }
     }
 
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_BOOL>) noexcept {
+        nativeOrLibType(node);
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_INT_8>) noexcept {
+        nativeOrLibType(node);
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_UINT_8>) noexcept {
+        nativeOrLibType(node);
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_INT_16>) noexcept {
+        nativeOrLibType(node);
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_UINT_16>) noexcept {
+        nativeOrLibType(node);
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_INT_32>) noexcept {
+        nativeOrLibType(node);
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_UINT_32>) noexcept {
+        nativeOrLibType(node);
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_INT_64>) noexcept {
+        nativeOrLibType(node);
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_UINT_64>) noexcept {
+        nativeOrLibType(node);
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_FLOAT_32>) noexcept {
+        nativeOrLibType(node);
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_FLOAT_64>) noexcept {
+        nativeOrLibType(node);
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_STR>) noexcept {
+        nativeOrLibType(node);
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_DATA>) noexcept {
+        nativeOrLibType(node);
+    }
+
     template <ASTNodeType Type>
     void visit(ASTNodeRef& node, Tag<Type>) noexcept {
         str = cname(node);
     }
-
-    /*
-    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_VOID>) {
-        str = ctx.useStdTypes() ? "void" : cname(node) + "_t";
-    }
-
-    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_CHAR>) {
-        str = ctx.useStdTypes() ? "char" : cname(node) + "_t";
-    }
-
-    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_STR>) {
-        str = ctx.useStdTypes() ? "const char*" : cname(node) + "_t";
-    }
-
-    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_BOOL>) {
-        switch (ctx.boolType()) {
-            case BoolType::Int32:
-                str = ctx.useStdTypes() ? "uint32_t" : cname(node) + "_t";
-                break;
-            case BoolType::Int8:
-                str = ctx.useStdTypes() ? "uint8_t" : cname(node) + "_t";
-                break;
-            case BoolType::StdBool:
-                str = ctx.useStdTypes() ? "bool" : cname(node) + "_t";
-                break;
-            default:
-                assert(!"unreachable code");
-                break;
-        }
-    }
-
-    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_INT_8>) {
-        str = ctx.useStdTypes() ? "int8_t" : cname(node) + "_t";
-    }
-
-    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_UINT_8>) {
-        str = ctx.useStdTypes() ? "uint8_t" : cname(node) + "_t";
-    }
-
-    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_INT_16>) {
-        str = ctx.useStdTypes() ? "int16_t" : cname(node) + "_t";
-    }
-
-    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_UINT_16>) {
-        str = ctx.useStdTypes() ? "uint16_t" : cname(node) + "_t";
-    }
-
-    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_INT_32>) {
-        str = ctx.useStdTypes() ? "int32_t" : cname(node) + "_t";
-    }
-
-    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_UINT_32>) {
-        str = ctx.useStdTypes() ? "uint32_t" : cname(node) + "_t";
-    }
-
-    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_INT_64>) {
-        str = ctx.useStdTypes() ? "int64_t" : cname(node) + "_t";
-    }
-
-    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_UINT_64>) {
-        str = ctx.useStdTypes() ? "uint64_t" : cname(node) + "_t";
-    }
-
-    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_FLOAT_32 {
-        str = ctx.useStdTypes() ? "float" : cname(node) + "_t";
-    }
-
-    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_FLOAT_64>) {
-        str = ctx.useStdTypes() ? "double" : cname(node) + "_t";
-    }
-
-    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_DATA>) {
-        str = ctx.useStdTypes() ? "void*" : cname(node) + "_t";
-    }*/
 
     std::string cnameDecl(ASTNodeRef& decl, bool upper) {
         assert(decl.is<IDL_AST_NODE_TYPE_DECL>());
@@ -125,9 +195,7 @@ struct CName {
         }
         auto screaming = isUpper ? isUpper.value() : upper;
         auto str       = decl.name();
-        return convert({ str.data(), str.length() },
-                       screaming ? Case::ScreamingSnakeCase : Case::SnakeCase,
-                       nums.empty() ? nullptr : &nums);
+        return convert({ str.data(), str.length() }, screaming ? Case::ScreamingSnakeCase : Case::SnakeCase, nums.empty() ? nullptr : &nums);
     }
 
     std::string cname(ASTNodeRef decl, bool upper = false) {
@@ -153,14 +221,25 @@ struct CName {
         return ss.str();
     }
 
+    void nativeOrLibType(ASTNodeRef& node) {
+        if (stdTypes) {
+            const auto native = node.accept<CNativeType>(boolType).str;
+            str.assign(native.data(), native.length());
+        } else {
+            str = cname(node) + "_t";
+        }
+    }
+
     std::string str;
+    bool stdTypes;
+    idl_bool_type_t boolType;
     bool includeImports;
     char separator;
     std::optional<bool> isUpper;
 };
 
 struct CLiteral {
-    explicit CLiteral(bool hex = false) noexcept : hex(hex) {
+    explicit CLiteral(bool stdTypes, idl_bool_type_t boolType, bool hex = false) noexcept : stdTypes(stdTypes), boolType(boolType), hex(hex) {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_LITERAL_STR>) {
@@ -183,8 +262,8 @@ struct CLiteral {
 
         auto isUnsigned = false;
         if (type.is<IDL_AST_NODE_TYPE_INTEGER_TYPE>()) {
-            isUnsigned = type.is<IDL_AST_NODE_TYPE_UINT_8>() || type.is<IDL_AST_NODE_TYPE_UINT_16>() ||
-                         type.is<IDL_AST_NODE_TYPE_UINT_32>() || type.is<IDL_AST_NODE_TYPE_UINT_64>();
+            isUnsigned = type.is<IDL_AST_NODE_TYPE_UINT_8>() || type.is<IDL_AST_NODE_TYPE_UINT_16>() || type.is<IDL_AST_NODE_TYPE_UINT_32>() ||
+                         type.is<IDL_AST_NODE_TYPE_UINT_64>();
         }
 
         if (isUnsigned) {
@@ -200,7 +279,7 @@ struct CLiteral {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_DECL_REF>) {
-        str = node.resolveRef().accept<CName>().str;
+        str = node.resolveRef().accept<CName>(stdTypes, boolType).str;
     }
 
     template <ASTNodeType Type>
@@ -209,6 +288,8 @@ struct CLiteral {
     }
 
     std::string str;
+    bool stdTypes;
+    idl_bool_type_t boolType;
     bool hex;
 };
 

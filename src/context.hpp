@@ -90,10 +90,7 @@ public:
         _symbols[fullnameLowercase] = decl;
     }
 
-    [[nodiscard]] ASTNodeRef findSymbol(ASTNodeRef& decl,
-                                        const ASTLocation& loc,
-                                        std::string_view name,
-                                        bool onlyType) {
+    [[nodiscard]] ASTNodeRef findSymbol(ASTNodeRef& decl, const ASTLocation& loc, std::string_view name, bool onlyType) {
         assert(decl.is<IDL_AST_NODE_TYPE_DECL>());
         char buffer[500];
         char buffer2[50];
@@ -193,7 +190,7 @@ public:
         ASTNodeHandle last = HandleNone;
 
         auto addBuiltin = [this, api = node, &loc, &last]<ASTNodeType Type>(
-                              std::string_view name, std::string_view detail, Tag<Type>) mutable {
+                              std::string_view name, std::string_view detail, Tag<Type>, std::string_view cname = "") mutable {
             auto node                         = _result->allocNode(loc, Tag<Type>::type);
             _result->getNode(node)->name.name = _result->intern(name);
             _result->getNode(node)->parent    = api.handle();
@@ -215,7 +212,14 @@ public:
             } else {
                 _result->getNode(last)->sibling = node;
             }
-            getNodeRef(node).setEvaulated();
+            auto ref = getNodeRef(node);
+            ref.setEvaulated();
+            addNode<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(ref, detail);
+            if (!cname.empty()) {
+                addNode<IDL_AST_NODE_TYPE_ATTR_CNAME>(ref, cname);
+            } else {
+                addNode<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>(ref, int64_t(0));
+            }
             _trivials[Tag<Type>::type] = node;
 
             last = node;
@@ -224,17 +228,17 @@ public:
         addBuiltin("Void"sv, "void type."sv, Tag<IDL_AST_NODE_TYPE_VOID>{});
         addBuiltin("Char"sv, "symbol type."sv, Tag<IDL_AST_NODE_TYPE_CHAR>{});
         addBuiltin("Bool"sv, "boolean type."sv, Tag<IDL_AST_NODE_TYPE_BOOL>{});
-        addBuiltin("Int8"sv, "8 bit signed integer."sv, Tag<IDL_AST_NODE_TYPE_INT_8>{});
+        addBuiltin("Int8"sv, "8 bit signed integer."sv, Tag<IDL_AST_NODE_TYPE_INT_8>{}, "sint8");
         addBuiltin("Uint8"sv, "8 bit unsigned integer."sv, Tag<IDL_AST_NODE_TYPE_UINT_8>{});
-        addBuiltin("Int16"sv, "16 bit signed integer."sv, Tag<IDL_AST_NODE_TYPE_INT_16>{});
+        addBuiltin("Int16"sv, "16 bit signed integer."sv, Tag<IDL_AST_NODE_TYPE_INT_16>{}, "sint16");
         addBuiltin("Uint16"sv, "16 bit unsigned integer."sv, Tag<IDL_AST_NODE_TYPE_UINT_16>{});
-        addBuiltin("Int32"sv, "32 bit signed integer."sv, Tag<IDL_AST_NODE_TYPE_INT_32>{});
+        addBuiltin("Int32"sv, "32 bit signed integer."sv, Tag<IDL_AST_NODE_TYPE_INT_32>{}, "sint32");
         addBuiltin("Uint32"sv, "32 bit unsigned integer."sv, Tag<IDL_AST_NODE_TYPE_UINT_32>{});
-        addBuiltin("Int64"sv, "64 bit signed integer."sv, Tag<IDL_AST_NODE_TYPE_INT_64>{});
+        addBuiltin("Int64"sv, "64 bit signed integer."sv, Tag<IDL_AST_NODE_TYPE_INT_64>{}, "sint64");
         addBuiltin("Uint64"sv, "64 bit unsigned integer."sv, Tag<IDL_AST_NODE_TYPE_UINT_64>{});
         addBuiltin("Float32"sv, "32 bit float point."sv, Tag<IDL_AST_NODE_TYPE_FLOAT_32>{});
         addBuiltin("Float64"sv, "64 bit float point."sv, Tag<IDL_AST_NODE_TYPE_FLOAT_64>{});
-        addBuiltin("Str"sv, "utf8 string."sv, Tag<IDL_AST_NODE_TYPE_STR>{});
+        addBuiltin("Str"sv, "utf8 string."sv, Tag<IDL_AST_NODE_TYPE_STR>{}, "utf8");
         addBuiltin("Data"sv, "pointer to data."sv, Tag<IDL_AST_NODE_TYPE_DATA>{});
     }
 
@@ -276,10 +280,9 @@ public:
     }
 
     void addLiteral(ASTNodeRef node, DeclRef value) {
-        auto declRef                 = addNode<IDL_AST_NODE_TYPE_DECL_REF>(node);
-        declRef->valueDeclRef.symbol = std::holds_alternative<String>(value.name)
-                                           ? std::get<String>(value.name)
-                                           : result()->intern(std::get<std::string_view>(value.name));
+        auto declRef = addNode<IDL_AST_NODE_TYPE_DECL_REF>(node);
+        declRef->valueDeclRef.symbol =
+            std::holds_alternative<String>(value.name) ? std::get<String>(value.name) : result()->intern(std::get<std::string_view>(value.name));
     }
 
     template <idl_status_t Status, typename... Args>
@@ -300,8 +303,7 @@ public:
 
 private:
     template <size_t N>
-    std::string_view
-    concat(char (&buffer)[N], std::string_view str1, std::string_view str2, size_t lower, char delimeter = '.') {
+    std::string_view concat(char (&buffer)[N], std::string_view str1, std::string_view str2, size_t lower, char delimeter = '.') {
         if (str1.length() + str2.length() + 2 >= N) {
             throw std::bad_alloc();
         }

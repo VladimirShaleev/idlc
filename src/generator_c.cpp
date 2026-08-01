@@ -558,26 +558,26 @@ macros for the )"s + std::string(apiName.data(), apiName.length()) +
             auto printVersionComponent = [&](Macro macro, int64_t value) {
                 if (state.addDoc) {
                     fmt::print(out(), "/**\n");
-                    fmt::print(out(), " * @brief {:{}}Major version number (API-breaking changes).\n", "", spaces);
-                    fmt::print(out(), " * @sa    {:{}}{}\n", "", spaces, state.macros[Version]);
-                    fmt::print(out(), " * @sa    {:{}}{}\n", "", spaces, state.macros[VersionString]);
+                    fmt::print(out(), " * @brief {:{}}Major version number (API-breaking changes).\n"sv, ""sv, spaces);
+                    fmt::print(out(), " * @sa    {:{}}{}\n"sv, ""sv, spaces, state.macros[Version]);
+                    fmt::print(out(), " * @sa    {:{}}{}\n"sv, ""sv, spaces, state.macros[VersionString]);
                     if (state.addDocGroups) {
-                        fmt::print(out(), " * @ingroup macros\n");
+                        fmt::print(out(), " * @ingroup macros\n"sv);
                     }
-                    fmt::print(out(), " */\n");
+                    fmt::print(out(), " */\n"sv);
                 }
-                fmt::print(out(), "#define {} {}\n", state.macros[macro], value);
+                fmt::print(out(), "#define {} {}\n"sv, state.macros[macro], value);
                 if (state.addDoc) {
                     fmt::print(out(), "\n");
                 }
             };
             if (state.addDoc) {
-                fmt::print(out(), "\n");
-                fmt::print(out(), "/**\n");
-                fmt::print(out(), " * @name  Version Components.\n");
-                fmt::print(out(), " * @brief Individual components of the library version.\n");
-                fmt::print(out(), " * @{{\n");
-                fmt::print(out(), " */\n");
+                fmt::print(out(), "\n"sv);
+                fmt::print(out(), "/**\n"sv);
+                fmt::print(out(), " * @name  Version Components.\n"sv);
+                fmt::print(out(), " * @brief Individual components of the library version.\n"sv);
+                fmt::print(out(), " * @{{\n"sv);
+                fmt::print(out(), " */\n"sv);
             }
             const auto& ver = std::get<Semver>(version);
             fmt::print(out(), "\n");
@@ -585,8 +585,125 @@ macros for the )"s + std::string(apiName.data(), apiName.length()) +
             printVersionComponent(VersionMinor, ver.minor);
             printVersionComponent(VersionMicro, ver.micro);
             if (state.addDoc) {
-                fmt::print(out(), "/** @}} */");
+                fmt::print(out(), "/** @}} */\n"sv);
+                fmt::print(out(), "\n"sv);
+                fmt::print(out(), "/**\n"sv);
+                fmt::print(out(), " * @name  Version Utilities.\n"sv);
+                fmt::print(out(), " * @brief Macros for working with version numbers.\n"sv);
+                fmt::print(out(), " * @{{\n"sv);
+                fmt::print(out(), " */\n"sv);
+                fmt::print(out(), "\n"sv);
+                fmt::print(out(), "/**\n");
+                fmt::print(out(), " * @brief     Encodes version components into a single integer.\n"sv);
+                fmt::print(out(), " * @details   Combines major, minor, and micro versions into a 32-bit value:\n"sv);
+                fmt::print(out(), " *              - Bits 24-31: Major version\n"sv);
+                fmt::print(out(), " *              - Bits 16-23: Minor version\n"sv);
+                fmt::print(out(), " *              - Bits 0-15: Micro version\n"sv);
+                fmt::print(out(), " *            \n"sv);
+                fmt::print(out(), " * @param[in] major Major version number.\n"sv);
+                fmt::print(out(), " * @param[in] minor Minor version number.\n"sv);
+                fmt::print(out(), " * @param[in] micro Micro version number.\n"sv);
+                fmt::print(out(), " * @return    Encoded version as unsigned long.\n"sv);
+                fmt::print(out(), " * @sa        {}\n"sv, state.macros[Version]);
+                if (state.addDocGroups) {
+                    fmt::print(out(), " * @ingroup   macros\n"sv);
+                }
+                fmt::print(out(), " */\n");
+            } else {
                 fmt::print(out(), "\n");
+            }
+            fmt::print(
+                out(), "#define {}(major, minor, micro) (((unsigned long) major) << 16 | (minor) << 8 | (micro))\n"sv, state.macros[VersionEncode]);
+            if (state.addDoc) {
+                fmt::print(out(), "\n");
+                fmt::print(out(), "/**\n"sv);
+                fmt::print(out(), " * @brief     Internal macro for string version generation.\n"sv);
+                fmt::print(out(),
+                           " * @details   Helper macro that stringizes version components (e.g., {0}, {1}, {2} -> \"{0}.{1}.{2}\").\n"sv,
+                           ver.major,
+                           ver.minor,
+                           ver.micro);
+                fmt::print(out(), " * @param[in] major Major version number.\n"sv);
+                fmt::print(out(), " * @param[in] minor Minor version number.\n"sv);
+                fmt::print(out(), " * @param[in] micro Micro version number.\n"sv);
+                fmt::print(out(), " * @return    Stringified version.\n"sv);
+                fmt::print(out(), " * @note      For internal use only.\n"sv);
+                if (state.addDocGroups) {
+                    fmt::print(out(), " * @ingroup   macros\n"sv);
+                }
+                fmt::print(out(), " * @private\n"sv);
+                fmt::print(out(), " */\n"sv);
+            }
+            fmt::print(out(), "#define {}(major, minor, micro) #major \".\" #minor \".\" #micro\n"sv, state.macros[VersionStringize_]);
+            if (state.addDoc) {
+                fmt::print(out(), "\n");
+                fmt::print(out(), "/**\n"sv);
+                fmt::print(out(), " * @brief     Creates version string from components.\n"sv);
+                fmt::print(out(),
+                           " * @details   Generates a string literal from version components (e.g., {0}, {1}, {2} -> \"{0}.{1}.{2}\").\n"sv,
+                           ver.major,
+                           ver.minor,
+                           ver.micro);
+                fmt::print(out(), " * @param[in] major Major version number.\n"sv);
+                fmt::print(out(), " * @param[in] minor Minor version number.\n"sv);
+                fmt::print(out(), " * @param[in] micro Micro version number.\n"sv);
+                fmt::print(out(), " * @return    Stringified version.\n"sv);
+                fmt::print(out(), " * @sa        {}\n"sv, state.macros[VersionString]);
+                if (state.addDocGroups) {
+                    fmt::print(out(), " * @ingroup   macros\n"sv);
+                }
+                fmt::print(out(), " */\n"sv);
+            }
+            fmt::print(out(),
+                       "#define {}(major, minor, micro) {}(major, minor, micro)\n"sv,
+                       state.macros[VersionStringize],
+                       state.macros[VersionStringize_]);
+            if (state.addDoc) {
+                fmt::print(out(), "\n");
+                fmt::print(out(), "/** @}} */\n");
+                fmt::print(out(), "\n");
+                fmt::print(out(), "/**\n"sv);
+                fmt::print(out(), " * @name  Current Version.\n"sv);
+                fmt::print(out(), " * @brief Macros representing the current library version.\n"sv);
+                fmt::print(out(), " * @{{\n"sv);
+                fmt::print(out(), " */\n"sv);
+                fmt::print(out(), "\n"sv);
+                fmt::print(out(), "/**\n"sv);
+                fmt::print(out(), " * @brief   Encoded library version as integer.\n"sv);
+                fmt::print(out(), " * @details Combined version value suitable for numeric comparisons.\n"sv);
+                fmt::print(out(), " *          Use #{} for human-readable format.\n"sv, state.macros[VersionString]);
+                fmt::print(out(), " * @sa      {}\n"sv, state.macros[VersionString]);
+                if (state.addDocGroups) {
+                    fmt::print(out(), " * @ingroup macros\n"sv);
+                }
+                fmt::print(out(), " */\n"sv);
+            } else {
+                fmt::print(out(), "\n"sv);
+            }
+            fmt::print(out(), "#define {} {}( \\\n"sv, state.macros[Version], state.macros[VersionEncode]);
+            fmt::print(out(), "    {}, \\\n"sv, state.macros[VersionMajor]);
+            fmt::print(out(), "    {}, \\\n"sv, state.macros[VersionMinor]);
+            fmt::print(out(), "    {})\n"sv, state.macros[VersionMicro]);
+            fmt::print(out(), "\n"sv);
+            if (state.addDoc) {
+                fmt::print(out(), "/**\n"sv);
+                fmt::print(out(), " * @brief   Library version as human-readable string.\n"sv);
+                fmt::print(
+                    out(), " * @details Version string in \"MAJOR.MINOR.MICRO\" format (e.g., \"{}.{}.{}\").\n"sv, ver.major, ver.minor, ver.micro);
+                fmt::print(out(), " *          Use #{} for numeric comparisons.\n"sv, state.macros[Version]);
+                fmt::print(out(), " * @sa      {}\n"sv, state.macros[Version]);
+                if (state.addDocGroups) {
+                    fmt::print(out(), " * @ingroup macros\n"sv);
+                }
+                fmt::print(out(), " */\n"sv);
+            }
+            fmt::print(out(), "#define {} {}( \\\n"sv, state.macros[VersionString], state.macros[VersionStringize]);
+            fmt::print(out(), "    {}, \\\n"sv, state.macros[VersionMajor]);
+            fmt::print(out(), "    {}, \\\n"sv, state.macros[VersionMinor]);
+            fmt::print(out(), "    {})\n"sv, state.macros[VersionMicro]);
+            if (state.addDoc) {
+                fmt::print(out(), "\n");
+                fmt::print(out(), "/** @}} */\n");
             }
         } else {
             const auto& ver = std::get<std::string_view>(version);

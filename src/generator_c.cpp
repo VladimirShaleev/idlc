@@ -32,7 +32,15 @@ enum Macro {
     PlatformLinux,
     PlatformWeb,
     Constexpr,
-    Constexpr14
+    Constexpr14,
+    VersionMajor,
+    VersionMinor,
+    VersionMicro,
+    VersionEncode,
+    VersionStringize_,
+    VersionStringize,
+    Version,
+    VersionString
 };
 
 struct Include {
@@ -250,7 +258,8 @@ struct ASTVisitor {
             state.single = true;
         }
         addMacros(node);
-        addPlatformFile(node);
+        addPlatformHeader(node);
+        addVersionHeader(node);
         pushImport(node, ""sv, true);
     }
 
@@ -351,19 +360,27 @@ struct ASTVisitor {
     }
 
     void addMacros(ASTNodeRef node) {
-        state.macros[ImportApi]       = getFullname(node, false, '_', "api"sv);
-        state.macros[StaticBuild]     = getFullname(node, true, '_', "STATIC"sv, "BUILD"sv);
-        state.macros[PlatformWindows] = getFullname(node, true, '_', "PLATFORM"sv, "WINDOWS"sv);
-        state.macros[PlatformIOS]     = getFullname(node, true, '_', "PLATFORM"sv, "IOS"sv);
-        state.macros[PlatformMacOS]   = getFullname(node, true, '_', "PLATFORM"sv, "MAC"sv, "OS"sv);
-        state.macros[PlatformAndroid] = getFullname(node, true, '_', "PLATFORM"sv, "ANDROID"sv);
-        state.macros[PlatformLinux]   = getFullname(node, true, '_', "PLATFORM"sv, "LINUX"sv);
-        state.macros[PlatformWeb]     = getFullname(node, true, '_', "PLATFORM"sv, "WEB"sv);
-        state.macros[Constexpr]       = getFullname(node, true, '_', "CONSTEXPR"sv);
-        state.macros[Constexpr14]     = getFullname(node, true, '_', "CONSTEXPR"sv, "14"sv);
+        state.macros[ImportApi]         = getFullname(node, false, '_', "api"sv);
+        state.macros[StaticBuild]       = getFullname(node, true, '_', "STATIC"sv, "BUILD"sv);
+        state.macros[PlatformWindows]   = getFullname(node, true, '_', "PLATFORM"sv, "WINDOWS"sv);
+        state.macros[PlatformIOS]       = getFullname(node, true, '_', "PLATFORM"sv, "IOS"sv);
+        state.macros[PlatformMacOS]     = getFullname(node, true, '_', "PLATFORM"sv, "MAC"sv, "OS"sv);
+        state.macros[PlatformAndroid]   = getFullname(node, true, '_', "PLATFORM"sv, "ANDROID"sv);
+        state.macros[PlatformLinux]     = getFullname(node, true, '_', "PLATFORM"sv, "LINUX"sv);
+        state.macros[PlatformWeb]       = getFullname(node, true, '_', "PLATFORM"sv, "WEB"sv);
+        state.macros[Constexpr]         = getFullname(node, true, '_', "CONSTEXPR"sv);
+        state.macros[Constexpr14]       = getFullname(node, true, '_', "CONSTEXPR"sv, "14"sv);
+        state.macros[VersionMajor]      = getFullname(node, true, '_', "VERSION"sv, "MAJOR"sv);
+        state.macros[VersionMinor]      = getFullname(node, true, '_', "VERSION"sv, "MINOR"sv);
+        state.macros[VersionMicro]      = getFullname(node, true, '_', "VERSION"sv, "MICRO"sv);
+        state.macros[VersionEncode]     = getFullname(node, true, '_', "VERSION"sv, "ENCODE"sv);
+        state.macros[VersionStringize_] = getFullname(node, true, '_', "VERSION"sv, "STRINGIZE_"sv);
+        state.macros[VersionStringize]  = getFullname(node, true, '_', "VERSION"sv, "STRINGIZE"sv);
+        state.macros[Version]           = getFullname(node, true, '_', "VERSION"sv);
+        state.macros[VersionString]     = getFullname(node, true, '_', "VERSION"sv, "STRING"sv);
     }
 
-    void addPlatformFile(ASTNodeRef node) {
+    void addPlatformHeader(ASTNodeRef node) {
         auto brief   = ASTNodeRef::byType<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>(node.ctx());
         auto detial  = ASTNodeRef::byType<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(node.ctx());
         auto apiName = state.writer.api().name();
@@ -436,7 +453,7 @@ macros for the )"s + std::string(apiName.data(), apiName.length()) +
                 fmt::print(out(), "#include <stdbool.h>\n");
             }
         } else {
-            if (state.addDoc && state.addDocGroups) {
+            if (state.addDocGroups) {
                 fmt::print(out(), "/**\n");
                 fmt::print(out(), " * @addtogroup types Types\n");
                 fmt::print(out(), " * @{{\n");
@@ -477,11 +494,102 @@ macros for the )"s + std::string(apiName.data(), apiName.length()) +
                 fmt::print(out(), "\n");
             }
 
-            if (state.addDoc && state.addDocGroups) {
+            if (state.addDocGroups) {
                 fmt::print(out(), "/** @}} */\n");
                 fmt::print(out(), "\n");
                 fmt::print(out(), "/** @}} */\n");
             }
+        }
+    }
+
+    void addVersionHeader(ASTNodeRef node) {
+        auto brief   = ASTNodeRef::byType<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>(node.ctx());
+        auto detial  = ASTNodeRef::byType<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(node.ctx());
+        auto apiName = state.writer.api().name();
+
+        OverridDoc doc;
+        doc[brief]  = "Library version information and utilities."s;
+        doc[detial] = fmt::format("This header provides version information for the {} library,\n"
+                                  "including version number components and macros for version comparison\n"
+                                  "and string generation. It supports:\n"
+                                  "  - Major/Minor/Micro version components\n"
+                                  "  - Integer version encoding\n"
+                                  "  - String version generation\n",
+                                  apiName);
+
+        pushImport(node, "version", false, doc);
+
+        struct Semver {
+            int64_t major;
+            int64_t minor;
+            int64_t micro;
+        };
+
+        std::variant<Semver, std::string_view> version;
+        bool setVersion = false;
+
+        if (const auto options = state.writer.options()) {
+            if (const auto ver = options->getVersion()) {
+                version    = Semver{ ver->major, ver->minor, ver->micro };
+                setVersion = true;
+            }
+        }
+        if (!setVersion) {
+            if (auto ver = node.findChild<IDL_AST_NODE_TYPE_ATTR_VERSION>()) {
+                auto literals = ver.getChilds<IDL_AST_NODE_TYPE_LITERAL>();
+                std::vector<ASTNodeRef> args;
+                args.assign(literals.begin(), literals.end());
+                if (args.size() == 1 && args[0].is<IDL_AST_NODE_TYPE_LITERAL_STR>()) {
+                    version    = args[0].valueStr();
+                    setVersion = true;
+                } else if (args.size() == 3 && args[0].is<IDL_AST_NODE_TYPE_LITERAL_INT>() && args[1].is<IDL_AST_NODE_TYPE_LITERAL_INT>() &&
+                           args[2].is<IDL_AST_NODE_TYPE_LITERAL_INT>()) {
+                    version    = Semver{ args[0]->valueInt, args[1]->valueInt, args[2]->valueInt };
+                    setVersion = true;
+                }
+            }
+        }
+        if (!setVersion) {
+            version = Semver{};
+        }
+
+        if (std::holds_alternative<Semver>(version)) {
+            const int spaces           = state.addDocGroups ? 2 : 0;
+            auto printVersionComponent = [&](Macro macro, int64_t value) {
+                if (state.addDoc) {
+                    fmt::print(out(), "/**\n");
+                    fmt::print(out(), " * @brief {:{}}Major version number (API-breaking changes).\n", "", spaces);
+                    fmt::print(out(), " * @sa    {:{}}{}\n", "", spaces, state.macros[Version]);
+                    fmt::print(out(), " * @sa    {:{}}{}\n", "", spaces, state.macros[VersionString]);
+                    if (state.addDocGroups) {
+                        fmt::print(out(), " * @ingroup macros\n");
+                    }
+                    fmt::print(out(), " */\n");
+                }
+                fmt::print(out(), "#define {} {}\n", state.macros[macro], value);
+                if (state.addDoc) {
+                    fmt::print(out(), "\n");
+                }
+            };
+            if (state.addDoc) {
+                fmt::print(out(), "\n");
+                fmt::print(out(), "/**\n");
+                fmt::print(out(), " * @name  Version Components.\n");
+                fmt::print(out(), " * @brief Individual components of the library version.\n");
+                fmt::print(out(), " * @{{\n");
+                fmt::print(out(), " */\n");
+            }
+            const auto& ver = std::get<Semver>(version);
+            fmt::print(out(), "\n");
+            printVersionComponent(VersionMajor, ver.major);
+            printVersionComponent(VersionMinor, ver.minor);
+            printVersionComponent(VersionMicro, ver.micro);
+            if (state.addDoc) {
+                fmt::print(out(), "/** @}} */");
+                fmt::print(out(), "\n");
+            }
+        } else {
+            const auto& ver = std::get<std::string_view>(version);
         }
     }
 
@@ -578,6 +686,9 @@ void generate(Writer& writer) {
         addDocGroups  = cOptions.add_doc_groups;
         stdTypes      = options->getStdTypes();
         boolType      = options->getBoolType();
+    }
+    if (!addDoc) {
+        addDocGroups = false;
     }
     State state{ writer, indents, addDoc, addDocGroups, stdTypes, boolType };
     writer.api().acceptRecursive<ASTVisitor>(filters, std::ref(state));

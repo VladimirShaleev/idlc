@@ -173,7 +173,7 @@ int main(int argc, char* argv[]) {
     idlOptions.prefered_original_style = idlOriginal ? 1 : 0;
 
     idl_c_options_t cOptions{};
-    cOptions.add_doc        = 0;
+    cOptions.add_doc        = 1;
     cOptions.add_doc_groups = 1;
 
     idl_options_set_debug_mode(options, 0);

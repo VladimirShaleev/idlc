@@ -31,7 +31,6 @@ enum Macro {
     PlatformAndroid,
     PlatformLinux,
     PlatformWeb,
-    Constexpr,
     Constexpr14,
     VersionMajor,
     VersionMinor,
@@ -40,7 +39,10 @@ enum Macro {
     VersionStringize_,
     VersionStringize,
     Version,
-    VersionString
+    VersionString,
+    BeginEnum,
+    EndEnum,
+    FlagsEnum
 };
 
 struct Include {
@@ -368,7 +370,6 @@ struct ASTVisitor {
         state.macros[PlatformAndroid]   = getFullname(node, true, '_', "PLATFORM"sv, "ANDROID"sv);
         state.macros[PlatformLinux]     = getFullname(node, true, '_', "PLATFORM"sv, "LINUX"sv);
         state.macros[PlatformWeb]       = getFullname(node, true, '_', "PLATFORM"sv, "WEB"sv);
-        state.macros[Constexpr]         = getFullname(node, true, '_', "CONSTEXPR"sv);
         state.macros[Constexpr14]       = getFullname(node, true, '_', "CONSTEXPR"sv, "14"sv);
         state.macros[VersionMajor]      = getFullname(node, true, '_', "VERSION"sv, "MAJOR"sv);
         state.macros[VersionMinor]      = getFullname(node, true, '_', "VERSION"sv, "MINOR"sv);
@@ -378,6 +379,9 @@ struct ASTVisitor {
         state.macros[VersionStringize]  = getFullname(node, true, '_', "VERSION"sv, "STRINGIZE"sv);
         state.macros[Version]           = getFullname(node, true, '_', "VERSION"sv);
         state.macros[VersionString]     = getFullname(node, true, '_', "VERSION"sv, "STRING"sv);
+        state.macros[BeginEnum]         = getFullname(node, true, '_', "BEGIN"sv, "ENUM"sv);
+        state.macros[EndEnum]           = getFullname(node, true, '_', "END"sv, "ENUM"sv);
+        state.macros[FlagsEnum]         = getFullname(node, true, '_', "FLAGS"sv, "ENUM"sv);
     }
 
     void addPlatformHeader(ASTNodeRef node) {
@@ -430,7 +434,7 @@ macros for the )"s + std::string(apiName.data(), apiName.length()) +
         fmt::print(out(), "# include <unistd.h>\n");
         fmt::print(out(), "# if TARGET_OS_IPHONE && !defined({})\n", state.macros[PlatformIOS]);
         fmt::print(out(), "#  define {}\n", state.macros[PlatformIOS]);
-        fmt::print(out(), "# elif TARGET_IPHONE_SIMULATOR && !defined(IDL_PLATFORM_IOS)\n");
+        fmt::print(out(), "# elif TARGET_IPHONE_SIMULATOR && !defined({})\n", state.macros[PlatformIOS]);
         fmt::print(out(), "#  define {}\n", state.macros[PlatformIOS]);
         fmt::print(out(), "# elif TARGET_OS_MAC && !defined({})\n", state.macros[PlatformMacOS]);
         fmt::print(out(), "#  define {}\n", state.macros[PlatformMacOS]);
@@ -498,6 +502,120 @@ macros for the )"s + std::string(apiName.data(), apiName.length()) +
                 fmt::print(out(), "/** @}} */\n");
                 fmt::print(out(), "\n");
                 fmt::print(out(), "/** @}} */\n");
+            }
+
+            if (state.addDoc) {
+                fmt::print(out(), "\n"sv);
+                fmt::print(out(), "/**\n"sv);
+                fmt::print(out(), " * @name  Enum Macros.\n"sv);
+                fmt::print(out(), " * @brief Macros for defining enums with fixed underlying types and flag support.\n"sv);
+                fmt::print(out(), " * @{{\n"sv);
+                fmt::print(out(), " */\n"sv);
+                fmt::print(out(), "\n"sv);
+                fmt::print(out(), "/**\n"sv);
+                fmt::print(out(), " * @def       {}\n"sv, state.macros[BeginEnum]);
+                fmt::print(out(), " * @brief     Begin an enum declaration with a fixed underlying type.\n"sv);
+                fmt::print(out(), " * @details   This macro expands to a typed enum declaration when the compiler\n"sv);
+                fmt::print(out(), " *            supports C++11 or C23 enum class style underlying types. On older\n"sv);
+                fmt::print(out(), " *            compilers it falls back to an untyped C enum.\n"sv);
+                fmt::print(out(), " * @param[in] type The underlying integer type to use for the enum.\n"sv);
+                if (state.addDocGroups) {
+                    fmt::print(out(), " * @ingroup   macros\n"sv);
+                }
+                fmt::print(out(), " */\n"sv);
+                fmt::print(out(), "\n"sv);
+                fmt::print(out(), "/**\n"sv);
+                fmt::print(out(), " * @def       {}\n"sv, state.macros[EndEnum]);
+                fmt::print(out(), " * @brief     End an enum declaration and declare the enum name.\n"sv);
+                fmt::print(out(), " * @details   This macro finishes the enum definition and optionally provides\n"sv);
+                fmt::print(out(), " *            a typedef alias for older C compilers that do not support typed\n"sv);
+                fmt::print(out(), " *            enums. It is paired with `{}`.\n"sv, state.macros[BeginEnum]);
+                fmt::print(out(), " * @param[in] name The enum type name to declare.\n"sv);
+                fmt::print(out(), " * @param[in] type The underlying integer type used for the enum.\n"sv);
+                if (state.addDocGroups) {
+                    fmt::print(out(), " * @ingroup   macros\n"sv);
+                }
+                fmt::print(out(), " */\n"sv);
+            }
+            fmt::print(out(), "\n"sv);
+            fmt::print(out(), "#if defined(__cplusplus)\n"sv);
+            fmt::print(out(), "# define {}(type) typedef enum : type\n"sv, state.macros[BeginEnum]);
+            fmt::print(out(), "# define {}(name, type) name\n"sv, state.macros[EndEnum]);
+            fmt::print(out(), "#elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L\n"sv);
+            fmt::print(out(), "# define {}(type) typedef enum : type\n"sv, state.macros[BeginEnum]);
+            fmt::print(out(), "# define {}(name, type) name\n"sv, state.macros[EndEnum]);
+            fmt::print(out(), "#else\n"sv);
+            fmt::print(out(), "# define {}(type) enum \n"sv, state.macros[BeginEnum]);
+            fmt::print(out(), "# define {}(name, type); typedef type name\n"sv, state.macros[EndEnum]);
+            fmt::print(out(), "#endif\n"sv);
+            if (state.addDoc) {
+                fmt::print(out(), "\n"sv);
+                fmt::print(out(), "/**\n"sv);
+                fmt::print(out(), " * @def       {}\n"sv, state.macros[FlagsEnum]);
+                fmt::print(out(), " * @brief     Enables bit flag operations for enumerations (C++ only).\n"sv);
+                fmt::print(out(), " * @details   Generates overloaded bitwise operators for type-safe flag manipulation:\n"sv);
+                fmt::print(out(), " *            - Bitwise NOT (~)\n"sv);
+                fmt::print(out(), " *            - OR (|, |=)\n"sv);
+                fmt::print(out(), " *            - AND (&, &=)\n"sv);
+                fmt::print(out(), " *            - XOR (^, ^=)\n"sv);
+                fmt::print(out(), " *\n"sv);
+                fmt::print(out(), " * @param[in] idl_enum_t Enumeration type to enhance with flag operations.\n"sv);
+                fmt::print(out(), " * @note      Only active in C++ mode. In C, expands to nothing.\n"sv);
+                if (state.addDocGroups) {
+                    fmt::print(out(), " * @ingroup   macros\n"sv);
+                }
+                fmt::print(out(), " */\n"sv);
+            }
+            fmt::print(out(), "\n"sv);
+            fmt::print(out(), "#ifdef __cplusplus\n"sv);
+            fmt::print(out(), "# include <type_traits>\n"sv);
+            std::vector<std::string> flags;
+            flags.push_back(fmt::format("# define {}(idl_enum_t)"sv, state.macros[FlagsEnum]));
+            flags.push_back(fmt::format("    inline constexpr idl_enum_t operator~(idl_enum_t lhr) noexcept {{"sv));
+            flags.push_back(fmt::format("        using U         = typename std::underlying_type<idl_enum_t>::type;"sv));
+            flags.push_back(fmt::format("        using UnsignedU = typename std::make_unsigned<U>::type;"sv));
+            flags.push_back(fmt::format("        return static_cast<idl_enum_t>(~static_cast<UnsignedU>(lhr));"sv));
+            flags.push_back(fmt::format("    }}"sv));
+            flags.push_back(fmt::format("    inline constexpr idl_enum_t operator|(idl_enum_t lhr, idl_enum_t rhs) noexcept {{"sv));
+            flags.push_back(fmt::format("        using U         = typename std::underlying_type<idl_enum_t>::type;"sv));
+            flags.push_back(fmt::format("        using UnsignedU = typename std::make_unsigned<U>::type;"sv));
+            flags.push_back(fmt::format("        return static_cast<idl_enum_t>(static_cast<UnsignedU>(lhr) | static_cast<UnsignedU>(rhs));"sv));
+            flags.push_back(fmt::format("    }}"sv));
+            flags.push_back(fmt::format("    inline constexpr idl_enum_t operator&(idl_enum_t lhr, idl_enum_t rhs) noexcept {{"sv));
+            flags.push_back(fmt::format("        using U         = typename std::underlying_type<idl_enum_t>::type;"sv));
+            flags.push_back(fmt::format("        using UnsignedU = typename std::make_unsigned<U>::type;"sv));
+            flags.push_back(fmt::format("        return static_cast<idl_enum_t>(static_cast<UnsignedU>(lhr) & static_cast<UnsignedU>(rhs));"sv));
+            flags.push_back(fmt::format("    }}"sv));
+            flags.push_back(fmt::format("    inline constexpr idl_enum_t operator^(idl_enum_t lhr, idl_enum_t rhs) noexcept {{"sv));
+            flags.push_back(fmt::format("        using U         = typename std::underlying_type<idl_enum_t>::type;"sv));
+            flags.push_back(fmt::format("        using UnsignedU = typename std::make_unsigned<U>::type;"sv));
+            flags.push_back(fmt::format("        return static_cast<idl_enum_t>(static_cast<UnsignedU>(lhr) ^ static_cast<UnsignedU>(rhs));"sv));
+            flags.push_back(fmt::format("    }}"sv));
+            flags.push_back(
+                fmt::format("    inline {} idl_enum_t& operator|=(idl_enum_t& lhr, idl_enum_t rhs) noexcept {{"sv, state.macros[Constexpr14]));
+            flags.push_back(fmt::format("        return lhr = lhr | rhs;"sv));
+            flags.push_back(fmt::format("    }}"sv));
+            flags.push_back(
+                fmt::format("    inline {} idl_enum_t& operator&=(idl_enum_t& lhr, idl_enum_t rhs) noexcept {{"sv, state.macros[Constexpr14]));
+            flags.push_back(fmt::format("        return lhr = lhr & rhs;"sv));
+            flags.push_back(fmt::format("    }}"sv));
+            flags.push_back(
+                fmt::format("    inline {} idl_enum_t& operator^=(idl_enum_t& lhr, idl_enum_t rhs) noexcept {{"sv, state.macros[Constexpr14]));
+            flags.push_back(fmt::format("        return lhr = lhr ^ rhs;"sv));
+            const auto maxLenFlags = std::ranges::max(flags | std::views::transform([](const auto& str) {
+                return str.length();
+            }));
+            for (const auto& str : flags) {
+                fmt::print(out(), "{}{:{}} \\\n"sv, str, ""sv, maxLenFlags - str.length());
+            }
+            fmt::print(out(), "    }}\n"sv);
+            fmt::print(out(), "#else\n"sv);
+            fmt::print(out(), "# define {}(idl_enum_t)\n"sv, state.macros[FlagsEnum]);
+            fmt::print(out(), "#endif\n"sv);
+
+            if (state.addDoc) {
+                fmt::print(out(), "\n"sv);
+                fmt::print(out(), "/** @}} */\n"sv);
             }
         }
     }
@@ -580,7 +698,7 @@ macros for the )"s + std::string(apiName.data(), apiName.length()) +
                 fmt::print(out(), " */\n"sv);
             }
             const auto& ver = std::get<Semver>(version);
-            fmt::print(out(), "\n");
+            fmt::print(out(), "\n"sv);
             printVersionComponent(VersionMajor, ver.major);
             printVersionComponent(VersionMinor, ver.minor);
             printVersionComponent(VersionMicro, ver.micro);
@@ -608,9 +726,9 @@ macros for the )"s + std::string(apiName.data(), apiName.length()) +
                 if (state.addDocGroups) {
                     fmt::print(out(), " * @ingroup   macros\n"sv);
                 }
-                fmt::print(out(), " */\n");
+                fmt::print(out(), " */\n"sv);
             } else {
-                fmt::print(out(), "\n");
+                fmt::print(out(), "\n"sv);
             }
             fmt::print(
                 out(), "#define {}(major, minor, micro) (((unsigned long) major) << 16 | (minor) << 8 | (micro))\n"sv, state.macros[VersionEncode]);
@@ -707,6 +825,29 @@ macros for the )"s + std::string(apiName.data(), apiName.length()) +
             }
         } else {
             const auto& ver = std::get<std::string_view>(version);
+
+            if (state.addDoc) {
+                fmt::print(out(), "\n"sv);
+                fmt::print(out(), "/**\n"sv);
+                fmt::print(out(), " * @name  Current Version.\n"sv);
+                fmt::print(out(), " * @brief Macros representing the current library version.\n"sv);
+                fmt::print(out(), " * @{{\n"sv);
+                fmt::print(out(), " */\n"sv);
+                fmt::print(out(), "\n"sv);
+                fmt::print(out(), "/**\n"sv);
+                fmt::print(out(), " * @brief   Library version as human-readable string.\n"sv);
+                fmt::print(out(), " * @details Version string.\n"sv);
+                if (state.addDocGroups) {
+                    fmt::print(out(), " * @ingroup macros\n"sv);
+                }
+                fmt::print(out(), " */\n"sv);
+            } else {
+                fmt::print(out(), "\n"sv);
+            }
+            fmt::print(out(), "#define {} \"{}\"\n"sv, state.macros[VersionString], ver);
+            if (state.addDoc) {
+                fmt::print(out(), "\n/** @}} */\n"sv);
+            }
         }
     }
 

@@ -1,0 +1,22 @@
+#ifndef {{ include_guard }}
+#define {{ include_guard }}
+
+#define {{ version_major }} {{ major }}
+#define {{ version_minor }} {{ minor }}
+#define {{ version_micro }} {{ micro }}
+
+#define {{ version_encode }} (major, minor, micro) (((unsigned long) major) << 16 | (minor) << 8 | (micro))
+#define {{ version_stringize_ }} (major, minor, micro) #major "." #minor "." #micro
+#define {{ version_stringize }} (major, minor, micro) {{ version_stringize_ }}(major, minor, micro)
+
+#define {{ version }} {{ version_encode }} ( \
+    {{ version_major }}, \
+    {{ version_minor }}, \
+    {{ version_micro }})
+
+#define {{ version_string }} {{ version_stringize }}( \
+    {{ version_major }}, \
+    {{ version_minor }}, \
+    {{ version_micro }})
+
+#endif /* {{ include_guard }} */

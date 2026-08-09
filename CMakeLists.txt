@@ -25,6 +25,7 @@ project(idlc
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
 include(CMakeDependentOption)
+include(cmake/resources.cmake)
 include(cmake/flex-install.cmake)
 include(cmake/bison-install.cmake)
 
@@ -40,8 +41,9 @@ cmake_dependent_option(IDLC_BUILD_PACKAGES "Build packages" ON
     IDLC_ENABLE_INSTALL OFF)
 
 find_package(fmt CONFIG REQUIRED)
-find_package(xxHash CONFIG REQUIRED)
+find_package(inja CONFIG REQUIRED)
 find_package(magic_enum CONFIG REQUIRED)
+find_package(xxHash CONFIG REQUIRED)
 if(IDLC_SUPPORTED_CS)
     find_package(stduuid CONFIG REQUIRED)
 endif()
@@ -75,15 +77,18 @@ endif()
 if(IDLC_SUPPORTED_CS)
 #    list(APPEND IDL_SOURCES src/generator_cs.cpp)
 endif()
+file(GLOB IDLC_TEMPLATES "src/templates/*.txt")
 
 add_library(idl
     ${IDL_SOURCES}
     ${IDLC_api_OUTPUTS}
     ${BISON_parser_OUTPUTS}
     ${FLEX_scanner_OUTPUTS})
+idl_embed_resources(idl ${IDLC_TEMPLATES})
 target_link_libraries(idl PRIVATE fmt::fmt)
-target_link_libraries(idl PRIVATE xxHash::xxhash)
 target_link_libraries(idl PRIVATE magic_enum::magic_enum)
+target_link_libraries(idl PRIVATE pantor::inja)
+target_link_libraries(idl PRIVATE xxHash::xxhash)
 if(IDLC_SUPPORTED_CS)
     target_link_libraries(idl PRIVATE stduuid)
 endif()

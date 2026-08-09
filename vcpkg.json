@@ -4,6 +4,7 @@
   "version": "1.5.15",
   "dependencies": [
     "fmt",
+    "inja",
     "magic-enum",
     "stduuid",
     "xxhash"

@@ -1,5 +1,6 @@
 #include "case_converter.hpp"
 #include "fixed_stack.hpp"
+#include "idl_resources.hpp"
 #include "visitors.hpp"
 #include "writer.hpp"
 
@@ -49,27 +50,24 @@ struct Include {
     State& state;
     Output output;
     ASTNodeRef import;
-    std::string includeGuard;
-    OverridDoc overrideDoc;
-    bool main;
-
-    void printHeader();
-    ~Include();
+    inja::json data;
 };
 
 struct State {
     Writer& writer;
-    uint32_t indents;
-    bool addDoc;
-    bool addDocGroups;
-    bool stdTypes;
-    idl_bool_type_t boolType;
-    bool single;
+    inja::json data;
+    inja::Environment env;
     std::stack<Include> includes;
-    std::array<std::string, magic_enum::enum_count<Macro>()> macros;
 
     std::ostream& out() noexcept {
         return includes.top().output.stream();
+    }
+
+    void mergeImport() {
+        auto& import = includes.top().data;
+
+        data["macros"]["include_guard"] = import["include_guard"];
+        data["is_main"]                 = import["is_main"];
     }
 };
 
@@ -126,139 +124,186 @@ struct DoxygenGroupVisitor {
     std::string_view str;
 };
 
-void printDoxygen(State& state, int level, std::span<DoxygenDoc> docs) {
-    if (docs.empty()) {
-        return;
-    }
-    auto& out          = state.out();
-    const auto indents = state.indents * level;
-    const auto maxLen  = std::ranges::max(docs | std::views::transform([](const auto& doc) {
-        return doc.doxygen.length();
-    }));
-    fmt::print(out, "{:{}}/**\n", "", indents);
-    for (const auto& [doxygen, doc] : docs) {
-        std::vector<std::ostringstream> strings;
-        strings.push_back({});
-        std::visit([&](const auto& arg) {
-            using Type = std::remove_cvref_t<decltype(arg)>;
-            if constexpr (std::is_same_v<std::string, Type> || std::is_same_v<std::string_view, Type>) {
-                auto hasPrevLine = false;
-                for (const auto row : arg | std::views::split('\n')) {
-                    std::string_view line(row.begin(), row.end());
-                    if (!line.empty() && line.back() == '\r') {
-                        line = line.substr(0, line.length() - 1);
-                    }
-                    if (hasPrevLine) {
-                        strings.push_back({});
-                    }
-                    strings.back() << line;
-                    hasPrevLine = true;
-                }
-            } else {
-                ASTNodeRef node(arg);
-                for (auto literal : node.getChilds()) {
-                    auto str = literal.template accept<CLiteral>(state.stdTypes, state.boolType).str;
-                    if (str[0] == '\n') {
-                        strings.push_back({});
-                    } else {
-                        strings.back() << str;
-                    }
-                }
-            }
-        }, doc);
-        if (doxygen.empty()) {
-            fmt::print(out, "{:{}} *\n{:{}} * {:{}} ", "", indents, "", indents, "", 3);
-        } else {
-            fmt::print(out, "{:{}} * @{:{}} ", "", indents, doxygen, maxLen);
-        }
-        for (auto it = strings.begin(); it != strings.end(); ++it) {
-            if (it != strings.begin()) {
-                fmt::print(out, "{:{}} *  {:{}} ", "", indents, " ", doxygen.empty() ? 2 : maxLen);
-            }
-            fmt::print(out, "{}\n", it->str());
-        }
-    }
-    fmt::print(out, "{:{}} */\n", "", indents);
-}
-
-void fillDocMap(ASTNodeRef node, std::map<int, DoxygenDoc>& docs) {
-    for (auto doc : node.getChilds<IDL_AST_NODE_TYPE_ATTR_DOC>()) {
-        if (!doc.is<IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE>()) {
-            auto priority   = doc.accept<PriorityDocAttr>().prior;
-            auto doxygenStr = doc.accept<DoxygenVisitor>().str;
-            docs[priority]  = { doxygenStr, doc };
-        }
-    }
-}
-
-template <typename... Node>
-void printDoc(State& state, const OverridDoc& overrideDoc, int level, Node... node) {
-    if (!state.addDoc) {
-        return;
-    }
-
-    std::map<int, DoxygenDoc> sortedDocs;
-    (fillDocMap(node, sortedDocs), ...);
-
-    for (const auto& [node, str] : overrideDoc) {
-        ASTNodeRef ref    = node;
-        auto prior        = ref.accept<PriorityDocAttr>().prior;
-        auto doxygenStr   = ref.accept<DoxygenVisitor>().str;
-        sortedDocs[prior] = { doxygenStr, str };
-    }
-
-    std::vector<DoxygenDoc> doxygen;
-    doxygen.reserve(sortedDocs.size() + 3);
-    if ((node.is<IDL_AST_NODE_TYPE_API, IDL_AST_NODE_TYPE_IMPORT>() || ...)) {
-        const auto filename = state.includes.top().output.filename().string();
-        doxygen.emplace_back("file"sv, filename);
-    }
-    for (auto [_, doc] : sortedDocs) {
-        doxygen.emplace_back(doc.doxygen, doc.doc);
-    }
-
-    const auto isApiNode  = ((!node || node.is<IDL_AST_NODE_TYPE_API>()) && ...);
-    const auto addLicense = state.includes.top().main && isApiNode;
-    if (addLicense) {
-        if (auto license = state.writer.api().findChild<IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE>()) {
-            doxygen.emplace_back(""sv, license);
-        }
-    }
-
-    if (state.addDocGroups) {
-        std::string_view groups[] = { node.accept<DoxygenGroupVisitor>().str... };
-
-        auto group = std::find_if(std::rbegin(groups), std::rend(groups), [](auto a) {
-            return !a.empty();
-        });
-
-        auto it = std::find_if(doxygen.begin(), doxygen.end(), [](const auto& d) {
-            return std::holds_alternative<ASTNodeRef>(d.doc) && std::get<ASTNodeRef>(d.doc).is<IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT>();
-        });
-
-        doxygen.insert(it, { "ingroup"sv, *group });
-    }
-
-    printDoxygen(state, level, doxygen);
-}
-
-void Include::printHeader() {
-    printDoc(state, state.includes.top().overrideDoc, 0, state.writer.api(), import);
-    fmt::print(output.stream(), "#ifndef {0}\n#define {0}\n", includeGuard);
-}
-
-Include::~Include() {
-    fmt::print(output.stream(), "\n#endif /* {} */\n", includeGuard);
-}
+// void printDoxygen(State& state, int level, std::span<DoxygenDoc> docs) {
+//     if (docs.empty()) {
+//         return;
+//     }
+//     auto& out          = state.out();
+//     const auto indents = state.indents * level;
+//     const auto maxLen  = std::ranges::max(docs | std::views::transform([](const auto& doc) {
+//         return doc.doxygen.length();
+//     }));
+//     fmt::print(out, "{:{}}/**\n", "", indents);
+//     for (const auto& [doxygen, doc] : docs) {
+//         std::vector<std::ostringstream> strings;
+//         strings.push_back({});
+//         std::visit([&](const auto& arg) {
+//             using Type = std::remove_cvref_t<decltype(arg)>;
+//             if constexpr (std::is_same_v<std::string, Type> || std::is_same_v<std::string_view, Type>) {
+//                 auto hasPrevLine = false;
+//                 for (const auto row : arg | std::views::split('\n')) {
+//                     std::string_view line(row.begin(), row.end());
+//                     if (!line.empty() && line.back() == '\r') {
+//                         line = line.substr(0, line.length() - 1);
+//                     }
+//                     if (hasPrevLine) {
+//                         strings.push_back({});
+//                     }
+//                     strings.back() << line;
+//                     hasPrevLine = true;
+//                 }
+//             } else {
+//                 ASTNodeRef node(arg);
+//                 for (auto literal : node.getChilds()) {
+//                     auto str = literal.template accept<CLiteral>(state.stdTypes, state.boolType).str;
+//                     if (str[0] == '\n') {
+//                         strings.push_back({});
+//                     } else {
+//                         strings.back() << str;
+//                     }
+//                 }
+//             }
+//         }, doc);
+//         if (doxygen.empty()) {
+//             fmt::print(out, "{:{}} *\n{:{}} * {:{}} ", "", indents, "", indents, "", 3);
+//         } else {
+//             fmt::print(out, "{:{}} * @{:{}} ", "", indents, doxygen, maxLen);
+//         }
+//         for (auto it = strings.begin(); it != strings.end(); ++it) {
+//             if (it != strings.begin()) {
+//                 fmt::print(out, "{:{}} *  {:{}} ", "", indents, " ", doxygen.empty() ? 2 : maxLen);
+//             }
+//             fmt::print(out, "{}\n", it->str());
+//         }
+//     }
+//     fmt::print(out, "{:{}} */\n", "", indents);
+// }
+//
+// void fillDocMap(ASTNodeRef node, std::map<int, DoxygenDoc>& docs) {
+//     for (auto doc : node.getChilds<IDL_AST_NODE_TYPE_ATTR_DOC>()) {
+//         if (!doc.is<IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE>()) {
+//             auto priority   = doc.accept<PriorityDocAttr>().prior;
+//             auto doxygenStr = doc.accept<DoxygenVisitor>().str;
+//             docs[priority]  = { doxygenStr, doc };
+//         }
+//     }
+// }
+//
+// template <typename... Node>
+// void printDoc(State& state, const OverridDoc& overrideDoc, int level, Node... node) {
+//     if (!state.addDoc) {
+//         return;
+//     }
+//
+//     std::map<int, DoxygenDoc> sortedDocs;
+//     (fillDocMap(node, sortedDocs), ...);
+//
+//     for (const auto& [node, str] : overrideDoc) {
+//         ASTNodeRef ref    = node;
+//         auto prior        = ref.accept<PriorityDocAttr>().prior;
+//         auto doxygenStr   = ref.accept<DoxygenVisitor>().str;
+//         sortedDocs[prior] = { doxygenStr, str };
+//     }
+//
+//     std::vector<DoxygenDoc> doxygen;
+//     doxygen.reserve(sortedDocs.size() + 3);
+//     if ((node.is<IDL_AST_NODE_TYPE_API, IDL_AST_NODE_TYPE_IMPORT>() || ...)) {
+//         const auto filename = state.includes.top().output.filename().string();
+//         doxygen.emplace_back("file"sv, filename);
+//     }
+//     for (auto [_, doc] : sortedDocs) {
+//         doxygen.emplace_back(doc.doxygen, doc.doc);
+//     }
+//
+//     const auto isApiNode = ((!node || node.is<IDL_AST_NODE_TYPE_API>()) && ...);
+//     // const auto addLicense = state.includes.top().main && isApiNode;
+//     // if (addLicense) {
+//     //     if (auto license = state.writer.api().findChild<IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE>()) {
+//     //         doxygen.emplace_back(""sv, license);
+//     //     }
+//     // }
+//
+//     if (state.addDocGroups) {
+//         std::string_view groups[] = { node.accept<DoxygenGroupVisitor>().str... };
+//
+//         auto group = std::find_if(std::rbegin(groups), std::rend(groups), [](auto a) {
+//             return !a.empty();
+//         });
+//
+//         auto it = std::find_if(doxygen.begin(), doxygen.end(), [](const auto& d) {
+//             return std::holds_alternative<ASTNodeRef>(d.doc) && std::get<ASTNodeRef>(d.doc).is<IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT>();
+//         });
+//
+//         doxygen.insert(it, { "ingroup"sv, *group });
+//     }
+//
+//     printDoxygen(state, level, doxygen);
+// }
 
 struct ASTVisitor {
     ASTVisitor(State& state) noexcept : state(state) {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_API>) {
+        auto single = false;
         if (node.findChild<IDL_AST_NODE_TYPE_ATTR_SINGLE>()) {
-            state.single = true;
+            single = true;
         }
+        uint32_t indents  = 4;
+        bool addDoc       = false;
+        bool addDocGroups = false;
+        if (auto options = state.writer.options()) {
+            indents       = options->getIndents();
+            auto cOptions = options->getCOptions();
+            addDoc        = cOptions.add_doc;
+            addDocGroups  = cOptions.add_doc_groups;
+        }
+        if (!addDoc) {
+            addDocGroups = false;
+        }
+        state.data["config"]["single"]         = single;
+        state.data["config"]["indents"]        = indents;
+        state.data["config"]["add_doc"]        = addDoc;
+        state.data["config"]["add_doc_groups"] = addDocGroups;
+        state.data["config"]["std_types"]      = stdTypes(node);
+        switch (boolType(node)) {
+            case IDL_BOOL_TYPE_INT_32:
+                state.data["config"]["bool_type"] = "int32";
+                break;
+            case IDL_BOOL_TYPE_DEFAULT:
+            case IDL_BOOL_TYPE_INT_8:
+                state.data["config"]["bool_type"] = "int8";
+                break;
+            case IDL_BOOL_TYPE_STD_BOOL:
+                state.data["config"]["bool_type"] = "std_bool";
+                break;
+        }
+
+        state.env.add_callback("cname", 1, [this](inja::Arguments& args) {
+            auto& ctx   = state.writer.api().ctx();
+            auto handle = args.at(0)->get<uint16_t>();
+
+            ASTNodeRef node(ctx, { handle });
+            return node.accept<CName>(stdTypes(node), boolType(node)).str;
+        });
+
+        state.env.add_callback("ctype", 1, [this](inja::Arguments& args) {
+            auto& ctx   = state.writer.api().ctx();
+            auto handle = args.at(0)->get<uint16_t>();
+
+            ASTNodeRef node(ctx, { handle });
+            return node.declType().accept<CName>(stdTypes(node), boolType(node)).str;
+        });
+
+        state.env.add_callback("consts", 1, [this](inja::Arguments& args) {
+            auto& ctx   = state.writer.api().ctx();
+            auto handle = args.at(0)->get<uint16_t>();
+            auto view = ASTNodeRef(ctx, { handle }).getChilds<IDL_AST_NODE_TYPE_CONST>() | std::views::transform([](const auto& node) {
+                return node.handle().handle;
+            });
+            return std::vector<uint16_t>(view.begin(), view.end());
+        });
+
         addMacros(node);
         addPlatformHeader(node);
         addVersionHeader(node);
@@ -272,52 +317,12 @@ struct ASTVisitor {
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ENUM>) {
         popImport(node);
 
-        auto hex    = node.findChild<IDL_AST_NODE_TYPE_ATTR_HEX>();
-        auto childs = node.getChilds();
-        auto view   = childs | std::views::filter([](const auto& child) {
-            return child.is<IDL_AST_NODE_TYPE_CONST>();
-        }) | std::views::transform([this](auto c) {
-            return std::make_pair(c.accept<CName>(state.stdTypes, state.boolType).str, c);
-        });
+        state.data["node"] = node.handle().handle;
 
-        std::vector<std::pair<std::string, ASTNodeRef>> consts;
-        consts.assign(view.begin(), view.end());
+        inja::Template enumTmpl;
+        enumTmpl = state.env.parse(resources::c_enum_txt);
 
-        size_t maxLen = std::ranges::max(consts | std::views::transform([](const auto& c) {
-            return c.first.length();
-        }));
-
-        fmt::print(out(), "\n");
-        printDoc(state, {}, 0, node);
-        fmt::print(out(), "typedef enum\n{{\n");
-        for (auto it = consts.begin(); it != consts.end(); ++it) {
-            const auto& [name, c] = *it;
-
-            auto maxEnum   = c.findChild<IDL_AST_NODE_TYPE_ATTR_BUILTIN_MAX_ENUM>();
-            auto isHex     = hex || !!maxEnum;
-            auto forward   = c.forwardDecl();
-            auto isFirst   = it == consts.begin();
-            auto attrValue = c.findChild<IDL_AST_NODE_TYPE_ATTR_VALUE>();
-            auto args      = attrValue | std::views::transform([this, isHex](auto arg) {
-                return arg.accept<CLiteral>(state.stdTypes, state.boolType, isHex).str;
-            });
-
-            auto values = forward ? std::to_string(evaulateConst(c)) : fmt::format("{}", fmt::join(args, " | "));
-
-            const auto isMultiline = isMultilineDoc(c);
-            if (isMultiline) {
-                if (!isFirst) {
-                    fmt::print(out(), "\n");
-                }
-                printDoc(state, {}, 1, c);
-            }
-            fmt::print(out(), "{:{}}{:{}} = {}{}", " ", state.indents, name, maxLen, values, !!maxEnum ? "" : ",");
-            if (!isMultiline) {
-                printIDoc(c);
-            }
-            fmt::print(out(), "\n");
-        }
-        fmt::print(out(), "}} {};\n", node.accept<CName>(state.stdTypes, state.boolType).str);
+        state.env.render_to(state.out(), enumTmpl, state.data);
     }
 
     template <ASTNodeType Type>
@@ -325,15 +330,15 @@ struct ASTVisitor {
     }
 
     void printIDoc(ASTNodeRef node) {
-        if (!state.addDoc) {
-            return;
-        }
-        auto detail = node.findChild<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>();
-        std::ostringstream ss;
-        for (auto literal : detail.getChilds()) {
-            ss << literal.template accept<CLiteral>(state.stdTypes, state.boolType).str;
-        }
-        fmt::print(out(), " /**< {} */", ss.str());
+        // if (!state.addDoc) {
+        //     return;
+        // }
+        // auto detail = node.findChild<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>();
+        // std::ostringstream ss;
+        // for (auto literal : detail.getChilds()) {
+        //     ss << literal.template accept<CLiteral>(state.stdTypes, state.boolType).str;
+        // }
+        // fmt::print(out(), " /**< {} */", ss.str());
     }
 
     int64_t evaulateConst(ASTNodeRef node) {
@@ -362,493 +367,33 @@ struct ASTVisitor {
     }
 
     void addMacros(ASTNodeRef node) {
-        state.macros[ImportApi]         = getFullname(node, false, '_', "api"sv);
-        state.macros[StaticBuild]       = getFullname(node, true, '_', "STATIC"sv, "BUILD"sv);
-        state.macros[PlatformWindows]   = getFullname(node, true, '_', "PLATFORM"sv, "WINDOWS"sv);
-        state.macros[PlatformIOS]       = getFullname(node, true, '_', "PLATFORM"sv, "IOS"sv);
-        state.macros[PlatformMacOS]     = getFullname(node, true, '_', "PLATFORM"sv, "MAC"sv, "OS"sv);
-        state.macros[PlatformAndroid]   = getFullname(node, true, '_', "PLATFORM"sv, "ANDROID"sv);
-        state.macros[PlatformLinux]     = getFullname(node, true, '_', "PLATFORM"sv, "LINUX"sv);
-        state.macros[PlatformWeb]       = getFullname(node, true, '_', "PLATFORM"sv, "WEB"sv);
-        state.macros[Constexpr14]       = getFullname(node, true, '_', "CONSTEXPR"sv, "14"sv);
-        state.macros[VersionMajor]      = getFullname(node, true, '_', "VERSION"sv, "MAJOR"sv);
-        state.macros[VersionMinor]      = getFullname(node, true, '_', "VERSION"sv, "MINOR"sv);
-        state.macros[VersionMicro]      = getFullname(node, true, '_', "VERSION"sv, "MICRO"sv);
-        state.macros[VersionEncode]     = getFullname(node, true, '_', "VERSION"sv, "ENCODE"sv);
-        state.macros[VersionStringize_] = getFullname(node, true, '_', "VERSION"sv, "STRINGIZE_"sv);
-        state.macros[VersionStringize]  = getFullname(node, true, '_', "VERSION"sv, "STRINGIZE"sv);
-        state.macros[Version]           = getFullname(node, true, '_', "VERSION"sv);
-        state.macros[VersionString]     = getFullname(node, true, '_', "VERSION"sv, "STRING"sv);
-        state.macros[BeginEnum]         = getFullname(node, true, '_', "BEGIN"sv, "ENUM"sv);
-        state.macros[EndEnum]           = getFullname(node, true, '_', "END"sv, "ENUM"sv);
-        state.macros[FlagsEnum]         = getFullname(node, true, '_', "FLAGS"sv, "ENUM"sv);
+        auto& macros                 = state.data["macros"];
+        macros["import_api"]         = getFullname(node, false, '_', "api"sv);
+        macros["static_build"]       = getFullname(node, true, '_', "STATIC"sv, "BUILD"sv);
+        macros["platform_windows"]   = getFullname(node, true, '_', "PLATFORM"sv, "WINDOWS"sv);
+        macros["platform_ios"]       = getFullname(node, true, '_', "PLATFORM"sv, "IOS"sv);
+        macros["platform_macos"]     = getFullname(node, true, '_', "PLATFORM"sv, "MAC"sv, "OS"sv);
+        macros["platform_android"]   = getFullname(node, true, '_', "PLATFORM"sv, "ANDROID"sv);
+        macros["platform_linux"]     = getFullname(node, true, '_', "PLATFORM"sv, "LINUX"sv);
+        macros["platform_web"]       = getFullname(node, true, '_', "PLATFORM"sv, "WEB"sv);
+        macros["constexpr14"]        = getFullname(node, true, '_', "CONSTEXPR"sv, "14"sv);
+        macros["version_major"]      = getFullname(node, true, '_', "VERSION"sv, "MAJOR"sv);
+        macros["version_minor"]      = getFullname(node, true, '_', "VERSION"sv, "MINOR"sv);
+        macros["version_micro"]      = getFullname(node, true, '_', "VERSION"sv, "MICRO"sv);
+        macros["version_encode"]     = getFullname(node, true, '_', "VERSION"sv, "ENCODE"sv);
+        macros["version_stringize_"] = getFullname(node, true, '_', "VERSION"sv, "STRINGIZE_"sv);
+        macros["version_stringize"]  = getFullname(node, true, '_', "VERSION"sv, "STRINGIZE"sv);
+        macros["version"]            = getFullname(node, true, '_', "VERSION"sv);
+        macros["version_string"]     = getFullname(node, true, '_', "VERSION"sv, "STRING"sv);
+        macros["begin_enum"]         = getFullname(node, true, '_', "BEGIN"sv, "ENUM"sv);
+        macros["end_enum"]           = getFullname(node, true, '_', "END"sv, "ENUM"sv);
+        macros["flags_enum"]         = getFullname(node, true, '_', "FLAGS"sv, "ENUM"sv);
     }
 
     void addPlatformHeader(ASTNodeRef node) {
-        auto brief   = ASTNodeRef::byType<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>(node.ctx());
-        auto detial  = ASTNodeRef::byType<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(node.ctx());
-        auto apiName = state.writer.api().name();
-
-        OverridDoc doc;
-        doc[brief]  = "Platform-specific definitions and utilities."s;
-        doc[detial] = R"(This header provides cross-platform macros, type definitions, and utility
-macros for the )"s + std::string(apiName.data(), apiName.length()) +
-                      R"( library. It handles:
-  - Platform detection (Windows, macOS, iOS, Android, Linux, Web)
-  - Symbol visibility control (DLL import/export on Windows)
-  - C/C++ interoperability
-  - Type definitions for consistent data sizes across platforms
-  - Bit flag operations for enumerations (C++ only).
-)"s;
-
-        pushImport(node, "platform", false, doc);
-
-        fmt::print(out(), "\n");
-        if (state.addDoc) {
-            fmt::print(out(), "/**\n");
-            fmt::print(out(), " * @def     {}\n", state.macros[ImportApi]);
-            fmt::print(out(), " * @brief   Controls symbol visibility for shared library builds.\n");
-            fmt::print(out(), " * @details This macro is used to control symbol visibility when building or using the library.\n");
-            fmt::print(out(), " *          On Windows (**MSVC**) with dynamic linking (non-static build), it expands to `__declspec(dllimport)`.\n");
-            fmt::print(out(), " *          In all other cases (static builds or non-Windows platforms), it expands to nothing.\n");
-            fmt::print(out(), " *          This allows proper importing of symbols from DLLs on Windows platforms.\n");
-            fmt::print(out(), " * @note    Define `{}` for static library configuration.\n", state.macros[StaticBuild]);
-            if (state.addDocGroups) {
-                fmt::print(out(), " * @ingroup macros\n");
-            }
-            fmt::print(out(), " */\n");
-            fmt::print(out(), "\n");
-        }
-        fmt::print(out(), "#ifndef {}\n", state.macros[ImportApi]);
-        fmt::print(out(), "# if defined(_MSC_VER) && !defined({})\n", state.macros[StaticBuild]);
-        fmt::print(out(), "#  define {} __declspec(dllimport)\n", state.macros[ImportApi]);
-        fmt::print(out(), "# else\n");
-        fmt::print(out(), "#  define {}\n", state.macros[ImportApi]);
-        fmt::print(out(), "# endif\n");
-        fmt::print(out(), "#endif\n");
-        fmt::print(out(), "\n");
-        fmt::print(out(), "#if defined(_WIN32) && !defined({})\n", state.macros[PlatformWindows]);
-        fmt::print(out(), "# define {}\n", state.macros[PlatformWindows]);
-        fmt::print(out(), "#elif defined(__APPLE__)\n");
-        fmt::print(out(), "# include <TargetConditionals.h>\n");
-        fmt::print(out(), "# include <unistd.h>\n");
-        fmt::print(out(), "# if TARGET_OS_IPHONE && !defined({})\n", state.macros[PlatformIOS]);
-        fmt::print(out(), "#  define {}\n", state.macros[PlatformIOS]);
-        fmt::print(out(), "# elif TARGET_IPHONE_SIMULATOR && !defined({})\n", state.macros[PlatformIOS]);
-        fmt::print(out(), "#  define {}\n", state.macros[PlatformIOS]);
-        fmt::print(out(), "# elif TARGET_OS_MAC && !defined({})\n", state.macros[PlatformMacOS]);
-        fmt::print(out(), "#  define {}\n", state.macros[PlatformMacOS]);
-        fmt::print(out(), "# else\n");
-        fmt::print(out(), "#  error unsupported Apple platform\n");
-        fmt::print(out(), "# endif\n");
-        fmt::print(out(), "#elif defined(__ANDROID__) && !defined({})\n", state.macros[PlatformAndroid]);
-        fmt::print(out(), "# define {}\n", state.macros[PlatformAndroid]);
-        fmt::print(out(), "#elif defined(__linux__) && !defined({})\n", state.macros[PlatformLinux]);
-        fmt::print(out(), "# define {}\n", state.macros[PlatformLinux]);
-        fmt::print(out(), "#elif defined(__EMSCRIPTEN__) && !defined({})\n", state.macros[PlatformWeb]);
-        fmt::print(out(), "# define {}\n", state.macros[PlatformWeb]);
-        fmt::print(out(), "#else\n");
-        fmt::print(out(), "# error unsupported platform\n");
-        fmt::print(out(), "#endif\n\n");
-
-        if (state.stdTypes) {
-            fmt::print(out(), "#include <stdint.h>\n");
-            if (state.boolType == IDL_BOOL_TYPE_STD_BOOL) {
-                fmt::print(out(), "#include <stdbool.h>\n");
-            }
-        } else {
-            if (state.addDocGroups) {
-                fmt::print(out(), "/**\n");
-                fmt::print(out(), " * @addtogroup types Types\n");
-                fmt::print(out(), " * @{{\n");
-                fmt::print(out(), " */\n");
-                fmt::print(out(), "\n");
-                fmt::print(out(), "/**\n");
-                fmt::print(out(), " * @name  Platform-independent type definitions.\n");
-                fmt::print(out(), " * @brief Fixed-size types guaranteed to work across all supported platforms.\n");
-                fmt::print(out(), " * @{{\n");
-                fmt::print(out(), " */\n");
-            }
-            fmt::print(out(), "#include <stdint.h>\n");
-            if (state.boolType == IDL_BOOL_TYPE_STD_BOOL) {
-                fmt::print(out(), "#include <stdbool.h>\n");
-            }
-
-            std::vector<std::tuple<std::string_view, std::string, ASTNodeRef>> types;
-            for (auto type : node.getChilds<IDL_AST_NODE_TYPE_TRIVIAL_TYPE>()) {
-                if (!type.is<IDL_AST_NODE_TYPE_VOID>()) {
-                    types.emplace_back(type.accept<CNativeType>(state.boolType).str, type.accept<CName>(state.stdTypes, state.boolType).str, type);
-                }
-            }
-
-            const auto nativeMaxLen = std::ranges::max(types | std::views::transform([](const auto& type) {
-                return std::get<0>(type).length();
-            }));
-
-            const auto maxLen = std::ranges::max(types | std::views::transform([](const auto& type) {
-                return std::get<1>(type).length();
-            }));
-
-            for (const auto& [native, type, node] : types) {
-                fmt::print(out(), "typedef {:{}} {};", native, nativeMaxLen, type);
-                if (state.addDoc) {
-                    fmt::print(out(), "{:>{}}", "", maxLen - type.length());
-                    printIDoc(node);
-                }
-                fmt::print(out(), "\n");
-            }
-
-            if (state.addDocGroups) {
-                fmt::print(out(), "/** @}} */\n");
-                fmt::print(out(), "\n");
-                fmt::print(out(), "/** @}} */\n");
-            }
-
-            if (state.addDoc) {
-                fmt::print(out(), "\n"sv);
-                fmt::print(out(), "/**\n"sv);
-                fmt::print(out(), " * @name  Enum Macros.\n"sv);
-                fmt::print(out(), " * @brief Macros for defining enums with fixed underlying types and flag support.\n"sv);
-                fmt::print(out(), " * @{{\n"sv);
-                fmt::print(out(), " */\n"sv);
-                fmt::print(out(), "\n"sv);
-                fmt::print(out(), "/**\n"sv);
-                fmt::print(out(), " * @def       {}\n"sv, state.macros[BeginEnum]);
-                fmt::print(out(), " * @brief     Begin an enum declaration with a fixed underlying type.\n"sv);
-                fmt::print(out(), " * @details   This macro expands to a typed enum declaration when the compiler\n"sv);
-                fmt::print(out(), " *            supports C++11 or C23 enum class style underlying types. On older\n"sv);
-                fmt::print(out(), " *            compilers it falls back to an untyped C enum.\n"sv);
-                fmt::print(out(), " * @param[in] type The underlying integer type to use for the enum.\n"sv);
-                if (state.addDocGroups) {
-                    fmt::print(out(), " * @ingroup   macros\n"sv);
-                }
-                fmt::print(out(), " */\n"sv);
-                fmt::print(out(), "\n"sv);
-                fmt::print(out(), "/**\n"sv);
-                fmt::print(out(), " * @def       {}\n"sv, state.macros[EndEnum]);
-                fmt::print(out(), " * @brief     End an enum declaration and declare the enum name.\n"sv);
-                fmt::print(out(), " * @details   This macro finishes the enum definition and optionally provides\n"sv);
-                fmt::print(out(), " *            a typedef alias for older C compilers that do not support typed\n"sv);
-                fmt::print(out(), " *            enums. It is paired with `{}`.\n"sv, state.macros[BeginEnum]);
-                fmt::print(out(), " * @param[in] name The enum type name to declare.\n"sv);
-                fmt::print(out(), " * @param[in] type The underlying integer type used for the enum.\n"sv);
-                if (state.addDocGroups) {
-                    fmt::print(out(), " * @ingroup   macros\n"sv);
-                }
-                fmt::print(out(), " */\n"sv);
-            }
-            fmt::print(out(), "\n"sv);
-            fmt::print(out(), "#if defined(__cplusplus)\n"sv);
-            fmt::print(out(), "# define {}(type) typedef enum : type\n"sv, state.macros[BeginEnum]);
-            fmt::print(out(), "# define {}(name, type) name\n"sv, state.macros[EndEnum]);
-            fmt::print(out(), "#elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L\n"sv);
-            fmt::print(out(), "# define {}(type) typedef enum : type\n"sv, state.macros[BeginEnum]);
-            fmt::print(out(), "# define {}(name, type) name\n"sv, state.macros[EndEnum]);
-            fmt::print(out(), "#else\n"sv);
-            fmt::print(out(), "# define {}(type) enum \n"sv, state.macros[BeginEnum]);
-            fmt::print(out(), "# define {}(name, type); typedef type name\n"sv, state.macros[EndEnum]);
-            fmt::print(out(), "#endif\n"sv);
-            if (state.addDoc) {
-                fmt::print(out(), "\n"sv);
-                fmt::print(out(), "/**\n"sv);
-                fmt::print(out(), " * @def       {}\n"sv, state.macros[FlagsEnum]);
-                fmt::print(out(), " * @brief     Enables bit flag operations for enumerations (C++ only).\n"sv);
-                fmt::print(out(), " * @details   Generates overloaded bitwise operators for type-safe flag manipulation:\n"sv);
-                fmt::print(out(), " *            - Bitwise NOT (~)\n"sv);
-                fmt::print(out(), " *            - OR (|, |=)\n"sv);
-                fmt::print(out(), " *            - AND (&, &=)\n"sv);
-                fmt::print(out(), " *            - XOR (^, ^=)\n"sv);
-                fmt::print(out(), " *\n"sv);
-                fmt::print(out(), " * @param[in] idl_enum_t Enumeration type to enhance with flag operations.\n"sv);
-                fmt::print(out(), " * @note      Only active in C++ mode. In C, expands to nothing.\n"sv);
-                if (state.addDocGroups) {
-                    fmt::print(out(), " * @ingroup   macros\n"sv);
-                }
-                fmt::print(out(), " */\n"sv);
-            }
-            fmt::print(out(), "\n"sv);
-            fmt::print(out(), "#ifdef __cplusplus\n"sv);
-            fmt::print(out(), "# include <type_traits>\n"sv);
-            std::vector<std::string> flags;
-            flags.push_back(fmt::format("# define {}(idl_enum_t)"sv, state.macros[FlagsEnum]));
-            flags.push_back(fmt::format("    inline constexpr idl_enum_t operator~(idl_enum_t lhr) noexcept {{"sv));
-            flags.push_back(fmt::format("        using U         = typename std::underlying_type<idl_enum_t>::type;"sv));
-            flags.push_back(fmt::format("        using UnsignedU = typename std::make_unsigned<U>::type;"sv));
-            flags.push_back(fmt::format("        return static_cast<idl_enum_t>(~static_cast<UnsignedU>(lhr));"sv));
-            flags.push_back(fmt::format("    }}"sv));
-            flags.push_back(fmt::format("    inline constexpr idl_enum_t operator|(idl_enum_t lhr, idl_enum_t rhs) noexcept {{"sv));
-            flags.push_back(fmt::format("        using U         = typename std::underlying_type<idl_enum_t>::type;"sv));
-            flags.push_back(fmt::format("        using UnsignedU = typename std::make_unsigned<U>::type;"sv));
-            flags.push_back(fmt::format("        return static_cast<idl_enum_t>(static_cast<UnsignedU>(lhr) | static_cast<UnsignedU>(rhs));"sv));
-            flags.push_back(fmt::format("    }}"sv));
-            flags.push_back(fmt::format("    inline constexpr idl_enum_t operator&(idl_enum_t lhr, idl_enum_t rhs) noexcept {{"sv));
-            flags.push_back(fmt::format("        using U         = typename std::underlying_type<idl_enum_t>::type;"sv));
-            flags.push_back(fmt::format("        using UnsignedU = typename std::make_unsigned<U>::type;"sv));
-            flags.push_back(fmt::format("        return static_cast<idl_enum_t>(static_cast<UnsignedU>(lhr) & static_cast<UnsignedU>(rhs));"sv));
-            flags.push_back(fmt::format("    }}"sv));
-            flags.push_back(fmt::format("    inline constexpr idl_enum_t operator^(idl_enum_t lhr, idl_enum_t rhs) noexcept {{"sv));
-            flags.push_back(fmt::format("        using U         = typename std::underlying_type<idl_enum_t>::type;"sv));
-            flags.push_back(fmt::format("        using UnsignedU = typename std::make_unsigned<U>::type;"sv));
-            flags.push_back(fmt::format("        return static_cast<idl_enum_t>(static_cast<UnsignedU>(lhr) ^ static_cast<UnsignedU>(rhs));"sv));
-            flags.push_back(fmt::format("    }}"sv));
-            flags.push_back(
-                fmt::format("    inline {} idl_enum_t& operator|=(idl_enum_t& lhr, idl_enum_t rhs) noexcept {{"sv, state.macros[Constexpr14]));
-            flags.push_back(fmt::format("        return lhr = lhr | rhs;"sv));
-            flags.push_back(fmt::format("    }}"sv));
-            flags.push_back(
-                fmt::format("    inline {} idl_enum_t& operator&=(idl_enum_t& lhr, idl_enum_t rhs) noexcept {{"sv, state.macros[Constexpr14]));
-            flags.push_back(fmt::format("        return lhr = lhr & rhs;"sv));
-            flags.push_back(fmt::format("    }}"sv));
-            flags.push_back(
-                fmt::format("    inline {} idl_enum_t& operator^=(idl_enum_t& lhr, idl_enum_t rhs) noexcept {{"sv, state.macros[Constexpr14]));
-            flags.push_back(fmt::format("        return lhr = lhr ^ rhs;"sv));
-            const auto maxLenFlags = std::ranges::max(flags | std::views::transform([](const auto& str) {
-                return str.length();
-            }));
-            for (const auto& str : flags) {
-                fmt::print(out(), "{}{:{}} \\\n"sv, str, ""sv, maxLenFlags - str.length());
-            }
-            fmt::print(out(), "    }}\n"sv);
-            fmt::print(out(), "#else\n"sv);
-            fmt::print(out(), "# define {}(idl_enum_t)\n"sv, state.macros[FlagsEnum]);
-            fmt::print(out(), "#endif\n"sv);
-
-            if (state.addDoc) {
-                fmt::print(out(), "\n"sv);
-                fmt::print(out(), "/** @}} */\n"sv);
-            }
-        }
     }
 
     void addVersionHeader(ASTNodeRef node) {
-        auto brief   = ASTNodeRef::byType<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>(node.ctx());
-        auto detial  = ASTNodeRef::byType<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(node.ctx());
-        auto apiName = state.writer.api().name();
-
-        OverridDoc doc;
-        doc[brief]  = "Library version information and utilities."s;
-        doc[detial] = fmt::format("This header provides version information for the {} library,\n"
-                                  "including version number components and macros for version comparison\n"
-                                  "and string generation. It supports:\n"
-                                  "  - Major/Minor/Micro version components\n"
-                                  "  - Integer version encoding\n"
-                                  "  - String version generation\n",
-                                  apiName);
-
-        pushImport(node, "version", false, doc);
-
-        struct Semver {
-            int64_t major;
-            int64_t minor;
-            int64_t micro;
-        };
-
-        std::variant<Semver, std::string_view> version;
-        bool setVersion = false;
-
-        if (const auto options = state.writer.options()) {
-            if (const auto ver = options->getVersion()) {
-                version    = Semver{ ver->major, ver->minor, ver->micro };
-                setVersion = true;
-            }
-        }
-        if (!setVersion) {
-            if (auto ver = node.findChild<IDL_AST_NODE_TYPE_ATTR_VERSION>()) {
-                auto literals = ver.getChilds<IDL_AST_NODE_TYPE_LITERAL>();
-                std::vector<ASTNodeRef> args;
-                args.assign(literals.begin(), literals.end());
-                if (args.size() == 1 && args[0].is<IDL_AST_NODE_TYPE_LITERAL_STR>()) {
-                    version    = args[0].valueStr();
-                    setVersion = true;
-                } else if (args.size() == 3 && args[0].is<IDL_AST_NODE_TYPE_LITERAL_INT>() && args[1].is<IDL_AST_NODE_TYPE_LITERAL_INT>() &&
-                           args[2].is<IDL_AST_NODE_TYPE_LITERAL_INT>()) {
-                    version    = Semver{ args[0]->valueInt, args[1]->valueInt, args[2]->valueInt };
-                    setVersion = true;
-                }
-            }
-        }
-        if (!setVersion) {
-            version = Semver{};
-        }
-
-        if (std::holds_alternative<Semver>(version)) {
-            const int spaces           = state.addDocGroups ? 2 : 0;
-            auto printVersionComponent = [&](Macro macro, int64_t value) {
-                if (state.addDoc) {
-                    fmt::print(out(), "/**\n");
-                    fmt::print(out(), " * @brief {:{}}Major version number (API-breaking changes).\n"sv, ""sv, spaces);
-                    fmt::print(out(), " * @sa    {:{}}{}\n"sv, ""sv, spaces, state.macros[Version]);
-                    fmt::print(out(), " * @sa    {:{}}{}\n"sv, ""sv, spaces, state.macros[VersionString]);
-                    if (state.addDocGroups) {
-                        fmt::print(out(), " * @ingroup macros\n"sv);
-                    }
-                    fmt::print(out(), " */\n"sv);
-                }
-                fmt::print(out(), "#define {} {}\n"sv, state.macros[macro], value);
-                if (state.addDoc) {
-                    fmt::print(out(), "\n");
-                }
-            };
-            if (state.addDoc) {
-                fmt::print(out(), "\n"sv);
-                fmt::print(out(), "/**\n"sv);
-                fmt::print(out(), " * @name  Version Components.\n"sv);
-                fmt::print(out(), " * @brief Individual components of the library version.\n"sv);
-                fmt::print(out(), " * @{{\n"sv);
-                fmt::print(out(), " */\n"sv);
-            }
-            const auto& ver = std::get<Semver>(version);
-            fmt::print(out(), "\n"sv);
-            printVersionComponent(VersionMajor, ver.major);
-            printVersionComponent(VersionMinor, ver.minor);
-            printVersionComponent(VersionMicro, ver.micro);
-            if (state.addDoc) {
-                fmt::print(out(), "/** @}} */\n"sv);
-                fmt::print(out(), "\n"sv);
-                fmt::print(out(), "/**\n"sv);
-                fmt::print(out(), " * @name  Version Utilities.\n"sv);
-                fmt::print(out(), " * @brief Macros for working with version numbers.\n"sv);
-                fmt::print(out(), " * @{{\n"sv);
-                fmt::print(out(), " */\n"sv);
-                fmt::print(out(), "\n"sv);
-                fmt::print(out(), "/**\n");
-                fmt::print(out(), " * @brief     Encodes version components into a single integer.\n"sv);
-                fmt::print(out(), " * @details   Combines major, minor, and micro versions into a 32-bit value:\n"sv);
-                fmt::print(out(), " *              - Bits 24-31: Major version\n"sv);
-                fmt::print(out(), " *              - Bits 16-23: Minor version\n"sv);
-                fmt::print(out(), " *              - Bits 0-15: Micro version\n"sv);
-                fmt::print(out(), " *            \n"sv);
-                fmt::print(out(), " * @param[in] major Major version number.\n"sv);
-                fmt::print(out(), " * @param[in] minor Minor version number.\n"sv);
-                fmt::print(out(), " * @param[in] micro Micro version number.\n"sv);
-                fmt::print(out(), " * @return    Encoded version as unsigned long.\n"sv);
-                fmt::print(out(), " * @sa        {}\n"sv, state.macros[Version]);
-                if (state.addDocGroups) {
-                    fmt::print(out(), " * @ingroup   macros\n"sv);
-                }
-                fmt::print(out(), " */\n"sv);
-            } else {
-                fmt::print(out(), "\n"sv);
-            }
-            fmt::print(
-                out(), "#define {}(major, minor, micro) (((unsigned long) major) << 16 | (minor) << 8 | (micro))\n"sv, state.macros[VersionEncode]);
-            if (state.addDoc) {
-                fmt::print(out(), "\n");
-                fmt::print(out(), "/**\n"sv);
-                fmt::print(out(), " * @brief     Internal macro for string version generation.\n"sv);
-                fmt::print(out(),
-                           " * @details   Helper macro that stringizes version components (e.g., {0}, {1}, {2} -> \"{0}.{1}.{2}\").\n"sv,
-                           ver.major,
-                           ver.minor,
-                           ver.micro);
-                fmt::print(out(), " * @param[in] major Major version number.\n"sv);
-                fmt::print(out(), " * @param[in] minor Minor version number.\n"sv);
-                fmt::print(out(), " * @param[in] micro Micro version number.\n"sv);
-                fmt::print(out(), " * @return    Stringified version.\n"sv);
-                fmt::print(out(), " * @note      For internal use only.\n"sv);
-                if (state.addDocGroups) {
-                    fmt::print(out(), " * @ingroup   macros\n"sv);
-                }
-                fmt::print(out(), " * @private\n"sv);
-                fmt::print(out(), " */\n"sv);
-            }
-            fmt::print(out(), "#define {}(major, minor, micro) #major \".\" #minor \".\" #micro\n"sv, state.macros[VersionStringize_]);
-            if (state.addDoc) {
-                fmt::print(out(), "\n");
-                fmt::print(out(), "/**\n"sv);
-                fmt::print(out(), " * @brief     Creates version string from components.\n"sv);
-                fmt::print(out(),
-                           " * @details   Generates a string literal from version components (e.g., {0}, {1}, {2} -> \"{0}.{1}.{2}\").\n"sv,
-                           ver.major,
-                           ver.minor,
-                           ver.micro);
-                fmt::print(out(), " * @param[in] major Major version number.\n"sv);
-                fmt::print(out(), " * @param[in] minor Minor version number.\n"sv);
-                fmt::print(out(), " * @param[in] micro Micro version number.\n"sv);
-                fmt::print(out(), " * @return    Stringified version.\n"sv);
-                fmt::print(out(), " * @sa        {}\n"sv, state.macros[VersionString]);
-                if (state.addDocGroups) {
-                    fmt::print(out(), " * @ingroup   macros\n"sv);
-                }
-                fmt::print(out(), " */\n"sv);
-            }
-            fmt::print(out(),
-                       "#define {}(major, minor, micro) {}(major, minor, micro)\n"sv,
-                       state.macros[VersionStringize],
-                       state.macros[VersionStringize_]);
-            if (state.addDoc) {
-                fmt::print(out(), "\n");
-                fmt::print(out(), "/** @}} */\n");
-                fmt::print(out(), "\n");
-                fmt::print(out(), "/**\n"sv);
-                fmt::print(out(), " * @name  Current Version.\n"sv);
-                fmt::print(out(), " * @brief Macros representing the current library version.\n"sv);
-                fmt::print(out(), " * @{{\n"sv);
-                fmt::print(out(), " */\n"sv);
-                fmt::print(out(), "\n"sv);
-                fmt::print(out(), "/**\n"sv);
-                fmt::print(out(), " * @brief   Encoded library version as integer.\n"sv);
-                fmt::print(out(), " * @details Combined version value suitable for numeric comparisons.\n"sv);
-                fmt::print(out(), " *          Use #{} for human-readable format.\n"sv, state.macros[VersionString]);
-                fmt::print(out(), " * @sa      {}\n"sv, state.macros[VersionString]);
-                if (state.addDocGroups) {
-                    fmt::print(out(), " * @ingroup macros\n"sv);
-                }
-                fmt::print(out(), " */\n"sv);
-            } else {
-                fmt::print(out(), "\n"sv);
-            }
-            fmt::print(out(), "#define {} {}( \\\n"sv, state.macros[Version], state.macros[VersionEncode]);
-            fmt::print(out(), "    {}, \\\n"sv, state.macros[VersionMajor]);
-            fmt::print(out(), "    {}, \\\n"sv, state.macros[VersionMinor]);
-            fmt::print(out(), "    {})\n"sv, state.macros[VersionMicro]);
-            fmt::print(out(), "\n"sv);
-            if (state.addDoc) {
-                fmt::print(out(), "/**\n"sv);
-                fmt::print(out(), " * @brief   Library version as human-readable string.\n"sv);
-                fmt::print(
-                    out(), " * @details Version string in \"MAJOR.MINOR.MICRO\" format (e.g., \"{}.{}.{}\").\n"sv, ver.major, ver.minor, ver.micro);
-                fmt::print(out(), " *          Use #{} for numeric comparisons.\n"sv, state.macros[Version]);
-                fmt::print(out(), " * @sa      {}\n"sv, state.macros[Version]);
-                if (state.addDocGroups) {
-                    fmt::print(out(), " * @ingroup macros\n"sv);
-                }
-                fmt::print(out(), " */\n"sv);
-            }
-            fmt::print(out(), "#define {} {}( \\\n"sv, state.macros[VersionString], state.macros[VersionStringize]);
-            fmt::print(out(), "    {}, \\\n"sv, state.macros[VersionMajor]);
-            fmt::print(out(), "    {}, \\\n"sv, state.macros[VersionMinor]);
-            fmt::print(out(), "    {})\n"sv, state.macros[VersionMicro]);
-            if (state.addDoc) {
-                fmt::print(out(), "\n");
-                fmt::print(out(), "/** @}} */\n");
-            }
-        } else {
-            const auto& ver = std::get<std::string_view>(version);
-
-            if (state.addDoc) {
-                fmt::print(out(), "\n"sv);
-                fmt::print(out(), "/**\n"sv);
-                fmt::print(out(), " * @name  Current Version.\n"sv);
-                fmt::print(out(), " * @brief Macros representing the current library version.\n"sv);
-                fmt::print(out(), " * @{{\n"sv);
-                fmt::print(out(), " */\n"sv);
-                fmt::print(out(), "\n"sv);
-                fmt::print(out(), "/**\n"sv);
-                fmt::print(out(), " * @brief   Library version as human-readable string.\n"sv);
-                fmt::print(out(), " * @details Version string.\n"sv);
-                if (state.addDocGroups) {
-                    fmt::print(out(), " * @ingroup macros\n"sv);
-                }
-                fmt::print(out(), " */\n"sv);
-            } else {
-                fmt::print(out(), "\n"sv);
-            }
-            fmt::print(out(), "#define {} \"{}\"\n"sv, state.macros[VersionString], ver);
-            if (state.addDoc) {
-                fmt::print(out(), "\n/** @}} */\n"sv);
-            }
-        }
     }
 
     std::ostream& out() noexcept {
@@ -856,14 +401,15 @@ macros for the )"s + std::string(apiName.data(), apiName.length()) +
     }
 
     void pushImport(ASTNodeRef& node, std::string_view postfix = ""sv, bool main = false, const OverridDoc& overrideDoc = {}) {
-        if (state.single && !state.includes.empty()) {
+        const auto single = state.data["config"]["single"].get<bool>();
+        if (single && !state.includes.empty()) {
             return;
         }
         std::string name;
         std::string includeGuard;
         OverridDoc overrideDocStub;
         const OverridDoc* doc = &overrideDoc;
-        if (!postfix.empty() && !state.single) {
+        if (!postfix.empty() && !single) {
             std::string postfixUpper(postfix.data(), postfix.length());
             postfixUpper = convert(postfixUpper, Case::ScreamingSnakeCase);
             name         = getFullname(node, false, '-', postfix);
@@ -874,13 +420,18 @@ macros for the )"s + std::string(apiName.data(), apiName.length()) +
             doc          = &overrideDocStub;
         }
         auto isImport = node.is<IDL_AST_NODE_TYPE_IMPORT>();
-        state.includes.emplace(
-            state, state.writer.createOutput(filename(name)), isImport ? node : node.ctx().emptyNodeRef(), includeGuard, *doc, main || state.single);
-        state.includes.top().printHeader();
+
+        inja::json data;
+        data["include_guard"] = includeGuard;
+        data["is_main"]       = main || single;
+
+        state.includes.emplace(state, state.writer.createOutput(filename(name)), isImport ? node : node.ctx().emptyNodeRef(), std::move(data));
+        state.mergeImport();
     }
 
     void popImport(ASTNodeRef& node) {
-        if (state.single) {
+        const auto single = state.data["config"]["single"].get<bool>();
+        if (single) {
             return;
         }
         auto currImport = state.includes.top().import;
@@ -892,6 +443,9 @@ macros for the )"s + std::string(apiName.data(), apiName.length()) +
             while (currParent != state.includes.top().import) {
                 state.includes.pop();
             }
+        }
+        if (!state.includes.empty()) {
+            state.mergeImport();
         }
     }
 
@@ -917,11 +471,30 @@ macros for the )"s + std::string(apiName.data(), apiName.length()) +
     template <typename... Postfix>
     std::string getFullname(ASTNodeRef& node, bool isUpper, char infix, Postfix&&... postfix) {
         std::ostringstream ss;
-        ss << node.accept<CName>(state.stdTypes, state.boolType, true, infix, isUpper).str;
+        ss << node.accept<CName>(stdTypes(node), boolType(node), true, infix, isUpper).str;
         if (sizeof...(postfix) > 0) {
             ((ss << infix, ss << postfix), ...);
         }
         return ss.str();
+    }
+
+    bool stdTypes(ASTNodeRef& /* node */) noexcept {
+        bool stdTypes = false;
+        if (auto options = state.writer.options()) {
+            stdTypes = options->getStdTypes();
+        }
+        return stdTypes;
+    }
+
+    idl_bool_type_t boolType(ASTNodeRef& /* node */) noexcept {
+        idl_bool_type_t boolType = IDL_BOOL_TYPE_INT_8;
+        if (auto options = state.writer.options()) {
+            boolType = options->getBoolType();
+            if (boolType == IDL_BOOL_TYPE_DEFAULT) { // TODO
+                boolType = IDL_BOOL_TYPE_INT_8;
+            }
+        }
+        return boolType;
     }
 
     State& state;
@@ -932,23 +505,7 @@ macros for the )"s + std::string(apiName.data(), apiName.length()) +
 void generate(Writer& writer) {
     constexpr auto filters =
         ASTNodeRef::SkipDocs | ASTNodeRef::SkipAttrBuiltins | ASTNodeRef::SkipAttrs | ASTNodeRef::SkipLiterals | ASTNodeRef::SkipTrivials;
-    uint32_t indents         = 4;
-    bool addDoc              = false;
-    bool addDocGroups        = false;
-    bool stdTypes            = false;
-    idl_bool_type_t boolType = IDL_BOOL_TYPE_DEFAULT;
-    if (auto options = writer.options()) {
-        indents       = options->getIndents();
-        auto cOptions = options->getCOptions();
-        addDoc        = cOptions.add_doc;
-        addDocGroups  = cOptions.add_doc_groups;
-        stdTypes      = options->getStdTypes();
-        boolType      = options->getBoolType();
-    }
-    if (!addDoc) {
-        addDocGroups = false;
-    }
-    State state{ writer, indents, addDoc, addDocGroups, stdTypes, boolType };
+    State state{ writer };
     writer.api().acceptRecursive<ASTVisitor>(filters, std::ref(state));
 }
 

@@ -1,0 +1,7 @@
+{{ macros.begin_enum }}({{ ctype(node) }})
+{
+## for const in consts(node)
+    {{ const }},
+## endfor
+}
+{{ macros.end_enum }}({{ ctype(node) }}, {{ cname(node) }});

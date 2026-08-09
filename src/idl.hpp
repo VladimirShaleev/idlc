@@ -37,6 +37,7 @@
 #include <fmt/base.h>
 #include <fmt/ostream.h>
 #include <fmt/ranges.h>
+#include <inja/inja.hpp>
 #include <magic_enum/magic_enum.hpp>
 #include <xxhash.h>
 

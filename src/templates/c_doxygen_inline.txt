@@ -1,1 +1,1 @@
-{% if doxygen.is_inline and length(doxygen.docs) > 0 %} /**< {% for literal in doxygen.docs.0.literals %}{{ literal }}{% endfor %} */{% endif %}
+{% if doxygen.is_inline and length(doxygen.docs) > 0 %} /**< {% for literal in doxygen.docs.0.literals %}{{ cliteral(literal) }}{% endfor %} */{% endif %}

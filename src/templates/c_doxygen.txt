@@ -1,7 +1,7 @@
 ## if doxygen.is_inline == false and length(doxygen.docs) > 0
 {{ doxygen.indents }}/**
 ## for doc in doxygen.docs
-{{ doxygen.indents }} * @{{doc.name}} {% for literal in doc.literals %}{{ literal }}{% if literal == "\n" %}{{ doxygen.indents }} *   {{indents(length(doc.name))}}{% endif %}{% endfor %}
+{{ doxygen.indents }} * @{{doc.name}} {% for literal in doc.literals %}{% set str=cliteral(literal) %}{{ str }}{% if str == "\n" %}{{ doxygen.indents }} *   {{ indents(length(doc.name)) }}{% endif %}{% endfor %}
 ## endfor
 {{ doxygen.indents }} */
 ## endif

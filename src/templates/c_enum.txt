@@ -1,7 +1,14 @@
 {{ render("c_doxygen", doxygen, "doxygen") }}{{ macros.begin_enum }}({{ ctype(node) }})
 {
+## set max_len = 0
 ## for const in consts
-{% if const.doxygen.is_inline == false %}{{ nl(1) }}{% endif %}{{ render("c_doxygen", const) }}    {{ cname(const.node) }} {{ const.name_align }}= {{ cvalue(const.node) }},{{render("c_doxygen_inline", const)}}
+## set name_len = length(cname(const.node))
+## if name_len > max_len
+## set max_len = name_len
+## endif
+## endfor
+## for const in consts
+{% if const.doxygen.is_inline == false %}{{ nl(1) }}{{ render("c_doxygen", const) }}{% endif %}    {% set name=cname(const.node) %}{{ name }} {{ indents(max_len - length(name)) }}= {{ cvalue(const.node) }}{% if const.is_last == false %},{% endif %}{{render("c_doxygen_inline", const)}}
 ## endfor
 }
 {{ macros.end_enum }}({{ cname(node) }}, {{ ctype(node) }});

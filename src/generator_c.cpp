@@ -263,20 +263,18 @@ struct ASTVisitor {
             return node.declType().accept<CName>(stdTypes(node), boolType(node)).str;
         });
 
-        state.env.add_callback("consts", 1, [this](inja::Arguments& args) {
-            auto& ctx   = state.writer.api().ctx();
-            auto handle = args.at(0)->get<uint16_t>();
-            auto view   = ASTNodeRef(ctx, { handle }).getChilds<IDL_AST_NODE_TYPE_CONST>() | std::views::transform([](const auto& node) {
-                return node.handle().handle;
-            });
-            return std::vector<uint16_t>(view.begin(), view.end());
-        });
-
         state.env.add_callback("cvalue", 1, [this](inja::Arguments& args) {
             auto& ctx   = state.writer.api().ctx();
             auto handle = args.at(0)->get<uint16_t>();
             auto node   = ASTNodeRef(ctx, { handle });
             return node.accept<CValue>(stdTypes(node), boolType(node)).str;
+        });
+
+        state.env.add_callback("cliteral", 1, [this](inja::Arguments& args) {
+            auto& ctx   = state.writer.api().ctx();
+            auto handle = args.at(0)->get<uint16_t>();
+            auto node   = ASTNodeRef(ctx, { handle });
+            return node.accept<CLiteral>(stdTypes(node), boolType(node)).str;
         });
 
         state.env.add_callback("render", [this](inja::Arguments& args) {
@@ -323,21 +321,13 @@ struct ASTVisitor {
         state.data["node"] = node.handle().handle;
         fillDoc(0, false, node, state.data);
 
-        auto& consts  = state.data["consts"];
-        size_t maxLen = 0;
+        auto& consts = state.data["consts"];
         for (auto child : node.getChilds<IDL_AST_NODE_TYPE_CONST>()) {
-            auto len = child.accept<CName>(stdTypes(node), boolType(node)).str.length();
-            maxLen   = std::max(maxLen, len);
             consts.push_back(inja::json::object({
-                { "node",      child.handle().handle },
-                { "_name_len", len                   }
+                { "node",    child.handle().handle                         },
+                { "is_last", !child.nextSibling<IDL_AST_NODE_TYPE_CONST>() }
             }));
             fillDoc(1, true, child, consts.back());
-        }
-
-        for (auto& c : consts) {
-            const auto indents = maxLen - c["_name_len"].get<size_t>();
-            c["name_align"]    = std::string(indents, ' ');
         }
 
         state.env.render_to(state.out(), findTemplate("c_enum.txt"), state.data);
@@ -378,11 +368,11 @@ struct ASTVisitor {
 
             auto& literals = docs.back()["literals"];
             for (auto literal : doc.getChilds()) {
-                auto str = literal.template accept<CLiteral>(stdTypes(literal), boolType(literal)).str;
-                literals.push_back(str);
-                if (str[0] == '\n') {
+                if (isInline && literal.is<IDL_AST_NODE_TYPE_LITERAL_STR>() && literal.valueStr()[0] == '\n') {
                     doxygen["is_inline"] = false;
+                    isInline             = false;
                 }
+                literals.push_back(literal.handle().handle);
             }
         }
         for (auto& doc : docs) {

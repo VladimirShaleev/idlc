@@ -8,7 +8,7 @@
 ## endif
 ## endfor
 ## for const in consts
-{% if const.doxygen.is_inline == false %}{{ nl(1) }}{{ render("c_doxygen", const) }}{% endif %}    {% set name=cname(const.node) %}{{ name }} {{ indents(max_len - length(name)) }}= {{ cvalue(const.node) }}{% if const.is_last == false %},{% endif %}{{render("c_doxygen_inline", const)}}
+{% if const.doxygen.is_inline == false %}{{ nl(1) }}{{ render("c_doxygen", const) }}{% endif %}    {% set name=cname(const.node) %}{{ name }} {{ indents(max_len - length(name)) }}= {{ cvalue(const.node) }}{% if const.is_last == false %},{% endif %}{{ render("c_doxygen_inline", const) }}
 ## endfor
 }
 {{ macros.end_enum }}({{ cname(node) }}, {{ ctype(node) }});

@@ -37,6 +37,17 @@ struct State {
         data["macros"]["include_guard"] = import["include_guard"];
         data["is_main"]                 = import["is_main"];
     }
+
+    void flushImports() {
+        data["include_guard_close"] = true;
+        while (!includes.empty()) {
+            env.render_to(out(), templates["c_include_guard.txt"], data);
+            includes.pop();
+            if (!includes.empty()) {
+                mergeImport();
+            }
+        }
+    }
 };
 
 struct DoxygenDoc {
@@ -489,6 +500,8 @@ struct ASTVisitor {
 
         state.includes.emplace(state, state.writer.createOutput(filename(name)), isImport ? node : node.ctx().emptyNodeRef(), std::move(data));
         state.mergeImport();
+
+        state.env.render_to(state.out(), findTemplate("c_include_guard.txt"), state.data);
     }
 
     void popImport(ASTNodeRef& node) {
@@ -503,11 +516,14 @@ struct ASTVisitor {
         }
         if (currParent != currImport) {
             while (currParent != state.includes.top().import) {
+                state.data["include_guard_close"] = true;
+                state.env.render_to(out(), findTemplate("c_include_guard.txt"), state.data);
                 state.includes.pop();
+                state.data["include_guard_close"] = false;
+                if (!state.includes.empty()) {
+                    state.mergeImport();
+                }
             }
-        }
-        if (!state.includes.empty()) {
-            state.mergeImport();
         }
     }
 
@@ -569,6 +585,7 @@ void generate(Writer& writer) {
         ASTNodeRef::SkipDocs | ASTNodeRef::SkipAttrBuiltins | ASTNodeRef::SkipAttrs | ASTNodeRef::SkipLiterals | ASTNodeRef::SkipTrivials;
     State state{ writer };
     writer.api().acceptRecursive<ASTVisitor>(filters, std::ref(state));
+    state.flushImports();
 }
 
 } // namespace idl::gen::c

@@ -1,7 +1,7 @@
-{{ macros.begin_enum }}({{ ctype(node) }})
+{{ render("c_doxygen", doxygen, "doxygen") }}{{ macros.begin_enum }}({{ ctype(node) }})
 {
-## for const in consts(node)
-    {{ const }},
+## for const in consts
+{% if const.doxygen.is_inline == false %}{{ nl(1) }}{% endif %}{{ render("c_doxygen", const) }}    {{ cname(const.node) }} {{ const.name_align }}= {{ cvalue(const.node) }},{{render("c_doxygen_inline", const)}}
 ## endfor
 }
-{{ macros.end_enum }}({{ ctype(node) }}, {{ cname(node) }});
+{{ macros.end_enum }}({{ cname(node) }}, {{ ctype(node) }});

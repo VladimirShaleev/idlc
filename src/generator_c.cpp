@@ -13,39 +13,6 @@ namespace {
 
 struct State;
 
-struct ASTNodeMapCmp {
-    bool operator()(ASTNodeRef n1, ASTNodeRef n2) const {
-        auto priority1 = n1.accept<PriorityDocAttr>().prior;
-        auto priority2 = n2.accept<PriorityDocAttr>().prior;
-        return priority1 < priority2;
-    }
-};
-
-using OverridDoc = std::map<ASTNodeRef, std::string, ASTNodeMapCmp>;
-
-enum Macro {
-    ImportApi,
-    StaticBuild,
-    PlatformWindows,
-    PlatformIOS,
-    PlatformMacOS,
-    PlatformAndroid,
-    PlatformLinux,
-    PlatformWeb,
-    Constexpr14,
-    VersionMajor,
-    VersionMinor,
-    VersionMicro,
-    VersionEncode,
-    VersionStringize_,
-    VersionStringize,
-    Version,
-    VersionString,
-    BeginEnum,
-    EndEnum,
-    FlagsEnum
-};
-
 struct Include {
     State& state;
     Output output;
@@ -58,6 +25,7 @@ struct State {
     inja::json data;
     inja::Environment env;
     std::stack<Include> includes;
+    std::unordered_map<std::string, inja::Template> templates;
 
     std::ostream& out() noexcept {
         return includes.top().output.stream();
@@ -298,10 +266,45 @@ struct ASTVisitor {
         state.env.add_callback("consts", 1, [this](inja::Arguments& args) {
             auto& ctx   = state.writer.api().ctx();
             auto handle = args.at(0)->get<uint16_t>();
-            auto view = ASTNodeRef(ctx, { handle }).getChilds<IDL_AST_NODE_TYPE_CONST>() | std::views::transform([](const auto& node) {
+            auto view   = ASTNodeRef(ctx, { handle }).getChilds<IDL_AST_NODE_TYPE_CONST>() | std::views::transform([](const auto& node) {
                 return node.handle().handle;
             });
             return std::vector<uint16_t>(view.begin(), view.end());
+        });
+
+        state.env.add_callback("cvalue", 1, [this](inja::Arguments& args) {
+            auto& ctx   = state.writer.api().ctx();
+            auto handle = args.at(0)->get<uint16_t>();
+            auto node   = ASTNodeRef(ctx, { handle });
+            return node.accept<CValue>(stdTypes(node), boolType(node)).str;
+        });
+
+        state.env.add_callback("render", [this](inja::Arguments& args) {
+            assert(args.size() == 2 || args.size() == 3);
+            const auto templateName = args.at(0)->get<std::string>();
+
+            auto& data = *args.at(1);
+            auto tmp   = findTemplate(templateName + ".txt");
+            std::string result;
+            if (args.size() == 3) {
+                const auto name = args.at(2)->get<std::string>();
+                inja::json root;
+                root[name] = std::move(data);
+                result     = state.env.render(tmp, root);
+
+                *const_cast<inja::json*>(args.at(1)) = std::move(root[name]);
+            } else {
+                result = state.env.render(tmp, data);
+            }
+            return result;
+        });
+
+        state.env.add_callback("indents", 1, [this](inja::Arguments& args) {
+            return std::string(args.at(0)->get<size_t>(), ' ');
+        });
+
+        state.env.add_callback("nl", 1, [this](inja::Arguments& args) {
+            return std::string(args.at(0)->get<size_t>(), '\n');
         });
 
         addMacros(node);
@@ -318,15 +321,87 @@ struct ASTVisitor {
         popImport(node);
 
         state.data["node"] = node.handle().handle;
+        fillDoc(0, false, node, state.data);
 
-        inja::Template enumTmpl;
-        enumTmpl = state.env.parse(resources::c_enum_txt);
+        auto& consts  = state.data["consts"];
+        size_t maxLen = 0;
+        for (auto child : node.getChilds<IDL_AST_NODE_TYPE_CONST>()) {
+            auto len = child.accept<CName>(stdTypes(node), boolType(node)).str.length();
+            maxLen   = std::max(maxLen, len);
+            consts.push_back(inja::json::object({
+                { "node",      child.handle().handle },
+                { "_name_len", len                   }
+            }));
+            fillDoc(1, true, child, consts.back());
+        }
 
-        state.env.render_to(state.out(), enumTmpl, state.data);
+        for (auto& c : consts) {
+            const auto indents = maxLen - c["_name_len"].get<size_t>();
+            c["name_align"]    = std::string(indents, ' ');
+        }
+
+        state.env.render_to(state.out(), findTemplate("c_enum.txt"), state.data);
+
+        state.data.erase("consts");
     }
 
     template <ASTNodeType Type>
     void visit(ASTNodeRef&, Tag<Type>) noexcept {
+    }
+
+    void fillDoc(size_t level, bool isInline, ASTNodeRef node, inja::json& data) {
+        const auto indents = state.data["config"]["indents"].get<size_t>();
+
+        auto& doxygen        = data["doxygen"];
+        doxygen["indents"]   = std::string(level * indents, ' ');
+        doxygen["is_inline"] = isInline;
+
+        auto& docs = doxygen["docs"];
+        docs       = {};
+
+        std::vector<std::pair<int, ASTNodeRef>> nodes;
+        for (auto doc : node.getChilds<IDL_AST_NODE_TYPE_ATTR_DOC>()) {
+            nodes.emplace_back(doc.accept<PriorityDocAttr>().prior, doc);
+        }
+        std::sort(nodes.begin(), nodes.end(), [](const auto& a, const auto& b) {
+            return a.first < b.first;
+        });
+
+        size_t maxLen = 0;
+        for (auto [_, doc] : nodes) {
+            const auto name = doc.accept<DoxygenVisitor>().str;
+            docs.push_back({
+                { "name",     name },
+                { "literals", {}   }
+            });
+            maxLen = std::max(maxLen, name.length());
+
+            auto& literals = docs.back()["literals"];
+            for (auto literal : doc.getChilds()) {
+                auto str = literal.template accept<CLiteral>(stdTypes(literal), boolType(literal)).str;
+                literals.push_back(str);
+                if (str[0] == '\n') {
+                    doxygen["is_inline"] = false;
+                }
+            }
+        }
+        for (auto& doc : docs) {
+            const auto name = doc["name"].get<std::string>();
+            doc["name"]     = name + std::string(maxLen - name.length(), ' ');
+        }
+    }
+
+    inja::Template& findTemplate(const std::string& tmp) {
+        if (auto it = state.templates.find(tmp); it != state.templates.end()) {
+            return it->second;
+        }
+        std::string_view tmpName(tmp.c_str(), tmp.length());
+        auto it = std::find_if(std::begin(resources::resource_table), std::end(resources::resource_table), [tmpName](const auto& item) {
+            return item.first == tmpName;
+        });
+        assert(it != std::end(resources::resource_table));
+        state.templates[tmp] = state.env.parse(it->second);
+        return state.templates[tmp];
     }
 
     void printIDoc(ASTNodeRef node) {
@@ -400,15 +475,13 @@ struct ASTVisitor {
         return state.out();
     }
 
-    void pushImport(ASTNodeRef& node, std::string_view postfix = ""sv, bool main = false, const OverridDoc& overrideDoc = {}) {
+    void pushImport(ASTNodeRef& node, std::string_view postfix = ""sv, bool main = false) {
         const auto single = state.data["config"]["single"].get<bool>();
         if (single && !state.includes.empty()) {
             return;
         }
         std::string name;
         std::string includeGuard;
-        OverridDoc overrideDocStub;
-        const OverridDoc* doc = &overrideDoc;
         if (!postfix.empty() && !single) {
             std::string postfixUpper(postfix.data(), postfix.length());
             postfixUpper = convert(postfixUpper, Case::ScreamingSnakeCase);
@@ -417,7 +490,6 @@ struct ASTVisitor {
         } else {
             name         = getFullname(node, false, '-');
             includeGuard = getFullname(node, true, '_', 'H');
-            doc          = &overrideDocStub;
         }
         auto isImport = node.is<IDL_AST_NODE_TYPE_IMPORT>();
 

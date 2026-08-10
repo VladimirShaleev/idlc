@@ -239,7 +239,7 @@ struct CName {
 };
 
 struct CLiteral {
-    explicit CLiteral(bool stdTypes, idl_bool_type_t boolType, bool hex = false) noexcept : stdTypes(stdTypes), boolType(boolType), hex(hex) {
+    CLiteral(bool stdTypes, idl_bool_type_t boolType, bool hex = false) noexcept : stdTypes(stdTypes), boolType(boolType), hex(hex) {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_LITERAL_STR>) {
@@ -291,6 +291,45 @@ struct CLiteral {
     bool stdTypes;
     idl_bool_type_t boolType;
     bool hex;
+};
+
+struct CValue {
+    CValue(bool stdTypes, idl_bool_type_t boolType) noexcept : stdTypes(stdTypes), boolType(boolType) {
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_CONST>) {
+        auto value   = node.findChild<IDL_AST_NODE_TYPE_ATTR_VALUE>();
+        auto hex     = !!node.parent().findChild<IDL_AST_NODE_TYPE_ATTR_HEX>();
+        auto maxEnum = !!node.findChild<IDL_AST_NODE_TYPE_ATTR_BUILTIN_MAX_ENUM>();
+        if (node.forwardDecl() || maxEnum) {
+            auto literal      = ASTNodeRef::byType<IDL_AST_NODE_TYPE_LITERAL_INT>(node.ctx());
+            literal->valueInt = value->valueInt;
+            literal->parent   = value->parent;
+            str               = literal.accept<CLiteral>(stdTypes, boolType, hex || maxEnum).str;
+        } else {
+            auto hasPrev = false;
+            std::ostringstream ss;
+            for (auto child : value) {
+                if (hasPrev) {
+                    ss << " | ";
+                }
+                ss << child.accept<CLiteral>(stdTypes, boolType, hex).str;
+                hasPrev = true;
+            }
+            str = ss.str();
+        }
+    }
+
+    template <ASTNodeType Type>
+    void visit(ASTNodeRef& node, Tag<Type>) noexcept {
+        auto value = node.findChild<IDL_AST_NODE_TYPE_ATTR_VALUE>();
+
+        str = value.accept<CLiteral>(stdTypes, boolType, false).str;
+    }
+
+    std::string str;
+    bool stdTypes;
+    idl_bool_type_t boolType;
 };
 
 struct PriorityDocAttr {

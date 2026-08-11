@@ -1,6 +1,7 @@
 ## if default(include_guard_close, false) == false
-#ifndef {{ macros.include_guard }}
+{{ render("c_doxygen", doxygen) }}#ifndef {{ macros.include_guard }}
 #define {{ macros.include_guard }}
 ## else
+
 #endif /* {{ macros.include_guard }} */
 ## endif

@@ -1,1 +1,1 @@
-{% if doxygen.is_inline and length(doxygen.docs) > 0 %} /**< {% for literal in doxygen.docs.0.literals %}{{ cliteral(literal) }}{% endfor %} */{% endif %}
+{% if config.add_doc and is_inline and length(docs) > 0 %} /**< {% for literal in docs.0.literals %}{{ cliteral(literal) }}{% endfor %} */{% endif %}

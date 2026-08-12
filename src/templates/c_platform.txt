@@ -1,0 +1,32 @@
+
+#ifndef {{ macros.import_api }}
+# if defined(_MSC_VER) && !defined({{ macros.static_build}})
+#  define {{ macros.import_api }} __declspec(dllimport)
+# else
+#  define {{ macros.import_api }}
+# endif
+#endif
+
+#if defined(_WIN32) && !defined({{ macros.platform_windows }})
+# define {{ macros.platform_windows }}
+#elif defined(__APPLE__)
+# include <TargetConditionals.h>
+# include <unistd.h>
+# if TARGET_OS_IPHONE && !defined({{ macros.platform_ios }})
+#  define {{ macros.platform_ios }}
+# elif TARGET_IPHONE_SIMULATOR && !defined({{ macros.platform_ios }})
+#  define {{ macros.platform_ios }}
+# elif TARGET_OS_MAC && !defined({{ macros.platform_macos }})
+#  define {{ macros.platform_macos }}
+# else
+#  error unsupported Apple platform
+# endif
+#elif defined(__ANDROID__) && !defined({{ macros.platform_android }})
+# define {{ macros.platform_android }}
+#elif defined(__linux__) && !defined({{ macros.platform_linux }})
+# define {{ macros.platform_linux }}
+#elif defined(__EMSCRIPTEN__) && !defined({{ macros.platform_web }})
+# define {{ macros.platform_web }}
+#else
+# error unsupported platform
+#endif

@@ -37,6 +37,7 @@ struct IdlOptions
 struct COptions [tokenizer(1)]
     field AddDoc {Bool} @ Add Doxygen documentation.
     field AddDocGroups {Bool} @ Add Doxygen groups.
+    field AddMemberGroups {Bool} @ Add Doxygen grouping members.
 
 @ Callback to get sources.
 @ Used to retrieve and compile sources from memory. [detail]

@@ -72,17 +72,17 @@
 ## set version_stringize__doxygen.docs.0.literals = [ "Internal macro for string version generation." ]
 ## set version_stringize__doxygen.docs.1.name = "details"
 ## set version_stringize__doxygen.docs.1.literals.0 = "Helper macro that stringizes version components (e.g., "
-## set version_stringize__doxygen.docs.1.literals.1 = str(major)
+## set version_stringize__doxygen.docs.1.literals.1 = str(config.version_major)
 ## set version_stringize__doxygen.docs.1.literals.2 = ", "
-## set version_stringize__doxygen.docs.1.literals.3 = str(minor)
+## set version_stringize__doxygen.docs.1.literals.3 = str(config.version_minor)
 ## set version_stringize__doxygen.docs.1.literals.4 = ", "
-## set version_stringize__doxygen.docs.1.literals.5 = str(micro)
+## set version_stringize__doxygen.docs.1.literals.5 = str(config.version_micro)
 ## set version_stringize__doxygen.docs.1.literals.6 = " -> \""
-## set version_stringize__doxygen.docs.1.literals.7 = str(major)
+## set version_stringize__doxygen.docs.1.literals.7 = str(config.version_major)
 ## set version_stringize__doxygen.docs.1.literals.8 = "."
-## set version_stringize__doxygen.docs.1.literals.9 = str(minor)
+## set version_stringize__doxygen.docs.1.literals.9 = str(config.version_minor)
 ## set version_stringize__doxygen.docs.1.literals.10 = "."
-## set version_stringize__doxygen.docs.1.literals.11 = str(micro)
+## set version_stringize__doxygen.docs.1.literals.11 = str(config.version_micro)
 ## set version_stringize__doxygen.docs.1.literals.12 = "\")."
 ## set version_stringize__doxygen.docs.2.name = "param[in]"
 ## set version_stringize__doxygen.docs.2.literals = [ "major Major version number." ]
@@ -109,17 +109,17 @@
 ## set version_stringize_doxygen.docs.0.literals = [ "Creates version string from components." ]
 ## set version_stringize_doxygen.docs.1.name = "details"
 ## set version_stringize_doxygen.docs.1.literals.0 = "Generates a string literal from version components (e.g., "
-## set version_stringize_doxygen.docs.1.literals.1 = str(major)
+## set version_stringize_doxygen.docs.1.literals.1 = str(config.version_major)
 ## set version_stringize_doxygen.docs.1.literals.2 = ", "
-## set version_stringize_doxygen.docs.1.literals.3 = str(minor)
+## set version_stringize_doxygen.docs.1.literals.3 = str(config.version_minor)
 ## set version_stringize_doxygen.docs.1.literals.4 = ", "
-## set version_stringize_doxygen.docs.1.literals.5 = str(micro)
+## set version_stringize_doxygen.docs.1.literals.5 = str(config.version_micro)
 ## set version_stringize_doxygen.docs.1.literals.6 = " -> \""
-## set version_stringize_doxygen.docs.1.literals.7 = str(major)
+## set version_stringize_doxygen.docs.1.literals.7 = str(config.version_major)
 ## set version_stringize_doxygen.docs.1.literals.8 = "."
-## set version_stringize_doxygen.docs.1.literals.9 = str(minor)
+## set version_stringize_doxygen.docs.1.literals.9 = str(config.version_minor)
 ## set version_stringize_doxygen.docs.1.literals.10 = "."
-## set version_stringize_doxygen.docs.1.literals.11 = str(micro)
+## set version_stringize_doxygen.docs.1.literals.11 = str(config.version_micro)
 ## set version_stringize_doxygen.docs.1.literals.12 = "\")."
 ## set version_stringize_doxygen.docs.2.name = "param[in]"
 ## set version_stringize_doxygen.docs.2.literals = [ "major Major version number." ]
@@ -157,11 +157,11 @@
 ## set version_string_doxygen.docs.0.literals = [ "Library version as human-readable string." ]
 ## set version_string_doxygen.docs.1.name = "details"
 ## set version_string_doxygen.docs.1.literals.0 = "Version string in \"MAJOR.MINOR.MICRO\" format (e.g., \""
-## set version_string_doxygen.docs.1.literals.1 = str(major)
+## set version_string_doxygen.docs.1.literals.1 = str(config.version_major)
 ## set version_string_doxygen.docs.1.literals.2 = "."
-## set version_string_doxygen.docs.1.literals.3 = str(minor)
+## set version_string_doxygen.docs.1.literals.3 = str(config.version_minor)
 ## set version_string_doxygen.docs.1.literals.4 = "."
-## set version_string_doxygen.docs.1.literals.5 = str(micro)
+## set version_string_doxygen.docs.1.literals.5 = str(config.version_micro)
 ## set version_string_doxygen.docs.1.literals.6 = "\")."
 ## set version_string_doxygen.docs.1.literals.7 = "\n"
 ## set version_string_doxygen.docs.1.literals.8 = "Use #"
@@ -201,9 +201,9 @@
 ## if config.add_member_groups
 {{ render("c_doxygen", version_components_doxygen) }}
 ## endif
-{{ render("c_doxygen", version_major_doxygen) }}#define {{ macros.version_major }} {{ major }}
-{% if config.add_doc %}{{ nl(1) }}{% endif %}{{ render("c_doxygen", version_minor_doxygen) }}#define {{ macros.version_minor }} {{ minor }}
-{% if config.add_doc %}{{ nl(1) }}{% endif %}{{ render("c_doxygen", version_micro_doxygen) }}#define {{ macros.version_micro }} {{ micro }}
+{{ render("c_doxygen", version_major_doxygen) }}#define {{ macros.version_major }} {{ config.version_major }}
+{% if config.add_doc %}{{ nl(1) }}{% endif %}{{ render("c_doxygen", version_minor_doxygen) }}#define {{ macros.version_minor }} {{ config.version_minor }}
+{% if config.add_doc %}{{ nl(1) }}{% endif %}{{ render("c_doxygen", version_micro_doxygen) }}#define {{ macros.version_micro }} {{ config.version_micro }}
 
 ## if config.add_member_groups
 ## set version_components_doxygen.member_group = "end"
@@ -219,13 +219,13 @@
 {{ render("c_doxygen", version_utilities_doxygen) }}
 {{ render("c_doxygen", current_version_doxygen) }}
 ## endif
-{{ render("c_doxygen", version_doxygen) }}#define {{ macros.version }} {{ macros.version_encode }} ( \
-    {{ macros.version_major }}, \
-    {{ macros.version_minor }}, \
-    {{ macros.version_micro }})
+{{ render("c_doxygen", version_doxygen) }}#define {{ macros.version }} {{ macros.version_encode }}( \
+{{ indents(config.indents) }}{{ macros.version_major }}, \
+{{ indents(config.indents) }}{{ macros.version_minor }}, \
+{{ indents(config.indents) }}{{ macros.version_micro }})
 
 {{ render("c_doxygen", version_string_doxygen) }}#define {{ macros.version_string }} {{ macros.version_stringize }}( \
-    {{ macros.version_major }}, \
-    {{ macros.version_minor }}, \
-    {{ macros.version_micro }})
+{{ indents(config.indents) }}{{ macros.version_major }}, \
+{{ indents(config.indents) }}{{ macros.version_minor }}, \
+{{ indents(config.indents) }}{{ macros.version_micro }})
 {% if config.add_member_groups %}{% set current_version_doxygen.member_group = "end" %}{{ nl(1) }}{{ render("c_doxygen", current_version_doxygen) }}{% endif %}

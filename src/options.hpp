@@ -9,7 +9,7 @@ namespace idl {
 
 class Options final : public _idl_options {
 public:
-    Options() : _outputDir(std::filesystem::current_path().string()) {
+    Options() : _outputDir(std::filesystem::current_path().string()), _cOptions(defaultCOptions()) {
         _importDirs.reserve(20);
     }
 
@@ -144,7 +144,7 @@ public:
     }
 
     void setCOptions(const idl_c_options_t* coptions) noexcept {
-        _cOptions = coptions ? *coptions : idl_c_options_t{};
+        _cOptions = coptions ? *coptions : defaultCOptions();
     }
 
     const idl_api_version_t* getVersion() const noexcept {
@@ -156,6 +156,14 @@ public:
     }
 
 private:
+    static idl_c_options_t defaultCOptions() noexcept {
+        return {
+            .add_doc           = 1,
+            .add_doc_groups    = 1,
+            .add_member_groups = 1,
+        };
+    }
+
     bool _debugMode{};
     bool _warningsAsErrors{};
     uint32_t _indents{ 4 };

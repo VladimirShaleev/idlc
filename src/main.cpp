@@ -88,6 +88,9 @@ int main(int argc, char* argv[]) {
     uint32_t indents = 4;
     uint32_t line    = 120;
     bool idlOriginal;
+    bool cAddDoc;
+    bool cAddDocGroups;
+    bool cAddMemberGroups;
 
     std::map<std::string, idl_generator_t> generators = {
         { "idl", IDL_GENERATOR_IDL         },
@@ -112,6 +115,8 @@ int main(int argc, char* argv[]) {
     argparse::ArgumentParser program("idlc", IDL_VERSION_STRING);
     program.add_argument("input").store_into(input).help("input .idl file");
     addGeneratorArg(program, generators);
+    addBoolType(program, boolTypes);
+    addOutputFiles(program, formats);
     program.add_argument("-o", "--output").store_into(output).help("output directory");
     program.add_argument("-i", "--imports").append().store_into(imports).help("import directories");
     program.add_argument("-a", "--additions").append().store_into(additions).help("additional inclusions");
@@ -119,9 +124,10 @@ int main(int argc, char* argv[]) {
     program.add_argument("--apiver").store_into(apiver).help("api version");
     program.add_argument("--indents").store_into(indents).help("indents count");
     program.add_argument("--line").store_into(line).help("max line length");
-    addBoolType(program, boolTypes);
-    addOutputFiles(program, formats);
     program.add_argument("--idl-original").store_into(idlOriginal).help("prefered original style");
+    program.add_argument("--c-add-doc").store_into(cAddDoc).help("add Doxygen documentation");
+    program.add_argument("--c-add-doc-groups").store_into(cAddDocGroups).help("add Doxygen groups");
+    program.add_argument("--c-add-member-groups").store_into(cAddMemberGroups).help("add Doxygen grouping members");
 
     try {
         program.parse_args(argc, argv);
@@ -173,8 +179,9 @@ int main(int argc, char* argv[]) {
     idlOptions.prefered_original_style = idlOriginal ? 1 : 0;
 
     idl_c_options_t cOptions{};
-    cOptions.add_doc        = 1;
-    cOptions.add_doc_groups = 1;
+    cOptions.add_doc           = cAddDoc ? 1 : 0;
+    cOptions.add_doc_groups    = cAddDocGroups ? 1 : 0;
+    cOptions.add_member_groups = cAddMemberGroups ? 1 : 0;
 
     idl_options_set_debug_mode(options, 0);
     idl_options_set_warnings_as_errors(options, warnAsErr ? 1 : 0);

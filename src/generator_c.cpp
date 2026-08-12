@@ -9,9 +9,9 @@ using namespace std::string_view_literals;
 
 namespace idl::gen::c {
 
-using OverrideDoc = std::vector<std::pair<std::string_view, std::vector<std::string>>>;
-
 namespace {
+
+using OverrideDoc = std::vector<std::pair<std::string_view, std::vector<std::string>>>;
 
 struct State;
 
@@ -24,6 +24,8 @@ struct Include {
 
 struct State {
     Writer& writer;
+    bool stdTypes;
+    idl_bool_type_t boolType;
     inja::json data;
     inja::Environment env;
     std::stack<Include> includes;
@@ -50,11 +52,6 @@ struct State {
             }
         }
     }
-};
-
-struct DoxygenDoc {
-    std::string_view doxygen;
-    std::variant<ASTNodeRef, std::string_view, std::string> doc;
 };
 
 struct DoxygenVisitor {
@@ -105,217 +102,16 @@ struct DoxygenGroupVisitor {
     std::string_view str;
 };
 
-// void printDoxygen(State& state, int level, std::span<DoxygenDoc> docs) {
-//     if (docs.empty()) {
-//         return;
-//     }
-//     auto& out          = state.out();
-//     const auto indents = state.indents * level;
-//     const auto maxLen  = std::ranges::max(docs | std::views::transform([](const auto& doc) {
-//         return doc.doxygen.length();
-//     }));
-//     fmt::print(out, "{:{}}/**\n", "", indents);
-//     for (const auto& [doxygen, doc] : docs) {
-//         std::vector<std::ostringstream> strings;
-//         strings.push_back({});
-//         std::visit([&](const auto& arg) {
-//             using Type = std::remove_cvref_t<decltype(arg)>;
-//             if constexpr (std::is_same_v<std::string, Type> || std::is_same_v<std::string_view, Type>) {
-//                 auto hasPrevLine = false;
-//                 for (const auto row : arg | std::views::split('\n')) {
-//                     std::string_view line(row.begin(), row.end());
-//                     if (!line.empty() && line.back() == '\r') {
-//                         line = line.substr(0, line.length() - 1);
-//                     }
-//                     if (hasPrevLine) {
-//                         strings.push_back({});
-//                     }
-//                     strings.back() << line;
-//                     hasPrevLine = true;
-//                 }
-//             } else {
-//                 ASTNodeRef node(arg);
-//                 for (auto literal : node.getChilds()) {
-//                     auto str = literal.template accept<CLiteral>(state.stdTypes, state.boolType).str;
-//                     if (str[0] == '\n') {
-//                         strings.push_back({});
-//                     } else {
-//                         strings.back() << str;
-//                     }
-//                 }
-//             }
-//         }, doc);
-//         if (doxygen.empty()) {
-//             fmt::print(out, "{:{}} *\n{:{}} * {:{}} ", "", indents, "", indents, "", 3);
-//         } else {
-//             fmt::print(out, "{:{}} * @{:{}} ", "", indents, doxygen, maxLen);
-//         }
-//         for (auto it = strings.begin(); it != strings.end(); ++it) {
-//             if (it != strings.begin()) {
-//                 fmt::print(out, "{:{}} *  {:{}} ", "", indents, " ", doxygen.empty() ? 2 : maxLen);
-//             }
-//             fmt::print(out, "{}\n", it->str());
-//         }
-//     }
-//     fmt::print(out, "{:{}} */\n", "", indents);
-// }
-//
-// void fillDocMap(ASTNodeRef node, std::map<int, DoxygenDoc>& docs) {
-//     for (auto doc : node.getChilds<IDL_AST_NODE_TYPE_ATTR_DOC>()) {
-//         if (!doc.is<IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE>()) {
-//             auto priority   = doc.accept<PriorityDocAttr>().prior;
-//             auto doxygenStr = doc.accept<DoxygenVisitor>().str;
-//             docs[priority]  = { doxygenStr, doc };
-//         }
-//     }
-// }
-//
-// template <typename... Node>
-// void printDoc(State& state, const OverridDoc& overrideDoc, int level, Node... node) {
-//     if (!state.addDoc) {
-//         return;
-//     }
-//
-//     std::map<int, DoxygenDoc> sortedDocs;
-//     (fillDocMap(node, sortedDocs), ...);
-//
-//     for (const auto& [node, str] : overrideDoc) {
-//         ASTNodeRef ref    = node;
-//         auto prior        = ref.accept<PriorityDocAttr>().prior;
-//         auto doxygenStr   = ref.accept<DoxygenVisitor>().str;
-//         sortedDocs[prior] = { doxygenStr, str };
-//     }
-//
-//     std::vector<DoxygenDoc> doxygen;
-//     doxygen.reserve(sortedDocs.size() + 3);
-//     if ((node.is<IDL_AST_NODE_TYPE_API, IDL_AST_NODE_TYPE_IMPORT>() || ...)) {
-//         const auto filename = state.includes.top().output.filename().string();
-//         doxygen.emplace_back("file"sv, filename);
-//     }
-//     for (auto [_, doc] : sortedDocs) {
-//         doxygen.emplace_back(doc.doxygen, doc.doc);
-//     }
-//
-//     const auto isApiNode = ((!node || node.is<IDL_AST_NODE_TYPE_API>()) && ...);
-//     // const auto addLicense = state.includes.top().main && isApiNode;
-//     // if (addLicense) {
-//     //     if (auto license = state.writer.api().findChild<IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE>()) {
-//     //         doxygen.emplace_back(""sv, license);
-//     //     }
-//     // }
-//
-//     if (state.addDocGroups) {
-//         std::string_view groups[] = { node.accept<DoxygenGroupVisitor>().str... };
-//
-//         auto group = std::find_if(std::rbegin(groups), std::rend(groups), [](auto a) {
-//             return !a.empty();
-//         });
-//
-//         auto it = std::find_if(doxygen.begin(), doxygen.end(), [](const auto& d) {
-//             return std::holds_alternative<ASTNodeRef>(d.doc) && std::get<ASTNodeRef>(d.doc).is<IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT>();
-//         });
-//
-//         doxygen.insert(it, { "ingroup"sv, *group });
-//     }
-//
-//     printDoxygen(state, level, doxygen);
-// }
-
 struct ASTVisitor {
     ASTVisitor(State& state) noexcept : state(state) {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_API>) {
-        auto single = false;
-        if (node.findChild<IDL_AST_NODE_TYPE_ATTR_SINGLE>()) {
-            single = true;
-        }
-        uint32_t indents  = 4;
-        bool addDoc       = false;
-        bool addDocGroups = false;
-        if (auto options = state.writer.options()) {
-            indents       = options->getIndents();
-            auto cOptions = options->getCOptions();
-            addDoc        = cOptions.add_doc;
-            addDocGroups  = cOptions.add_doc_groups;
-        }
-        if (!addDoc) {
-            addDocGroups = false;
-        }
-        state.data["config"]["single"]            = single;
-        state.data["config"]["indents"]           = indents;
-        state.data["config"]["add_doc"]           = addDoc;
-        state.data["config"]["add_doc_groups"]    = addDocGroups;
-        state.data["config"]["add_member_groups"] = addDoc && true;
-        state.data["config"]["std_types"]         = stdTypes(node);
-        switch (boolType(node)) {
-            case IDL_BOOL_TYPE_INT_32:
-                state.data["config"]["bool_type"] = "int32";
-                break;
-            case IDL_BOOL_TYPE_DEFAULT:
-            case IDL_BOOL_TYPE_INT_8:
-                state.data["config"]["bool_type"] = "int8";
-                break;
-            case IDL_BOOL_TYPE_STD_BOOL:
-                state.data["config"]["bool_type"] = "std_bool";
-                break;
-        }
-
-        state.env.add_callback("cname", 1, [this](inja::Arguments& args) {
-            auto& ctx   = state.writer.api().ctx();
-            auto handle = args.at(0)->get<uint16_t>();
-
-            ASTNodeRef node(ctx, { handle });
-            return node.accept<CName>(stdTypes(node), boolType(node)).str;
-        });
-
-        state.env.add_callback("ctype", 1, [this](inja::Arguments& args) {
-            auto& ctx   = state.writer.api().ctx();
-            auto handle = args.at(0)->get<uint16_t>();
-
-            ASTNodeRef node(ctx, { handle });
-            return node.declType().accept<CName>(stdTypes(node), boolType(node)).str;
-        });
-
-        state.env.add_callback("cvalue", 1, [this](inja::Arguments& args) {
-            auto& ctx   = state.writer.api().ctx();
-            auto handle = args.at(0)->get<uint16_t>();
-            auto node   = ASTNodeRef(ctx, { handle });
-            return node.accept<CValue>(stdTypes(node), boolType(node)).str;
-        });
-
-        state.env.add_callback("cliteral", 1, [this](inja::Arguments& args) {
-            auto& ctx = state.writer.api().ctx();
-            if (args.at(0)->type() == nlohmann::detail::value_t::string) {
-                return args.at(0)->get<std::string>();
-            } else {
-                auto handle = args.at(0)->get<uint16_t>();
-                auto node   = ASTNodeRef(ctx, { handle });
-                return node.accept<CLiteral>(stdTypes(node), boolType(node)).str;
-            }
-        });
-
-        state.env.add_callback("render", 2, [this](inja::Arguments& args) {
-            auto& data = *args.at(1);
-            auto tmp   = findTemplate(args.at(0)->get<std::string>() + ".txt");
-            return state.env.render(tmp, data);
-        });
-
-        state.env.add_callback("indents", 1, [this](inja::Arguments& args) {
-            return std::string(args.at(0)->get<size_t>(), ' ');
-        });
-
-        state.env.add_callback("nl", 1, [this](inja::Arguments& args) {
-            return std::string(args.at(0)->get<size_t>(), '\n');
-        });
-
-        state.env.add_callback("str", 1, [this](inja::Arguments& args) {
-            return std::to_string(args.at(0)->get<int64_t>());
-        });
-
+        addConfig(node);
+        addCallbacks(node);
         addMacros(node);
-        addPlatformHeader(node);
-        addVersionHeader(node);
+        renderPlatformHeader(node);
+        renderVersionHeader(node);
         pushImport(node, ""sv, true);
     }
 
@@ -324,7 +120,7 @@ struct ASTVisitor {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ENUM>) {
-        popImport(node);
+        tryPopImport(node);
 
         state.data["node"] = node.handle().handle;
         fillDoc(0, false, node, state.data);
@@ -453,101 +249,252 @@ struct ASTVisitor {
         return state.templates[tmp];
     }
 
-    void addMacros(ASTNodeRef node) {
-        auto& macros                 = state.data["macros"];
-        macros["import_api"]         = getFullname(node, false, '_', "api"sv);
-        macros["static_build"]       = getFullname(node, true, '_', "STATIC"sv, "BUILD"sv);
-        macros["platform_windows"]   = getFullname(node, true, '_', "PLATFORM"sv, "WINDOWS"sv);
-        macros["platform_ios"]       = getFullname(node, true, '_', "PLATFORM"sv, "IOS"sv);
-        macros["platform_macos"]     = getFullname(node, true, '_', "PLATFORM"sv, "MAC"sv, "OS"sv);
-        macros["platform_android"]   = getFullname(node, true, '_', "PLATFORM"sv, "ANDROID"sv);
-        macros["platform_linux"]     = getFullname(node, true, '_', "PLATFORM"sv, "LINUX"sv);
-        macros["platform_web"]       = getFullname(node, true, '_', "PLATFORM"sv, "WEB"sv);
-        macros["constexpr14"]        = getFullname(node, true, '_', "CONSTEXPR"sv, "14"sv);
-        macros["version_major"]      = getFullname(node, true, '_', "VERSION"sv, "MAJOR"sv);
-        macros["version_minor"]      = getFullname(node, true, '_', "VERSION"sv, "MINOR"sv);
-        macros["version_micro"]      = getFullname(node, true, '_', "VERSION"sv, "MICRO"sv);
-        macros["version_encode"]     = getFullname(node, true, '_', "VERSION"sv, "ENCODE"sv);
-        macros["version_stringize_"] = getFullname(node, true, '_', "VERSION"sv, "STRINGIZE_"sv);
-        macros["version_stringize"]  = getFullname(node, true, '_', "VERSION"sv, "STRINGIZE"sv);
-        macros["version"]            = getFullname(node, true, '_', "VERSION"sv);
-        macros["version_string"]     = getFullname(node, true, '_', "VERSION"sv, "STRING"sv);
-        macros["begin_enum"]         = getFullname(node, true, '_', "BEGIN"sv, "ENUM"sv);
-        macros["end_enum"]           = getFullname(node, true, '_', "END"sv, "ENUM"sv);
-        macros["flags_enum"]         = getFullname(node, true, '_', "FLAGS"sv, "ENUM"sv);
-    }
-
-    void addPlatformHeader(ASTNodeRef node) {
-    }
-
-    void addVersionHeader(ASTNodeRef node) {
-        pushImport(node,
-                   "version"sv,
-                   false,
-                   {
-                       { "brief",   { "Library version information and utilities." } },
-
-                       { "details",
-                        {
-                             "This header provides version information for the ",
-                             getFullname(node, false, ' '),
-                             " library,",
-                             "\n",
-                             "including version number components and macros for version comparison",
-                             "\n",
-                             "and string generation. It supports:",
-                             "\n",
-                             "  - Major/Minor/Micro version components",
-                             "\n",
-                             "  - Integer version encoding",
-                             "\n",
-                             "  - String version generation",
-                             "\n",
-                         }                                                           }
-        });
-
+    void addConfig(ASTNodeRef node) {
         struct Semver {
             int64_t major;
             int64_t minor;
             int64_t micro;
         };
 
-        std::variant<Semver, std::string_view> version;
-        bool setVersion = false;
+        std::variant<std::string_view, Semver> version;
+        if (auto ver = node.findChild<IDL_AST_NODE_TYPE_ATTR_VERSION>()) {
+            auto literals = ver.getChilds<IDL_AST_NODE_TYPE_LITERAL>();
+            std::vector<ASTNodeRef> args;
+            args.assign(literals.begin(), literals.end());
+            if (args.size() == 1 && args[0].is<IDL_AST_NODE_TYPE_LITERAL_STR>()) {
+                version = args[0].valueStr();
+            } else if (args.size() == 3 && args[0].is<IDL_AST_NODE_TYPE_LITERAL_INT>() && args[1].is<IDL_AST_NODE_TYPE_LITERAL_INT>() &&
+                       args[2].is<IDL_AST_NODE_TYPE_LITERAL_INT>()) {
+                version = Semver{ args[0]->valueInt, args[1]->valueInt, args[2]->valueInt };
+            }
+        }
 
-        if (const auto options = state.writer.options()) {
+        auto indents         = 4;
+        auto single          = !!node.findChild<IDL_AST_NODE_TYPE_ATTR_SINGLE>();
+        auto addDoc          = false;
+        auto addDocGroups    = false;
+        auto addMemberGroups = false;
+        state.stdTypes       = false;
+        state.boolType       = IDL_BOOL_TYPE_INT_8;
+        if (auto options = state.writer.options()) {
+            switch (options->getOutputFiles()) {
+                case IDL_OUTPUT_FILES_SINGLE:
+                    single = true;
+                    break;
+                case IDL_OUTPUT_FILES_MULTI:
+                    single = false;
+                    break;
+                case IDL_OUTPUT_FILES_DEFAULT:
+                    [[fallthrough]];
+                default:
+                    break;
+            }
+
+            if (auto boolType = options->getBoolType(); boolType != IDL_BOOL_TYPE_DEFAULT) {
+                state.boolType = boolType;
+            }
+
             if (const auto ver = options->getVersion()) {
-                version    = Semver{ ver->major, ver->minor, ver->micro };
-                setVersion = true;
+                version = Semver{ ver->major, ver->minor, ver->micro };
             }
+
+            state.stdTypes  = options->getStdTypes();
+            indents         = options->getIndents();
+            auto cOptions   = options->getCOptions();
+            addDoc          = cOptions.add_doc;
+            addDocGroups    = cOptions.add_doc_groups;
+            addMemberGroups = cOptions.add_member_groups;
         }
-        if (!setVersion) {
-            if (auto ver = node.findChild<IDL_AST_NODE_TYPE_ATTR_VERSION>()) {
-                auto literals = ver.getChilds<IDL_AST_NODE_TYPE_LITERAL>();
-                std::vector<ASTNodeRef> args;
-                args.assign(literals.begin(), literals.end());
-                if (args.size() == 1 && args[0].is<IDL_AST_NODE_TYPE_LITERAL_STR>()) {
-                    version    = args[0].valueStr();
-                    setVersion = true;
-                } else if (args.size() == 3 && args[0].is<IDL_AST_NODE_TYPE_LITERAL_INT>() && args[1].is<IDL_AST_NODE_TYPE_LITERAL_INT>() &&
-                           args[2].is<IDL_AST_NODE_TYPE_LITERAL_INT>()) {
-                    version    = Semver{ args[0]->valueInt, args[1]->valueInt, args[2]->valueInt };
-                    setVersion = true;
-                }
+        auto& config                = state.data["config"];
+        config["single"]            = single;
+        config["indents"]           = indents;
+        config["add_doc"]           = addDoc;
+        config["add_doc_groups"]    = addDoc && addDocGroups;
+        config["add_member_groups"] = addDoc && addMemberGroups;
+        config["std_types"]         = state.stdTypes;
+        switch (state.boolType) {
+            case IDL_BOOL_TYPE_INT_32:
+                config["bool_type"] = "int32";
+                break;
+            case IDL_BOOL_TYPE_INT_8:
+                config["bool_type"] = "int8";
+                break;
+            case IDL_BOOL_TYPE_STD_BOOL:
+                config["bool_type"] = "std_bool";
+                break;
+            case IDL_BOOL_TYPE_DEFAULT:
+                assert(!"unreachable code");
+                break;
+        }
+        config["semver"] = std::holds_alternative<Semver>(version);
+        if (std::holds_alternative<Semver>(version)) {
+            const auto& ver         = std::get<Semver>(version);
+            config["version_major"] = ver.major;
+            config["version_minor"] = ver.minor;
+            config["version_micro"] = ver.micro;
+        } else {
+            config["version_string"] = std::get<std::string_view>(version);
+        }
+    }
+
+    void addCallbacks(ASTNodeRef node) {
+        state.env.add_callback("cname", 1, [this](inja::Arguments& args) {
+            auto& ctx   = state.writer.api().ctx();
+            auto handle = args.at(0)->get<uint16_t>();
+            ASTNodeRef node(ctx, { handle });
+            return node.accept<CName>(state.stdTypes, state.boolType).str;
+        });
+
+        state.env.add_callback("ctype", 1, [this](inja::Arguments& args) {
+            auto& ctx   = state.writer.api().ctx();
+            auto handle = args.at(0)->get<uint16_t>();
+            ASTNodeRef node(ctx, { handle });
+            return node.declType().accept<CName>(state.stdTypes, state.boolType).str;
+        });
+
+        state.env.add_callback("cvalue", 1, [this](inja::Arguments& args) {
+            auto& ctx   = state.writer.api().ctx();
+            auto handle = args.at(0)->get<uint16_t>();
+            auto node   = ASTNodeRef(ctx, { handle });
+            return node.accept<CValue>(state.stdTypes, state.boolType).str;
+        });
+
+        state.env.add_callback("cliteral", 1, [this](inja::Arguments& args) {
+            auto& ctx = state.writer.api().ctx();
+            if (args.at(0)->type() == nlohmann::detail::value_t::string) {
+                return args.at(0)->get<std::string>();
+            } else {
+                auto handle = args.at(0)->get<uint16_t>();
+                auto node   = ASTNodeRef(ctx, { handle });
+                return node.accept<CLiteral>(state.stdTypes, state.boolType).str;
             }
-        }
-        if (!setVersion) {
-            version = Semver{};
+        });
+
+        state.env.add_callback("render", 2, [this](inja::Arguments& args) {
+            auto& data = *args.at(1);
+            auto tmp   = findTemplate(args.at(0)->get<std::string>() + ".txt");
+            return state.env.render(tmp, data);
+        });
+
+        state.env.add_callback("indents", 1, [this](inja::Arguments& args) {
+            return std::string(args.at(0)->get<size_t>(), ' ');
+        });
+
+        state.env.add_callback("nl", 1, [this](inja::Arguments& args) {
+            return std::string(args.at(0)->get<size_t>(), '\n');
+        });
+
+        state.env.add_callback("str", 1, [this](inja::Arguments& args) {
+            const auto type = args.at(0)->type();
+            const auto& arg = args.at(0);
+            switch (type) {
+                case nlohmann::detail::value_t::null:
+                    return "NULL"s;
+                case nlohmann::detail::value_t::string:
+                    return escape(arg->get<std::string_view>());
+                case nlohmann::detail::value_t::boolean:
+                    return arg->get<bool>() ? "true"s : "false"s;
+                case nlohmann::detail::value_t::number_integer:
+                    return std::to_string(arg->get<int64_t>());
+                case nlohmann::detail::value_t::number_unsigned:
+                    return std::to_string(arg->get<uint64_t>());
+                case nlohmann::detail::value_t::number_float:
+                    return fmt::format("{:g}", arg->get<double>());
+                default:
+                    assert(!"unreachable code");
+                    return ""s;
+            }
+        });
+    }
+
+    void addMacros(ASTNodeRef node) {
+        auto& macros                 = state.data["macros"];
+        macros["import_api"]         = fullname(node, false, '_', "api"sv);
+        macros["static_build"]       = fullname(node, true, '_', "STATIC"sv, "BUILD"sv);
+        macros["platform_windows"]   = fullname(node, true, '_', "PLATFORM"sv, "WINDOWS"sv);
+        macros["platform_ios"]       = fullname(node, true, '_', "PLATFORM"sv, "IOS"sv);
+        macros["platform_macos"]     = fullname(node, true, '_', "PLATFORM"sv, "MAC"sv, "OS"sv);
+        macros["platform_android"]   = fullname(node, true, '_', "PLATFORM"sv, "ANDROID"sv);
+        macros["platform_linux"]     = fullname(node, true, '_', "PLATFORM"sv, "LINUX"sv);
+        macros["platform_web"]       = fullname(node, true, '_', "PLATFORM"sv, "WEB"sv);
+        macros["constexpr14"]        = fullname(node, true, '_', "CONSTEXPR"sv, "14"sv);
+        macros["version_major"]      = fullname(node, true, '_', "VERSION"sv, "MAJOR"sv);
+        macros["version_minor"]      = fullname(node, true, '_', "VERSION"sv, "MINOR"sv);
+        macros["version_micro"]      = fullname(node, true, '_', "VERSION"sv, "MICRO"sv);
+        macros["version_encode"]     = fullname(node, true, '_', "VERSION"sv, "ENCODE"sv);
+        macros["version_stringize_"] = fullname(node, true, '_', "VERSION"sv, "STRINGIZE_"sv);
+        macros["version_stringize"]  = fullname(node, true, '_', "VERSION"sv, "STRINGIZE"sv);
+        macros["version"]            = fullname(node, true, '_', "VERSION"sv);
+        macros["version_string"]     = fullname(node, true, '_', "VERSION"sv, "STRING"sv);
+        macros["begin_enum"]         = fullname(node, true, '_', "BEGIN"sv, "ENUM"sv);
+        macros["end_enum"]           = fullname(node, true, '_', "END"sv, "ENUM"sv);
+        macros["flags_enum"]         = fullname(node, true, '_', "FLAGS"sv, "ENUM"sv);
+    }
+
+    void renderPlatformHeader(ASTNodeRef node) {
+        std::vector brief   = { "Platform-specific definitions and utilities."s };
+        std::vector details = { "This header provides cross-platform macros, type definitions, and utility"s,
+                                "\n"s,
+                                "macros for the "s,
+                                apiName(node),
+                                " library. It handles:"s,
+                                "\n"s,
+                                "  - Platform detection (Windows, macOS, iOS, Android, Linux, Web)"s,
+                                "\n"s,
+                                "  - Symbol visibility control (DLL import/export on Windows)"s,
+                                "\n"s,
+                                "  - C/C++ interoperability"s,
+                                "\n"s,
+                                "  - Type definitions for consistent data sizes across platforms"s,
+                                "\n"s,
+                                "  - Bit flag operations for enumerations (C++ only)."s,
+                                "\n"s };
+        pushImport(node,
+                   "platform"sv,
+                   false,
+                   {
+                       { "brief",   std::move(brief)   },
+                       { "details", std::move(details) }
+        });
+
+        state.env.render_to(state.out(), findTemplate("c_platform.txt"), state.data);
+    }
+
+    void renderVersionHeader(ASTNodeRef node) {
+        const auto semver = state.data["config"]["semver"].get<bool>();
+        std::vector<std::string> brief;
+        std::vector<std::string> details;
+
+        if (semver) {
+            brief   = { "Library version information and utilities."s };
+            details = { "This header provides version information for the "s,
+                        apiName(node),
+                        " library,"s,
+                        "\n"s,
+                        "including version number components and macros for version comparison"s,
+                        "\n"s,
+                        "and string generation. It supports:"s,
+                        "\n"s,
+                        "  - Major/Minor/Micro version components"s,
+                        "\n"s,
+                        "  - Integer version encoding"s,
+                        "\n"s,
+                        "  - String version generation"s,
+                        "\n"s };
+        } else {
+            brief   = { "Library version information."s };
+            details = { "This header provides version information for the "s, apiName(node), " library."s };
         }
 
-        if (std::holds_alternative<Semver>(version)) {
-            const auto& ver     = std::get<Semver>(version);
-            state.data["major"] = ver.major;
-            state.data["minor"] = ver.minor;
-            state.data["micro"] = ver.micro;
-            state.env.render_to(state.out(), findTemplate("c_semver.txt"), state.data);
-        } else {
-        }
+        pushImport(node,
+                   "version"sv,
+                   false,
+                   {
+                       { "brief",   std::move(brief)   },
+                       { "details", std::move(details) }
+        });
+
+        state.env.render_to(state.out(), findTemplate(semver ? "c_semver.txt"s : "c_strver.txt"s), state.data);
     }
 
     std::ostream& out() noexcept {
@@ -564,27 +511,27 @@ struct ASTVisitor {
         if (!postfix.empty() && !single) {
             std::string postfixUpper(postfix.data(), postfix.length());
             postfixUpper = convert(postfixUpper, Case::ScreamingSnakeCase);
-            name         = getFullname(node, false, '-', postfix);
-            includeGuard = getFullname(node, true, '_', postfixUpper, 'H');
+            name         = fullname(node, false, '-', postfix);
+            includeGuard = fullname(node, true, '_', postfixUpper, 'H');
         } else {
-            name         = getFullname(node, false, '-');
-            includeGuard = getFullname(node, true, '_', 'H');
+            name         = fullname(node, false, '-');
+            includeGuard = fullname(node, true, '_', 'H');
         }
-        auto isImport = node.is<IDL_AST_NODE_TYPE_IMPORT>();
+
+        auto import = node.is<IDL_AST_NODE_TYPE_IMPORT>() ? node : node.ctx().emptyNodeRef();
 
         inja::json data;
         data["include_guard"] = includeGuard;
         data["is_main"]       = main || single;
 
-        state.includes.emplace(state, state.writer.createOutput(filename(name)), isImport ? node : node.ctx().emptyNodeRef(), std::move(data));
+        state.includes.emplace(state, state.writer.createOutput(filename(name)), import, std::move(data));
         state.mergeImport();
-
         fillDoc(0, false, node, state.data, overrideDoc);
 
         state.env.render_to(state.out(), findTemplate("c_include_guard.txt"), state.data);
     }
 
-    void popImport(ASTNodeRef& node) {
+    void tryPopImport(ASTNodeRef& node) {
         const auto single = state.data["config"]["single"].get<bool>();
         if (single) {
             return;
@@ -614,32 +561,47 @@ struct ASTVisitor {
     }
 
     template <typename... Postfix>
-    std::string getFullname(ASTNodeRef& node, bool isUpper, char infix, Postfix&&... postfix) {
+    std::string fullname(ASTNodeRef& node, bool isUpper, char infix, Postfix&&... postfix) {
         std::ostringstream ss;
-        ss << node.accept<CName>(stdTypes(node), boolType(node), true, infix, isUpper).str;
+        ss << node.accept<CName>(state.stdTypes, state.boolType, true, infix, isUpper).str;
         if (sizeof...(postfix) > 0) {
             ((ss << infix, ss << postfix), ...);
         }
         return ss.str();
     }
 
-    bool stdTypes(ASTNodeRef& /* node */) noexcept {
-        bool stdTypes = false;
-        if (auto options = state.writer.options()) {
-            stdTypes = options->getStdTypes();
+    std::string apiName(ASTNodeRef& node) {
+        std::vector<int> nums{};
+        if (auto attr = node.findChild<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>()) {
+            auto view = attr.getChilds() | std::views::transform([](const auto& arg) {
+                return int(arg->valueInt);
+            });
+            nums.assign(view.begin(), view.end());
         }
-        return stdTypes;
+        const auto str = node.name();
+        return convert({ str.data(), str.length() }, Case::PascalCase, nums.empty() ? nullptr : &nums);
     }
 
-    idl_bool_type_t boolType(ASTNodeRef& /* node */) noexcept {
-        idl_bool_type_t boolType = IDL_BOOL_TYPE_INT_8;
-        if (auto options = state.writer.options()) {
-            boolType = options->getBoolType();
-            if (boolType == IDL_BOOL_TYPE_DEFAULT) { // TODO
-                boolType = IDL_BOOL_TYPE_INT_8;
+    static std::string escape(std::string_view str) {
+        std::ostringstream ss;
+        ss << '"';
+        for (char c : str) {
+            switch (c) {
+                case '\n':
+                    ss << '\\' << 'n';
+                    break;
+                case '\t':
+                    ss << '\\' << 't';
+                    break;
+                default:
+                    if (c == '\\' || c == '"') {
+                        ss << '\\';
+                    }
+                    ss << c;
+                    break;
             }
         }
-        return boolType;
+        return ss.str();
     }
 
     State& state;

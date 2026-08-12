@@ -1,0 +1,2 @@
+
+#define {{ macros.version_string }} {{ str(config.version_string) }}

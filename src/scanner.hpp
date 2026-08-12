@@ -15,10 +15,7 @@ namespace idl {
 
 class Scanner : public yyFlexLexer {
 public:
-    Scanner(Context& ctx,
-            const Options* options,
-            std::span<const idl_source_t> sources,
-            const std::filesystem::path& file) :
+    Scanner(Context& ctx, const Options* options, std::span<const idl_source_t> sources, const std::filesystem::path& file) :
         yyFlexLexer(),
         _ctx(ctx),
         _options(options),
@@ -58,9 +55,7 @@ public:
 
     void import(const idl::location& loc, const std::filesystem::path& file, bool isRelative = true) {
         const std::string& locFile = *loc.begin.filename;
-        ASTLocation astLoc{ _ctx.result()->intern({ locFile.c_str(), locFile.length() }),
-                            1,
-                            uint16_t(loc.end.line - 1) };
+        ASTLocation astLoc{ _ctx.result()->intern({ locFile.c_str(), locFile.length() }), 1, uint16_t(loc.end.line - 1) };
         if (isRelative && file.is_absolute()) {
             _ctx.log<IDL_STATUS_E3021>(astLoc, file.string());
             return;
@@ -89,15 +84,8 @@ public:
             _imports.back()->line     = yylineno;
         }
         auto initLineNum = _imports.empty() ? 1 : std::numeric_limits<position::counter_type>::max() - 1;
-        _imports.emplace_back(std::make_unique<Import>(this,
-                                                       source,
-                                                       needRelease,
-                                                       path,
-                                                       filenamePtr,
-                                                       idl::location(idl::position(filenamePtr, initLineNum, 1)),
-                                                       1,
-                                                       nullptr,
-                                                       nullptr));
+        _imports.emplace_back(std::make_unique<Import>(
+            this, source, needRelease, path, filenamePtr, idl::location(idl::position(filenamePtr, initLineNum, 1)), 1, nullptr, nullptr));
         auto& import = *_imports.back();
         if (import.source) {
             import.memBuffer = std::make_unique<MemoryBuffer>(import.source->data, (size_t) import.source->size);
@@ -151,8 +139,7 @@ public:
         try {
             return std::stod(str);
         } catch (const std::out_of_range& e) {
-            context().log<IDL_STATUS_W2004>(
-                location, "Float", str, std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max());
+            context().log<IDL_STATUS_W2004>(location, "Float", str, std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max());
         } catch (...) {
             context().log<IDL_STATUS_E3046>(location);
         }
@@ -163,8 +150,7 @@ public:
         try {
             return std::stoll(str);
         } catch (const std::out_of_range& e) {
-            context().log<IDL_STATUS_W2004>(
-                location, "Integer", str, std::numeric_limits<int64_t>::min(), std::numeric_limits<int64_t>::max());
+            context().log<IDL_STATUS_W2004>(location, "Integer", str, std::numeric_limits<int64_t>::min(), std::numeric_limits<int64_t>::max());
         } catch (...) {
             context().log<IDL_STATUS_E3046>(location);
         }
@@ -329,6 +315,36 @@ private:
                 assert(!"unreachable code");
             }
             ss << c;
+        }
+        return ss.str();
+    }
+
+    std::string cunescape(const std::string_view str, const idl::location& loc) {
+        auto cStr = str.data();
+        std::ostringstream ss;
+        char c;
+        while ((c = *cStr++) != '\0') {
+            char nc = *cStr;
+            if (c == '\\') {
+                if (nc == '\0') {
+                    // TODO: err
+                    break;
+                } else if (nc == '\\') {
+                    ss << '\\';
+                } else if (nc == '"') {
+                    ss << '"';
+                } else if (nc == 'n') {
+                    ss << '\n';
+                } else if (nc == 't') {
+                    ss << '\t';
+                } else {
+                    // TODO: err
+                    break;
+                }
+                ++cStr;
+            } else {
+                ss << c;
+            }
         }
         return ss.str();
     }

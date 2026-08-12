@@ -83,6 +83,7 @@ typedef struct
 {
     idl_bool_t add_doc; /**< Add Doxygen documentation. */
     idl_bool_t add_doc_groups; /**< Add Doxygen groups. */
+    idl_bool_t add_member_groups; /**< Add Doxygen grouping members. */
 } idl_c_options_t;
 
 /**

@@ -149,7 +149,7 @@ import[ ]+ { BEGIN(IMPORTCTX); }
 <*>{FLOAT}               { yylval->emplace<double>(parse_float(YYText())); return token::FLOAT; }
 <*>{INT}                 { yylval->emplace<int64_t>(parse_int(YYText())); return token::INT; }
 <*>{SYMBOL}+             { yylval->emplace<std::string>(YYText()); return token::INVALID_ID; }
-<*>\"(\\.|[^\\"\r\n])*\" { std::string str = YYText(); str = str.substr(1, str.length() - 2); yylval->emplace<std::string>(str); return token::STR; }
+<*>\"(\\.|[^\\"\r\n])*\" { std::string str = YYText(); str = str.substr(1, str.length() - 2); yylval->emplace<std::string>(cunescape(str, *yylloc)); return token::STR; }
 <*>\"(\\.|[^\\"\r\n])*   { std::string str = YYText(); log(E3009, str.substr(0, str.length())); }
 
 <*><<EOF>>                { setDeclaring(false); if (popImport()) { return token::POPIMPORT; } else { return token::YYEOF; } }

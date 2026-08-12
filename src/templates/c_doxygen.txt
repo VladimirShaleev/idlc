@@ -1,4 +1,7 @@
-## if config.add_doc and is_inline == false and length(docs) > 0
+## if config.add_doc and is_inline == false
+## if config.add_member_groups and default(member_group, "none") == "end"
+{{ indents }}/** @} */
+## else if length(docs) > 0
 ## set max_len = 0
 ## for doc in docs
 ## set name_len = length(doc.name)
@@ -13,5 +16,9 @@
 ## if exists("license")
 {{ indents }} *{{ nl(1) }}{{ indents }} *     {% for literal in license %}{% set str=cliteral(literal) %}{{ str }}{% if str == "\n" %}{{ indents }} *     {% endif %}{% endfor %}
 ## endif
+## if config.add_member_groups and default(member_group, "none") == "begin"
+{{ indents }} * @{
+## endif
 {{ indents }} */
+## endif
 ## endif

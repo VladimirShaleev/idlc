@@ -242,11 +242,12 @@ struct ASTVisitor {
         if (!addDoc) {
             addDocGroups = false;
         }
-        state.data["config"]["single"]         = single;
-        state.data["config"]["indents"]        = indents;
-        state.data["config"]["add_doc"]        = addDoc;
-        state.data["config"]["add_doc_groups"] = addDocGroups;
-        state.data["config"]["std_types"]      = stdTypes(node);
+        state.data["config"]["single"]            = single;
+        state.data["config"]["indents"]           = indents;
+        state.data["config"]["add_doc"]           = addDoc;
+        state.data["config"]["add_doc_groups"]    = addDocGroups;
+        state.data["config"]["add_member_groups"] = addDoc && true;
+        state.data["config"]["std_types"]         = stdTypes(node);
         switch (boolType(node)) {
             case IDL_BOOL_TYPE_INT_32:
                 state.data["config"]["bool_type"] = "int32";

@@ -75,8 +75,7 @@ TEST(idlc, ExplicitAttributeDetail) {
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
-    ASSERT_EQ(messages[0],
-              "note [N1004]: Unnecessary explicit attribute [detail] in inline documentation at n1004:11:25");
+    ASSERT_EQ(messages[0], "note [N1004]: Unnecessary explicit attribute [detail] in inline documentation at n1004:11:25");
 
     auto api = idl_compilation_result_get_api(ast);
     ASSERT_NE(api, HandleNone);
@@ -104,8 +103,7 @@ TEST(idlc, MissingAttribute) {
     ASSERT_EQ(messages[4], "warning [W2001]: The declaration 'Api' is missing an attribute [license] at w2001:1:1");
     ASSERT_EQ(messages[5], "warning [W2001]: The declaration 'Api.Test' is missing an attribute [brief] at w2001:3:1");
     ASSERT_EQ(messages[6], "warning [W2001]: The declaration 'Api.Test' is missing an attribute [detail] at w2001:3:1");
-    ASSERT_EQ(messages[7],
-              "warning [W2001]: The declaration 'Api.Test.Value' is missing an attribute [detail] at w2001:4:5");
+    ASSERT_EQ(messages[7], "warning [W2001]: The declaration 'Api.Test.Value' is missing an attribute [detail] at w2001:4:5");
 
     auto api = idl_compilation_result_get_api(ast);
     ASSERT_NE(api, HandleNone);
@@ -165,11 +163,12 @@ TEST(idlc, ConstantForwardRefers) {
     ASSERT_NE(test, HandleNone);
 
     auto testConsts = getChilds(ast, test, IDL_AST_NODE_TYPE_CONST);
-    ASSERT_EQ(testConsts.size(), 4);
+    ASSERT_EQ(testConsts.size(), 5);
     ASSERT_TRUE(checkConst(ast, testConsts[0], 0, true, false, false));
     ASSERT_TRUE(checkConst(ast, testConsts[1], 0, false, false, false));
     ASSERT_TRUE(checkConst(ast, testConsts[2], 5, false, false, true));
     ASSERT_TRUE(checkConst(ast, testConsts[3], 5, false, false, false));
+    ASSERT_TRUE(checkConst(ast, testConsts[4], 0x7fffffff, true, false, false));
 }
 
 TEST(idlc, FloatOutOfRange) {
@@ -240,7 +239,7 @@ TEST(idlc, IntegerOutOfRange) {
     ASSERT_TRUE(checkConst(ast, firstConsts[1], 300, false, false, false));
     ASSERT_TRUE(checkConst(ast, firstConsts[2], 367, false, false, false));
     ASSERT_TRUE(checkConst(ast, firstConsts[3], 0x7fffffff, true, false, false));
-    ASSERT_NE(findChild(ast, firstConsts[3], IDL_AST_NODE_TYPE_ATTR_MAX_ENUM), HandleNone);
+    ASSERT_NE(findChild(ast, firstConsts[3], IDL_AST_NODE_TYPE_ATTR_BUILTIN_MAX_ENUM), HandleNone);
 
     auto secondConsts = getChilds(ast, enums[1], IDL_AST_NODE_TYPE_CONST);
     ASSERT_EQ(secondConsts.size(), 6);
@@ -250,7 +249,7 @@ TEST(idlc, IntegerOutOfRange) {
     ASSERT_TRUE(checkConst(ast, secondConsts[3], 5, false, false, false));
     ASSERT_TRUE(checkConst(ast, secondConsts[4], 367, false, false, false));
     ASSERT_TRUE(checkConst(ast, secondConsts[5], 0x7fffffff, true, false, false));
-    ASSERT_NE(findChild(ast, secondConsts[5], IDL_AST_NODE_TYPE_ATTR_MAX_ENUM), HandleNone);
+    ASSERT_NE(findChild(ast, secondConsts[5], IDL_AST_NODE_TYPE_ATTR_BUILTIN_MAX_ENUM), HandleNone);
 }
 
 TEST(idlc, IntegerOutOfRangeWarnAsErrors) {
@@ -277,7 +276,7 @@ TEST(idlc, IntegerOutOfRangeWarnAsErrors) {
     ASSERT_TRUE(checkConst(ast, firstConsts[1], 300, false, false, false));
     ASSERT_TRUE(checkConst(ast, firstConsts[2], 367, false, false, false));
     ASSERT_TRUE(checkConst(ast, firstConsts[3], 0x7fffffff, true, false, false));
-    ASSERT_NE(findChild(ast, firstConsts[3], IDL_AST_NODE_TYPE_ATTR_MAX_ENUM), HandleNone);
+    ASSERT_NE(findChild(ast, firstConsts[3], IDL_AST_NODE_TYPE_ATTR_BUILTIN_MAX_ENUM), HandleNone);
 
     auto secondConsts = getChilds(ast, enums[1], IDL_AST_NODE_TYPE_CONST);
     ASSERT_EQ(secondConsts.size(), 6);
@@ -287,7 +286,7 @@ TEST(idlc, IntegerOutOfRangeWarnAsErrors) {
     ASSERT_TRUE(checkConst(ast, secondConsts[3], 5, false, false, false));
     ASSERT_TRUE(checkConst(ast, secondConsts[4], 367, false, true, false));
     ASSERT_TRUE(checkConst(ast, secondConsts[5], 0x7fffffff, true, false, false));
-    ASSERT_NE(findChild(ast, secondConsts[5], IDL_AST_NODE_TYPE_ATTR_MAX_ENUM), HandleNone);
+    ASSERT_NE(findChild(ast, secondConsts[5], IDL_AST_NODE_TYPE_ATTR_BUILTIN_MAX_ENUM), HandleNone);
 }
 
 TEST(idlc, SpecialCharacterExpectedAfterBackslash) {
@@ -321,14 +320,16 @@ TEST(idlc, SpecialCharacterExpectedAfterBackslash) {
     ASSERT_NE(test, HandleNone);
 
     auto consts = getChilds(ast, test, IDL_AST_NODE_TYPE_CONST);
-    ASSERT_EQ(consts.size(), 3);
+    ASSERT_EQ(consts.size(), 4);
 
     auto value1 = consts[0];
     auto value2 = consts[1];
     auto value3 = consts[2];
+    auto value4 = consts[3];
     ASSERT_NE(value1, HandleNone);
     ASSERT_NE(value2, HandleNone);
     ASSERT_NE(value3, HandleNone);
+    ASSERT_NE(value4, HandleNone);
 
     auto apiBrief     = findChild(ast, api, IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF);
     auto apiDetail    = findChild(ast, api, IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL);
@@ -340,6 +341,7 @@ TEST(idlc, SpecialCharacterExpectedAfterBackslash) {
     auto value1Detail = findChild(ast, value1, IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL);
     auto value2Detail = findChild(ast, value2, IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL);
     auto value3Detail = findChild(ast, value3, IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL);
+    auto value4Detail = findChild(ast, value4, IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL);
     ASSERT_NE(apiBrief, HandleNone);
     ASSERT_NE(apiDetail, HandleNone);
     ASSERT_NE(apiCopyright, HandleNone);
@@ -350,6 +352,7 @@ TEST(idlc, SpecialCharacterExpectedAfterBackslash) {
     ASSERT_NE(value1Detail, HandleNone);
     ASSERT_NE(value2Detail, HandleNone);
     ASSERT_NE(value3Detail, HandleNone);
+    ASSERT_NE(value4Detail, HandleNone);
     ASSERT_TRUE(hasAllState(ast, apiBrief, IDL_AST_NODE_STATE_MULTILINE_DOC_BIT));
     ASSERT_FALSE(hasAllState(ast, apiDetail, IDL_AST_NODE_STATE_MULTILINE_DOC_BIT));
     ASSERT_FALSE(hasAllState(ast, apiCopyright, IDL_AST_NODE_STATE_MULTILINE_DOC_BIT));
@@ -360,6 +363,7 @@ TEST(idlc, SpecialCharacterExpectedAfterBackslash) {
     ASSERT_FALSE(hasAllState(ast, value1Detail, IDL_AST_NODE_STATE_MULTILINE_DOC_BIT));
     ASSERT_TRUE(hasAllState(ast, value2Detail, IDL_AST_NODE_STATE_MULTILINE_DOC_BIT));
     ASSERT_FALSE(hasAllState(ast, value3Detail, IDL_AST_NODE_STATE_MULTILINE_DOC_BIT));
+    ASSERT_FALSE(hasAllState(ast, value4Detail, IDL_AST_NODE_STATE_MULTILINE_DOC_BIT));
 
     auto apiBriefArgs = getChilds(ast, apiBrief);
     ASSERT_EQ(apiBriefArgs.size(), 25);
@@ -473,6 +477,20 @@ TEST(idlc, SpecialCharacterExpectedAfterBackslash) {
     ASSERT_EQ(getStr(ast, value3DetailArgs[0]), "Test");
     ASSERT_EQ(getDeclRef(ast, value3DetailArgs[1]), value3);
     ASSERT_EQ(getStr(ast, value3DetailArgs[2]), "OK.");
+
+    auto value4DetailArgs = getChilds(ast, value4Detail);
+    ASSERT_EQ(value4DetailArgs.size(), 11);
+    ASSERT_EQ(getStr(ast, value4DetailArgs[0]), "Max");
+    ASSERT_EQ(getStr(ast, value4DetailArgs[1]), " ");
+    ASSERT_EQ(getStr(ast, value4DetailArgs[2]), "value");
+    ASSERT_EQ(getStr(ast, value4DetailArgs[3]), " ");
+    ASSERT_EQ(getStr(ast, value4DetailArgs[4]), "of");
+    ASSERT_EQ(getStr(ast, value4DetailArgs[5]), " ");
+    ASSERT_EQ(getStr(ast, value4DetailArgs[6]), "enum");
+    ASSERT_EQ(getStr(ast, value4DetailArgs[7]), " ");
+    ASSERT_EQ(getStr(ast, value4DetailArgs[8]), "(not");
+    ASSERT_EQ(getStr(ast, value4DetailArgs[9]), " ");
+    ASSERT_EQ(getStr(ast, value4DetailArgs[10]), "used)");
 }
 
 TEST(idlc, FieldTypeHasDeclTypeDeclaredBelow) {
@@ -498,8 +516,7 @@ TEST(idlc, ImplicitConversionFromIntToFloat) {
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
-    ASSERT_EQ(messages[0],
-              "warning [W2007]: Implicit conversion from an integer type to a floating-point type at w2007:13:30");
+    ASSERT_EQ(messages[0], "warning [W2007]: Implicit conversion from an integer type to a floating-point type at w2007:13:30");
 
     auto api = idl_compilation_result_get_api(ast);
     ASSERT_NE(api, HandleNone);
@@ -584,12 +601,9 @@ TEST(idlc, VersionComponentRange) {
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 3);
-    ASSERT_EQ(messages[0],
-              "error [E3004]: Version values must be between 0 and 255, while the argument is -1 at e3004:6:10");
-    ASSERT_EQ(messages[1],
-              "error [E3004]: Version values must be between 0 and 255, while the argument is 256 at e3004:6:10");
-    ASSERT_EQ(messages[2],
-              "error [E3004]: Version values must be between 0 and 255, while the argument is 1000 at e3004:6:10");
+    ASSERT_EQ(messages[0], "error [E3004]: Version values must be between 0 and 255, while the argument is -1 at e3004:6:10");
+    ASSERT_EQ(messages[1], "error [E3004]: Version values must be between 0 and 255, while the argument is 256 at e3004:6:10");
+    ASSERT_EQ(messages[2], "error [E3004]: Version values must be between 0 and 255, while the argument is 1000 at e3004:6:10");
 
     auto api = idl_compilation_result_get_api(ast);
     ASSERT_NE(api, HandleNone);
@@ -608,10 +622,10 @@ TEST(idlc, InvalidAttrForDeclaration) {
     ASSERT_EQ(messages.size(), 2);
     ASSERT_EQ(messages[0],
               "error [E3005]: Invalid attribute [flags] for api 'Api' declaration, allowed attributes are cname, "
-              "tokenizer, single, version, brief, detail, author, copyright, license at e3005:6:10");
+              "tokenizer, single, stdtypes, booltype, version, brief, detail, author, copyright, license at e3005:6:10");
     ASSERT_EQ(messages[1],
               "error [E3005]: Invalid attribute [hex] for api 'Api' declaration, allowed attributes are cname, "
-              "tokenizer, single, version, brief, detail, author, copyright, license at e3005:6:17");
+              "tokenizer, single, stdtypes, booltype, version, brief, detail, author, copyright, license at e3005:6:17");
 
     auto api = idl_compilation_result_get_api(ast);
     ASSERT_NE(api, HandleNone);
@@ -709,9 +723,7 @@ TEST(idlc, StringClosingCharacter) {
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 2);
-    ASSERT_EQ(
-        messages[0],
-        "error [E3009]: String closing character not found in string: \"Lost closing character)])] at e3009:5:17");
+    ASSERT_EQ(messages[0], "error [E3009]: String closing character not found in string: \"Lost closing character)])] at e3009:5:17");
     ASSERT_EQ(messages[1], "error [E3001]: Syntax error at e3009:5:44");
 
     auto api = idl_compilation_result_get_api(ast);
@@ -738,8 +750,7 @@ TEST(idlc, FirstDeclaration) {
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
-    ASSERT_EQ(messages[0],
-              "error [E3011]: The first declaration in the description should always begin with the 'api' declaration");
+    ASSERT_EQ(messages[0], "error [E3011]: The first declaration in the description should always begin with the 'api' declaration");
 
     auto api = idl_compilation_result_get_api(ast);
     ASSERT_NE(api, HandleNone);
@@ -850,10 +861,10 @@ TEST(idlc, UnknownAttributeInDoc) {
     ASSERT_EQ(messages[4], "error [E3018]: Inline documentation only [detail] description is allowed at e3015:7:39");
     ASSERT_EQ(messages[5],
               "error [E3005]: Invalid attribute [flags] for api 'Api' declaration, allowed attributes are cname, "
-              "tokenizer, single, version, brief, detail, author, copyright, license at e3015:6:31");
+              "tokenizer, single, stdtypes, booltype, version, brief, detail, author, copyright, license at e3015:6:31");
     ASSERT_EQ(messages[6],
               "error [E3005]: Invalid attribute [hex] for api 'Api' declaration, allowed attributes are cname, "
-              "tokenizer, single, version, brief, detail, author, copyright, license at e3015:7:39");
+              "tokenizer, single, stdtypes, booltype, version, brief, detail, author, copyright, license at e3015:7:39");
 
     auto api = idl_compilation_result_get_api(ast);
     ASSERT_NE(api, HandleNone);
@@ -912,8 +923,7 @@ TEST(idlc, MultiLineCommentMustBeSeparatedNL) {
 
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
-    ASSERT_EQ(messages[0],
-              "error [E3017]: The body of a multi-line comment '@ ```' must be separated by a new line at e3017:1:1");
+    ASSERT_EQ(messages[0], "error [E3017]: The body of a multi-line comment '@ ```' must be separated by a new line at e3017:1:1");
 
     auto api = idl_compilation_result_get_api(ast);
     ASSERT_NE(api, HandleNone);
@@ -1081,8 +1091,7 @@ TEST(idlc, AllLiteralsInTheValueAttrMustBeOfSameType) {
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
-    ASSERT_EQ(messages[0],
-              "error [E3026]: All literals in the [value] attribute must be of the same type at e3026:10:18");
+    ASSERT_EQ(messages[0], "error [E3026]: All literals in the [value] attribute must be of the same type at e3026:10:18");
 
     auto api = idl_compilation_result_get_api(ast);
     ASSERT_NE(api, HandleNone);
@@ -1126,8 +1135,7 @@ TEST(idlc, CnameAttrMustContainSingleStringLiteralArg) {
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 2);
     ASSERT_EQ(messages[0], "error [E3002]: Argument parsing error 'not string' at e3028:6:16");
-    ASSERT_EQ(messages[1],
-              "error [E3028]: The [cname] attribute must contain a single string literal argument at e3028:6:10");
+    ASSERT_EQ(messages[1], "error [E3028]: The [cname] attribute must contain a single string literal argument at e3028:6:10");
 
     auto api = idl_compilation_result_get_api(ast);
     ASSERT_NE(api, HandleNone);
@@ -1198,9 +1206,7 @@ TEST(idlc, InvalidTokenizerFormatString) {
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
-    ASSERT_EQ(
-        messages[0],
-        "error [E3031]: Invalid tokenizer format string \"2-a3-4\", a valid string looks like (2-^3-4) at e3031:6:10");
+    ASSERT_EQ(messages[0], "error [E3031]: Invalid tokenizer format string \"2-a3-4\", a valid string looks like (2-^3-4) at e3031:6:10");
 
     auto api = idl_compilation_result_get_api(ast);
     ASSERT_NE(api, HandleNone);
@@ -1283,16 +1289,11 @@ TEST(idlc, IsNotPossibleToAssignLiteralToType) {
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 5);
-    ASSERT_EQ(messages[0],
-              "error [E3035]: It is not possible to assign string literal to type 'Api.Int32' at e3035:24:28");
-    ASSERT_EQ(messages[1],
-              "error [E3035]: It is not possible to assign integer literal to type 'Api.Bool' at e3035:25:27");
-    ASSERT_EQ(messages[2],
-              "error [E3035]: It is not possible to assign boolean literal to type 'Api.Str' at e3035:26:26");
-    ASSERT_EQ(messages[3],
-              "error [E3035]: It is not possible to assign float-point literal to type 'Api.Int32' at e3035:27:28");
-    ASSERT_EQ(messages[4],
-              "error [E3035]: It is not possible to assign enum const literal to type 'Api.Int32' at e3035:28:29");
+    ASSERT_EQ(messages[0], "error [E3035]: It is not possible to assign string literal to type 'Api.Int32' at e3035:24:28");
+    ASSERT_EQ(messages[1], "error [E3035]: It is not possible to assign integer literal to type 'Api.Bool' at e3035:25:27");
+    ASSERT_EQ(messages[2], "error [E3035]: It is not possible to assign boolean literal to type 'Api.Str' at e3035:26:26");
+    ASSERT_EQ(messages[3], "error [E3035]: It is not possible to assign float-point literal to type 'Api.Int32' at e3035:27:28");
+    ASSERT_EQ(messages[4], "error [E3035]: It is not possible to assign enum const literal to type 'Api.Int32' at e3035:28:29");
 
     auto api = idl_compilation_result_get_api(ast);
     ASSERT_NE(api, HandleNone);
@@ -1315,8 +1316,7 @@ TEST(idlc, IsNotPossibleToAssignLiteralToType) {
         return getLiteral(ast, args[0]);
     });
 
-    std::vector<Literal> expected = { "test string",          5, true, -2.54, value2,
-                                      "invalid literal type", 7, true, 3.7,   value2 };
+    std::vector<Literal> expected = { "test string", 5, true, -2.54, value2, "invalid literal type", 7, true, 3.7, value2 };
 
     std::vector<Literal> actual;
     actual.assign(values.begin(), values.end());
@@ -1329,8 +1329,7 @@ TEST(idlc, IdentifiersCaseSensitive) {
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 2);
-    ASSERT_EQ(messages[0],
-              "error [E3036]: Identifiers are case sensitive, error in 'ApI', but expected 'Api' at e3036:1:9");
+    ASSERT_EQ(messages[0], "error [E3036]: Identifiers are case sensitive, error in 'ApI', but expected 'Api' at e3036:1:9");
     ASSERT_EQ(messages[1],
               "error [E3036]: Identifiers are case sensitive, error in 'Api.Test.value', but expected 'Api.Test.Value' "
               "at e3036:2:22");
@@ -1382,9 +1381,10 @@ TEST(idlc, ConstCanOnlyReferToOtherConstWhenEvaluated) {
     ASSERT_NE(test, HandleNone);
 
     auto consts = getChilds(ast, test, IDL_AST_NODE_TYPE_CONST);
-    ASSERT_EQ(consts.size(), 2);
+    ASSERT_EQ(consts.size(), 3);
     ASSERT_TRUE(checkConst(ast, consts[0], 0, false, true, false));
     ASSERT_TRUE(checkConst(ast, consts[1], 1, false, false, false));
+    ASSERT_TRUE(checkConst(ast, consts[2], 0x7fffffff, true, false, false));
 }
 
 TEST(idlc, ConstCannotReferToItselfWhenEvaluated) {
@@ -1392,8 +1392,7 @@ TEST(idlc, ConstCannotReferToItselfWhenEvaluated) {
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
-    ASSERT_EQ(messages[0],
-              "error [E3039]: A constant 'Api.Test.Value' cannot refer to itself when evaluated at e3039:10:5");
+    ASSERT_EQ(messages[0], "error [E3039]: A constant 'Api.Test.Value' cannot refer to itself when evaluated at e3039:10:5");
 
     auto api = idl_compilation_result_get_api(ast);
     ASSERT_NE(api, HandleNone);
@@ -1402,8 +1401,9 @@ TEST(idlc, ConstCannotReferToItselfWhenEvaluated) {
     ASSERT_NE(test, HandleNone);
 
     auto consts = getChilds(ast, test, IDL_AST_NODE_TYPE_CONST);
-    ASSERT_EQ(consts.size(), 1);
+    ASSERT_EQ(consts.size(), 2);
     ASSERT_TRUE(checkConst(ast, consts.front(), 0, false, true, false));
+    ASSERT_TRUE(checkConst(ast, consts.back(), 0x7fffffff, true, false, false));
 }
 
 TEST(idlc, EnumConstsCanOnlyBeSpecifiedAsIntOrEnumConsts) {
@@ -1428,10 +1428,11 @@ TEST(idlc, EnumConstsCanOnlyBeSpecifiedAsIntOrEnumConsts) {
     ASSERT_NE(test, HandleNone);
 
     auto consts = getChilds(ast, test, IDL_AST_NODE_TYPE_CONST);
-    ASSERT_EQ(consts.size(), 3);
+    ASSERT_EQ(consts.size(), 4);
     ASSERT_TRUE(checkConst(ast, consts[0], 0, false, true, false));
     ASSERT_TRUE(checkConst(ast, consts[1], 0, false, true, false));
     ASSERT_TRUE(checkConst(ast, consts[2], 0, false, true, false));
+    ASSERT_TRUE(checkConst(ast, consts[3], 0x7fffffff, true, false, false));
 }
 
 TEST(idlc, FailedCalculateConst) {
@@ -1451,11 +1452,12 @@ TEST(idlc, FailedCalculateConst) {
     ASSERT_NE(test, HandleNone);
 
     auto consts = getChilds(ast, test, IDL_AST_NODE_TYPE_CONST);
-    ASSERT_EQ(consts.size(), 4);
+    ASSERT_EQ(consts.size(), 5);
     ASSERT_TRUE(checkConst(ast, consts[0], 0, false, true, false));
     ASSERT_TRUE(checkConst(ast, consts[1], 0, false, true, false));
     ASSERT_TRUE(checkConst(ast, consts[2], 0, false, true, false));
     ASSERT_TRUE(checkConst(ast, consts[3], 0, true, true, false));
+    ASSERT_TRUE(checkConst(ast, consts[4], 0x7fffffff, true, false, false));
 }
 
 TEST(idlc, CyclicDependenceOfConst) {
@@ -1473,10 +1475,9 @@ TEST(idlc, CyclicDependenceOfConst) {
     ASSERT_EQ(messages[3],
               "warning [W2003]: The constant 'Api.OtherTest.Value3' refers to a constant declared below "
               "'Api.OtherTest.Value8' at e3042:20:5");
-    ASSERT_EQ(
-        messages[4],
-        "error [E3042]: Cyclic dependence of constant 'Api.OtherTest.Value3 -> Api.OtherTest.Value8 -> "
-        "Api.OtherTest.Value7 -> Api.OtherTest.Value6 -> Api.OtherTest.Value4 -> Api.OtherTest.Value3' at e3042:20:5");
+    ASSERT_EQ(messages[4],
+              "error [E3042]: Cyclic dependence of constant 'Api.OtherTest.Value3 -> Api.OtherTest.Value8 -> "
+              "Api.OtherTest.Value7 -> Api.OtherTest.Value6 -> Api.OtherTest.Value4 -> Api.OtherTest.Value3' at e3042:20:5");
     ASSERT_EQ(messages[5], "error [E3041]: Failed to calculate the constant 'Api.OtherTest.Value4' at e3042:21:5");
 
     auto api = idl_compilation_result_get_api(ast);
@@ -1488,15 +1489,16 @@ TEST(idlc, CyclicDependenceOfConst) {
     auto otherTest = enums[1];
 
     auto testConsts = getChilds(ast, test, IDL_AST_NODE_TYPE_CONST);
-    ASSERT_EQ(testConsts.size(), 5);
+    ASSERT_EQ(testConsts.size(), 6);
     ASSERT_TRUE(checkConst(ast, testConsts[0], 0, false, true, true));
     ASSERT_TRUE(checkConst(ast, testConsts[1], 2, false, false, false));
     ASSERT_TRUE(checkConst(ast, testConsts[2], 0, false, true, false));
     ASSERT_TRUE(checkConst(ast, testConsts[3], 2, false, true, false));
     ASSERT_TRUE(checkConst(ast, testConsts[4], 0, false, true, false));
+    ASSERT_TRUE(checkConst(ast, testConsts[5], 0x7fffffff, true, false, false));
 
     auto otherTestConsts = getChilds(ast, otherTest, IDL_AST_NODE_TYPE_CONST);
-    ASSERT_EQ(otherTestConsts.size(), 8);
+    ASSERT_EQ(otherTestConsts.size(), 9);
     ASSERT_TRUE(checkConst(ast, otherTestConsts[0], 0, true, false, false));
     ASSERT_TRUE(checkConst(ast, otherTestConsts[1], 2, false, false, false));
     ASSERT_TRUE(checkConst(ast, otherTestConsts[2], 0, false, true, true));
@@ -1505,6 +1507,7 @@ TEST(idlc, CyclicDependenceOfConst) {
     ASSERT_TRUE(checkConst(ast, otherTestConsts[5], 0, false, true, false));
     ASSERT_TRUE(checkConst(ast, otherTestConsts[6], 0, true, true, false));
     ASSERT_TRUE(checkConst(ast, otherTestConsts[7], 0, true, true, false));
+    ASSERT_TRUE(checkConst(ast, otherTestConsts[8], 0x7fffffff, true, false, false));
 }
 
 TEST(idlc, TypeAttrMustContainOnlyOneType) {
@@ -1675,16 +1678,18 @@ TEST(idlc, AttributeMustContainOneArgument) {
     const auto [result, ast, messages] = compile("e3050");
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
-    ASSERT_EQ(messages.size(), 2);
-    ASSERT_EQ(messages[0],
+    ASSERT_EQ(messages.size(), 3);
+    ASSERT_EQ(messages[0], "error [E3050]: The [booltype] attribute must contain one argument (Int8, Int32 or Bool) at e3050:6:10");
+    ASSERT_EQ(messages[1],
               "error [E3050]: The [array] attribute must contain one argument (fixed-size integer or reference to an "
               "integer field/arg specifying the size) at e3050:12:27");
-    ASSERT_EQ(messages[1],
+    ASSERT_EQ(messages[2],
               "error [E3050]: The [array] attribute must contain one argument (fixed-size integer or reference to an "
               "integer field/arg specifying the size) at e3050:13:27");
 
     auto api = idl_compilation_result_get_api(ast);
     ASSERT_NE(api, HandleNone);
+    ASSERT_NE(findChild(ast, api, IDL_AST_NODE_TYPE_ATTR_BOOL_TYPE), HandleNone);
 
     auto test = findChild(ast, api, IDL_AST_NODE_TYPE_STRUCT);
     ASSERT_NE(test, HandleNone);
@@ -1778,8 +1783,7 @@ TEST(idlc, ArraySizeRefCannotReferToItsOwnDeclaration) {
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
-    ASSERT_EQ(messages[0],
-              "error [E3054]: An array size reference cannot refer to its own field 'Api.Test.Arr' at e3054:11:5");
+    ASSERT_EQ(messages[0], "error [E3054]: An array size reference cannot refer to its own field 'Api.Test.Arr' at e3054:11:5");
 
     auto api = idl_compilation_result_get_api(ast);
     ASSERT_NE(api, HandleNone);

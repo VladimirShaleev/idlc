@@ -316,7 +316,7 @@ struct ASTVisitor {
             case IDL_BOOL_TYPE_STD_BOOL:
                 config["bool_type"] = "std_bool";
                 break;
-            case IDL_BOOL_TYPE_DEFAULT:
+            default:
                 assert(!"unreachable code");
                 break;
         }

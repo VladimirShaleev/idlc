@@ -251,7 +251,7 @@ struct CLiteral {
         auto type = node.ctx().emptyNodeRef();
         auto curr = node;
         while (curr) {
-            if (type = curr.declType()) {
+            if (type = curr.declType(); type) {
                 break;
             }
             curr = curr.parent();

@@ -181,7 +181,7 @@ bool checkConst(idl_compilation_result_t result,
         return false;
     }
 
-    auto isMaxEnum = findChild(result, node, IDL_AST_NODE_TYPE_ATTR_MAX_ENUM) != HandleNone;
+    auto isMaxEnum = findChild(result, node, IDL_AST_NODE_TYPE_ATTR_BUILTIN_MAX_ENUM) != HandleNone;
 
     if (hasAnyState(result,
                     node,

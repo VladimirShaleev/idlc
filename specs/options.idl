@@ -1,3 +1,10 @@
+@ Trivial types.
+@ Fixed-size primitive types. [detail]
+enum TrivialTypes
+    const Default @ Default types from .idl file.
+    const Std @ Use std types
+    const ApiDefined @ User-defined types in the API
+
 @ Bool type.
 @ Boolean ABI represent type. [detail]
 enum BoolType
@@ -78,7 +85,7 @@ interface Options
     prop OutputDir [get(GetOutputDir),set(SetOutputDir)] @ Output directory of the compilation result.
     prop ImportDirs [get(GetImportDirs),set(SetImportDirs)] @ Directories to search for files when importing.
     prop BoolType [get(GetBoolType),set(SetBoolType)] @ Setting bool type representation.
-    prop StdTypes [get(GetStdTypes),set(SetStdTypes)] @ Setting use stdint.h types directly.
+    prop TrivialTypes [get(GetTrivialTypes),set(SetTrivialTypes)] @ Setting use stdint.h types directly.
     prop IdlOptions [get(GetIdlOptions),set(SetIdlOptions)] @ Setting specifi Idl options.
     prop COptions [get(GetCOptions),set(SetCOptions)] @ Setting specific C options.
 
@@ -288,16 +295,16 @@ interface Options
     @ Is std types.
     @ Returns is used std types. [detail]
     @ {True} is use std types. [return]
-    @ {SetStdTypes} [see]
-    method GetStdTypes {Bool} [const]
+    @ {SetTrivialTypes} [see]
+    method GetTrivialTypes {TrivialTypes} [const]
         arg Options {Options} [this] @ Target options.
 
     @ Set std types.
     @ Use stdint.h types directly if {True}. [detail]
-    @ {GetStdTypes} [see]
-    method SetStdTypes
+    @ {GetTrivialTypes} [see]
+    method SetTrivialTypes
         arg Options {Options} [this] @ Target options.
-        arg UseStd {Bool} @ Use stdint.h types.
+        arg Types {TrivialTypes} @ Use stdint.h types.
 
     @ Get Idl options.
     @ Returns specific Idl options. [detail]

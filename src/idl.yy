@@ -103,6 +103,8 @@
 %token ATTRTOKENIZER
 %token ATTRARRAY
 %token ATTRSINGLE
+%token ATTRSTDTYPES
+%token ATTRBOOLTYPE
 %token ATTRREF
 %token ATTRCONST
 %token ATTROPTIONAL
@@ -260,6 +262,8 @@ attr_item
     | ATTRTOKENIZER { $$ = alloc_node(@1, ATTR_TOKENIZER); }
     | ATTRARRAY     { $$ = alloc_node(@1, ATTR_ARRAY); }
     | ATTRSINGLE    { $$ = alloc_node(@1, ATTR_SINGLE); }
+    | ATTRSTDTYPES  { $$ = alloc_node(@1, ATTR_STD_TYPES); }
+    | ATTRBOOLTYPE  { $$ = alloc_node(@1, ATTR_BOOL_TYPE); }
     | ATTRHEX       { $$ = alloc_node(@1, ATTR_HEX); }
     | ATTRREF       { $$ = alloc_node(@1, ATTR_REF); }
     | ATTRCONST     { $$ = alloc_node(@1, ATTR_CONST); }

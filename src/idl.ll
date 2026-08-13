@@ -65,6 +65,8 @@ SYMBOLS  [a-zA-Z0-9_\-^\.@ ]
 <ATTRCTX>"type"        { attrArg(); return token::ATTRTYPE; }
 <ATTRCTX>"cname"       { attrArg(ShortString); return token::ATTRCNAME; }
 <ATTRCTX>"single"      { attrArg(); return token::ATTRSINGLE; }
+<ATTRCTX>"stdtypes"    { attrArg(); return token::ATTRSTDTYPES; }
+<ATTRCTX>"booltype"    { attrArg(); return token::ATTRBOOLTYPE; }
 <ATTRCTX>"tokenizer"   { attrArg(FallbackString); return token::ATTRTOKENIZER; }
 <ATTRCTX>"array"       { attrArg(FallbackString); return token::ATTRARRAY; }
 <ATTRCTX>"ref"         { attrArg(); return token::ATTRREF; }

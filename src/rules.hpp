@@ -15,29 +15,25 @@ struct AttrValidatorRules {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_API>) {
-        static std::map allowed = {
-            add<IDL_AST_NODE_TYPE_ATTR_VERSION>(),        add<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>(true),
-            add<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(true), add<IDL_AST_NODE_TYPE_ATTR_CNAME>(),
-            add<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>(),      add<IDL_AST_NODE_TYPE_ATTR_SINGLE>(),
-            add<IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR>(true), add<IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT>(true),
-            add<IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE>(true)
-        };
+        static std::map allowed = { add<IDL_AST_NODE_TYPE_ATTR_VERSION>(),        add<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>(true),
+                                    add<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(true), add<IDL_AST_NODE_TYPE_ATTR_CNAME>(),
+                                    add<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>(),      add<IDL_AST_NODE_TYPE_ATTR_SINGLE>(),
+                                    add<IDL_AST_NODE_TYPE_ATTR_STD_TYPES>(),      add<IDL_AST_NODE_TYPE_ATTR_BOOL_TYPE>(),
+                                    add<IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR>(true), add<IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT>(true),
+                                    add<IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE>(true) };
         validate(node, allowed);
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_IMPORT>) {
-        static std::map allowed = { add<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>(true),
-                                    add<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(true) };
+        static std::map allowed = { add<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>(true), add<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(true) };
         validate(node, allowed);
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ENUM>) {
-        static std::map allowed = {
-            add<IDL_AST_NODE_TYPE_ATTR_FLAGS>(),         add<IDL_AST_NODE_TYPE_ATTR_HEX>(),
-            add<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>(true), add<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(true),
-            add<IDL_AST_NODE_TYPE_ATTR_CNAME>(),         add<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>(),
-            add<IDL_AST_NODE_TYPE_ATTR_TYPE>()
-        };
+        static std::map allowed = { add<IDL_AST_NODE_TYPE_ATTR_FLAGS>(),         add<IDL_AST_NODE_TYPE_ATTR_HEX>(),
+                                    add<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>(true), add<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(true),
+                                    add<IDL_AST_NODE_TYPE_ATTR_CNAME>(),         add<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>(),
+                                    add<IDL_AST_NODE_TYPE_ATTR_TYPE>() };
         validate(node, allowed);
     }
 
@@ -59,35 +55,29 @@ struct AttrValidatorRules {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_FIELD>) {
-        static std::map allowed = {
-            add<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(true), add<IDL_AST_NODE_TYPE_ATTR_CNAME>(),
-            add<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>(),      add<IDL_AST_NODE_TYPE_ATTR_TYPE>(true),
-            add<IDL_AST_NODE_TYPE_ATTR_VALUE>(),          add<IDL_AST_NODE_TYPE_ATTR_REF>(),
-            add<IDL_AST_NODE_TYPE_ATTR_ARRAY>(),          add<IDL_AST_NODE_TYPE_ATTR_CONST>(),
-            add<IDL_AST_NODE_TYPE_ATTR_OPTIONAL>()
-        };
+        static std::map allowed = { add<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(true), add<IDL_AST_NODE_TYPE_ATTR_CNAME>(),
+                                    add<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>(),      add<IDL_AST_NODE_TYPE_ATTR_TYPE>(true),
+                                    add<IDL_AST_NODE_TYPE_ATTR_VALUE>(),          add<IDL_AST_NODE_TYPE_ATTR_REF>(),
+                                    add<IDL_AST_NODE_TYPE_ATTR_ARRAY>(),          add<IDL_AST_NODE_TYPE_ATTR_CONST>(),
+                                    add<IDL_AST_NODE_TYPE_ATTR_OPTIONAL>() };
         validate(node, allowed);
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_FUNC>) {
-        static std::map allowed = {
-            add<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>(true), add<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(true),
-            add<IDL_AST_NODE_TYPE_ATTR_CNAME>(),         add<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>(),
-            add<IDL_AST_NODE_TYPE_ATTR_TYPE>(),          add<IDL_AST_NODE_TYPE_ATTR_REF>(),
-            add<IDL_AST_NODE_TYPE_ATTR_ARRAY>(),         add<IDL_AST_NODE_TYPE_ATTR_CONST>(),
-            add<IDL_AST_NODE_TYPE_ATTR_OPTIONAL>()
-        };
+        static std::map allowed = { add<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>(true), add<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(true),
+                                    add<IDL_AST_NODE_TYPE_ATTR_CNAME>(),         add<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>(),
+                                    add<IDL_AST_NODE_TYPE_ATTR_TYPE>(),          add<IDL_AST_NODE_TYPE_ATTR_REF>(),
+                                    add<IDL_AST_NODE_TYPE_ATTR_ARRAY>(),         add<IDL_AST_NODE_TYPE_ATTR_CONST>(),
+                                    add<IDL_AST_NODE_TYPE_ATTR_OPTIONAL>() };
         validate(node, allowed);
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ARG>) {
-        static std::map allowed = {
-            add<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(true), add<IDL_AST_NODE_TYPE_ATTR_CNAME>(),
-            add<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>(),      add<IDL_AST_NODE_TYPE_ATTR_TYPE>(true),
-            add<IDL_AST_NODE_TYPE_ATTR_VALUE>(),          add<IDL_AST_NODE_TYPE_ATTR_REF>(),
-            add<IDL_AST_NODE_TYPE_ATTR_ARRAY>(),          add<IDL_AST_NODE_TYPE_ATTR_CONST>(),
-            add<IDL_AST_NODE_TYPE_ATTR_OPTIONAL>()
-        };
+        static std::map allowed = { add<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(true), add<IDL_AST_NODE_TYPE_ATTR_CNAME>(),
+                                    add<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>(),      add<IDL_AST_NODE_TYPE_ATTR_TYPE>(true),
+                                    add<IDL_AST_NODE_TYPE_ATTR_VALUE>(),          add<IDL_AST_NODE_TYPE_ATTR_REF>(),
+                                    add<IDL_AST_NODE_TYPE_ATTR_ARRAY>(),          add<IDL_AST_NODE_TYPE_ATTR_CONST>(),
+                                    add<IDL_AST_NODE_TYPE_ATTR_OPTIONAL>() };
         validate(node, allowed);
     }
 
@@ -218,10 +208,7 @@ struct AttrIDocValidatorRules {
 };
 
 struct AttrArgRules {
-    AttrArgRules(ASTNodeHandle argFirst, ASTNodeHandle argLast, size_t argCount) noexcept :
-        argFirst(argFirst),
-        argLast(argLast),
-        argCount(argCount) {
+    AttrArgRules(ASTNodeHandle argFirst, ASTNodeHandle argLast, size_t argCount) noexcept : argFirst(argFirst), argLast(argLast), argCount(argCount) {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ATTR_VERSION>) {
@@ -254,8 +241,8 @@ struct AttrArgRules {
                 ctx.addLiteral(node, int64_t(optionVersion->minor));
                 ctx.addLiteral(node, int64_t(optionVersion->micro));
             }
-        } else if (argCount == 3 && arg0.is<IDL_AST_NODE_TYPE_LITERAL_INT>() &&
-                   arg1.is<IDL_AST_NODE_TYPE_LITERAL_INT>() && arg2.is<IDL_AST_NODE_TYPE_LITERAL_INT>()) {
+        } else if (argCount == 3 && arg0.is<IDL_AST_NODE_TYPE_LITERAL_INT>() && arg1.is<IDL_AST_NODE_TYPE_LITERAL_INT>() &&
+                   arg2.is<IDL_AST_NODE_TYPE_LITERAL_INT>()) {
             const auto major = arg0->valueInt;
             const auto minor = arg1->valueInt;
             const auto micro = arg2->valueInt;
@@ -298,6 +285,20 @@ struct AttrArgRules {
         } else {
             ctx.log<IDL_STATUS_E3003>(node->location);
         }
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ATTR_BOOL_TYPE>) {
+        if (argCount == 1) {
+            node->child = argFirst;
+            auto arg0   = node.ctx().getNodeRef(argFirst);
+            if (arg0.is<IDL_AST_NODE_TYPE_DECL_REF>()) {
+                auto type = node.result()->getStr(arg0->valueDeclRef.symbol);
+                if (type == "Int8" || type == "Int32" || type == "Bool") {
+                    return;
+                }
+            }
+        }
+        node.ctx().log<IDL_STATUS_E3050>(node->location, node.accept<AttrName>().str, " (Int8, Int32 or Bool)");
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR>) {
@@ -440,8 +441,7 @@ struct AttrArgRules {
                 }
             }
         } else {
-            ctx.log<IDL_STATUS_E3014>(
-                node->location, node.accept<AttrName>().str, " (integers: 2, -2, 4 or string \"2-^3-4\")");
+            ctx.log<IDL_STATUS_E3014>(node->location, node.accept<AttrName>().str, " (integers: 2, -2, 4 or string \"2-^3-4\")");
         }
     }
 
@@ -461,9 +461,8 @@ struct AttrArgRules {
                 ctx.addLiteral(node, DeclRef(arg0->valueStr));
             }
         } else {
-            ctx.log<IDL_STATUS_E3050>(node->location,
-                                      node.accept<AttrName>().str,
-                                      " (fixed-size integer or reference to an integer field/arg specifying the size)");
+            ctx.log<IDL_STATUS_E3050>(
+                node->location, node.accept<AttrName>().str, " (fixed-size integer or reference to an integer field/arg specifying the size)");
         }
     }
 
@@ -637,20 +636,19 @@ struct IntegerCastRules {
         std::string valueStr;
         if constexpr (std::numeric_limits<T>::is_signed) {
             const auto valueInt = value->valueInt;
-            success = valueInt >= std::numeric_limits<T>::min() && valueInt <= std::numeric_limits<T>::max();
+            success             = valueInt >= std::numeric_limits<T>::min() && valueInt <= std::numeric_limits<T>::max();
             if (!success) {
                 valueStr = std::to_string(valueInt);
             }
         } else {
             const auto valueInt = uint64_t(value->valueInt);
-            success = valueInt >= std::numeric_limits<T>::min() && valueInt <= std::numeric_limits<T>::max();
+            success             = valueInt >= std::numeric_limits<T>::min() && valueInt <= std::numeric_limits<T>::max();
             if (!success) {
                 valueStr = std::to_string(valueInt);
             }
         }
         if (!success) {
-            node.ctx().log<IDL_STATUS_W2004>(
-                value->location, node.name(), valueStr, std::numeric_limits<T>::min(), std::numeric_limits<T>::max());
+            node.ctx().log<IDL_STATUS_W2004>(value->location, node.name(), valueStr, std::numeric_limits<T>::min(), std::numeric_limits<T>::max());
         }
     }
 
@@ -679,14 +677,10 @@ struct FloatCastRules {
     void cast(ASTNodeRef& node) {
         std::string valueStr;
         const auto valueFloat = value->valueFloat;
-        success = valueFloat >= std::numeric_limits<T>::lowest() && valueFloat <= std::numeric_limits<T>::max();
+        success               = valueFloat >= std::numeric_limits<T>::lowest() && valueFloat <= std::numeric_limits<T>::max();
         if (!success) {
             valueStr = fmt::format("{:g}", valueFloat);
-            node.ctx().log<IDL_STATUS_W2004>(value->location,
-                                             node.name(),
-                                             valueStr,
-                                             std::numeric_limits<T>::lowest(),
-                                             std::numeric_limits<T>::max());
+            node.ctx().log<IDL_STATUS_W2004>(value->location, node.name(), valueStr, std::numeric_limits<T>::lowest(), std::numeric_limits<T>::max());
         }
     }
 
@@ -695,9 +689,7 @@ struct FloatCastRules {
 };
 
 struct DefaultValueRules {
-    explicit DefaultValueRules(ASTNodeRef& type, std::string_view declaration) noexcept :
-        type(type),
-        declaration(declaration) {
+    explicit DefaultValueRules(ASTNodeRef& type, std::string_view declaration) noexcept : type(type), declaration(declaration) {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_LITERAL_STR>) {
@@ -754,8 +746,7 @@ struct DefaultValueRules {
             node.ctx().log<IDL_STATUS_E3035>(node->location, "enum const", type.fullname());
             success = false;
         } else if (type != ref.parent()) {
-            node.ctx().log<IDL_STATUS_E3049>(
-                node->location, ref.name(), ref.parent().fullname(), declaration, type.fullname());
+            node.ctx().log<IDL_STATUS_E3049>(node->location, ref.name(), ref.parent().fullname(), declaration, type.fullname());
             success = false;
         }
     }
@@ -807,12 +798,61 @@ struct BuildRules {
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_API>) {
         auto& ctx = node.ctx();
-        if (ctx.options() && ctx.options()->getOutputFiles() != IDL_OUTPUT_FILES_DEFAULT) {
-            const auto format = ctx.options()->getOutputFiles();
-            if (format == IDL_OUTPUT_FILES_SINGLE && !node.findChild<IDL_AST_NODE_TYPE_ATTR_SINGLE>()) {
-                ctx.addNode<IDL_AST_NODE_TYPE_ATTR_SINGLE>(node);
-            } else if (format == IDL_OUTPUT_FILES_MULTI && node.findChild<IDL_AST_NODE_TYPE_ATTR_SINGLE>()) {
-                node.findChild<IDL_AST_NODE_TYPE_ATTR_SINGLE>().setReplacedByCompiler();
+        if (const auto options = ctx.options()) {
+            if (options->getOutputFiles() != IDL_OUTPUT_FILES_DEFAULT) {
+                const auto format = options->getOutputFiles();
+                if (format == IDL_OUTPUT_FILES_SINGLE && !node.findChild<IDL_AST_NODE_TYPE_ATTR_SINGLE>()) {
+                    ctx.addNode<IDL_AST_NODE_TYPE_ATTR_SINGLE>(node);
+                } else if (format == IDL_OUTPUT_FILES_MULTI && node.findChild<IDL_AST_NODE_TYPE_ATTR_SINGLE>()) {
+                    node.findChild<IDL_AST_NODE_TYPE_ATTR_SINGLE>().setReplacedByCompiler();
+                }
+            }
+            if (const auto boolType = options->getBoolType(); boolType != IDL_BOOL_TYPE_DEFAULT) {
+                std::string_view symbol{};
+                switch (boolType) {
+                    case IDL_BOOL_TYPE_INT_32:
+                        symbol = "Int32";
+                        break;
+                    case IDL_BOOL_TYPE_INT_8:
+                        symbol = "Int8";
+                        break;
+                    case IDL_BOOL_TYPE_STD_BOOL:
+                        symbol = "Bool";
+                        break;
+                    default:
+                        assert(!"unreachable code");
+                        break;
+                }
+                auto addBoolType = true;
+                if (auto attrBoolType = node.findChild<IDL_AST_NODE_TYPE_ATTR_BOOL_TYPE>(); attrBoolType) {
+                    auto type = node.ctx().getNodeRef(attrBoolType->child).resolveRef();
+                    idl_bool_type_t prevBoolType{};
+                    if (type.is<IDL_AST_NODE_TYPE_INT_8>()) {
+                        prevBoolType = IDL_BOOL_TYPE_INT_8;
+                    } else if (type.is<IDL_AST_NODE_TYPE_INT_32>()) {
+                        prevBoolType = IDL_BOOL_TYPE_INT_32;
+                    } else if (type.is<IDL_AST_NODE_TYPE_BOOL>()) {
+                        prevBoolType = IDL_BOOL_TYPE_STD_BOOL;
+                    } else {
+                        assert(!"unreachable code");
+                    }
+                    if (prevBoolType != boolType) {
+                        attrBoolType.setReplacedByCompiler();
+                    } else {
+                        addBoolType = false;
+                    }
+                }
+                if (addBoolType) {
+                    ctx.addNode<IDL_AST_NODE_TYPE_ATTR_BOOL_TYPE>(node, DeclRef(symbol));
+                }
+            }
+            if (const auto trivials = options->getTrivialTypes(); trivials != IDL_TRIVIAL_TYPES_DEFAULT) {
+                auto attrStdTypes = node.findChild<IDL_AST_NODE_TYPE_ATTR_STD_TYPES>();
+                if (trivials == IDL_TRIVIAL_TYPES_STD && !attrStdTypes) {
+                    ctx.addNode<IDL_AST_NODE_TYPE_ATTR_STD_TYPES>(node);
+                } else if (trivials == IDL_TRIVIAL_TYPES_API_DEFINED && attrStdTypes) {
+                    attrStdTypes.setReplacedByCompiler();
+                }
             }
         }
     }
@@ -892,8 +932,7 @@ struct BuildRules {
             }
         } else if (!type.is<IDL_AST_NODE_TYPE_STRUCT>() && !type.evaulated()) {
             node.parent().setForwardDecl();
-            ctx.log<IDL_STATUS_W2006>(
-                attrType->location, node.fullname(), type.accept<DeclToken>().str, type.fullname());
+            ctx.log<IDL_STATUS_W2006>(attrType->location, node.fullname(), type.accept<DeclToken>().str, type.fullname());
             if (warnAsErrors) {
                 node.setBuildError();
             }
@@ -1022,8 +1061,8 @@ struct BuildRules {
                     enumConst.setBuildError();
                 } else {
                     auto prevEvaulatedValue = prevEnumConst.findChild<IDL_AST_NODE_TYPE_ATTR_VALUE>()->valueInt;
-                    attrValue = ctx.addNode<IDL_AST_NODE_TYPE_ATTR_VALUE>(enumConst, int64_t(prevEvaulatedValue + 1));
-                    attrValue->valueInt = int64_t(prevEvaulatedValue + 1);
+                    attrValue               = ctx.addNode<IDL_AST_NODE_TYPE_ATTR_VALUE>(enumConst, int64_t(prevEvaulatedValue + 1));
+                    attrValue->valueInt     = int64_t(prevEvaulatedValue + 1);
                 }
             } else {
                 attrValue           = ctx.addNode<IDL_AST_NODE_TYPE_ATTR_VALUE>(enumConst, int64_t(0));
@@ -1076,11 +1115,9 @@ struct BuildRules {
                 } else if (decl.parent() != node.parent()) {
                     ctx.log<IDL_STATUS_E3053>(node->location, declaration, node.fullname());
                     node.setBuildError();
-                } else if (!decl.declType().is<IDL_AST_NODE_TYPE_INTEGER_TYPE>() ||
-                           decl.findChild<IDL_AST_NODE_TYPE_ATTR_ARRAY>()) {
+                } else if (!decl.declType().is<IDL_AST_NODE_TYPE_INTEGER_TYPE>() || decl.findChild<IDL_AST_NODE_TYPE_ATTR_ARRAY>()) {
                     std::string_view typeArray = decl.findChild<IDL_AST_NODE_TYPE_ATTR_ARRAY>() ? "array of " : "";
-                    ctx.log<IDL_STATUS_E3052>(
-                        node->location, declaration, decl.fullname(), typeArray, decl.declType().fullname());
+                    ctx.log<IDL_STATUS_E3052>(node->location, declaration, decl.fullname(), typeArray, decl.declType().fullname());
                     node.setBuildError();
                 }
             } else {
@@ -1109,8 +1146,7 @@ struct BuildRules {
                 }
                 node.setBuildError();
             }
-            if (auto fixedSize = attrArray.findChild<IDL_AST_NODE_TYPE_LITERAL_INT>();
-                fixedSize && fixedSize->valueInt < countArgs) {
+            if (auto fixedSize = attrArray.findChild<IDL_AST_NODE_TYPE_LITERAL_INT>(); fixedSize && fixedSize->valueInt < countArgs) {
                 ctx.log<IDL_STATUS_E3006>(node->location, countArgs, declaration, node.fullname(), fixedSize->valueInt);
                 node.setBuildError();
             }

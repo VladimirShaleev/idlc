@@ -123,12 +123,12 @@ public:
         _boolType = boolType;
     }
 
-    bool getStdTypes() const noexcept {
-        return _stdTypes;
+    idl_trivial_types_t getTrivialTypes() const noexcept {
+        return _trivialTypes;
     }
 
-    void setStdTypes(bool useStd) noexcept {
-        _stdTypes = useStd;
+    void setTrivialTypes(idl_trivial_types_t types) noexcept {
+        _trivialTypes = types;
     }
 
     idl_idl_options_t getIdlOptions() const noexcept {
@@ -173,7 +173,7 @@ private:
     std::vector<std::string> _importDirs{};
     std::vector<std::string> _additions{};
     idl_bool_type_t _boolType{};
-    bool _stdTypes{};
+    idl_trivial_types_t _trivialTypes{};
     idl_idl_options_t _idlOptions{};
     idl_c_options_t _cOptions{};
     idl_import_callback_t _importer{};

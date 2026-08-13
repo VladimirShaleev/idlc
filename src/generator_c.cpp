@@ -269,36 +269,30 @@ struct ASTVisitor {
             }
         }
 
+        if (auto attrBoolType = node.findChild<IDL_AST_NODE_TYPE_ATTR_BOOL_TYPE>()) {
+            auto boolType = node.ctx().getNodeRef(attrBoolType->child).resolveRef(true);
+            if (boolType.is<IDL_AST_NODE_TYPE_INT_8>()) {
+                state.boolType = IDL_BOOL_TYPE_INT_8;
+            } else if (boolType.is<IDL_AST_NODE_TYPE_INT_32>()) {
+                state.boolType = IDL_BOOL_TYPE_INT_32;
+            } else if (boolType.is<IDL_AST_NODE_TYPE_BOOL>()) {
+                state.boolType = IDL_BOOL_TYPE_STD_BOOL;
+            }
+        } else {
+            state.boolType = IDL_BOOL_TYPE_INT_32;
+        }
+
         auto indents         = 4;
         auto single          = !!node.findChild<IDL_AST_NODE_TYPE_ATTR_SINGLE>();
         auto addDoc          = false;
         auto addDocGroups    = false;
         auto addMemberGroups = false;
-        state.stdTypes       = false;
-        state.boolType       = IDL_BOOL_TYPE_INT_8;
+        state.stdTypes       = !!node.findChild<IDL_AST_NODE_TYPE_ATTR_STD_TYPES>();
         if (auto options = state.writer.options()) {
-            switch (options->getOutputFiles()) {
-                case IDL_OUTPUT_FILES_SINGLE:
-                    single = true;
-                    break;
-                case IDL_OUTPUT_FILES_MULTI:
-                    single = false;
-                    break;
-                case IDL_OUTPUT_FILES_DEFAULT:
-                    [[fallthrough]];
-                default:
-                    break;
-            }
-
-            if (auto boolType = options->getBoolType(); boolType != IDL_BOOL_TYPE_DEFAULT) {
-                state.boolType = boolType;
-            }
-
             if (const auto ver = options->getVersion()) {
                 version = Semver{ ver->major, ver->minor, ver->micro };
             }
 
-            state.stdTypes  = options->getStdTypes();
             indents         = options->getIndents();
             auto cOptions   = options->getCOptions();
             addDoc          = cOptions.add_doc;
@@ -601,6 +595,7 @@ struct ASTVisitor {
                     break;
             }
         }
+        ss << '"';
         return ss.str();
     }
 

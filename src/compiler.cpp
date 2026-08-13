@@ -33,17 +33,13 @@ namespace idl {
 
 class Compiler final : public _idl_compiler {
 public:
-    idl_result_t compile(idl_generator_t generator,
-                         idl_utf8_t file,
-                         std::span<const idl_source_t> sources,
-                         Options* options,
-                         CompilationResult* result) noexcept {
+    idl_result_t compile(
+        idl_generator_t generator, idl_utf8_t file, std::span<const idl_source_t> sources, Options* options, CompilationResult* result) noexcept {
         CompilationResultBase* base = result;
         try {
             if (!base) {
                 idl_compilation_result_t tempResult{};
-                if (auto result = idl::Object::create<idl::CompilationResultStub>(tempResult);
-                    result != IDL_RESULT_SUCCESS) {
+                if (auto result = idl::Object::create<idl::CompilationResultStub>(tempResult); result != IDL_RESULT_SUCCESS) {
                     return result;
                 }
                 base = tempResult->as<CompilationResultBase>();
@@ -296,14 +292,14 @@ void idl_options_set_bool_type(idl_options_t options, idl_bool_type_t bool_type)
     options->as<idl::Options>()->setBoolType(bool_type);
 }
 
-idl_bool_t idl_options_get_std_types(idl_options_t options) {
+idl_trivial_types_t idl_options_get_trivial_types(idl_options_t options) {
     assert(options);
-    return options->as<idl::Options>()->getStdTypes() ? 1 : 0;
+    return options->as<idl::Options>()->getTrivialTypes();
 }
 
-void idl_options_set_std_types(idl_options_t options, idl_bool_t use_std) {
+void idl_options_set_trivial_types(idl_options_t options, idl_trivial_types_t types) {
     assert(options);
-    options->as<idl::Options>()->setStdTypes(use_std);
+    options->as<idl::Options>()->setTrivialTypes(types);
 }
 
 idl_idl_options_t idl_options_get_idl_options(idl_options_t options) {
@@ -400,9 +396,7 @@ idl_bool_t idl_compilation_result_has_errors(idl_compilation_result_t compilatio
     return compilation_result->as<idl::CompilationResultBase>()->hasErrors();
 }
 
-void idl_compilation_result_get_messages(idl_compilation_result_t compilation_result,
-                                         idl_uint32_t* message_count,
-                                         idl_message_t* messages) {
+void idl_compilation_result_get_messages(idl_compilation_result_t compilation_result, idl_uint32_t* message_count, idl_message_t* messages) {
     assert(compilation_result);
     assert(message_count);
     return compilation_result->as<idl::CompilationResultBase>()->getMessages(*message_count, messages);
@@ -413,28 +407,23 @@ idl_ast_node_h idl_compilation_result_get_api(idl_compilation_result_t compilati
     return compilation_result->as<idl::CompilationResultBase>()->getApi();
 }
 
-idl_ast_node_type_t idl_compilation_result_get_node_type(idl_compilation_result_t compilation_result,
-                                                         idl_ast_node_h node) {
+idl_ast_node_type_t idl_compilation_result_get_node_type(idl_compilation_result_t compilation_result, idl_ast_node_h node) {
     assert(compilation_result);
     return compilation_result->as<idl::CompilationResultBase>()->getNodeType(node);
 }
 
-idl_ast_node_state_flags_t idl_compilation_result_get_node_state(idl_compilation_result_t compilation_result,
-                                                                 idl_ast_node_h node) {
+idl_ast_node_state_flags_t idl_compilation_result_get_node_state(idl_compilation_result_t compilation_result, idl_ast_node_h node) {
     assert(compilation_result);
     return compilation_result->as<idl::CompilationResultBase>()->getNodeState(node);
 }
 
-void idl_compilation_result_get_node_location(idl_compilation_result_t compilation_result,
-                                              idl_ast_node_h node,
-                                              idl_ast_location_t* location) {
+void idl_compilation_result_get_node_location(idl_compilation_result_t compilation_result, idl_ast_node_h node, idl_ast_location_t* location) {
     assert(compilation_result);
     assert(location);
     return compilation_result->as<idl::CompilationResultBase>()->getNodeLocation(node, *location);
 }
 
-idl_ast_node_h idl_compilation_result_get_parent_node(idl_compilation_result_t compilation_result,
-                                                      idl_ast_node_h node) {
+idl_ast_node_h idl_compilation_result_get_parent_node(idl_compilation_result_t compilation_result, idl_ast_node_h node) {
     assert(compilation_result);
     return compilation_result->as<idl::CompilationResultBase>()->getParentNode(node);
 }
@@ -449,9 +438,7 @@ idl_ast_node_h idl_compilation_result_get_child_node(idl_compilation_result_t co
     return compilation_result->as<idl::CompilationResultBase>()->getChildNode(node);
 }
 
-idl_bool_t idl_compilation_result_is_node_type(idl_compilation_result_t compilation_result,
-                                               idl_ast_node_h node,
-                                               idl_ast_node_type_t type) {
+idl_bool_t idl_compilation_result_is_node_type(idl_compilation_result_t compilation_result, idl_ast_node_h node, idl_ast_node_type_t type) {
     assert(compilation_result);
     return compilation_result->as<idl::CompilationResultBase>()->isNodeType(node, type);
 }
@@ -461,26 +448,22 @@ idl_utf8_t idl_compilation_result_get_node_value_str(idl_compilation_result_t co
     return compilation_result->as<idl::CompilationResultBase>()->getNodeValueStr(node);
 }
 
-idl_sint64_t idl_compilation_result_get_node_value_int(idl_compilation_result_t compilation_result,
-                                                       idl_ast_node_h node) {
+idl_sint64_t idl_compilation_result_get_node_value_int(idl_compilation_result_t compilation_result, idl_ast_node_h node) {
     assert(compilation_result);
     return compilation_result->as<idl::CompilationResultBase>()->getNodeValueInt(node);
 }
 
-idl_float64_t idl_compilation_result_get_node_value_float(idl_compilation_result_t compilation_result,
-                                                          idl_ast_node_h node) {
+idl_float64_t idl_compilation_result_get_node_value_float(idl_compilation_result_t compilation_result, idl_ast_node_h node) {
     assert(compilation_result);
     return compilation_result->as<idl::CompilationResultBase>()->getNodeValueFloat(node);
 }
 
-idl_bool_t idl_compilation_result_get_node_value_bool(idl_compilation_result_t compilation_result,
-                                                      idl_ast_node_h node) {
+idl_bool_t idl_compilation_result_get_node_value_bool(idl_compilation_result_t compilation_result, idl_ast_node_h node) {
     assert(compilation_result);
     return compilation_result->as<idl::CompilationResultBase>()->getNodeValueBool(node);
 }
 
-idl_ast_node_h idl_compilation_result_get_node_value_decl_ref(idl_compilation_result_t compilation_result,
-                                                              idl_ast_node_h node) {
+idl_ast_node_h idl_compilation_result_get_node_value_decl_ref(idl_compilation_result_t compilation_result, idl_ast_node_h node) {
     assert(compilation_result);
     return compilation_result->as<idl::CompilationResultBase>()->getNodeValueDeclRef(node);
 }

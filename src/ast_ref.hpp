@@ -76,10 +76,7 @@ public:
     ASTNodeRef(Context& ctx) noexcept : _ctx(&ctx) {
     }
 
-    ASTNodeRef(Context& ctx, ASTNodeHandle handle) noexcept :
-        _ctx(&ctx),
-        _handle(handle),
-        _node(result()->getNode(_handle)) {
+    ASTNodeRef(Context& ctx, ASTNodeHandle handle) noexcept : _ctx(&ctx), _handle(handle), _node(result()->getNode(_handle)) {
     }
 
     ASTNodeRef(const ASTNodeRef& node) noexcept : _ctx(node._ctx), _handle(node._handle), _node(node._node) {
@@ -321,6 +318,12 @@ public:
                 case IDL_AST_NODE_TYPE_ATTR_SINGLE:
                     visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_SINGLE>{});
                     break;
+                case IDL_AST_NODE_TYPE_ATTR_STD_TYPES:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_STD_TYPES>{});
+                    break;
+                case IDL_AST_NODE_TYPE_ATTR_BOOL_TYPE:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_BOOL_TYPE>{});
+                    break;
                 case IDL_AST_NODE_TYPE_ATTR_REF:
                     visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_REF>{});
                     break;
@@ -488,8 +491,7 @@ public:
     }
 
     [[nodiscard]] bool forwardDecl() const noexcept {
-        return _node ? (_node->flags & IDL_AST_NODE_STATE_FORWARD_DECL_BIT) == IDL_AST_NODE_STATE_FORWARD_DECL_BIT
-                     : false;
+        return _node ? (_node->flags & IDL_AST_NODE_STATE_FORWARD_DECL_BIT) == IDL_AST_NODE_STATE_FORWARD_DECL_BIT : false;
     }
 
     void setForwardDecl() noexcept {
@@ -499,9 +501,7 @@ public:
     }
 
     [[nodiscard]] bool addedByCompiler() const noexcept {
-        return _node ? (_node->flags & IDL_AST_NODE_STATE_ADDED_BY_COMPILER_BIT) ==
-                           IDL_AST_NODE_STATE_ADDED_BY_COMPILER_BIT
-                     : false;
+        return _node ? (_node->flags & IDL_AST_NODE_STATE_ADDED_BY_COMPILER_BIT) == IDL_AST_NODE_STATE_ADDED_BY_COMPILER_BIT : false;
     }
 
     void setAddedByCompiler() noexcept {
@@ -511,9 +511,7 @@ public:
     }
 
     [[nodiscard]] bool replacedByCompiler() const noexcept {
-        return _node ? (_node->flags & IDL_AST_NODE_STATE_REPLACED_BY_COMPILER_BIT) ==
-                           IDL_AST_NODE_STATE_REPLACED_BY_COMPILER_BIT
-                     : false;
+        return _node ? (_node->flags & IDL_AST_NODE_STATE_REPLACED_BY_COMPILER_BIT) == IDL_AST_NODE_STATE_REPLACED_BY_COMPILER_BIT : false;
     }
 
     void setReplacedByCompiler() noexcept {
@@ -523,14 +521,11 @@ public:
     }
 
     [[nodiscard]] bool changedByCompiler() const noexcept {
-        return _node ? (_node->flags &
-                        (IDL_AST_NODE_STATE_ADDED_BY_COMPILER_BIT | IDL_AST_NODE_STATE_REPLACED_BY_COMPILER_BIT)) != 0
-                     : false;
+        return _node ? (_node->flags & (IDL_AST_NODE_STATE_ADDED_BY_COMPILER_BIT | IDL_AST_NODE_STATE_REPLACED_BY_COMPILER_BIT)) != 0 : false;
     }
 
     [[nodiscard]] bool multilineDoc() const noexcept {
-        return _node ? (_node->flags & IDL_AST_NODE_STATE_MULTILINE_DOC_BIT) == IDL_AST_NODE_STATE_MULTILINE_DOC_BIT
-                     : false;
+        return _node ? (_node->flags & IDL_AST_NODE_STATE_MULTILINE_DOC_BIT) == IDL_AST_NODE_STATE_MULTILINE_DOC_BIT : false;
     }
 
     void setMultilineDoc() noexcept {

@@ -14,6 +14,19 @@
 IDL_BEGIN
 
 /**
+ * @brief   Trivial types.
+ * @details Fixed-size primitive types.
+ * @ingroup enums
+ */
+typedef enum
+{
+    IDL_TRIVIAL_TYPES_DEFAULT     = 0, /**< Default types from .idl file. */
+    IDL_TRIVIAL_TYPES_STD         = 1, /**< Use std types */
+    IDL_TRIVIAL_TYPES_API_DEFINED = 2, /**< User-defined types in the API */
+    IDL_TRIVIAL_TYPES_MAX_ENUM    = 0x7FFFFFFF /**< Max value of enum (not used) */
+} idl_trivial_types_t;
+
+/**
  * @brief   Bool type.
  * @details Boolean ABI represent type.
  * @ingroup enums
@@ -467,23 +480,23 @@ idl_options_set_bool_type(idl_options_t options,
  * @details   Returns is used std types.
  * @param[in] options Target options.
  * @return    TRUE is use std types.
- * @sa        ::idl_options_set_std_types
+ * @sa        ::idl_options_set_trivial_types
  * @ingroup   functions
  */
-idl_api idl_bool_t
-idl_options_get_std_types(idl_options_t options);
+idl_api idl_trivial_types_t
+idl_options_get_trivial_types(idl_options_t options);
 
 /**
  * @brief     Set std types.
  * @details   Use stdint.h types directly if TRUE.
  * @param[in] options Target options.
- * @param[in] use_std Use stdint.h types.
- * @sa        ::idl_options_get_std_types
+ * @param[in] types Use stdint.h types.
+ * @sa        ::idl_options_get_trivial_types
  * @ingroup   functions
  */
 idl_api void
-idl_options_set_std_types(idl_options_t options,
-                          idl_bool_t use_std);
+idl_options_set_trivial_types(idl_options_t options,
+                              idl_trivial_types_t types);
 
 /**
  * @brief     Get Idl options.

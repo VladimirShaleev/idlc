@@ -91,7 +91,6 @@ public:
     }
 
     [[nodiscard]] ASTNodeRef findSymbol(ASTNodeRef& decl, const ASTLocation& loc, std::string_view name, bool onlyType) {
-        assert(decl.is<IDL_AST_NODE_TYPE_DECL>());
         char buffer[500];
         char buffer2[50];
         auto nameLower    = concat(buffer2, name, "", name.length(), '\0');

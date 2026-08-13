@@ -419,6 +419,14 @@ struct AttrName {
         str = "single";
     }
 
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_STD_TYPES>) {
+        str = "stdtypes";
+    }
+
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_BOOL_TYPE>) {
+        str = "booltype";
+    }
+
     void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_VERSION>) {
         str = "version";
     }

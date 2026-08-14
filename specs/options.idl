@@ -33,6 +33,7 @@ struct ApiVersion
     field Major {Uint32} @ Major component of the version.
     field Minor {Uint32} @ Minor component of the version.
     field Micro {Uint32} @ Micro component of the version.
+    field Str {Str} @ Representing version as string.
 
 @ Idl Options.
 @ Specific options for Idl. [detail]

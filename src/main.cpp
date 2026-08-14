@@ -3,104 +3,34 @@
 #include <argparse/argparse.hpp>
 #include <regex>
 
-void addGeneratorArg(argparse::ArgumentParser& program, const std::map<std::string, idl_generator_t>& generators) {
-    auto& arg = program.add_argument("-g", "--generator");
-    std::ostringstream help;
-    help << "generator programming language (";
+using namespace std::string_view_literals;
+
+template <typename T, typename... Args>
+std::function<T(argparse::ArgumentParser&, const std::map<std::string, T>&)>
+addCommand(argparse::ArgumentParser& program, std::string_view help, T defaultValue, const std::map<std::string, T>& keys, Args&&... args) {
+    auto& arg = program.add_argument(args...);
+    std::ostringstream ss;
+    ss << help << " ("sv;
     bool first = true;
-    for (auto& [gen, _] : generators) {
-        arg.add_choice(gen);
+    for (auto& [key, _] : keys) {
+        arg.add_choice(key);
         if (!first) {
-            help << ", ";
+            ss << ", "sv;
         }
         first = false;
-        help << gen;
+        ss << key;
     }
-    help << ')';
-    arg.help(help.str());
-}
+    ss << ')';
+    arg.help(ss.str());
 
-void addBoolType(argparse::ArgumentParser& program, const std::map<std::string, idl_bool_type_t>& types) {
-    auto& arg = program.add_argument("--bool");
-    std::ostringstream help;
-    help << "bool type (";
-    bool first = true;
-    for (auto& [type, _] : types) {
-        arg.add_choice(type);
-        if (!first) {
-            help << ", ";
+    auto lastArg = (args, ...);
+    return [defaultValue, lastArg](argparse::ArgumentParser& program, const std::map<std::string, T>& keys) {
+        if (!program.is_used(lastArg)) {
+            return defaultValue;
         }
-        first = false;
-        help << type;
-    }
-    help << ')';
-    arg.help(help.str());
-}
-
-void addTrivialTypes(argparse::ArgumentParser& program, const std::map<std::string, idl_trivial_types_t>& types) {
-    auto& arg = program.add_argument("--trivials");
-    std::ostringstream help;
-    help << "trivial types (";
-    bool first = true;
-    for (auto& [type, _] : types) {
-        arg.add_choice(type);
-        if (!first) {
-            help << ", ";
-        }
-        first = false;
-        help << type;
-    }
-    help << ')';
-    arg.help(help.str());
-}
-
-void addOutputFiles(argparse::ArgumentParser& program, const std::map<std::string, idl_output_files_t>& formats) {
-    auto& arg = program.add_argument("--output-files");
-    std::ostringstream help;
-    help << "output files format (";
-    bool first = true;
-    for (auto& [fmt, _] : formats) {
-        arg.add_choice(fmt);
-        if (!first) {
-            help << ", ";
-        }
-        first = false;
-        help << fmt;
-    }
-    help << ')';
-    arg.help(help.str());
-}
-
-idl_generator_t getGeneratorArg(argparse::ArgumentParser& program, const std::map<std::string, idl_generator_t>& generators) {
-    if (!program.is_used("--generator")) {
-        return IDL_GENERATOR_C;
-    }
-    std::string gen = program.get("--generator");
-    return generators.at(gen);
-}
-
-idl_bool_type_t getBoolTypesArg(argparse::ArgumentParser& program, const std::map<std::string, idl_bool_type_t>& types) {
-    if (!program.is_used("--bool")) {
-        return IDL_BOOL_TYPE_DEFAULT;
-    }
-    std::string type = program.get("--bool");
-    return types.at(type);
-}
-
-idl_trivial_types_t getTrivialTypesArg(argparse::ArgumentParser& program, const std::map<std::string, idl_trivial_types_t>& types) {
-    if (!program.is_used("--trivials")) {
-        return IDL_TRIVIAL_TYPES_DEFAULT;
-    }
-    std::string type = program.get("--trivials");
-    return types.at(type);
-}
-
-idl_output_files_t getOutputFilesArg(argparse::ArgumentParser& program, const std::map<std::string, idl_output_files_t>& formats) {
-    if (!program.is_used("--output-files")) {
-        return IDL_OUTPUT_FILES_DEFAULT;
-    }
-    std::string fmt = program.get("--output-files");
-    return formats.at(fmt);
+        std::string key = program.get(lastArg);
+        return keys.at(key);
+    };
 }
 
 int main(int argc, char* argv[]) {
@@ -145,14 +75,13 @@ int main(int argc, char* argv[]) {
 
     argparse::ArgumentParser program("idlc", IDL_VERSION_STRING);
     program.add_argument("input").store_into(input).help("input .idl file");
-    addGeneratorArg(program, generators);
-    addBoolType(program, boolTypes);
-    addTrivialTypes(program, trivialTypes);
-    addOutputFiles(program, formats);
+    auto generator = addCommand(program, "generator programming language"sv, IDL_GENERATOR_C, generators, "-g"sv, "--generator"sv);
     program.add_argument("-o", "--output").store_into(output).help("output directory");
     program.add_argument("-i", "--imports").append().store_into(imports).help("import directories");
-    program.add_argument("-a", "--additions").append().store_into(additions).help("additional inclusions");
     program.add_argument("-w", "--warnings").store_into(warnAsErr).help("warnings as errors");
+    auto boolType = addCommand(program, "bool type"sv, IDL_BOOL_TYPE_DEFAULT, boolTypes, "--bool"sv);
+    auto trivials = addCommand(program, "trivial types"sv, IDL_TRIVIAL_TYPES_DEFAULT, trivialTypes, "--trivials"sv);
+    auto format   = addCommand(program, "output files format"sv, IDL_OUTPUT_FILES_DEFAULT, formats, "--output-files"sv);
     program.add_argument("--apiver").store_into(apiver).help("api version");
     program.add_argument("--indents").store_into(indents).help("indents count");
     program.add_argument("--line").store_into(line).help("max line length");
@@ -183,16 +112,11 @@ int main(int argc, char* argv[]) {
                 return EXIT_FAILURE;
             }
         } else {
-            std::cerr << "invalid version format" << std::endl;
-            return EXIT_FAILURE;
+            version = idl_api_version_t{ .str = apiver.c_str() };
         }
     }
-    idl_generator_t gen          = getGeneratorArg(program, generators);
-    idl_bool_type_t boolType     = getBoolTypesArg(program, boolTypes);
-    idl_trivial_types_t trivials = getTrivialTypesArg(program, trivialTypes);
-    idl_output_files_t format    = getOutputFilesArg(program, formats);
-    std::string inputFile        = input.string();
-    std::string outputDir        = output.string();
+    std::string inputFile = input.string();
+    std::string outputDir = output.string();
     std::vector<idl_utf8_t> dirs;
     std::vector<idl_utf8_t> adds;
     for (const auto& import : imports) {
@@ -223,9 +147,9 @@ int main(int argc, char* argv[]) {
     idl_options_set_version(options, version ? &version.value() : nullptr);
     idl_options_set_indents(options, indents);
     idl_options_set_line_length(options, line);
-    idl_options_set_output_files(options, format);
-    idl_options_set_trivial_types(options, trivials);
-    idl_options_set_bool_type(options, boolType);
+    idl_options_set_output_files(options, format(program, formats));
+    idl_options_set_trivial_types(options, trivials(program, trivialTypes));
+    idl_options_set_bool_type(options, boolType(program, boolTypes));
     idl_options_set_idl_options(options, &idlOptions);
     idl_options_set_c_options(options, &cOptions);
     idl_compiler_t compiler{};
@@ -236,7 +160,7 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
     idl_compilation_result_t result{};
-    code = idl_compiler_compile(compiler, gen, inputFile.c_str(), 0, nullptr, options, &result);
+    code = idl_compiler_compile(compiler, generator(program, generators), inputFile.c_str(), 0, nullptr, options, &result);
 
     bool failed = false;
     if (result) {

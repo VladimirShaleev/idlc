@@ -217,32 +217,8 @@ struct AttrArgRules {
         auto arg0                = ctx.getNodeRef(argFirst);
         auto arg1                = arg0 ? ctx.getNodeRef(arg0->sibling) : ctx.emptyNodeRef();
         auto arg2                = arg1 ? ctx.getNodeRef(arg1->sibling) : ctx.emptyNodeRef();
-        if (optionVersion) {
-            arg0.setReplacedByCompiler();
-            arg1.setReplacedByCompiler();
-            arg2.setReplacedByCompiler();
-            auto fail = false;
-            if (optionVersion->major < 0 || optionVersion->major > 255) {
-                ctx.log<IDL_STATUS_E3004>(node->location, optionVersion->major);
-                fail = true;
-            }
-            if (optionVersion->minor < 0 || optionVersion->minor > 255) {
-                ctx.log<IDL_STATUS_E3004>(node->location, optionVersion->minor);
-                fail = true;
-            }
-            if (optionVersion->micro < 0 || optionVersion->micro > 255) {
-                ctx.log<IDL_STATUS_E3004>(node->location, optionVersion->micro);
-                fail = true;
-            }
-            if (!fail) {
-                node->child = argFirst;
-                arg0.setReplacedByCompiler();
-                ctx.addLiteral(node, int64_t(optionVersion->major));
-                ctx.addLiteral(node, int64_t(optionVersion->minor));
-                ctx.addLiteral(node, int64_t(optionVersion->micro));
-            }
-        } else if (argCount == 3 && arg0.is<IDL_AST_NODE_TYPE_LITERAL_INT>() && arg1.is<IDL_AST_NODE_TYPE_LITERAL_INT>() &&
-                   arg2.is<IDL_AST_NODE_TYPE_LITERAL_INT>()) {
+        if (argCount == 3 && arg0.is<IDL_AST_NODE_TYPE_LITERAL_INT>() && arg1.is<IDL_AST_NODE_TYPE_LITERAL_INT>() &&
+            arg2.is<IDL_AST_NODE_TYPE_LITERAL_INT>()) {
             const auto major = arg0->valueInt;
             const auto minor = arg1->valueInt;
             const auto micro = arg2->valueInt;
@@ -289,11 +265,11 @@ struct AttrArgRules {
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ATTR_BOOL_TYPE>) {
         if (argCount == 1) {
-            node->child = argFirst;
-            auto arg0   = node.ctx().getNodeRef(argFirst);
+            auto arg0 = node.ctx().getNodeRef(argFirst);
             if (arg0.is<IDL_AST_NODE_TYPE_DECL_REF>()) {
                 auto type = node.result()->getStr(arg0->valueDeclRef.symbol);
                 if (type == "Int8" || type == "Int32" || type == "Bool") {
+                    node->child = argFirst;
                     return;
                 }
             }
@@ -852,6 +828,32 @@ struct BuildRules {
                     ctx.addNode<IDL_AST_NODE_TYPE_ATTR_STD_TYPES>(node);
                 } else if (trivials == IDL_TRIVIAL_TYPES_API_DEFINED && attrStdTypes) {
                     attrStdTypes.setReplacedByCompiler();
+                }
+            }
+            if (const auto ver = options->getVersion()) {
+                if (auto attrVer = node.findChild<IDL_AST_NODE_TYPE_ATTR_VERSION>()) {
+                    attrVer.setReplacedByCompiler();
+                }
+                if (ver->str) {
+                    std::string_view verStr = ver->str;
+                    ctx.addNode<IDL_AST_NODE_TYPE_ATTR_VERSION>(node, verStr);
+                } else {
+                    auto fail = false;
+                    if (ver->major < 0 || ver->major > 255) {
+                        ctx.log<IDL_STATUS_E3004>(node->location, ver->major);
+                        fail = true;
+                    }
+                    if (ver->major < 0 || ver->major > 255) {
+                        ctx.log<IDL_STATUS_E3004>(node->location, ver->minor);
+                        fail = true;
+                    }
+                    if (ver->minor < 0 || ver->micro > 255) {
+                        ctx.log<IDL_STATUS_E3004>(node->location, ver->micro);
+                        fail = true;
+                    }
+                    if (!fail) {
+                        ctx.addNode<IDL_AST_NODE_TYPE_ATTR_VERSION>(node, int64_t(ver->major), int64_t(ver->minor), int64_t(ver->micro));
+                    }
                 }
             }
         }

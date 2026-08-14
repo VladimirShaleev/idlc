@@ -267,6 +267,8 @@ struct ASTVisitor {
                        args[2].is<IDL_AST_NODE_TYPE_LITERAL_INT>()) {
                 version = Semver{ args[0]->valueInt, args[1]->valueInt, args[2]->valueInt };
             }
+        } else {
+            version = Semver{};
         }
 
         if (auto attrBoolType = node.findChild<IDL_AST_NODE_TYPE_ATTR_BOOL_TYPE>()) {
@@ -289,10 +291,6 @@ struct ASTVisitor {
         auto addMemberGroups = false;
         state.stdTypes       = !!node.findChild<IDL_AST_NODE_TYPE_ATTR_STD_TYPES>();
         if (auto options = state.writer.options()) {
-            if (const auto ver = options->getVersion()) {
-                version = Semver{ ver->major, ver->minor, ver->micro };
-            }
-
             indents         = options->getIndents();
             auto cOptions   = options->getCOptions();
             addDoc          = cOptions.add_doc;

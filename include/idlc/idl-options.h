@@ -75,6 +75,7 @@ typedef struct
     idl_uint32_t major; /**< Major component of the version. */
     idl_uint32_t minor; /**< Minor component of the version. */
     idl_uint32_t micro; /**< Micro component of the version. */
+    idl_utf8_t   str; /**< Representing version as string. */
 } idl_api_version_t;
 
 /**

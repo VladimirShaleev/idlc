@@ -1,2 +1,29 @@
+## set version_string_doxygen.config = config
+## set current_version_doxygen.config = config
+## if config.add_doc
+## set version_string_doxygen.indents = ""
+## set version_string_doxygen.is_inline = false
+## set version_string_doxygen.docs.0.name = "brief"
+## set version_string_doxygen.docs.0.literals = [ "Library version as human-readable string." ]
+## set version_string_doxygen.docs.1.name = "details"
+## set version_string_doxygen.docs.1.literals = [ "Representation of the current library version as a string" ]
+## if config.add_doc_groups
+## set version_string_doxygen.docs.2.name = "ingroup"
+## set version_string_doxygen.docs.2.literals = [ "macros" ]
+## endif
+## if config.add_member_groups
+## set current_version_doxygen.indents = ""
+## set current_version_doxygen.is_inline = false
+## set current_version_doxygen.docs.0.name = "name"
+## set current_version_doxygen.docs.0.literals = [ "Current Version." ]
+## set current_version_doxygen.docs.1.name = "brief"
+## set current_version_doxygen.docs.1.literals = [ "Macros representing the current library version." ]
+## set current_version_doxygen.member_group = "begin"
+## endif
+## endif
 
-#define {{ macros.version_string }} {{ str(config.version_string) }}
+## if config.add_member_groups
+{{ render("c_doxygen", current_version_doxygen) }}
+## endif
+{{ render("c_doxygen", version_string_doxygen) }}#define {{ macros.version_string }} {{ str(config.version_string) }}
+{% if config.add_member_groups %}{% set current_version_doxygen.member_group = "end" %}{{ nl(1) }}{{ render("c_doxygen", current_version_doxygen) }}{% endif %}

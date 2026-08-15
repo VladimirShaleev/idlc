@@ -337,6 +337,13 @@ struct ASTVisitor {
             return node.accept<CName>(state.stdTypes, state.boolType).str;
         });
 
+        state.env.add_callback("cnativetype", 1, [this](inja::Arguments& args) {
+            auto& ctx   = state.writer.api().ctx();
+            auto handle = args.at(0)->get<uint16_t>();
+            ASTNodeRef node(ctx, { handle });
+            return node.accept<CNativeType>(state.boolType).str;
+        });
+
         state.env.add_callback("ctype", 1, [this](inja::Arguments& args) {
             auto& ctx   = state.writer.api().ctx();
             auto handle = args.at(0)->get<uint16_t>();
@@ -441,6 +448,17 @@ struct ASTVisitor {
                                 "\n"s,
                                 "  - Bit flag operations for enumerations (C++ only)."s,
                                 "\n"s };
+
+        auto& trivials = state.data["trivials"];
+        for (auto child : node.getChilds<IDL_AST_NODE_TYPE_TRIVIAL_TYPE>()) {
+            if (!child.is<IDL_AST_NODE_TYPE_VOID>()) {
+                trivials.push_back(inja::json::object({
+                    { "node", child.handle().handle }
+                }));
+                fillDoc(0, true, child, trivials.back());
+            }
+        }
+
         pushImport(node,
                    "platform"sv,
                    false,
@@ -450,6 +468,8 @@ struct ASTVisitor {
         });
 
         state.env.render_to(state.out(), findTemplate("c_platform.txt"), state.data);
+
+        state.data.erase("trivials");
     }
 
     void renderVersionHeader(ASTNodeRef node) {
@@ -518,7 +538,7 @@ struct ASTVisitor {
 
         state.includes.emplace(state, state.writer.createOutput(filename(name)), import, std::move(data));
         state.mergeImport();
-        fillDoc(0, false, node, state.data, overrideDoc);
+        fillDoc(0, false, node, state.data, !postfix.empty() && !single ? overrideDoc : OverrideDoc{});
 
         state.env.render_to(state.out(), findTemplate("c_include_guard.txt"), state.data);
     }

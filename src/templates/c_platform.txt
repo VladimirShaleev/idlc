@@ -1,4 +1,40 @@
+## set import_api_doxygen.config = config
+## set types_doxygen.config = config
+## if config.add_doc
+## set import_api_doxygen.indents = ""
+## set import_api_doxygen.is_inline = false
+## set import_api_doxygen.docs.0.name = "def"
+## set import_api_doxygen.docs.0.literals.0 = macros.import_api
+## set import_api_doxygen.docs.1.name = "brief"
+## set import_api_doxygen.docs.1.literals = [ "Controls symbol visibility for shared library builds." ]
+## set import_api_doxygen.docs.2.name = "details"
+## set import_api_doxygen.docs.2.literals.0 = "This macro is used to control symbol visibility when building or using the library."
+## set import_api_doxygen.docs.2.literals.1 = "\n"
+## set import_api_doxygen.docs.2.literals.2 = "On Windows (**MSVC**) with dynamic linking (non-static build), it expands to `__declspec(dllimport)`."
+## set import_api_doxygen.docs.2.literals.3 = "\n"
+## set import_api_doxygen.docs.2.literals.4 = "In all other cases (static builds or non-Windows platforms), it expands to nothing."
+## set import_api_doxygen.docs.2.literals.5 = "\n"
+## set import_api_doxygen.docs.2.literals.6 = "This allows proper importing of symbols from DLLs on Windows platforms."
+## set import_api_doxygen.docs.3.name = "note"
+## set import_api_doxygen.docs.3.literals.0 = "Define `"
+## set import_api_doxygen.docs.3.literals.1 = macros.static_build
+## set import_api_doxygen.docs.3.literals.2 = "` for static library configuration."
+## if config.add_doc_groups
+## set import_api_doxygen.docs.4.name = "ingroup"
+## set import_api_doxygen.docs.4.literals = [ "macros" ]
+## endif
+## if config.add_doc_groups
+## set types_doxygen.indents = ""
+## set types_doxygen.is_inline = false
+## set types_doxygen.docs.0.name = "addtogroup"
+## set types_doxygen.docs.0.literals = [ "types Types" ]
+## set types_doxygen.member_group = "begin"
+## endif
+## endif
 
+## if config.add_doc
+{{ render("c_doxygen", import_api_doxygen) }}
+## endif
 #ifndef {{ macros.import_api }}
 # if defined(_MSC_VER) && !defined({{ macros.static_build}})
 #  define {{ macros.import_api }} __declspec(dllimport)
@@ -30,3 +66,23 @@
 #else
 # error unsupported platform
 #endif
+
+{{ render("c_doxygen", types_doxygen) }}
+#include <stdint.h>
+## set max_len = 0
+## set max_len2 = 0
+## for trivial in trivials
+## set name_len = length(cnativetype(trivial.node))
+## set name_len2 = length(cname(trivial.node))
+## if name_len > max_len
+## set max_len = name_len
+## endif
+## if name_len2 > max_len2
+## set max_len2 = name_len2
+## endif
+## endfor
+## for trivial in trivials
+typedef {% set native=cnativetype(trivial.node) %}{{ native }} {{ indents(max_len - length(native)) }}{% set name=cname(trivial.node) %}{{ name }};{{ indents(max_len2 - length(name)) }}{{ render("c_doxygen_inline", trivial.doxygen) }}
+## endfor
+## set types_doxygen.member_group = "end"
+{{ render("c_doxygen", types_doxygen) }}

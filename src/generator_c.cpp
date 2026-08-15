@@ -125,6 +125,12 @@ struct ASTVisitor {
 
         state.data["node"] = node.handle().handle;
         fillDoc(0, false, node, state.data);
+        auto& docs = state.data["doxygen"]["docs"];
+        docs.insert(docs.begin(),
+                    inja::json{
+                        { "name",     "typedef"                                                             },
+                        { "literals", std::vector{ node.accept<CName>(state.stdTypes, state.boolType).str } }
+        });
 
         auto& consts = state.data["consts"];
         for (auto child : node.getChilds<IDL_AST_NODE_TYPE_CONST>()) {
@@ -134,6 +140,7 @@ struct ASTVisitor {
             fillDoc(1, true, child, consts.back());
         }
 
+        std::cout << state.data.dump(2) << std::endl;
         state.env.render_to(state.out(), findTemplate("c_enum.txt"), state.data);
 
         state.data.erase("consts");

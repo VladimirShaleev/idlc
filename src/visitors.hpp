@@ -123,6 +123,10 @@ struct CName {
         }
     }
 
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_CHAR>) noexcept {
+        nativeOrLibType(node);
+    }
+
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_BOOL>) noexcept {
         nativeOrLibType(node);
     }

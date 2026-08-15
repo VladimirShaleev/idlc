@@ -1,5 +1,11 @@
 ## set import_api_doxygen.config = config
+## set constexpr_14_doxygen.config = config
 ## set types_doxygen.config = config
+## set type_definitions_doxygen.config = config
+## set enum_macros_doxygen.config = config
+## set begin_enum_doxygen.config = config
+## set end_enum_doxygen.config = config
+## set flags_enum_doxygen.config = config
 ## if config.add_doc
 ## set import_api_doxygen.indents = ""
 ## set import_api_doxygen.is_inline = false
@@ -23,12 +29,108 @@
 ## set import_api_doxygen.docs.4.name = "ingroup"
 ## set import_api_doxygen.docs.4.literals = [ "macros" ]
 ## endif
+## set constexpr_14_doxygen.indents = ""
+## set constexpr_14_doxygen.is_inline = false
+## set constexpr_14_doxygen.docs.0.name = "def"
+## set constexpr_14_doxygen.docs.0.literals.0 = macros.constexpr14
+## set constexpr_14_doxygen.docs.1.name = "brief"
+## set constexpr_14_doxygen.docs.1.literals = [ "Conditional C++14 relaxed `constexpr` specifier." ]
+## set constexpr_14_doxygen.docs.2.name = "details"
+## set constexpr_14_doxygen.docs.2.literals.0 = "Expands to `constexpr` if the compiler supports C++14 relaxed `constexpr` features"
+## set constexpr_14_doxygen.docs.2.literals.1 = "\n"
+## set constexpr_14_doxygen.docs.2.literals.2 = "(checked via `__cpp_constexpr >= 201304L`). Otherwise, it expands to nothing."
+## set constexpr_14_doxygen.docs.2.literals.3 = "\n"
+## set constexpr_14_doxygen.docs.2.literals.4 = "This allows writing code that leverages compile-time evaluation on modern compilers"
+## set constexpr_14_doxygen.docs.2.literals.5 = "\n"
+## set constexpr_14_doxygen.docs.2.literals.6 = "while retaining compatibility with older C++ standards or C compilation modes."
+## if config.add_doc_groups
+## set constexpr_14_doxygen.docs.3.name = "ingroup"
+## set constexpr_14_doxygen.docs.3.literals = [ "macros" ]
+## endif
+## set begin_enum_doxygen.indents = ""
+## set begin_enum_doxygen.is_inline = false
+## set begin_enum_doxygen.docs.0.name = "def"
+## set begin_enum_doxygen.docs.0.literals.0 = macros.begin_enum
+## set begin_enum_doxygen.docs.1.name = "brief"
+## set begin_enum_doxygen.docs.1.literals = [ "Begin an enum declaration with a fixed underlying type." ]
+## set begin_enum_doxygen.docs.2.name = "details"
+## set begin_enum_doxygen.docs.2.literals.0 = "This macro expands to a typed enum declaration when the compiler"
+## set begin_enum_doxygen.docs.2.literals.1 = "\n"
+## set begin_enum_doxygen.docs.2.literals.2 = "supports C++11 or C23 enum class style underlying types. On older"
+## set begin_enum_doxygen.docs.2.literals.3 = "\n"
+## set begin_enum_doxygen.docs.2.literals.4 = "compilers it falls back to an untyped C enum."
+## set begin_enum_doxygen.docs.3.name = "param[in]"
+## set begin_enum_doxygen.docs.3.literals = [ "type The underlying integer type to use for the enum." ]
+## if config.add_doc_groups
+## set begin_enum_doxygen.docs.4.name = "ingroup"
+## set begin_enum_doxygen.docs.4.literals = [ "macros" ]
+## endif
+## set end_enum_doxygen.indents = ""
+## set end_enum_doxygen.is_inline = false
+## set end_enum_doxygen.docs.0.name = "def"
+## set end_enum_doxygen.docs.0.literals.0 = macros.end_enum
+## set end_enum_doxygen.docs.1.name = "brief"
+## set end_enum_doxygen.docs.1.literals = [ "End an enum declaration and declare the enum name." ]
+## set end_enum_doxygen.docs.2.name = "details"
+## set end_enum_doxygen.docs.2.literals.0 = "This macro finishes the enum definition and optionally provides"
+## set end_enum_doxygen.docs.2.literals.1 = "\n"
+## set end_enum_doxygen.docs.2.literals.2 = "enums. It is paired with `"
+## set end_enum_doxygen.docs.2.literals.3 = macros.begin_enum
+## set end_enum_doxygen.docs.2.literals.4 = "`."
+## set end_enum_doxygen.docs.3.name = "param[in]"
+## set end_enum_doxygen.docs.3.literals = [ "name The enum type name to declare." ]
+## set end_enum_doxygen.docs.4.name = "param[in]"
+## set end_enum_doxygen.docs.4.literals = [ "type The underlying integer type used for the enum." ]
+## if config.add_doc_groups
+## set end_enum_doxygen.docs.5.name = "ingroup"
+## set end_enum_doxygen.docs.5.literals = [ "macros" ]
+## endif
+## set flags_enum_doxygen.indents = ""
+## set flags_enum_doxygen.is_inline = false
+## set flags_enum_doxygen.docs.0.name = "def"
+## set flags_enum_doxygen.docs.0.literals.0 = macros.flags_enum
+## set flags_enum_doxygen.docs.1.name = "brief"
+## set flags_enum_doxygen.docs.1.literals = [ "Enables bit flag operations for enumerations (C++ only)." ]
+## set flags_enum_doxygen.docs.2.name = "details"
+## set flags_enum_doxygen.docs.2.literals.0 = "Generates overloaded bitwise operators for type-safe flag manipulation:"
+## set flags_enum_doxygen.docs.2.literals.1 = "\n"
+## set flags_enum_doxygen.docs.2.literals.2 = "  - Bitwise NOT (~)"
+## set flags_enum_doxygen.docs.2.literals.3 = "\n"
+## set flags_enum_doxygen.docs.2.literals.4 = "  - OR (|, |=)"
+## set flags_enum_doxygen.docs.2.literals.5 = "\n"
+## set flags_enum_doxygen.docs.2.literals.6 = "  - AND (&, &=)"
+## set flags_enum_doxygen.docs.2.literals.7 = "\n"
+## set flags_enum_doxygen.docs.2.literals.8 = "  - XOR (^, ^=)"
+## set flags_enum_doxygen.docs.2.literals.9 = "\n"
+## set flags_enum_doxygen.docs.3.name = "param[in]"
+## set flags_enum_doxygen.docs.3.literals.0 = api_name + "_enum_t"
+## set flags_enum_doxygen.docs.3.literals.1 = " Enumeration type to enhance with flag operations."
+## if config.add_doc_groups
+## set flags_enum_doxygen.docs.4.name = "ingroup"
+## set flags_enum_doxygen.docs.4.literals = [ "macros" ]
+## endif
 ## if config.add_doc_groups
 ## set types_doxygen.indents = ""
 ## set types_doxygen.is_inline = false
 ## set types_doxygen.docs.0.name = "addtogroup"
 ## set types_doxygen.docs.0.literals = [ "types Types" ]
 ## set types_doxygen.member_group = "begin"
+## endif
+## if config.add_member_groups
+## set type_definitions_doxygen.indents = ""
+## set type_definitions_doxygen.is_inline = false
+## set type_definitions_doxygen.docs.0.name = "name"
+## set type_definitions_doxygen.docs.0.literals = [ "Platform-independent type definitions." ]
+## set type_definitions_doxygen.docs.1.name = "brief"
+## set type_definitions_doxygen.docs.1.literals = [ "Fixed-size types guaranteed to work across all supported platforms." ]
+## set type_definitions_doxygen.member_group = "begin"
+## set enum_macros_doxygen.indents = ""
+## set enum_macros_doxygen.is_inline = false
+## set enum_macros_doxygen.docs.0.name = "name"
+## set enum_macros_doxygen.docs.0.literals = [ "Enum Macros." ]
+## set enum_macros_doxygen.docs.1.name = "brief"
+## set enum_macros_doxygen.docs.1.literals = [ "Macros for defining enums with fixed underlying types and flag support." ]
+## set enum_macros_doxygen.member_group = "begin"
 ## endif
 ## endif
 
@@ -67,8 +169,16 @@
 # error unsupported platform
 #endif
 
-{{ render("c_doxygen", types_doxygen) }}
-#include <stdint.h>
+## if config.add_doc
+{{ render("c_doxygen", constexpr_14_doxygen) }}
+## endif
+#if defined(__cpp_constexpr) && __cpp_constexpr >= 201304L
+# define {{ macros.constexpr14 }} constexpr
+#else
+# define {{ macros.constexpr14 }}
+#endif
+
+{% if config.add_doc_groups %}{{ render("c_doxygen", types_doxygen) }}{{ nl(1) }}{% endif %}{% if config.add_member_groups %}{{ render("c_doxygen", type_definitions_doxygen) }}{% endif %}#include <stdint.h>
 ## set max_len = 0
 ## set max_len2 = 0
 ## for trivial in trivials
@@ -85,4 +195,63 @@
 typedef {% set native=cnativetype(trivial.node) %}{{ native }} {{ indents(max_len - length(native)) }}{% set name=cname(trivial.node) %}{{ name }};{{ indents(max_len2 - length(name)) }}{{ render("c_doxygen_inline", trivial.doxygen) }}
 ## endfor
 ## set types_doxygen.member_group = "end"
-{{ render("c_doxygen", types_doxygen) }}
+## set type_definitions_doxygen.member_group = "end"
+{% if config.add_member_groups %}{{ render("c_doxygen", type_definitions_doxygen) }}{% endif %}{% if config.add_doc_groups %}{{ nl(1) }}{{ render("c_doxygen", types_doxygen) }}{% endif %}
+{% if config.add_member_groups %}{{ render("c_doxygen", enum_macros_doxygen) }}{{ nl(1) }}{% endif %}{%if config.add_doc%}{{ render("c_doxygen", begin_enum_doxygen) }}{{ nl(1) }}{{ render("c_doxygen", end_enum_doxygen) }}{{ nl(1) }}{% endif %}#if defined(__cplusplus)
+# define {{ macros.begin_enum }}(type) typedef enum : type
+# define {{ macros.end_enum }}(name, type) name
+#elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L
+# define {{ macros.begin_enum }}(type) typedef enum : type
+# define {{ macros.end_enum }}(name, type) name
+#else
+# define {{ macros.begin_enum }}(type) enum 
+# define {{ macros.end_enum }}(name, type); typedef type name
+#endif
+
+## set enum_t = api_name + "_enum_t"
+## set flags.0 = "# define " + macros.flags_enum + "(" + enum_t + ")"
+## set flags.1 = "    inline constexpr " + enum_t + " operator~(" + enum_t + " lhr) noexcept {"
+## set flags.2 = "        using U         = typename std::underlying_type<" + enum_t + ">::type;"
+## set flags.3 = "        using UnsignedU = typename std::make_unsigned<U>::type;"
+## set flags.4 = "        return static_cast<" + enum_t + ">(~static_cast<UnsignedU>(lhr));"
+## set flags.5 = "    }"
+## set flags.6 = "    inline constexpr " + enum_t + " operator|(" + enum_t + " lhr, " + enum_t + " rhs) noexcept {"
+## set flags.7 = "        using U         = typename std::underlying_type<" + enum_t + ">::type;"
+## set flags.8 = "        using UnsignedU = typename std::make_unsigned<U>::type;"
+## set flags.9 = "        return static_cast<" + enum_t + ">(static_cast<UnsignedU>(lhr) | static_cast<UnsignedU>(rhs));"
+## set flags.10 = "    }"
+## set flags.11 = "    inline constexpr " + enum_t + " operator&(" + enum_t + " lhr, " + enum_t + " rhs) noexcept {"
+## set flags.12 = "        using U         = typename std::underlying_type<" + enum_t + ">::type;"
+## set flags.13 = "        using UnsignedU = typename std::make_unsigned<U>::type;"
+## set flags.14 = "        return static_cast<" + enum_t + ">(static_cast<UnsignedU>(lhr) & static_cast<UnsignedU>(rhs));"
+## set flags.15 = "    }"
+## set flags.16 = "    inline constexpr " + enum_t + " operator^(" + enum_t + " lhr, " + enum_t + " rhs) noexcept {"
+## set flags.17 = "        using U         = typename std::underlying_type<" + enum_t + ">::type;"
+## set flags.18 = "        using UnsignedU = typename std::make_unsigned<U>::type;"
+## set flags.19 = "        return static_cast<" + enum_t + ">(static_cast<UnsignedU>(lhr) ^ static_cast<UnsignedU>(rhs));"
+## set flags.20 = "    }"
+## set flags.21 = "    inline " + macros.constexpr14 + " " + enum_t + "& operator|=(" + enum_t + "& lhr, " + enum_t + " rhs) noexcept {"
+## set flags.22 = "        return lhr = lhr | rhs;"
+## set flags.23 = "    }"
+## set flags.24 = "    inline " + macros.constexpr14 + " " + enum_t + "& operator&=(" + enum_t + "& lhr, " + enum_t + " rhs) noexcept {"
+## set flags.25 = "        return lhr = lhr & rhs;"
+## set flags.26 = "    }"
+## set flags.27 = "    inline " + macros.constexpr14 + " " + enum_t + "& operator^=(" + enum_t + "& lhr, " + enum_t + " rhs) noexcept {"
+## set flags.28 = "        return lhr = lhr ^ rhs;"
+## set max_len = 0
+## for line in flags
+## set line_len = length(line)
+## if line_len > max_len
+## set max_len = line_len
+## endif
+## endfor
+{% if config.add_doc %}{{ render("c_doxygen", flags_enum_doxygen) }}{{ nl(1) }}{% endif %}#ifdef __cplusplus
+# include <type_traits>
+## for line in flags
+{{ line }} {{ indents(max_len - length(line)) }}\
+## endfor
+    }
+#else
+# define {{ macros.flags_enum }}({{ enum_t }})
+#endif
+{% if config.add_member_groups %}{% set enum_macros_doxygen.member_group = "end" %}{{ nl(1) }}{{ render("c_doxygen", enum_macros_doxygen) }}{% endif %}

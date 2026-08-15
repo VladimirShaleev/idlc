@@ -107,6 +107,7 @@ struct ASTVisitor {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_API>) {
+        state.data["api_name"] = apiName(node, Case::SnakeCase);
         addConfig(node);
         addCallbacks(node);
         addMacros(node);
@@ -297,6 +298,7 @@ struct ASTVisitor {
             addDocGroups    = cOptions.add_doc_groups;
             addMemberGroups = cOptions.add_member_groups;
         }
+
         auto& config                = state.data["config"];
         config["single"]            = single;
         config["indents"]           = indents;
@@ -582,7 +584,7 @@ struct ASTVisitor {
         return ss.str();
     }
 
-    std::string apiName(ASTNodeRef& node) {
+    std::string apiName(ASTNodeRef& node, Case caseConvention = Case::PascalCase) {
         std::vector<int> nums{};
         if (auto attr = node.findChild<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>()) {
             auto view = attr.getChilds() | std::views::transform([](const auto& arg) {
@@ -591,7 +593,7 @@ struct ASTVisitor {
             nums.assign(view.begin(), view.end());
         }
         const auto str = node.name();
-        return convert({ str.data(), str.length() }, Case::PascalCase, nums.empty() ? nullptr : &nums);
+        return convert({ str.data(), str.length() }, caseConvention, nums.empty() ? nullptr : &nums);
     }
 
     static std::string escape(std::string_view str) {

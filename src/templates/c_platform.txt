@@ -168,6 +168,7 @@
 #else
 # error unsupported platform
 #endif
+## if config.has_enum_flags
 
 ## if config.add_doc
 {{ render("c_doxygen", constexpr_14_doxygen) }}
@@ -177,6 +178,7 @@
 #else
 # define {{ macros.constexpr14 }}
 #endif
+## endif
 {% if config.std_types == false %}{{ nl(1) }}{% if config.add_doc_groups %}{{ render("c_doxygen", types_doxygen) }}{{ nl(1) }}{% endif %}{% if config.add_member_groups %}{{ render("c_doxygen", type_definitions_doxygen) }}{% endif %}#include <stdint.h>
 ## set max_len = 0
 ## set max_len2 = 0
@@ -195,7 +197,7 @@ typedef {% set native=cnativetype(trivial.node) %}{{ native }} {{ indents(max_le
 ## endfor
 ## set types_doxygen.member_group = "end"
 ## set type_definitions_doxygen.member_group = "end"
-{% if config.add_member_groups %}{{ render("c_doxygen", type_definitions_doxygen) }}{% endif %}{% if config.add_doc_groups %}{{ nl(1) }}{{ render("c_doxygen", types_doxygen) }}{% endif %}{% endif %}
+{% if config.add_member_groups %}{{ render("c_doxygen", type_definitions_doxygen) }}{% endif %}{% if config.add_doc_groups %}{{ nl(1) }}{{ render("c_doxygen", types_doxygen) }}{% endif %}{% endif %}{% if config.has_enums %}
 {% if config.add_member_groups %}{{ render("c_doxygen", enum_macros_doxygen) }}{{ nl(1) }}{% endif %}{%if config.add_doc%}{{ render("c_doxygen", begin_enum_doxygen) }}{{ nl(1) }}{{ render("c_doxygen", end_enum_doxygen) }}{{ nl(1) }}{% endif %}#if defined(__cplusplus)
 # define {{ macros.begin_enum }}(type) typedef enum : type
 # define {{ macros.end_enum }}(name, type) name
@@ -206,37 +208,40 @@ typedef {% set native=cnativetype(trivial.node) %}{{ native }} {{ indents(max_le
 # define {{ macros.begin_enum }}(type) enum 
 # define {{ macros.end_enum }}(name, type); typedef type name
 #endif
+## if config.has_enum_flags
 
 ## set enum_t = api_name + "_enum_t"
+## set sp = indents(config.indents)
+## set sp2 = indents(config.indents * 2)
 ## set flags.0 = "# define " + macros.flags_enum + "(" + enum_t + ")"
-## set flags.1 = "    inline constexpr " + enum_t + " operator~(" + enum_t + " lhr) noexcept {"
-## set flags.2 = "        using U         = typename std::underlying_type<" + enum_t + ">::type;"
-## set flags.3 = "        using UnsignedU = typename std::make_unsigned<U>::type;"
-## set flags.4 = "        return static_cast<" + enum_t + ">(~static_cast<UnsignedU>(lhr));"
-## set flags.5 = "    }"
-## set flags.6 = "    inline constexpr " + enum_t + " operator|(" + enum_t + " lhr, " + enum_t + " rhs) noexcept {"
-## set flags.7 = "        using U         = typename std::underlying_type<" + enum_t + ">::type;"
-## set flags.8 = "        using UnsignedU = typename std::make_unsigned<U>::type;"
-## set flags.9 = "        return static_cast<" + enum_t + ">(static_cast<UnsignedU>(lhr) | static_cast<UnsignedU>(rhs));"
-## set flags.10 = "    }"
-## set flags.11 = "    inline constexpr " + enum_t + " operator&(" + enum_t + " lhr, " + enum_t + " rhs) noexcept {"
-## set flags.12 = "        using U         = typename std::underlying_type<" + enum_t + ">::type;"
-## set flags.13 = "        using UnsignedU = typename std::make_unsigned<U>::type;"
-## set flags.14 = "        return static_cast<" + enum_t + ">(static_cast<UnsignedU>(lhr) & static_cast<UnsignedU>(rhs));"
-## set flags.15 = "    }"
-## set flags.16 = "    inline constexpr " + enum_t + " operator^(" + enum_t + " lhr, " + enum_t + " rhs) noexcept {"
-## set flags.17 = "        using U         = typename std::underlying_type<" + enum_t + ">::type;"
-## set flags.18 = "        using UnsignedU = typename std::make_unsigned<U>::type;"
-## set flags.19 = "        return static_cast<" + enum_t + ">(static_cast<UnsignedU>(lhr) ^ static_cast<UnsignedU>(rhs));"
-## set flags.20 = "    }"
-## set flags.21 = "    inline " + macros.constexpr14 + " " + enum_t + "& operator|=(" + enum_t + "& lhr, " + enum_t + " rhs) noexcept {"
-## set flags.22 = "        return lhr = lhr | rhs;"
-## set flags.23 = "    }"
-## set flags.24 = "    inline " + macros.constexpr14 + " " + enum_t + "& operator&=(" + enum_t + "& lhr, " + enum_t + " rhs) noexcept {"
-## set flags.25 = "        return lhr = lhr & rhs;"
-## set flags.26 = "    }"
-## set flags.27 = "    inline " + macros.constexpr14 + " " + enum_t + "& operator^=(" + enum_t + "& lhr, " + enum_t + " rhs) noexcept {"
-## set flags.28 = "        return lhr = lhr ^ rhs;"
+## set flags.1 = sp + "inline constexpr " + enum_t + " operator~(" + enum_t + " lhr) noexcept {"
+## set flags.2 = sp2 + "using U         = typename std::underlying_type<" + enum_t + ">::type;"
+## set flags.3 = sp2 + "using UnsignedU = typename std::make_unsigned<U>::type;"
+## set flags.4 = sp2 + "return static_cast<" + enum_t + ">(~static_cast<UnsignedU>(lhr));"
+## set flags.5 = sp + "}"
+## set flags.6 = sp + "inline constexpr " + enum_t + " operator|(" + enum_t + " lhr, " + enum_t + " rhs) noexcept {"
+## set flags.7 = sp2 + "using U         = typename std::underlying_type<" + enum_t + ">::type;"
+## set flags.8 = sp2 + "using UnsignedU = typename std::make_unsigned<U>::type;"
+## set flags.9 = sp2 + "return static_cast<" + enum_t + ">(static_cast<UnsignedU>(lhr) | static_cast<UnsignedU>(rhs));"
+## set flags.10 = sp + "}"
+## set flags.11 = sp + "inline constexpr " + enum_t + " operator&(" + enum_t + " lhr, " + enum_t + " rhs) noexcept {"
+## set flags.12 = sp2 + "using U         = typename std::underlying_type<" + enum_t + ">::type;"
+## set flags.13 = sp2 + "using UnsignedU = typename std::make_unsigned<U>::type;"
+## set flags.14 = sp2 + "return static_cast<" + enum_t + ">(static_cast<UnsignedU>(lhr) & static_cast<UnsignedU>(rhs));"
+## set flags.15 = sp + "}"
+## set flags.16 = sp + "inline constexpr " + enum_t + " operator^(" + enum_t + " lhr, " + enum_t + " rhs) noexcept {"
+## set flags.17 = sp2 + "using U         = typename std::underlying_type<" + enum_t + ">::type;"
+## set flags.18 = sp2 + "using UnsignedU = typename std::make_unsigned<U>::type;"
+## set flags.19 = sp2 + "return static_cast<" + enum_t + ">(static_cast<UnsignedU>(lhr) ^ static_cast<UnsignedU>(rhs));"
+## set flags.20 = sp + "}"
+## set flags.21 = sp + "inline " + macros.constexpr14 + " " + enum_t + "& operator|=(" + enum_t + "& lhr, " + enum_t + " rhs) noexcept {"
+## set flags.22 = sp2 + "return lhr = lhr | rhs;"
+## set flags.23 = sp + "}"
+## set flags.24 = sp + "inline " + macros.constexpr14 + " " + enum_t + "& operator&=(" + enum_t + "& lhr, " + enum_t + " rhs) noexcept {"
+## set flags.25 = sp2 + "return lhr = lhr & rhs;"
+## set flags.26 = sp + "}"
+## set flags.27 = sp + "inline " + macros.constexpr14 + " " + enum_t + "& operator^=(" + enum_t + "& lhr, " + enum_t + " rhs) noexcept {"
+## set flags.28 = sp2 + "return lhr = lhr ^ rhs;"
 ## set max_len = 0
 ## for line in flags
 ## set line_len = length(line)
@@ -249,8 +254,9 @@ typedef {% set native=cnativetype(trivial.node) %}{{ native }} {{ indents(max_le
 ## for line in flags
 {{ line }} {{ indents(max_len - length(line)) }}\
 ## endfor
-    }
+{{ sp }}}
 #else
 # define {{ macros.flags_enum }}({{ enum_t }})
 #endif
-{% if config.add_member_groups %}{% set enum_macros_doxygen.member_group = "end" %}{{ nl(1) }}{{ render("c_doxygen", enum_macros_doxygen) }}{% endif %}
+## endif
+{% if config.add_member_groups %}{% set enum_macros_doxygen.member_group = "end" %}{{ nl(1) }}{{ render("c_doxygen", enum_macros_doxygen) }}{% endif %}{% endif %}

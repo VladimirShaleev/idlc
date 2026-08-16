@@ -821,6 +821,8 @@ struct BuildRules {
                 if (addBoolType) {
                     ctx.addNode<IDL_AST_NODE_TYPE_ATTR_BOOL_TYPE>(node, DeclRef(symbol));
                 }
+            } else if (!node.findChild<IDL_AST_NODE_TYPE_ATTR_BOOL_TYPE>()) {
+                ctx.addNode<IDL_AST_NODE_TYPE_ATTR_BOOL_TYPE>(node, DeclRef("Int32"));
             }
             if (const auto trivials = options->getTrivialTypes(); trivials != IDL_TRIVIAL_TYPES_DEFAULT) {
                 auto attrStdTypes = node.findChild<IDL_AST_NODE_TYPE_ATTR_STD_TYPES>();
@@ -855,6 +857,8 @@ struct BuildRules {
                         ctx.addNode<IDL_AST_NODE_TYPE_ATTR_VERSION>(node, int64_t(ver->major), int64_t(ver->minor), int64_t(ver->micro));
                     }
                 }
+            } else if (!node.findChild<IDL_AST_NODE_TYPE_ATTR_VERSION>()) {
+                ctx.addNode<IDL_AST_NODE_TYPE_ATTR_VERSION>(node, int64_t(0), int64_t(0), int64_t(0));
             }
         }
     }

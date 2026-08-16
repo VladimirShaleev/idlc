@@ -102,6 +102,29 @@ struct DoxygenGroupVisitor {
     std::string_view str;
 };
 
+struct ASTStatsVisitor {
+    struct Stats {
+        size_t hasEnums{};
+        size_t hasEnumFlags{};
+    };
+
+    explicit ASTStatsVisitor(Stats& stats) noexcept : stats(stats) {
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ENUM>) {
+        stats.hasEnums = true;
+        if (node.findChild<IDL_AST_NODE_TYPE_ATTR_FLAGS>()) {
+            stats.hasEnumFlags = true;
+        }
+    }
+
+    template <ASTNodeType Type>
+    void visit(ASTNodeRef&, Tag<Type>) noexcept {
+    }
+
+    Stats& stats;
+};
+
 struct ASTVisitor {
     ASTVisitor(State& state) noexcept : state(state) {
     }
@@ -265,31 +288,32 @@ struct ASTVisitor {
         };
 
         std::variant<std::string_view, Semver> version;
-        if (auto ver = node.findChild<IDL_AST_NODE_TYPE_ATTR_VERSION>()) {
-            auto literals = ver.getChilds<IDL_AST_NODE_TYPE_LITERAL>();
-            std::vector<ASTNodeRef> args;
-            args.assign(literals.begin(), literals.end());
-            if (args.size() == 1 && args[0].is<IDL_AST_NODE_TYPE_LITERAL_STR>()) {
-                version = args[0].valueStr();
-            } else if (args.size() == 3 && args[0].is<IDL_AST_NODE_TYPE_LITERAL_INT>() && args[1].is<IDL_AST_NODE_TYPE_LITERAL_INT>() &&
-                       args[2].is<IDL_AST_NODE_TYPE_LITERAL_INT>()) {
-                version = Semver{ args[0]->valueInt, args[1]->valueInt, args[2]->valueInt };
-            }
-        } else {
-            version = Semver{};
+        auto attrVer = node.findChild<IDL_AST_NODE_TYPE_ATTR_VERSION>();
+        assert(attrVer);
+        auto literals = attrVer.getChilds<IDL_AST_NODE_TYPE_LITERAL>();
+        std::vector<ASTNodeRef> args;
+        args.assign(literals.begin(), literals.end());
+        if (args.size() == 1 && args[0].is<IDL_AST_NODE_TYPE_LITERAL_STR>()) {
+            version = args[0].valueStr();
+        } else if (args.size() == 3 && args[0].is<IDL_AST_NODE_TYPE_LITERAL_INT>() && args[1].is<IDL_AST_NODE_TYPE_LITERAL_INT>() &&
+                   args[2].is<IDL_AST_NODE_TYPE_LITERAL_INT>()) {
+            version = Semver{ args[0]->valueInt, args[1]->valueInt, args[2]->valueInt };
         }
 
-        if (auto attrBoolType = node.findChild<IDL_AST_NODE_TYPE_ATTR_BOOL_TYPE>()) {
-            auto boolType = node.ctx().getNodeRef(attrBoolType->child).resolveRef(true);
-            if (boolType.is<IDL_AST_NODE_TYPE_INT_8>()) {
-                state.boolType = IDL_BOOL_TYPE_INT_8;
-            } else if (boolType.is<IDL_AST_NODE_TYPE_INT_32>()) {
-                state.boolType = IDL_BOOL_TYPE_INT_32;
-            } else if (boolType.is<IDL_AST_NODE_TYPE_BOOL>()) {
-                state.boolType = IDL_BOOL_TYPE_STD_BOOL;
-            }
-        } else {
+        constexpr auto filters =
+            ASTNodeRef::SkipDocs | ASTNodeRef::SkipAttrBuiltins | ASTNodeRef::SkipAttrs | ASTNodeRef::SkipLiterals | ASTNodeRef::SkipTrivials;
+        ASTStatsVisitor::Stats stats{};
+        state.writer.api().acceptRecursive<ASTStatsVisitor>(filters, std::ref(stats));
+
+        auto attrBoolType = node.findChild<IDL_AST_NODE_TYPE_ATTR_BOOL_TYPE>();
+        assert(attrBoolType);
+        auto boolType = node.ctx().getNodeRef(attrBoolType->child).resolveRef(true);
+        if (boolType.is<IDL_AST_NODE_TYPE_INT_8>()) {
+            state.boolType = IDL_BOOL_TYPE_INT_8;
+        } else if (boolType.is<IDL_AST_NODE_TYPE_INT_32>()) {
             state.boolType = IDL_BOOL_TYPE_INT_32;
+        } else if (boolType.is<IDL_AST_NODE_TYPE_BOOL>()) {
+            state.boolType = IDL_BOOL_TYPE_STD_BOOL;
         }
 
         auto indents         = 4;
@@ -313,6 +337,8 @@ struct ASTVisitor {
         config["add_doc_groups"]    = addDoc && addDocGroups;
         config["add_member_groups"] = addDoc && addMemberGroups;
         config["std_types"]         = state.stdTypes;
+        config["has_enums"]         = stats.hasEnums;
+        config["has_enum_flags"]    = stats.hasEnumFlags;
         switch (state.boolType) {
             case IDL_BOOL_TYPE_INT_32:
                 config["bool_type"] = "int32";

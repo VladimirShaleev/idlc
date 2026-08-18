@@ -133,7 +133,7 @@
 ## set enum_macros_doxygen.member_group = "begin"
 ## endif
 ## endif
-{% if config.std_types %}{{ nl(1) }}#include <stdint.h>{{ nl(1) }}{% endif %}
+{% if config.std_types %}{{ nl(1) }}#include <stdint.h>{% if config.bool_type == "std_bool" %}{{ nl(1) }}#include <stdbool.h>{% endif %}{{ nl(1) }}{% endif %}
 ## if config.add_doc
 {{ render("c_doxygen", import_api_doxygen) }}
 ## endif
@@ -179,7 +179,7 @@
 # define {{ macros.constexpr14 }}
 #endif
 ## endif
-{% if config.std_types == false %}{{ nl(1) }}{% if config.add_doc_groups %}{{ render("c_doxygen", types_doxygen) }}{{ nl(1) }}{% endif %}{% if config.add_member_groups %}{{ render("c_doxygen", type_definitions_doxygen) }}{% endif %}#include <stdint.h>
+{% if config.std_types == false %}{{ nl(1) }}{% if config.add_doc_groups %}{{ render("c_doxygen", types_doxygen) }}{{ nl(1) }}{% endif %}{% if config.add_member_groups %}{{ render("c_doxygen", type_definitions_doxygen) }}{% endif %}#include <stdint.h>{% if config.bool_type == "std_bool" %}{{ nl(1) }}#include <stdbool.h>{% endif %}
 ## set max_len = 0
 ## set max_len2 = 0
 ## for trivial in trivials

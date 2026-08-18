@@ -24,8 +24,7 @@ struct Include {
 
 struct State {
     Writer& writer;
-    bool stdTypes;
-    idl_bool_type_t boolType;
+    CName::Settings cnameSettings;
     inja::json data;
     inja::Environment env;
     std::stack<Include> includes;
@@ -39,17 +38,29 @@ struct State {
         auto& import = includes.top().data;
 
         data["macros"]["include_guard"] = import["include_guard"];
+        data["filename"]                = import["filename"];
         data["is_main"]                 = import["is_main"];
     }
 
-    void flushImports() {
+    void popImport() {
+        const auto filename = includes.top().output.filename().string();
+        const auto isImport = !!includes.top().import;
+
         data["include_guard_close"] = true;
-        while (!includes.empty()) {
-            env.render_to(out(), templates["c_include_guard.txt"], data);
-            includes.pop();
-            if (!includes.empty()) {
-                mergeImport();
+        env.render_to(out(), templates["c_include_guard.txt"], data);
+        includes.pop();
+        data["include_guard_close"] = false;
+        if (!includes.empty()) {
+            mergeImport();
+            if (isImport) {
+                fmt::print(out(), "#include \"{}\"\n", filename);
             }
+        }
+    }
+
+    void flushImports() {
+        while (!includes.empty()) {
+            popImport();
         }
     }
 };
@@ -146,13 +157,14 @@ struct ASTVisitor {
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ENUM>) {
         tryPopImport(node);
 
-        state.data["node"] = node.handle().handle;
+        state.data["node"]     = node.handle().handle;
+        state.data["is_flags"] = !!node.findChild<IDL_AST_NODE_TYPE_ATTR_FLAGS>();
         fillDoc(0, false, node, state.data);
         auto& docs = state.data["doxygen"]["docs"];
         docs.insert(docs.begin(),
                     inja::json{
-                        { "name",     "typedef"                                                             },
-                        { "literals", std::vector{ node.accept<CName>(state.stdTypes, state.boolType).str } }
+                        { "name",     "typedef"                                                            },
+                        { "literals", std::vector{ node.accept<CName>(std::ref(state.cnameSettings)).str } }
         });
 
         auto& consts = state.data["consts"];
@@ -163,7 +175,6 @@ struct ASTVisitor {
             fillDoc(1, true, child, consts.back());
         }
 
-        std::cout << state.data.dump(2) << std::endl;
         state.env.render_to(state.out(), findTemplate("c_enum.txt"), state.data);
 
         state.data.erase("consts");
@@ -305,23 +316,57 @@ struct ASTVisitor {
         ASTStatsVisitor::Stats stats{};
         state.writer.api().acceptRecursive<ASTStatsVisitor>(filters, std::ref(stats));
 
+        auto& cname       = state.cnameSettings;
         auto attrBoolType = node.findChild<IDL_AST_NODE_TYPE_ATTR_BOOL_TYPE>();
         assert(attrBoolType);
         auto boolType = node.ctx().getNodeRef(attrBoolType->child).resolveRef(true);
         if (boolType.is<IDL_AST_NODE_TYPE_INT_8>()) {
-            state.boolType = IDL_BOOL_TYPE_INT_8;
+            cname.boolType = IDL_BOOL_TYPE_INT_8;
         } else if (boolType.is<IDL_AST_NODE_TYPE_INT_32>()) {
-            state.boolType = IDL_BOOL_TYPE_INT_32;
+            cname.boolType = IDL_BOOL_TYPE_INT_32;
         } else if (boolType.is<IDL_AST_NODE_TYPE_BOOL>()) {
-            state.boolType = IDL_BOOL_TYPE_STD_BOOL;
+            cname.boolType = IDL_BOOL_TYPE_STD_BOOL;
         }
+
+        auto addConv =
+            [&cname](idl_ast_node_type_t type, bool fullname = true, Case caseConvention = Case::SnakeCase, bool addT = true) -> CName::Convention& {
+            cname.conventions[type].fullname       = fullname;
+            cname.conventions[type].caseConvention = caseConvention;
+            if (addT) {
+                cname.conventions[type].postfix = "_t"sv;
+            }
+            return cname.conventions[type];
+        };
+
+        addConv(IDL_AST_NODE_TYPE_CONST, true, Case::ScreamingSnakeCase, false).constBit = "_BIT";
+        addConv(IDL_AST_NODE_TYPE_STRUCT);
+        addConv(IDL_AST_NODE_TYPE_ENUM).enumFlags = "_flags"sv;
+        addConv(IDL_AST_NODE_TYPE_FIELD, false, Case::SnakeCase, false);
+        addConv(IDL_AST_NODE_TYPE_FUNC, true, Case::SnakeCase, false);
+        addConv(IDL_AST_NODE_TYPE_ARG, false, Case::SnakeCase, false);
+        addConv(IDL_AST_NODE_TYPE_IMPORT, true, Case::LispCase, false).includeImports = true;
+        addConv(IDL_AST_NODE_TYPE_VOID);
+        addConv(IDL_AST_NODE_TYPE_DATA);
+        addConv(IDL_AST_NODE_TYPE_CHAR);
+        addConv(IDL_AST_NODE_TYPE_STR);
+        addConv(IDL_AST_NODE_TYPE_BOOL);
+        addConv(IDL_AST_NODE_TYPE_INT_8);
+        addConv(IDL_AST_NODE_TYPE_UINT_8);
+        addConv(IDL_AST_NODE_TYPE_INT_16);
+        addConv(IDL_AST_NODE_TYPE_UINT_16);
+        addConv(IDL_AST_NODE_TYPE_INT_32);
+        addConv(IDL_AST_NODE_TYPE_UINT_32);
+        addConv(IDL_AST_NODE_TYPE_INT_64);
+        addConv(IDL_AST_NODE_TYPE_UINT_64);
+        addConv(IDL_AST_NODE_TYPE_FLOAT_32);
+        addConv(IDL_AST_NODE_TYPE_FLOAT_64);
 
         auto indents         = 4;
         auto single          = !!node.findChild<IDL_AST_NODE_TYPE_ATTR_SINGLE>();
         auto addDoc          = false;
         auto addDocGroups    = false;
         auto addMemberGroups = false;
-        state.stdTypes       = !!node.findChild<IDL_AST_NODE_TYPE_ATTR_STD_TYPES>();
+        cname.stdTypes       = !!node.findChild<IDL_AST_NODE_TYPE_ATTR_STD_TYPES>();
         if (auto options = state.writer.options()) {
             indents         = options->getIndents();
             auto cOptions   = options->getCOptions();
@@ -336,10 +381,10 @@ struct ASTVisitor {
         config["add_doc"]           = addDoc;
         config["add_doc_groups"]    = addDoc && addDocGroups;
         config["add_member_groups"] = addDoc && addMemberGroups;
-        config["std_types"]         = state.stdTypes;
+        config["std_types"]         = cname.stdTypes;
         config["has_enums"]         = stats.hasEnums;
         config["has_enum_flags"]    = stats.hasEnumFlags;
-        switch (state.boolType) {
+        switch (cname.boolType) {
             case IDL_BOOL_TYPE_INT_32:
                 config["bool_type"] = "int32";
                 break;
@@ -369,28 +414,28 @@ struct ASTVisitor {
             auto& ctx   = state.writer.api().ctx();
             auto handle = args.at(0)->get<uint16_t>();
             ASTNodeRef node(ctx, { handle });
-            return node.accept<CName>(state.stdTypes, state.boolType).str;
+            return node.accept<CName>(std::cref(state.cnameSettings)).str;
         });
 
         state.env.add_callback("cnativetype", 1, [this](inja::Arguments& args) {
             auto& ctx   = state.writer.api().ctx();
             auto handle = args.at(0)->get<uint16_t>();
             ASTNodeRef node(ctx, { handle });
-            return node.accept<CNativeType>(state.boolType).str;
+            return node.accept<CNativeType>(state.cnameSettings.boolType).str;
         });
 
         state.env.add_callback("ctype", 1, [this](inja::Arguments& args) {
             auto& ctx   = state.writer.api().ctx();
             auto handle = args.at(0)->get<uint16_t>();
             ASTNodeRef node(ctx, { handle });
-            return node.declType().accept<CName>(state.stdTypes, state.boolType).str;
+            return node.declType().accept<CName>(std::cref(state.cnameSettings)).str;
         });
 
         state.env.add_callback("cvalue", 1, [this](inja::Arguments& args) {
             auto& ctx   = state.writer.api().ctx();
             auto handle = args.at(0)->get<uint16_t>();
             auto node   = ASTNodeRef(ctx, { handle });
-            return node.accept<CValue>(state.stdTypes, state.boolType).str;
+            return node.accept<CValue>(std::cref(state.cnameSettings)).str;
         });
 
         state.env.add_callback("cliteral", 1, [this](inja::Arguments& args) {
@@ -400,7 +445,7 @@ struct ASTVisitor {
             } else {
                 auto handle = args.at(0)->get<uint16_t>();
                 auto node   = ASTNodeRef(ctx, { handle });
-                return node.accept<CLiteral>(state.stdTypes, state.boolType).str;
+                return node.accept<CLiteral>(std::cref(state.cnameSettings)).str;
             }
         });
 
@@ -443,26 +488,28 @@ struct ASTVisitor {
 
     void addMacros(ASTNodeRef node) {
         auto& macros                 = state.data["macros"];
-        macros["import_api"]         = fullname(node, false, '_', "api"sv);
-        macros["static_build"]       = fullname(node, true, '_', "STATIC"sv, "BUILD"sv);
-        macros["platform_windows"]   = fullname(node, true, '_', "PLATFORM"sv, "WINDOWS"sv);
-        macros["platform_ios"]       = fullname(node, true, '_', "PLATFORM"sv, "IOS"sv);
-        macros["platform_macos"]     = fullname(node, true, '_', "PLATFORM"sv, "MAC"sv, "OS"sv);
-        macros["platform_android"]   = fullname(node, true, '_', "PLATFORM"sv, "ANDROID"sv);
-        macros["platform_linux"]     = fullname(node, true, '_', "PLATFORM"sv, "LINUX"sv);
-        macros["platform_web"]       = fullname(node, true, '_', "PLATFORM"sv, "WEB"sv);
-        macros["constexpr14"]        = fullname(node, true, '_', "CONSTEXPR"sv, "14"sv);
-        macros["version_major"]      = fullname(node, true, '_', "VERSION"sv, "MAJOR"sv);
-        macros["version_minor"]      = fullname(node, true, '_', "VERSION"sv, "MINOR"sv);
-        macros["version_micro"]      = fullname(node, true, '_', "VERSION"sv, "MICRO"sv);
-        macros["version_encode"]     = fullname(node, true, '_', "VERSION"sv, "ENCODE"sv);
-        macros["version_stringize_"] = fullname(node, true, '_', "VERSION"sv, "STRINGIZE_"sv);
-        macros["version_stringize"]  = fullname(node, true, '_', "VERSION"sv, "STRINGIZE"sv);
-        macros["version"]            = fullname(node, true, '_', "VERSION"sv);
-        macros["version_string"]     = fullname(node, true, '_', "VERSION"sv, "STRING"sv);
-        macros["begin_enum"]         = fullname(node, true, '_', "BEGIN"sv, "ENUM"sv);
-        macros["end_enum"]           = fullname(node, true, '_', "END"sv, "ENUM"sv);
-        macros["flags_enum"]         = fullname(node, true, '_', "FLAGS"sv, "ENUM"sv);
+        macros["import_api"]         = fullname(node, Case::SnakeCase, "_api"sv);
+        macros["static_build"]       = fullname(node, Case::ScreamingSnakeCase, "_STATIC_BUILD"sv);
+        macros["platform_windows"]   = fullname(node, Case::ScreamingSnakeCase, "_PLATFORM_WINDOWS"sv);
+        macros["platform_ios"]       = fullname(node, Case::ScreamingSnakeCase, "_PLATFORM_IOS"sv);
+        macros["platform_macos"]     = fullname(node, Case::ScreamingSnakeCase, "_PLATFORM_MAC_OS"sv);
+        macros["platform_android"]   = fullname(node, Case::ScreamingSnakeCase, "_PLATFORM_ANDROID"sv);
+        macros["platform_linux"]     = fullname(node, Case::ScreamingSnakeCase, "_PLATFORM_LINUX"sv);
+        macros["platform_web"]       = fullname(node, Case::ScreamingSnakeCase, "_PLATFORM_WEB"sv);
+        macros["constexpr14"]        = fullname(node, Case::ScreamingSnakeCase, "_CONSTEXPR_14"sv);
+        macros["version_major"]      = fullname(node, Case::ScreamingSnakeCase, "_VERSION_MAJOR"sv);
+        macros["version_minor"]      = fullname(node, Case::ScreamingSnakeCase, "_VERSION_MINOR"sv);
+        macros["version_micro"]      = fullname(node, Case::ScreamingSnakeCase, "_VERSION_MICRO"sv);
+        macros["version_encode"]     = fullname(node, Case::ScreamingSnakeCase, "_VERSION_ENCODE"sv);
+        macros["version_stringize_"] = fullname(node, Case::ScreamingSnakeCase, "_VERSION_STRINGIZE_"sv);
+        macros["version_stringize"]  = fullname(node, Case::ScreamingSnakeCase, "_VERSION_STRINGIZE"sv);
+        macros["version"]            = fullname(node, Case::ScreamingSnakeCase, "_VERSION"sv);
+        macros["version_string"]     = fullname(node, Case::ScreamingSnakeCase, "_VERSION_STRING"sv);
+        macros["begin_enum"]         = fullname(node, Case::ScreamingSnakeCase, "_BEGIN_ENUM"sv);
+        macros["end_enum"]           = fullname(node, Case::ScreamingSnakeCase, "_END_ENUM"sv);
+        macros["flags_enum"]         = fullname(node, Case::ScreamingSnakeCase, "_FLAGS_ENUM"sv);
+
+        std::cout << state.data.dump(2) << std::endl;
     }
 
     void renderPlatformHeader(ASTNodeRef node) {
@@ -556,22 +603,27 @@ struct ASTVisitor {
         std::string name;
         std::string includeGuard;
         if (!postfix.empty() && !single) {
+            std::string postfixLower(postfix.data(), postfix.length());
             std::string postfixUpper(postfix.data(), postfix.length());
-            postfixUpper = convert(postfixUpper, Case::ScreamingSnakeCase);
-            name         = fullname(node, false, '-', postfix);
-            includeGuard = fullname(node, true, '_', postfixUpper, 'H');
+            postfixLower = '-' + postfixLower;
+            postfixUpper = '_' + convert(postfixUpper, Case::ScreamingSnakeCase) + "_H";
+            name         = fullname(node, Case::LispCase, { postfixLower.c_str(), postfixLower.length() });
+            includeGuard = fullname(node, Case::ScreamingSnakeCase, { postfixUpper.c_str(), postfixUpper.length() });
         } else {
-            name         = fullname(node, false, '-');
-            includeGuard = fullname(node, true, '_', 'H');
+            name         = fullname(node, Case::LispCase);
+            includeGuard = fullname(node, Case::ScreamingSnakeCase, "_H");
         }
+        std::replace(name.begin(), name.end(), '_', '-');
 
         auto import = node.is<IDL_AST_NODE_TYPE_IMPORT>() ? node : node.ctx().emptyNodeRef();
+        auto fname  = filename(name);
 
         inja::json data;
         data["include_guard"] = includeGuard;
+        data["filename"]      = fname.string();
         data["is_main"]       = main || single;
 
-        state.includes.emplace(state, state.writer.createOutput(filename(name)), import, std::move(data));
+        state.includes.emplace(state, state.writer.createOutput(fname), import, std::move(data));
         state.mergeImport();
         fillDoc(0, false, node, state.data, !postfix.empty() && !single ? overrideDoc : OverrideDoc{});
 
@@ -590,13 +642,7 @@ struct ASTVisitor {
         }
         if (currParent != currImport) {
             while (currParent != state.includes.top().import) {
-                state.data["include_guard_close"] = true;
-                state.env.render_to(out(), findTemplate("c_include_guard.txt"), state.data);
-                state.includes.pop();
-                state.data["include_guard_close"] = false;
-                if (!state.includes.empty()) {
-                    state.mergeImport();
-                }
+                state.popImport();
             }
         }
     }
@@ -608,13 +654,14 @@ struct ASTVisitor {
     }
 
     template <typename... Postfix>
-    std::string fullname(ASTNodeRef& node, bool isUpper, char infix, Postfix&&... postfix) {
-        std::ostringstream ss;
-        ss << node.accept<CName>(state.stdTypes, state.boolType, true, infix, isUpper).str;
-        if (sizeof...(postfix) > 0) {
-            ((ss << infix, ss << postfix), ...);
-        }
-        return ss.str();
+    std::string fullname(ASTNodeRef& node, Case caseConvention, std::string_view postfix = {}) {
+        CName::Settings settings = state.cnameSettings;
+
+        settings.conventions[IDL_AST_NODE_TYPE_API].caseConvention    = caseConvention;
+        settings.conventions[IDL_AST_NODE_TYPE_API].postfix           = postfix;
+        settings.conventions[IDL_AST_NODE_TYPE_IMPORT].caseConvention = caseConvention;
+        settings.conventions[IDL_AST_NODE_TYPE_IMPORT].postfix        = postfix;
+        return node.accept<CName>(std::cref(settings)).str;
     }
 
     std::string apiName(ASTNodeRef& node, Case caseConvention = Case::PascalCase) {

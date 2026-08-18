@@ -92,103 +92,61 @@ struct CNativeType {
 };
 
 struct CName {
-    CName(bool stdTypes,
-          idl_bool_type_t boolType,
-          bool includeImports         = false,
-          char separator              = '_',
-          std::optional<bool> isUpper = std::nullopt) noexcept :
-        stdTypes(stdTypes),
-        boolType(boolType),
-        includeImports(includeImports),
-        separator(separator),
-        isUpper(isUpper) {
+    struct Convention {
+        bool includeImports;
+        bool fullname;
+        Case caseConvention;
+        std::string_view prefix;
+        std::string_view postfix;
+        std::string_view enumFlags;
+        std::string_view constBit;
+    };
+
+    struct Settings {
+        bool stdTypes;
+        idl_bool_type_t boolType;
+        std::array<Convention, IDL_AST_NODE_TYPE_FLOAT_64 + 1> conventions;
+    };
+
+    explicit CName(const Settings& settings) noexcept : settings(settings) {
     }
 
-    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_IMPORT>) {
-        str = cname(node, false);
-    }
-
-    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ENUM>) {
-        str = cname(node);
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ENUM> tag) {
+        const auto& conv = settings.conventions[tag.type];
         if (node.findChild<IDL_AST_NODE_TYPE_ATTR_FLAGS>()) {
-            str += "_flags";
+            str = cname(node, conv.includeImports, conv.fullname, conv.caseConvention, conv.prefix, conv.enumFlags, conv.postfix);
+        } else {
+            str = cname(node, conv.includeImports, conv.fullname, conv.caseConvention, conv.prefix, conv.postfix);
         }
-        str += "_t";
     }
 
-    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_CONST>) {
-        str = cname(node, true);
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_CONST> tag) {
+        const auto& conv = settings.conventions[tag.type];
         if (node.parent().findChild<IDL_AST_NODE_TYPE_ATTR_FLAGS>()) {
-            str += "_BIT";
+            str = cname(node, conv.includeImports, conv.fullname, conv.caseConvention, conv.prefix, conv.constBit, conv.postfix);
+        } else {
+            str = cname(node, conv.includeImports, conv.fullname, conv.caseConvention, conv.prefix, conv.postfix);
         }
-    }
-
-    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_CHAR>) noexcept {
-        nativeOrLibType(node);
-    }
-
-    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_BOOL>) noexcept {
-        nativeOrLibType(node);
-    }
-
-    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_INT_8>) noexcept {
-        nativeOrLibType(node);
-    }
-
-    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_UINT_8>) noexcept {
-        nativeOrLibType(node);
-    }
-
-    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_INT_16>) noexcept {
-        nativeOrLibType(node);
-    }
-
-    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_UINT_16>) noexcept {
-        nativeOrLibType(node);
-    }
-
-    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_INT_32>) noexcept {
-        nativeOrLibType(node);
-    }
-
-    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_UINT_32>) noexcept {
-        nativeOrLibType(node);
-    }
-
-    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_INT_64>) noexcept {
-        nativeOrLibType(node);
-    }
-
-    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_UINT_64>) noexcept {
-        nativeOrLibType(node);
-    }
-
-    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_FLOAT_32>) noexcept {
-        nativeOrLibType(node);
-    }
-
-    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_FLOAT_64>) noexcept {
-        nativeOrLibType(node);
-    }
-
-    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_STR>) noexcept {
-        nativeOrLibType(node);
-    }
-
-    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_DATA>) noexcept {
-        nativeOrLibType(node);
     }
 
     template <ASTNodeType Type>
-    void visit(ASTNodeRef& node, Tag<Type>) noexcept {
-        str = cname(node);
+    void visit(ASTNodeRef& node, Tag<Type> tag) noexcept {
+        if (settings.stdTypes && node.is<IDL_AST_NODE_TYPE_TRIVIAL_TYPE>()) {
+            const auto native = node.accept<CNativeType>(settings.boolType).str;
+            str.assign(native.data(), native.length());
+        } else {
+            const auto& conv = settings.conventions[tag.type];
+
+            str = cname(node, conv.includeImports, conv.fullname, conv.caseConvention, conv.prefix, conv.postfix);
+        }
     }
 
-    std::string cnameDecl(ASTNodeRef& decl, bool upper) {
+    std::string cnameDecl(ASTNodeRef& decl, Case caseConvention) {
         assert(decl.is<IDL_AST_NODE_TYPE_DECL>());
         if (auto attr = decl.findChild<IDL_AST_NODE_TYPE_ATTR_CNAME>()) {
             auto str = decl.ctx().getNodeRef(attr->child).valueStr();
-            return { str.data(), str.length() };
+            std::string result{ str.data(), str.length() };
+            return caseConvention == Case::ScreamingLispCase || caseConvention == Case::ScreamingSnakeCase ? upper(result) : result;
         }
         std::vector<int> nums{};
         if (auto attr = decl.findChild<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>()) {
@@ -197,23 +155,30 @@ struct CName {
             });
             nums.assign(view.begin(), view.end());
         }
-        auto screaming = isUpper ? isUpper.value() : upper;
-        auto str       = decl.name();
-        return convert({ str.data(), str.length() }, screaming ? Case::ScreamingSnakeCase : Case::SnakeCase, nums.empty() ? nullptr : &nums);
+        auto str = decl.name();
+        return convert({ str.data(), str.length() }, caseConvention, nums.empty() ? nullptr : &nums);
     }
 
-    std::string cname(ASTNodeRef decl, bool upper = false) {
+    template <typename... Args>
+    std::string cname(ASTNodeRef decl, bool includeImports, bool fullname, Case caseConvention, std::string_view prefix, Args&&... postfix) {
         FixedStack<std::string, 20> names;
         while (decl) {
             if (decl.is<IDL_AST_NODE_TYPE_DECL>()) {
                 if (includeImports || !decl.is<IDL_AST_NODE_TYPE_IMPORT>()) {
-                    names.push(cnameDecl(decl, upper));
+                    names.push(cnameDecl(decl, caseConvention));
                 }
+            }
+            if (!fullname) {
+                break;
             }
             decl = decl.parent();
         }
-        auto first = true;
+        const auto separator = getSeparator(caseConvention);
+
         std::ostringstream ss;
+        ss << prefix;
+
+        auto first = true;
         while (!names.empty()) {
             if (!first) {
                 ss << separator;
@@ -222,28 +187,38 @@ struct CName {
             names.pop();
             first = false;
         }
+        ((ss << postfix), ...);
         return ss.str();
     }
 
-    void nativeOrLibType(ASTNodeRef& node) {
-        if (stdTypes) {
-            const auto native = node.accept<CNativeType>(boolType).str;
-            str.assign(native.data(), native.length());
-        } else {
-            str = cname(node) + "_t";
+    static std::string_view getSeparator(Case caseConvention) noexcept {
+        switch (caseConvention) {
+            case Case::LispCase:
+                [[fallthrough]];
+            case Case::ScreamingLispCase:
+                return "-";
+            case Case::CamelCase:
+                [[fallthrough]];
+            case Case::PascalCase:
+                return "";
+            case Case::SnakeCase:
+                [[fallthrough]];
+            case Case::ScreamingSnakeCase:
+                return "_";
+            case Case::SpaceCase:
+                return " ";
+            default:
+                assert(!"unreachable code");
+                return "";
         }
     }
 
     std::string str;
-    bool stdTypes;
-    idl_bool_type_t boolType;
-    bool includeImports;
-    char separator;
-    std::optional<bool> isUpper;
+    const Settings& settings;
 };
 
 struct CLiteral {
-    CLiteral(bool stdTypes, idl_bool_type_t boolType, bool hex = false) noexcept : stdTypes(stdTypes), boolType(boolType), hex(hex) {
+    explicit CLiteral(const CName::Settings& settings, bool hex = false) noexcept : settings(settings), hex(hex) {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_LITERAL_STR>) {
@@ -283,7 +258,7 @@ struct CLiteral {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_DECL_REF>) {
-        str = node.resolveRef().accept<CName>(stdTypes, boolType).str;
+        str = node.resolveRef().accept<CName>(std::cref(settings)).str;
     }
 
     template <ASTNodeType Type>
@@ -292,13 +267,12 @@ struct CLiteral {
     }
 
     std::string str;
-    bool stdTypes;
-    idl_bool_type_t boolType;
+    const CName::Settings& settings;
     bool hex;
 };
 
 struct CValue {
-    CValue(bool stdTypes, idl_bool_type_t boolType) noexcept : stdTypes(stdTypes), boolType(boolType) {
+    explicit CValue(const CName::Settings& settings) noexcept : settings(settings) {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_CONST>) {
@@ -309,7 +283,7 @@ struct CValue {
             auto literal      = ASTNodeRef::byType<IDL_AST_NODE_TYPE_LITERAL_INT>(node.ctx());
             literal->valueInt = value->valueInt;
             literal->parent   = value->parent;
-            str               = literal.accept<CLiteral>(stdTypes, boolType, hex || maxEnum).str;
+            str               = literal.accept<CLiteral>(std::cref(settings), hex || maxEnum).str;
         } else {
             auto hasPrev = false;
             std::ostringstream ss;
@@ -317,7 +291,7 @@ struct CValue {
                 if (hasPrev) {
                     ss << " | ";
                 }
-                ss << child.accept<CLiteral>(stdTypes, boolType, hex).str;
+                ss << child.accept<CLiteral>(std::cref(settings), hex).str;
                 hasPrev = true;
             }
             str = ss.str();
@@ -328,12 +302,11 @@ struct CValue {
     void visit(ASTNodeRef& node, Tag<Type>) noexcept {
         auto value = node.findChild<IDL_AST_NODE_TYPE_ATTR_VALUE>();
 
-        str = value.accept<CLiteral>(stdTypes, boolType, false).str;
+        str = value.accept<CLiteral>(std::cref(settings), false).str;
     }
 
     std::string str;
-    bool stdTypes;
-    idl_bool_type_t boolType;
+    const CName::Settings& settings;
 };
 
 struct PriorityDocAttr {

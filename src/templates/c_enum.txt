@@ -13,3 +13,6 @@
 ## endfor
 }
 {{ macros.end_enum }}({{ cname(node) }}, {{ ctype(node) }});
+## if is_flags
+{{ macros.flags_enum}}({{ cname(node) }});
+## endif

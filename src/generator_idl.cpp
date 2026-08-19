@@ -74,9 +74,7 @@ std::string refName(ASTNodeRef path, ASTNodeRef exclude) {
 }
 
 struct LiteralPrinter {
-    explicit LiteralPrinter(bool addQuotes, ASTNodeRef currDepth) noexcept :
-        addQuotes(addQuotes),
-        currDepth(currDepth) {
+    explicit LiteralPrinter(bool addQuotes, ASTNodeRef currDepth) noexcept : addQuotes(addQuotes), currDepth(currDepth) {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_LITERAL_STR>) {
@@ -85,8 +83,8 @@ struct LiteralPrinter {
         if (!addQuotes) {
             auto validSymbols = true;
             for (auto c : valueStr) {
-                auto valid = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' ||
-                             c == '-' || c == '^' || c == '.' || c == '@';
+                auto valid = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '-' || c == '^' ||
+                             c == '.' || c == '@';
                 if (!valid) {
                     validSymbols = false;
                     break;
@@ -306,9 +304,8 @@ struct ASTVisitor {
 
     void printAttrs(ASTNodeRef& node) {
         auto attrs = node.getAttrs(state.origin) | std::views::filter([](const auto& attr) {
-            return attr.template is<IDL_AST_NODE_TYPE_ATTR>() && !attr.template is<IDL_AST_NODE_TYPE_ATTR_DOC,
-                                                                                   IDL_AST_NODE_TYPE_ATTR_VALUE,
-                                                                                   IDL_AST_NODE_TYPE_ATTR_TYPE>();
+            return attr.template is<IDL_AST_NODE_TYPE_ATTR>() &&
+                   !attr.template is<IDL_AST_NODE_TYPE_ATTR_DOC, IDL_AST_NODE_TYPE_ATTR_VALUE, IDL_AST_NODE_TYPE_ATTR_TYPE>();
         });
 
         bool hasPrev = false;
@@ -446,10 +443,9 @@ struct ASTVisitor {
 } // namespace
 
 void generate(Writer& writer) {
-    auto origin         = false;
-    auto filters        = ASTNodeRef::SkipDocs | ASTNodeRef::SkipAttrBuiltins | ASTNodeRef::SkipAttrs |
-                          ASTNodeRef::SkipLiterals | ASTNodeRef::SkipTrivials;
-    uint32_t indents    = 4;
+    auto origin      = false;
+    auto filters     = ASTNodeRef::SkipDocs | ASTNodeRef::SkipBuiltins | ASTNodeRef::SkipAttrs | ASTNodeRef::SkipLiterals | ASTNodeRef::SkipTrivials;
+    uint32_t indents = 4;
     uint32_t lineLength = 120;
     if (auto options = writer.options()) {
         indents         = options->getIndents();

@@ -80,12 +80,10 @@ inline bool isNodeType(const ASTNode* node, ASTNodeType type) noexcept {
             case IDL_AST_NODE_TYPE_ATTR:
                 return nodeType >= IDL_AST_NODE_TYPE_ATTR && nodeType < IDL_AST_NODE_TYPE_TYPE;
             case IDL_AST_NODE_TYPE_ATTR_DOC:
-                return nodeType >= IDL_AST_NODE_TYPE_ATTR_DOC && nodeType < IDL_AST_NODE_TYPE_ATTR_BUILTIN;
-            case IDL_AST_NODE_TYPE_ATTR_BUILTIN:
-                return nodeType >= IDL_AST_NODE_TYPE_ATTR_BUILTIN && nodeType < IDL_AST_NODE_TYPE_TYPE;
+                return nodeType >= IDL_AST_NODE_TYPE_ATTR_DOC && nodeType < IDL_AST_NODE_TYPE_TYPE;
             case IDL_AST_NODE_TYPE_TYPE:
-                return nodeType >= IDL_AST_NODE_TYPE_TYPE && nodeType <= IDL_AST_NODE_TYPE_FLOAT_64 ||
-                       nodeType == IDL_AST_NODE_TYPE_ENUM || nodeType == IDL_AST_NODE_TYPE_STRUCT;
+                return nodeType >= IDL_AST_NODE_TYPE_TYPE && nodeType <= IDL_AST_NODE_TYPE_FLOAT_64 || nodeType == IDL_AST_NODE_TYPE_ENUM ||
+                       nodeType == IDL_AST_NODE_TYPE_STRUCT;
             case IDL_AST_NODE_TYPE_TRIVIAL_TYPE:
                 return nodeType >= IDL_AST_NODE_TYPE_TRIVIAL_TYPE && nodeType <= IDL_AST_NODE_TYPE_FLOAT_64;
             case IDL_AST_NODE_TYPE_INTEGER_TYPE:

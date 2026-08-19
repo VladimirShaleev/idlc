@@ -311,8 +311,7 @@ struct ASTVisitor {
             version = Semver{ args[0]->valueInt, args[1]->valueInt, args[2]->valueInt };
         }
 
-        constexpr auto filters =
-            ASTNodeRef::SkipDocs | ASTNodeRef::SkipAttrBuiltins | ASTNodeRef::SkipAttrs | ASTNodeRef::SkipLiterals | ASTNodeRef::SkipTrivials;
+        constexpr auto filters = ASTNodeRef::SkipDocs | ASTNodeRef::SkipAttrs | ASTNodeRef::SkipLiterals | ASTNodeRef::SkipTrivials;
         ASTStatsVisitor::Stats stats{};
         state.writer.api().acceptRecursive<ASTStatsVisitor>(filters, std::ref(stats));
 
@@ -376,6 +375,7 @@ struct ASTVisitor {
         }
 
         auto& config                = state.data["config"];
+        config["begin_block"]       = "\n{";
         config["single"]            = single;
         config["indents"]           = indents;
         config["add_doc"]           = addDoc;
@@ -508,8 +508,6 @@ struct ASTVisitor {
         macros["begin_enum"]         = fullname(node, Case::ScreamingSnakeCase, "_BEGIN_ENUM"sv);
         macros["end_enum"]           = fullname(node, Case::ScreamingSnakeCase, "_END_ENUM"sv);
         macros["flags_enum"]         = fullname(node, Case::ScreamingSnakeCase, "_FLAGS_ENUM"sv);
-
-        std::cout << state.data.dump(2) << std::endl;
     }
 
     void renderPlatformHeader(ASTNodeRef node) {
@@ -705,8 +703,7 @@ struct ASTVisitor {
 } // namespace
 
 void generate(Writer& writer) {
-    constexpr auto filters =
-        ASTNodeRef::SkipDocs | ASTNodeRef::SkipAttrBuiltins | ASTNodeRef::SkipAttrs | ASTNodeRef::SkipLiterals | ASTNodeRef::SkipTrivials;
+    constexpr auto filters = ASTNodeRef::SkipDocs | ASTNodeRef::SkipAttrs | ASTNodeRef::SkipLiterals | ASTNodeRef::SkipTrivials;
     State state{ writer };
     writer.api().acceptRecursive<ASTVisitor>(filters, std::ref(state));
     state.flushImports();

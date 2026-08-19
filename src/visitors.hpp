@@ -122,7 +122,7 @@ struct CName {
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_CONST> tag) {
         const auto& conv = settings.conventions[tag.type];
-        if (node.parent().findChild<IDL_AST_NODE_TYPE_ATTR_FLAGS>()) {
+        if (node.parent().findChild<IDL_AST_NODE_TYPE_ATTR_FLAGS>() && !node.builtin()) {
             str = cname(node, conv.includeImports, conv.fullname, conv.caseConvention, conv.prefix, conv.constBit, conv.postfix);
         } else {
             str = cname(node, conv.includeImports, conv.fullname, conv.caseConvention, conv.prefix, conv.postfix);
@@ -278,7 +278,7 @@ struct CValue {
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_CONST>) {
         auto value   = node.findChild<IDL_AST_NODE_TYPE_ATTR_VALUE>();
         auto hex     = !!node.parent().findChild<IDL_AST_NODE_TYPE_ATTR_HEX>();
-        auto maxEnum = !!node.findChild<IDL_AST_NODE_TYPE_ATTR_BUILTIN_MAX_ENUM>();
+        auto maxEnum = !!node.findChild<IDL_AST_NODE_TYPE_ATTR_MAX_ENUM>();
         if (node.forwardDecl() || maxEnum) {
             auto literal      = ASTNodeRef::byType<IDL_AST_NODE_TYPE_LITERAL_INT>(node.ctx());
             literal->valueInt = value->valueInt;
@@ -428,6 +428,14 @@ struct AttrName {
         str = "hex";
     }
 
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_MAX_ENUM>) {
+        str = "maxenum";
+    }
+
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_COUNT_ENUMS>) {
+        str = "countenums";
+    }
+
     void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>) {
         str = "brief";
     }
@@ -458,10 +466,6 @@ struct AttrName {
 
     void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_OPTIONAL>) {
         str = "optional";
-    }
-
-    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_BUILTIN_MAX_ENUM>) {
-        str = "maxenum";
     }
 
     template <ASTNodeType Type>

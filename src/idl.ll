@@ -59,6 +59,8 @@ SYMBOLS  [a-zA-Z0-9_\-^\.@ ]
 <ATTRCTX>"license"     { attrArg(); return token::ATTRLICENSE; }
 <ATTRCTX>"flags"       { attrArg(); return token::ATTRFLAGS; }
 <ATTRCTX>"hex"         { attrArg(); return token::ATTRHEX; }
+<ATTRCTX>"maxenum"     { attrArg(); return token::ATTRMAXENUM; }
+<ATTRCTX>"countenums"  { attrArg(); return token::ATTRCOUNTENUMS; }
 <ATTRCTX>"brief"       { attrArg(); return token::ATTRBRIEF; }
 <ATTRCTX>"detail"      { attrArg(); return token::ATTRDETAIL; }
 <ATTRCTX>"value"       { attrArg(); return token::ATTRVALUE; }

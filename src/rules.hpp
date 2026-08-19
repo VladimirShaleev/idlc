@@ -15,12 +15,13 @@ struct AttrValidatorRules {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_API>) {
-        static std::map allowed = { add<IDL_AST_NODE_TYPE_ATTR_VERSION>(),        add<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>(true),
-                                    add<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(true), add<IDL_AST_NODE_TYPE_ATTR_CNAME>(),
-                                    add<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>(),      add<IDL_AST_NODE_TYPE_ATTR_SINGLE>(),
-                                    add<IDL_AST_NODE_TYPE_ATTR_STD_TYPES>(),      add<IDL_AST_NODE_TYPE_ATTR_BOOL_TYPE>(),
-                                    add<IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR>(true), add<IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT>(true),
-                                    add<IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE>(true) };
+        static std::map allowed = { add<IDL_AST_NODE_TYPE_ATTR_VERSION>(),         add<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>(true),
+                                    add<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(true),  add<IDL_AST_NODE_TYPE_ATTR_CNAME>(),
+                                    add<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>(),       add<IDL_AST_NODE_TYPE_ATTR_SINGLE>(),
+                                    add<IDL_AST_NODE_TYPE_ATTR_STD_TYPES>(),       add<IDL_AST_NODE_TYPE_ATTR_BOOL_TYPE>(),
+                                    add<IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR>(true),  add<IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT>(true),
+                                    add<IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE>(true), add<IDL_AST_NODE_TYPE_ATTR_COUNT_ENUMS>(),
+                                    add<IDL_AST_NODE_TYPE_ATTR_MAX_ENUM>() };
         validate(node, allowed);
     }
 
@@ -31,6 +32,7 @@ struct AttrValidatorRules {
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ENUM>) {
         static std::map allowed = { add<IDL_AST_NODE_TYPE_ATTR_FLAGS>(),         add<IDL_AST_NODE_TYPE_ATTR_HEX>(),
+                                    add<IDL_AST_NODE_TYPE_ATTR_COUNT_ENUMS>(),   add<IDL_AST_NODE_TYPE_ATTR_MAX_ENUM>(),
                                     add<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>(true), add<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(true),
                                     add<IDL_AST_NODE_TYPE_ATTR_CNAME>(),         add<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>(),
                                     add<IDL_AST_NODE_TYPE_ATTR_TYPE>() };
@@ -1089,19 +1091,57 @@ struct BuildRules {
         }
 
         if (!enumConst.nextSibling<IDL_AST_NODE_TYPE_CONST>()) {
-            auto maxEnum       = ctx.addNode<IDL_AST_NODE_TYPE_CONST>(enumConst.parent());
-            maxEnum->name.name = ctx.result()->intern("MaxEnum");
-
-            auto value = int64_t(0x7FFFFFFF);
-
             using namespace std::string_view_literals;
-            ctx.addNode<IDL_AST_NODE_TYPE_ATTR_VALUE>(maxEnum, value)->valueInt = value;
-            ctx.addNode<IDL_AST_NODE_TYPE_ATTR_BUILTIN_MAX_ENUM>(maxEnum);
-            ctx.addNode<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(
-                maxEnum, "Max"sv, " "sv, "value"sv, " "sv, "of"sv, " "sv, "enum"sv, " "sv, "(not"sv, " "sv, "used)"sv);
 
-            maxEnum.setEvaulated();
-            ctx.addSymbol(maxEnum.handle());
+            auto addCountEnums = !!enumConst.parent().findChild<IDL_AST_NODE_TYPE_ATTR_COUNT_ENUMS>();
+            if (!addCountEnums) {
+                addCountEnums = !!ctx.getNodeRef(ctx.result()->getApi()).findChild<IDL_AST_NODE_TYPE_ATTR_COUNT_ENUMS>();
+            }
+
+            auto addMaxEnum = !!enumConst.parent().findChild<IDL_AST_NODE_TYPE_ATTR_MAX_ENUM>();
+            if (!addMaxEnum) {
+                addMaxEnum = !!ctx.getNodeRef(ctx.result()->getApi()).findChild<IDL_AST_NODE_TYPE_ATTR_MAX_ENUM>();
+            }
+
+            if (addCountEnums) {
+                auto countValue = 0ll;
+                auto curr       = enumConst;
+                while (curr) {
+                    ++countValue;
+                    if (auto prev = curr.findChild<IDL_AST_NODE_TYPE_DECL_PREV_SIBLING_REF>()) {
+                        curr = prev.resolveRef();
+                    } else {
+                        break;
+                    }
+                };
+
+                auto countEnums       = ctx.addNode<IDL_AST_NODE_TYPE_CONST>(enumConst.parent());
+                countEnums->name.name = ctx.result()->intern("CountEnums");
+                countEnums.setBuiltin();
+
+                ctx.addNode<IDL_AST_NODE_TYPE_ATTR_VALUE>(countEnums, int64_t(countValue))->valueInt = countValue;
+                ctx.addNode<IDL_AST_NODE_TYPE_ATTR_COUNT_ENUMS>(countEnums).setBuiltin();
+                ctx.addNode<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(
+                    countEnums, "Count"sv, " "sv, "of"sv, " "sv, "constants"sv, " "sv, "in"sv, " "sv, "the"sv, " "sv, "enumeration."sv);
+
+                countEnums.setEvaulated();
+                ctx.addSymbol(countEnums.handle());
+            }
+
+            if (addMaxEnum) {
+                auto maxValue      = int64_t(0x7FFFFFFF);
+                auto maxEnum       = ctx.addNode<IDL_AST_NODE_TYPE_CONST>(enumConst.parent());
+                maxEnum->name.name = ctx.result()->intern("MaxEnum");
+                maxEnum.setBuiltin();
+
+                ctx.addNode<IDL_AST_NODE_TYPE_ATTR_VALUE>(maxEnum, maxValue)->valueInt = maxValue;
+                ctx.addNode<IDL_AST_NODE_TYPE_ATTR_MAX_ENUM>(maxEnum).setBuiltin();
+                ctx.addNode<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(
+                    maxEnum, "Max"sv, " "sv, "value"sv, " "sv, "of"sv, " "sv, "enum"sv, " "sv, "(not"sv, " "sv, "used)."sv);
+
+                maxEnum.setEvaulated();
+                ctx.addSymbol(maxEnum.handle());
+            }
         }
 
         enumConst.setEvaulated();

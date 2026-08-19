@@ -300,6 +300,12 @@ public:
                 case IDL_AST_NODE_TYPE_ATTR_HEX:
                     visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_HEX>{});
                     break;
+                case IDL_AST_NODE_TYPE_ATTR_MAX_ENUM:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_MAX_ENUM>{});
+                    break;
+                case IDL_AST_NODE_TYPE_ATTR_COUNT_ENUMS:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_COUNT_ENUMS>{});
+                    break;
                 case IDL_AST_NODE_TYPE_ATTR_VALUE:
                     visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_VALUE>{});
                     break;
@@ -329,9 +335,6 @@ public:
                     break;
                 case IDL_AST_NODE_TYPE_ATTR_CONST:
                     visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_CONST>{});
-                    break;
-                case IDL_AST_NODE_TYPE_ATTR_BUILTIN_MAX_ENUM:
-                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_BUILTIN_MAX_ENUM>{});
                     break;
                 case IDL_AST_NODE_TYPE_ATTR_OPTIONAL:
                     visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_OPTIONAL>{});
@@ -405,15 +408,15 @@ public:
     }
 
     enum Filter {
-        None             = 0,
-        SkipDocs         = 1 << 0,
-        SkipAttrs        = 1 << 1,
-        SkipAttrBuiltins = 1 << 2,
-        SkipDecls        = 1 << 3,
-        SkipImports      = 1 << 4,
-        SkipLiterals     = 1 << 5,
-        SkipTrivials     = 1 << 6,
-        OriginalIdl      = 1 << 7
+        None         = 0,
+        SkipDocs     = 1 << 0,
+        SkipAttrs    = 1 << 1,
+        SkipBuiltins = 1 << 2,
+        SkipDecls    = 1 << 3,
+        SkipImports  = 1 << 4,
+        SkipLiterals = 1 << 5,
+        SkipTrivials = 1 << 6,
+        OriginalIdl  = 1 << 7
     };
 
     template <typename Visitor, typename... Args>
@@ -431,7 +434,7 @@ public:
             if ((filters & SkipAttrs) == SkipAttrs && node.is<IDL_AST_NODE_TYPE_ATTR>()) {
                 continue;
             }
-            if ((filters & SkipAttrBuiltins) == SkipAttrBuiltins && node.findChild<IDL_AST_NODE_TYPE_ATTR_BUILTIN>()) {
+            if ((filters & SkipBuiltins) == SkipBuiltins && node.builtin()) {
                 continue;
             }
             if ((filters & SkipDocs) == SkipDocs && node.is<IDL_AST_NODE_TYPE_ATTR_DOC>()) {
@@ -477,6 +480,16 @@ public:
     void setEvaulated() noexcept {
         if (_node) {
             _node->flags |= IDL_AST_NODE_STATE_EVAULATED_BIT;
+        }
+    }
+
+    [[nodiscard]] bool builtin() const noexcept {
+        return _node ? (_node->flags & IDL_AST_NODE_STATE_BUILTIN_BIT) == IDL_AST_NODE_STATE_BUILTIN_BIT : false;
+    }
+
+    void setBuiltin() noexcept {
+        if (_node) {
+            _node->flags |= IDL_AST_NODE_STATE_BUILTIN_BIT;
         }
     }
 

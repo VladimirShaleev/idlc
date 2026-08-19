@@ -95,6 +95,8 @@
 %token ATTRLICENSE
 %token ATTRFLAGS
 %token ATTRHEX
+%token ATTRMAXENUM;
+%token ATTRCOUNTENUMS;
 %token ATTRBRIEF
 %token ATTRDETAIL
 %token ATTRVALUE
@@ -251,26 +253,28 @@ attr_item_with_args
     ;
 
 attr_item
-    : ATTRVERSION   { $$ = alloc_node(@1, ATTR_VERSION); }
-    | ATTRAUTHOR    { $$ = alloc_node(@1, ATTR_DOC_AUTHOR); }
-    | ATTRCOPYRIGHT { $$ = alloc_node(@1, ATTR_DOC_COPYRIGHT); }
-    | ATTRLICENSE   { $$ = alloc_node(@1, ATTR_DOC_LICENSE); }
-    | ATTRFLAGS     { $$ = alloc_node(@1, ATTR_FLAGS); }
-    | ATTRVALUE     { $$ = alloc_node(@1, ATTR_VALUE); }
-    | ATTRTYPE      { $$ = alloc_node(@1, ATTR_TYPE); }
-    | ATTRCNAME     { $$ = alloc_node(@1, ATTR_CNAME); }
-    | ATTRTOKENIZER { $$ = alloc_node(@1, ATTR_TOKENIZER); }
-    | ATTRARRAY     { $$ = alloc_node(@1, ATTR_ARRAY); }
-    | ATTRSINGLE    { $$ = alloc_node(@1, ATTR_SINGLE); }
-    | ATTRSTDTYPES  { $$ = alloc_node(@1, ATTR_STD_TYPES); }
-    | ATTRBOOLTYPE  { $$ = alloc_node(@1, ATTR_BOOL_TYPE); }
-    | ATTRHEX       { $$ = alloc_node(@1, ATTR_HEX); }
-    | ATTRREF       { $$ = alloc_node(@1, ATTR_REF); }
-    | ATTRCONST     { $$ = alloc_node(@1, ATTR_CONST); }
-    | ATTROPTIONAL  { $$ = alloc_node(@1, ATTR_OPTIONAL); }
-    | ATTRBRIEF     { $$ = alloc_node(@1, ATTR_DOC_BRIEF); }
-    | ATTRDETAIL    { $$ = alloc_node(@1, ATTR_DOC_DETAIL); }
-    | INVALID_ATTR  { $$ = HandleNone; log(E3013, @1, $1); }
+    : ATTRVERSION    { $$ = alloc_node(@1, ATTR_VERSION); }
+    | ATTRAUTHOR     { $$ = alloc_node(@1, ATTR_DOC_AUTHOR); }
+    | ATTRCOPYRIGHT  { $$ = alloc_node(@1, ATTR_DOC_COPYRIGHT); }
+    | ATTRLICENSE    { $$ = alloc_node(@1, ATTR_DOC_LICENSE); }
+    | ATTRFLAGS      { $$ = alloc_node(@1, ATTR_FLAGS); }
+    | ATTRVALUE      { $$ = alloc_node(@1, ATTR_VALUE); }
+    | ATTRTYPE       { $$ = alloc_node(@1, ATTR_TYPE); }
+    | ATTRCNAME      { $$ = alloc_node(@1, ATTR_CNAME); }
+    | ATTRTOKENIZER  { $$ = alloc_node(@1, ATTR_TOKENIZER); }
+    | ATTRARRAY      { $$ = alloc_node(@1, ATTR_ARRAY); }
+    | ATTRSINGLE     { $$ = alloc_node(@1, ATTR_SINGLE); }
+    | ATTRSTDTYPES   { $$ = alloc_node(@1, ATTR_STD_TYPES); }
+    | ATTRBOOLTYPE   { $$ = alloc_node(@1, ATTR_BOOL_TYPE); }
+    | ATTRHEX        { $$ = alloc_node(@1, ATTR_HEX); }
+    | ATTRMAXENUM    { $$ = alloc_node(@1, ATTR_MAX_ENUM); }
+    | ATTRCOUNTENUMS { $$ = alloc_node(@1, ATTR_COUNT_ENUMS); }
+    | ATTRREF        { $$ = alloc_node(@1, ATTR_REF); }
+    | ATTRCONST      { $$ = alloc_node(@1, ATTR_CONST); }
+    | ATTROPTIONAL   { $$ = alloc_node(@1, ATTR_OPTIONAL); }
+    | ATTRBRIEF      { $$ = alloc_node(@1, ATTR_DOC_BRIEF); }
+    | ATTRDETAIL     { $$ = alloc_node(@1, ATTR_DOC_DETAIL); }
+    | INVALID_ATTR   { $$ = HandleNone; log(E3013, @1, $1); }
     ;
 
 arg_item

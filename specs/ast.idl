@@ -22,6 +22,8 @@ enum ASTNodeType [tokenizer(3-4)]
     const Attr @ TODO
     const AttrFlags @ TODO
     const AttrHex @ TODO
+    const AttrMaxEnum @ TODO
+    const AttrCountEnums @ TODO
     const AttrValue @ TODO
     const AttrType @ TODO
     const AttrCName @ TODO
@@ -42,9 +44,6 @@ enum ASTNodeType [tokenizer(3-4)]
     const AttrDocCopyright @ TODO
     const AttrDocLicense @ TODO
 
-    const AttrBuiltin @ TODO
-    const AttrBuiltinMaxEnum @ TODO
-    
     const Type @ TODO
     const TrivialType @ TODO
     const Void @ TODO
@@ -75,6 +74,7 @@ enum ASTNodeState [hex,flags,tokenizer(3-4)]
     const AddedByCompiler : 8 @ TODO
     const ReplacedByCompiler : 16 @ TODO
     const MultilineDoc : 32 @ TODO
+    const Builtin : 64 @ TODO
 
 @ TODO.
 @ TODO. [detail]

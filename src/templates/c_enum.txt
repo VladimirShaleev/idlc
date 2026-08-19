@@ -1,6 +1,5 @@
 
-{{ render("c_doxygen", doxygen) }}{{ macros.begin_enum }}({{ ctype(node) }})
-{
+{{ render("c_doxygen", doxygen) }}{{ macros.begin_enum }}({{ ctype(node) }}){{ config.begin_block }}
 ## set max_len = 0
 ## for const in consts
 ## set name_len = length(cname(const.node))

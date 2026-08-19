@@ -3,7 +3,7 @@
 @ Copyright [copyright]
 @ License [license]
 @ Author [author]
-api Api
+api Api [maxenum]
 
 @ Brief
 @ Detail [detail]

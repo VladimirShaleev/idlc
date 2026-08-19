@@ -14,7 +14,7 @@ api Api
 
 @ Brief
 @ Detail [detail]
-enum Test
+enum Test [maxenum]
     const Value1 @   Test    first doc\sstring
     const Value2 @ ```
         Test multiline

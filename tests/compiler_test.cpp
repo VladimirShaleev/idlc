@@ -108,7 +108,11 @@ TEST(idlc, MissingAttribute) {
     auto api = idl_compilation_result_get_api(ast);
     ASSERT_NE(api, HandleNone);
     ASSERT_EQ(getAttrs(ast, api, AttrFilterDoc).size(), 0);
-    ASSERT_EQ(getAttrs(ast, api).size(), 0);
+
+    auto apiAttrs = getAttrs(ast, api);
+    ASSERT_EQ(apiAttrs.size(), 2);
+    ASSERT_TRUE(isType(ast, apiAttrs[0], IDL_AST_NODE_TYPE_ATTR_BOOL_TYPE));
+    ASSERT_TRUE(isType(ast, apiAttrs[1], IDL_AST_NODE_TYPE_ATTR_VERSION));
 
     auto test = findChild(ast, api, IDL_AST_NODE_TYPE_ENUM);
     ASSERT_NE(test, HandleNone);
@@ -239,7 +243,7 @@ TEST(idlc, IntegerOutOfRange) {
     ASSERT_TRUE(checkConst(ast, firstConsts[1], 300, false, false, false));
     ASSERT_TRUE(checkConst(ast, firstConsts[2], 367, false, false, false));
     ASSERT_TRUE(checkConst(ast, firstConsts[3], 0x7fffffff, true, false, false));
-    ASSERT_NE(findChild(ast, firstConsts[3], IDL_AST_NODE_TYPE_ATTR_BUILTIN_MAX_ENUM), HandleNone);
+    ASSERT_NE(findChild(ast, firstConsts[3], IDL_AST_NODE_TYPE_ATTR_MAX_ENUM), HandleNone);
 
     auto secondConsts = getChilds(ast, enums[1], IDL_AST_NODE_TYPE_CONST);
     ASSERT_EQ(secondConsts.size(), 6);
@@ -249,7 +253,7 @@ TEST(idlc, IntegerOutOfRange) {
     ASSERT_TRUE(checkConst(ast, secondConsts[3], 5, false, false, false));
     ASSERT_TRUE(checkConst(ast, secondConsts[4], 367, false, false, false));
     ASSERT_TRUE(checkConst(ast, secondConsts[5], 0x7fffffff, true, false, false));
-    ASSERT_NE(findChild(ast, secondConsts[5], IDL_AST_NODE_TYPE_ATTR_BUILTIN_MAX_ENUM), HandleNone);
+    ASSERT_NE(findChild(ast, secondConsts[5], IDL_AST_NODE_TYPE_ATTR_MAX_ENUM), HandleNone);
 }
 
 TEST(idlc, IntegerOutOfRangeWarnAsErrors) {
@@ -276,7 +280,7 @@ TEST(idlc, IntegerOutOfRangeWarnAsErrors) {
     ASSERT_TRUE(checkConst(ast, firstConsts[1], 300, false, false, false));
     ASSERT_TRUE(checkConst(ast, firstConsts[2], 367, false, false, false));
     ASSERT_TRUE(checkConst(ast, firstConsts[3], 0x7fffffff, true, false, false));
-    ASSERT_NE(findChild(ast, firstConsts[3], IDL_AST_NODE_TYPE_ATTR_BUILTIN_MAX_ENUM), HandleNone);
+    ASSERT_NE(findChild(ast, firstConsts[3], IDL_AST_NODE_TYPE_ATTR_MAX_ENUM), HandleNone);
 
     auto secondConsts = getChilds(ast, enums[1], IDL_AST_NODE_TYPE_CONST);
     ASSERT_EQ(secondConsts.size(), 6);
@@ -286,7 +290,7 @@ TEST(idlc, IntegerOutOfRangeWarnAsErrors) {
     ASSERT_TRUE(checkConst(ast, secondConsts[3], 5, false, false, false));
     ASSERT_TRUE(checkConst(ast, secondConsts[4], 367, false, true, false));
     ASSERT_TRUE(checkConst(ast, secondConsts[5], 0x7fffffff, true, false, false));
-    ASSERT_NE(findChild(ast, secondConsts[5], IDL_AST_NODE_TYPE_ATTR_BUILTIN_MAX_ENUM), HandleNone);
+    ASSERT_NE(findChild(ast, secondConsts[5], IDL_AST_NODE_TYPE_ATTR_MAX_ENUM), HandleNone);
 }
 
 TEST(idlc, SpecialCharacterExpectedAfterBackslash) {
@@ -490,7 +494,7 @@ TEST(idlc, SpecialCharacterExpectedAfterBackslash) {
     ASSERT_EQ(getStr(ast, value4DetailArgs[7]), " ");
     ASSERT_EQ(getStr(ast, value4DetailArgs[8]), "(not");
     ASSERT_EQ(getStr(ast, value4DetailArgs[9]), " ");
-    ASSERT_EQ(getStr(ast, value4DetailArgs[10]), "used)");
+    ASSERT_EQ(getStr(ast, value4DetailArgs[10]), "used).");
 }
 
 TEST(idlc, FieldTypeHasDeclTypeDeclaredBelow) {
@@ -621,11 +625,11 @@ TEST(idlc, InvalidAttrForDeclaration) {
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 2);
     ASSERT_EQ(messages[0],
-              "error [E3005]: Invalid attribute [flags] for api 'Api' declaration, allowed attributes are cname, "
-              "tokenizer, single, stdtypes, booltype, version, brief, detail, author, copyright, license at e3005:6:10");
+              "error [E3005]: Invalid attribute [flags] for api 'Api' declaration, allowed attributes are maxenum, countenums, cname, tokenizer, "
+              "single, stdtypes, booltype, version, brief, detail, author, copyright, license at e3005:6:10");
     ASSERT_EQ(messages[1],
-              "error [E3005]: Invalid attribute [hex] for api 'Api' declaration, allowed attributes are cname, "
-              "tokenizer, single, stdtypes, booltype, version, brief, detail, author, copyright, license at e3005:6:17");
+              "error [E3005]: Invalid attribute [hex] for api 'Api' declaration, allowed attributes are maxenum, countenums, cname, tokenizer, "
+              "single, stdtypes, booltype, version, brief, detail, author, copyright, license at e3005:6:17");
 
     auto api = idl_compilation_result_get_api(ast);
     ASSERT_NE(api, HandleNone);
@@ -860,11 +864,11 @@ TEST(idlc, UnknownAttributeInDoc) {
     ASSERT_EQ(messages[3], "error [E3015]: Unknown attribute in the documentation [hex] at e3015:7:39");
     ASSERT_EQ(messages[4], "error [E3018]: Inline documentation only [detail] description is allowed at e3015:7:39");
     ASSERT_EQ(messages[5],
-              "error [E3005]: Invalid attribute [flags] for api 'Api' declaration, allowed attributes are cname, "
-              "tokenizer, single, stdtypes, booltype, version, brief, detail, author, copyright, license at e3015:6:31");
+              "error [E3005]: Invalid attribute [flags] for api 'Api' declaration, allowed attributes are maxenum, countenums, cname, tokenizer, "
+              "single, stdtypes, booltype, version, brief, detail, author, copyright, license at e3015:6:31");
     ASSERT_EQ(messages[6],
-              "error [E3005]: Invalid attribute [hex] for api 'Api' declaration, allowed attributes are cname, "
-              "tokenizer, single, stdtypes, booltype, version, brief, detail, author, copyright, license at e3015:7:39");
+              "error [E3005]: Invalid attribute [hex] for api 'Api' declaration, allowed attributes are maxenum, countenums, cname, tokenizer, "
+              "single, stdtypes, booltype, version, brief, detail, author, copyright, license at e3015:7:39");
 
     auto api = idl_compilation_result_get_api(ast);
     ASSERT_NE(api, HandleNone);
@@ -1489,13 +1493,14 @@ TEST(idlc, CyclicDependenceOfConst) {
     auto otherTest = enums[1];
 
     auto testConsts = getChilds(ast, test, IDL_AST_NODE_TYPE_CONST);
-    ASSERT_EQ(testConsts.size(), 6);
+    ASSERT_EQ(testConsts.size(), 7);
     ASSERT_TRUE(checkConst(ast, testConsts[0], 0, false, true, true));
     ASSERT_TRUE(checkConst(ast, testConsts[1], 2, false, false, false));
     ASSERT_TRUE(checkConst(ast, testConsts[2], 0, false, true, false));
     ASSERT_TRUE(checkConst(ast, testConsts[3], 2, false, true, false));
     ASSERT_TRUE(checkConst(ast, testConsts[4], 0, false, true, false));
-    ASSERT_TRUE(checkConst(ast, testConsts[5], 0x7fffffff, true, false, false));
+    ASSERT_TRUE(checkConst(ast, testConsts[5], 5, true, false, false));
+    ASSERT_TRUE(checkConst(ast, testConsts[6], 0x7fffffff, true, false, false));
 
     auto otherTestConsts = getChilds(ast, otherTest, IDL_AST_NODE_TYPE_CONST);
     ASSERT_EQ(otherTestConsts.size(), 9);

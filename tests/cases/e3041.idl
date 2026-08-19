@@ -6,7 +6,7 @@
 api Api
 
 @ Brief
-enum Test @ Detail
+enum Test [maxenum] @ Detail
     const Value1 : "Invalid value" @ Detail
     const Value2 : Value1 @ Detail
     const Value3 : Value2 @ Detail

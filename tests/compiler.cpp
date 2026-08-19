@@ -45,7 +45,7 @@ std::tuple<idl_result_t, idl_compilation_result_t, std::vector<std::string>> com
 
     idl_compilation_result_t result{};
     idl_compilation_result_t* resultPtr = returnMessages ? &result : nullptr;
-    code = idl_compiler_compile(compiler, IDL_GENERATOR_NONE, testCase.data(), 0, nullptr, options, resultPtr);
+    code                                = idl_compiler_compile(compiler, IDL_GENERATOR_NONE, testCase.data(), 0, nullptr, options, resultPtr);
 
     std::vector<std::string> results;
     if (returnMessages) {
@@ -163,29 +163,23 @@ bool hasAnyState(idl_compilation_result_t result, idl_ast_node_h node, idl_ast_n
     return (flags & state) != 0;
 }
 
-bool checkConst(idl_compilation_result_t result,
-                idl_ast_node_h node,
-                int64_t value,
-                bool addedByCompiler,
-                bool buildFailed,
-                bool forwardDecl) {
+bool checkConst(idl_compilation_result_t result, idl_ast_node_h node, int64_t value, bool addedByCompiler, bool buildFailed, bool forwardDecl) {
     if (node == HandleNone) {
         return false;
     }
 
     if (!hasAllState(result,
                      node,
-                     IDL_AST_NODE_STATE_EVAULATED_BIT |
-                         (buildFailed ? IDL_AST_NODE_STATE_BUILD_ERROR_BIT : IDL_AST_NODE_STATE_NONE_BIT) |
+                     IDL_AST_NODE_STATE_EVAULATED_BIT | (buildFailed ? IDL_AST_NODE_STATE_BUILD_ERROR_BIT : IDL_AST_NODE_STATE_NONE_BIT) |
                          (forwardDecl ? IDL_AST_NODE_STATE_FORWARD_DECL_BIT : IDL_AST_NODE_STATE_NONE_BIT))) {
         return false;
     }
 
-    auto isMaxEnum = findChild(result, node, IDL_AST_NODE_TYPE_ATTR_BUILTIN_MAX_ENUM) != HandleNone;
+    auto isBuiltin = hasAnyState(result, node, IDL_AST_NODE_STATE_BUILTIN_BIT);
 
     if (hasAnyState(result,
                     node,
-                    (isMaxEnum ? IDL_AST_NODE_STATE_NONE_BIT : IDL_AST_NODE_STATE_ADDED_BY_COMPILER_BIT) |
+                    (isBuiltin ? IDL_AST_NODE_STATE_NONE_BIT : IDL_AST_NODE_STATE_ADDED_BY_COMPILER_BIT) |
                         IDL_AST_NODE_STATE_REPLACED_BY_COMPILER_BIT |
                         (buildFailed ? IDL_AST_NODE_STATE_NONE_BIT : IDL_AST_NODE_STATE_BUILD_ERROR_BIT) |
                         (forwardDecl ? IDL_AST_NODE_STATE_NONE_BIT : IDL_AST_NODE_STATE_FORWARD_DECL_BIT))) {
@@ -201,16 +195,14 @@ bool checkConst(idl_compilation_result_t result,
         return false;
     }
 
-    if (!hasAllState(result,
-                     evaulated,
-                     addedByCompiler ? IDL_AST_NODE_STATE_ADDED_BY_COMPILER_BIT : IDL_AST_NODE_STATE_NONE_BIT)) {
+    if (!hasAllState(result, evaulated, addedByCompiler ? IDL_AST_NODE_STATE_ADDED_BY_COMPILER_BIT : IDL_AST_NODE_STATE_NONE_BIT)) {
         return false;
     }
 
     if (hasAnyState(result,
                     evaulated,
-                    IDL_AST_NODE_STATE_BUILD_ERROR_BIT | IDL_AST_NODE_STATE_FORWARD_DECL_BIT |
-                        IDL_AST_NODE_STATE_EVAULATED_BIT | IDL_AST_NODE_STATE_REPLACED_BY_COMPILER_BIT |
+                    IDL_AST_NODE_STATE_BUILD_ERROR_BIT | IDL_AST_NODE_STATE_FORWARD_DECL_BIT | IDL_AST_NODE_STATE_EVAULATED_BIT |
+                        IDL_AST_NODE_STATE_REPLACED_BY_COMPILER_BIT |
                         (addedByCompiler ? IDL_AST_NODE_STATE_NONE_BIT : IDL_AST_NODE_STATE_ADDED_BY_COMPILER_BIT))) {
         return false;
     }

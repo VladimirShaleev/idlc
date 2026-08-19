@@ -6,6 +6,6 @@
 api Api
 
 @ Brief
-enum Test @ Detail
+enum Test [maxenum] @ Detail
     const Value1 : Api @ Detail
     const Value2 : 1 @ Detail

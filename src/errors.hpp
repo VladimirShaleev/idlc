@@ -93,8 +93,7 @@ inline std::string err(Args&&... args) {
     } else if constexpr (Status == IDL_STATUS_E3028) {
         str = fmt::format("The [cname] attribute must contain a single string literal argument");
     } else if constexpr (Status == IDL_STATUS_E3029) {
-        str =
-            fmt::format("The [cname] attribute must specify a name (\"{}\") without spaces and punctuations", args...);
+        str = fmt::format("The [cname] attribute must specify a name (\"{}\") without spaces and punctuations", args...);
     } else if constexpr (Status == IDL_STATUS_E3030) {
         str = fmt::format("This field '{}' has the type of the structure declared below '{}'; reoder declarations or "
                           "use attribute [ref]",
@@ -102,8 +101,7 @@ inline std::string err(Args&&... args) {
     } else if constexpr (Status == IDL_STATUS_E3031) {
         str = fmt::format("Invalid tokenizer format string \"{}\", a valid string looks like (2-^3-4)", args...);
     } else if constexpr (Status == IDL_STATUS_E3032) {
-        str = fmt::format(
-            "Integer tokenization parameters or a tokenizer string must be passed to the attribute [tokenizer]");
+        str = fmt::format("Integer tokenization parameters or a tokenizer string must be passed to the attribute [tokenizer]");
     } else if constexpr (Status == IDL_STATUS_E3033) {
         str = fmt::format("The field '{}' type corresponds to the type of the structure '{}' in which it is contained; "
                           "use attribute [ref]",
@@ -137,11 +135,9 @@ inline std::string err(Args&&... args) {
     } else if constexpr (Status == IDL_STATUS_E3047) {
         str = fmt::format("The name or type must start with a capital letter '{}'", args...);
     } else if constexpr (Status == IDL_STATUS_E3048) {
-        str = fmt::format(
-            "Only literals and compile-time expressions (enumeration constants) can be used as default values");
+        str = fmt::format("Only literals and compile-time expressions (enumeration constants) can be used as default values");
     } else if constexpr (Status == IDL_STATUS_E3049) {
-        str = fmt::format("Cannot assign a constant '{}' of '{}' type to {} with a different enumeration type '{}'",
-                          args...);
+        str = fmt::format("Cannot assign a constant '{}' of '{}' type to {} with a different enumeration type '{}'", args...);
     } else if constexpr (Status == IDL_STATUS_E3050) {
         str = fmt::format("The [{}] attribute must contain one argument{}", args...);
     } else if constexpr (Status == IDL_STATUS_E3051) {
@@ -157,10 +153,12 @@ inline std::string err(Args&&... args) {
     } else if constexpr (Status == IDL_STATUS_E3055) {
         str = fmt::format("Multiple default values can be assigned to {} '{}' only to an array", args...);
     } else if constexpr (Status == IDL_STATUS_E3056) {
-        str = fmt::format("Multiple enumeration constants can be assigned to {} '{}' only to a flag enumeration",
-                          args...);
+        str = fmt::format("Multiple enumeration constants can be assigned to {} '{}' only to a flag enumeration", args...);
     } else if constexpr (Status == IDL_STATUS_E3057) {
         str = fmt::format("A 'arg' of '{}' can be defined only for 'func', 'method' and 'callback'", args...);
+    } else if constexpr (Status == IDL_STATUS_E3058) {
+        str = fmt::format(
+            "An invalid calling convention format was passed to the argument at index {} ({}) in attribute [cconv] (correct format: {})", args...);
     } else {
         assert(!"Unknown status code");
     }

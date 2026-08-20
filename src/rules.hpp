@@ -21,7 +21,7 @@ struct AttrValidatorRules {
                                     add<IDL_AST_NODE_TYPE_ATTR_STD_TYPES>(),       add<IDL_AST_NODE_TYPE_ATTR_BOOL_TYPE>(),
                                     add<IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR>(true),  add<IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT>(true),
                                     add<IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE>(true), add<IDL_AST_NODE_TYPE_ATTR_COUNT_ENUMS>(),
-                                    add<IDL_AST_NODE_TYPE_ATTR_MAX_ENUM>() };
+                                    add<IDL_AST_NODE_TYPE_ATTR_MAX_ENUM>(),        add<IDL_AST_NODE_TYPE_ATTR_CCONV>() };
         validate(node, allowed);
     }
 
@@ -382,6 +382,37 @@ struct AttrArgRules {
         }
     }
 
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ATTR_CCONV>) {
+        using namespace std::string_view_literals;
+        auto& ctx          = node.ctx();
+        node->child        = argFirst;
+        const auto tokens  = cconvTokens(ctx);
+        const auto cases   = cconvCase();
+        const auto sumbols = "[a-zA-Z0-9_\\-^\\.@]*"sv;
+        const std::regex format(fmt::format("({0}):({1}):(full|short):(skip|add):{2}:{2}(:{2})?", tokens, cases, sumbols));
+        int index = -1;
+        std::string_view invalidArg{};
+
+        auto isValidFormats = argCount > 0 && std::all_of(node.begin(), node.end(), [this, &format, &index, &invalidArg](auto arg) {
+            ++index;
+            if (arg.template is<IDL_AST_NODE_TYPE_LITERAL_STR>()) {
+                auto argView = arg.valueStr();
+                invalidArg   = argView;
+                return std::regex_match(argView.begin(), argView.end(), format);
+            }
+            return false;
+        });
+        constexpr std::string_view correctFormat = "<token>:<snake|camel|pascal|...>:<full|short>:<skip|add>:<prefix>:<postfix>[:<special_postfix>], "
+                                                   "sample: const:screamingsnake:full:skip:::_BIT";
+        if (argCount == 0) {
+            node->child = HandleNone;
+            ctx.log<IDL_STATUS_E3014>(node->location, node.accept<AttrName>().str, std::format(" (format: {})", correctFormat));
+        } else if (!isValidFormats) {
+            node->child = HandleNone;
+            ctx.log<IDL_STATUS_E3058>(node->location, index, invalidArg, correctFormat);
+        }
+    }
+
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>) {
         auto& ctx = node.ctx();
         if (argCount > 0) {
@@ -450,6 +481,35 @@ struct AttrArgRules {
             const auto name = node.accept<AttrName>().str;
             node.ctx().log<IDL_STATUS_E3008>(node->location, name);
         }
+    }
+
+    template <size_t... I>
+    static std::string cconvTokensSeq(Context& ctx, std::index_sequence<I...>) {
+        std::ostringstream ss;
+        ((ss << ASTNodeRef::byType<idl_ast_node_type_t(I + IDL_AST_NODE_TYPE_ENUM)>(ctx).accept<DeclToken>().str << '|'), ...);
+        ss << "file";
+        return ss.str();
+    }
+
+    static std::string cconvTokens(Context& ctx) {
+        constexpr size_t count = IDL_AST_NODE_TYPE_DECL_REF - IDL_AST_NODE_TYPE_ENUM;
+        return cconvTokensSeq(ctx, std::make_index_sequence<count>{});
+    }
+
+    static std::string cconvCase() {
+        std::ostringstream ss;
+        for (const auto& name : magic_enum::enum_names<Case>()) {
+            auto view = name.substr(0, name.length() - 4) | std::views::transform([](auto c) {
+                return char(std::tolower(c));
+            });
+            for (auto c : view) {
+                ss << c;
+            }
+            ss << '|';
+        }
+        auto result = ss.str();
+        result.pop_back();
+        return result;
     }
 
     ASTNodeHandle argFirst;

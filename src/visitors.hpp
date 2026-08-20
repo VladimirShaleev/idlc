@@ -456,6 +456,10 @@ struct AttrName {
         str = "cname";
     }
 
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_CCONV>) {
+        str = "cconv";
+    }
+
     void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_REF>) {
         str = "ref";
     }

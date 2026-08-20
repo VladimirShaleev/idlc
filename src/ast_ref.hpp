@@ -315,6 +315,9 @@ public:
                 case IDL_AST_NODE_TYPE_ATTR_CNAME:
                     visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_CNAME>{});
                     break;
+                case IDL_AST_NODE_TYPE_ATTR_CCONV:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_CCONV>{});
+                    break;
                 case IDL_AST_NODE_TYPE_ATTR_TOKENIZER:
                     visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>{});
                     break;

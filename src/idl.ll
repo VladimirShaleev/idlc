@@ -34,8 +34,8 @@ MDOCCHAR ([^ \r\n\t\{\}[\]\\`]|\\\{|\\\}|\\\[|\\\]|\\\\|\\`)
 DOCCHAR  ([^ \r\n\t\{\}[\]\\]|\\\{|\\\}|\\\[|\\\]|\\\\)
 FLOAT    [-+]?[0-9]*\.[0-9]+([eE][-+]?[0-9]+)?
 INT      [-+]?[0-9]+
-SYMBOL   [a-zA-Z0-9_\-^\.@]
-SYMBOLS  [a-zA-Z0-9_\-^\.@ ]
+SYMBOL   [a-zA-Z0-9_\-^\.@:]
+SYMBOLS  [a-zA-Z0-9_\-^\.@: ]
 
 %%
 
@@ -66,6 +66,7 @@ SYMBOLS  [a-zA-Z0-9_\-^\.@ ]
 <ATTRCTX>"value"       { attrArg(); return token::ATTRVALUE; }
 <ATTRCTX>"type"        { attrArg(); return token::ATTRTYPE; }
 <ATTRCTX>"cname"       { attrArg(ShortString); return token::ATTRCNAME; }
+<ATTRCTX>"cconv"       { attrArg(ShortString); return token::ATTRCCONV; }
 <ATTRCTX>"single"      { attrArg(); return token::ATTRSINGLE; }
 <ATTRCTX>"stdtypes"    { attrArg(); return token::ATTRSTDTYPES; }
 <ATTRCTX>"booltype"    { attrArg(); return token::ATTRBOOLTYPE; }

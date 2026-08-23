@@ -387,9 +387,10 @@ struct AttrArgRules {
         auto& ctx          = node.ctx();
         node->child        = argFirst;
         const auto tokens  = cconvTokens(ctx);
+        const auto types   = cconvTypes();
         const auto cases   = cconvCase();
         const auto sumbols = "[a-zA-Z0-9_\\-^\\.@]*"sv;
-        const std::regex format(fmt::format("({0}):({1}):(full|short):(skip|add):{2}:{2}(:{2})?", tokens, cases, sumbols));
+        const std::regex format(fmt::format("({0}|{1}):({2}):(full|short):(skip|add):{3}:{3}(:{3})?", tokens, types, cases, sumbols));
         int index = -1;
         std::string_view invalidArg{};
 
@@ -494,6 +495,35 @@ struct AttrArgRules {
     static std::string cconvTokens(Context& ctx) {
         constexpr size_t count = IDL_AST_NODE_TYPE_DECL_REF - IDL_AST_NODE_TYPE_ENUM;
         return cconvTokensSeq(ctx, std::make_index_sequence<count>{});
+    }
+
+    template <ASTNodeType Type>
+    static std::string cconvType() {
+        auto name = magic_enum::enum_name(Type).substr(18);
+        std::string str{ name.data(), name.length() };
+        if (auto pos = str.find_last_of('_'); pos != std::string::npos) {
+            str.erase(pos, 1);
+        }
+        return lower(str);
+    }
+
+    template <size_t B, size_t... I>
+    static void cconvTypesSeq(std::ostringstream& ss, std::index_sequence<I...>) {
+        ((ss << cconvType<ASTNodeType(B + I)>() << '|'), ...);
+    }
+
+    static std::string cconvTypes() {
+        constexpr size_t otherCount   = IDL_AST_NODE_TYPE_INTEGER_TYPE - IDL_AST_NODE_TYPE_VOID;
+        constexpr size_t integerCount = IDL_AST_NODE_TYPE_FLOAT_TYPE - IDL_AST_NODE_TYPE_INT_8;
+        constexpr size_t floatCount   = IDL_AST_NODE_TYPE_FLOAT_64 - IDL_AST_NODE_TYPE_FLOAT_TYPE;
+
+        std::ostringstream ss;
+        cconvTypesSeq<IDL_AST_NODE_TYPE_VOID>(ss, std::make_index_sequence<otherCount>{});
+        cconvTypesSeq<IDL_AST_NODE_TYPE_INT_8>(ss, std::make_index_sequence<integerCount>{});
+        cconvTypesSeq<IDL_AST_NODE_TYPE_FLOAT_32>(ss, std::make_index_sequence<floatCount>{});
+        auto result = ss.str();
+        result.pop_back();
+        return result;
     }
 
     static std::string cconvCase() {

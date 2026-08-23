@@ -157,14 +157,17 @@ struct CName {
 
     template <ASTNodeType Type>
     void visit(ASTNodeRef& node, Tag<Type>) noexcept {
-        if (cache.stdTypes && node.is<IDL_AST_NODE_TYPE_TRIVIAL_TYPE>()) {
+        const auto isTrivial = !!node.is<IDL_AST_NODE_TYPE_TRIVIAL_TYPE>();
+        if (cache.stdTypes && isTrivial) {
             const auto native = node.accept<CNativeType>(cache.boolType).str;
             str.assign(native.data(), native.length());
         } else {
             const auto& conv = getConv(node);
-
-            str = cname(node, conv.includeImports, conv.fullname, conv.caseConvention, conv.prefix, conv.postfix);
-
+            if (isTrivial && !conv.postfixEx.empty()) {
+                str = std::format("{}{}", conv.prefix, conv.postfixEx);
+            } else {
+                str = cname(node, conv.includeImports, conv.fullname, conv.caseConvention, conv.prefix, conv.postfix);
+            }
             if (node.is<IDL_AST_NODE_TYPE_API, IDL_AST_NODE_TYPE_IMPORT>()) {
                 if (conv.caseConvention == Case::LispCase || conv.caseConvention == Case::ScreamingLispCase) {
                     std::replace(str.begin(), str.end(), '_', '-');
@@ -274,11 +277,16 @@ struct CName {
             auto api  = ctx.getNodeRef(ctx.result()->getApi());
             if (auto cconv = api.findChild<IDL_AST_NODE_TYPE_ATTR_CCONV>()) {
                 auto typeName       = magic_enum::enum_name(idl_ast_node_type_t(node->type));
-                auto index          = typeName.find_last_of('_');
-                auto typeNameSuffix = typeName.substr(index + 1);
+                auto typeNameSuffix = typeName.substr(18);
                 std::string typeStr{ typeNameSuffix.data(), typeNameSuffix.length() };
+                if (auto pos = typeStr.find_last_of('_'); pos != std::string::npos) {
+                    typeStr.erase(pos, 1);
+                }
                 lower(typeStr);
                 std::string_view token{ typeStr.c_str(), typeStr.length() };
+                if (node.is<IDL_AST_NODE_TYPE_API, IDL_AST_NODE_TYPE_IMPORT>()) {
+                    token = "file";
+                }
 
                 auto argView = cconv.getChilds();
 

@@ -133,14 +133,15 @@ struct CDefaultConvention {
     CConvention conv{ true, Case::SnakeCase, true };
 };
 
-struct CName {
+template <typename CBaseConvention>
+struct CBaseName {
     struct Cache {
         bool stdTypes{};
         idl_bool_type_t boolType{};
         std::array<CConvention, IDL_AST_NODE_TYPE_FLOAT_64 + 1> conventions{};
     };
 
-    explicit CName(Cache& cache, std::string_view filePostfix = {}) noexcept : cache(cache), filePostfix(filePostfix) {
+    explicit CBaseName(Cache& cache, std::string_view filePostfix = {}) noexcept : cache(cache), filePostfix(filePostfix) {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ENUM>) {
@@ -296,7 +297,7 @@ struct CName {
                 });
 
                 if (it == argView.end()) {
-                    conv = node.accept<CDefaultConvention>().conv;
+                    conv = node.accept<CBaseConvention>().conv;
                 } else {
                     auto params = split(it->valueStr());
                     auto target = params[1];
@@ -329,6 +330,8 @@ struct CName {
     std::string str;
     Cache& cache;
 };
+
+using CName = CBaseName<CDefaultConvention>;
 
 struct CLiteral {
     explicit CLiteral(CName::Cache& cache, bool hex = false) noexcept : cache(cache), hex(hex) {

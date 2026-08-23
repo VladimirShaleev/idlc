@@ -141,7 +141,6 @@ struct ASTVisitor {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_API>) {
-        state.data["api_name"] = apiName(node, Case::SnakeCase);
         addConfig(node);
         addCallbacks(node);
         addMacros(node);
@@ -327,41 +326,6 @@ struct ASTVisitor {
             cname.boolType = IDL_BOOL_TYPE_STD_BOOL;
         }
 
-        /*
-        auto addConv =
-            [&cname](idl_ast_node_type_t type, bool fullname = true, Case caseConvention = Case::SnakeCase, bool addT = true) -> CName::Convention& {
-            cname.conventions[type].fullname       = fullname;
-            cname.conventions[type].caseConvention = caseConvention;
-            if (addT) {
-                cname.conventions[type].postfix = "_t"sv;
-            }
-            return cname.conventions[type];
-        };
-
-        addConv(IDL_AST_NODE_TYPE_CONST, true, Case::ScreamingSnakeCase, false).constBit = "_BIT";
-        addConv(IDL_AST_NODE_TYPE_STRUCT);
-        addConv(IDL_AST_NODE_TYPE_ENUM).enumFlags = "_flags"sv;
-        addConv(IDL_AST_NODE_TYPE_FIELD, false, Case::SnakeCase, false);
-        addConv(IDL_AST_NODE_TYPE_FUNC, true, Case::SnakeCase, false);
-        addConv(IDL_AST_NODE_TYPE_ARG, false, Case::SnakeCase, false);
-        addConv(IDL_AST_NODE_TYPE_IMPORT, true, Case::LispCase, false).includeImports = true;
-        addConv(IDL_AST_NODE_TYPE_VOID);
-        addConv(IDL_AST_NODE_TYPE_DATA);
-        addConv(IDL_AST_NODE_TYPE_CHAR);
-        addConv(IDL_AST_NODE_TYPE_STR);
-        addConv(IDL_AST_NODE_TYPE_BOOL);
-        addConv(IDL_AST_NODE_TYPE_INT_8);
-        addConv(IDL_AST_NODE_TYPE_UINT_8);
-        addConv(IDL_AST_NODE_TYPE_INT_16);
-        addConv(IDL_AST_NODE_TYPE_UINT_16);
-        addConv(IDL_AST_NODE_TYPE_INT_32);
-        addConv(IDL_AST_NODE_TYPE_UINT_32);
-        addConv(IDL_AST_NODE_TYPE_INT_64);
-        addConv(IDL_AST_NODE_TYPE_UINT_64);
-        addConv(IDL_AST_NODE_TYPE_FLOAT_32);
-        addConv(IDL_AST_NODE_TYPE_FLOAT_64);
-*/
-
         auto indents         = 4;
         auto single          = !!node.findChild<IDL_AST_NODE_TYPE_ATTR_SINGLE>();
         auto addDoc          = false;
@@ -409,6 +373,18 @@ struct ASTVisitor {
         } else {
             config["version_string"] = std::get<std::string_view>(version);
         }
+
+        std::vector<int> nums{};
+        if (auto attr = node.findChild<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>()) {
+            auto view = attr.getChilds() | std::views::transform([](const auto& arg) {
+                return int(arg->valueInt);
+            });
+            nums.assign(view.begin(), view.end());
+        }
+        const auto str = node.name();
+
+        state.data["api_name"]          = "";
+        state.data["api_name_readable"] = convert({ str.data(), str.length() }, Case::SpaceCase, nums.empty() ? nullptr : &nums);
     }
 
     void addCallbacks(ASTNodeRef node) {
@@ -489,27 +465,32 @@ struct ASTVisitor {
     }
 
     void addMacros(ASTNodeRef node) {
+        auto prefix      = calcMacro(node, {}, false);
+        auto prefixLower = calcMacro(node, {}, false, false);
+
         auto& macros                 = state.data["macros"];
-        macros["import_api"]         = fullname(node, Case::SnakeCase, "_api"sv);
-        macros["static_build"]       = fullname(node, Case::ScreamingSnakeCase, "_STATIC_BUILD"sv);
-        macros["platform_windows"]   = fullname(node, Case::ScreamingSnakeCase, "_PLATFORM_WINDOWS"sv);
-        macros["platform_ios"]       = fullname(node, Case::ScreamingSnakeCase, "_PLATFORM_IOS"sv);
-        macros["platform_macos"]     = fullname(node, Case::ScreamingSnakeCase, "_PLATFORM_MAC_OS"sv);
-        macros["platform_android"]   = fullname(node, Case::ScreamingSnakeCase, "_PLATFORM_ANDROID"sv);
-        macros["platform_linux"]     = fullname(node, Case::ScreamingSnakeCase, "_PLATFORM_LINUX"sv);
-        macros["platform_web"]       = fullname(node, Case::ScreamingSnakeCase, "_PLATFORM_WEB"sv);
-        macros["constexpr14"]        = fullname(node, Case::ScreamingSnakeCase, "_CONSTEXPR_14"sv);
-        macros["version_major"]      = fullname(node, Case::ScreamingSnakeCase, "_VERSION_MAJOR"sv);
-        macros["version_minor"]      = fullname(node, Case::ScreamingSnakeCase, "_VERSION_MINOR"sv);
-        macros["version_micro"]      = fullname(node, Case::ScreamingSnakeCase, "_VERSION_MICRO"sv);
-        macros["version_encode"]     = fullname(node, Case::ScreamingSnakeCase, "_VERSION_ENCODE"sv);
-        macros["version_stringize_"] = fullname(node, Case::ScreamingSnakeCase, "_VERSION_STRINGIZE_"sv);
-        macros["version_stringize"]  = fullname(node, Case::ScreamingSnakeCase, "_VERSION_STRINGIZE"sv);
-        macros["version"]            = fullname(node, Case::ScreamingSnakeCase, "_VERSION"sv);
-        macros["version_string"]     = fullname(node, Case::ScreamingSnakeCase, "_VERSION_STRING"sv);
-        macros["begin_enum"]         = fullname(node, Case::ScreamingSnakeCase, "_BEGIN_ENUM"sv);
-        macros["end_enum"]           = fullname(node, Case::ScreamingSnakeCase, "_END_ENUM"sv);
-        macros["flags_enum"]         = fullname(node, Case::ScreamingSnakeCase, "_FLAGS_ENUM"sv);
+        macros["macro_prefix"]       = prefix;
+        macros["macro_prefix_lower"] = prefixLower;
+        macros["import_api"]         = prefixLower + "_api"s;
+        macros["static_build"]       = prefix + "_STATIC_BUILD"s;
+        macros["platform_windows"]   = prefix + "_PLATFORM_WINDOWS"s;
+        macros["platform_ios"]       = prefix + "_PLATFORM_IOS"s;
+        macros["platform_macos"]     = prefix + "_PLATFORM_MAC_OS"s;
+        macros["platform_android"]   = prefix + "_PLATFORM_ANDROID"s;
+        macros["platform_linux"]     = prefix + "_PLATFORM_LINUX"s;
+        macros["platform_web"]       = prefix + "_PLATFORM_WEB"s;
+        macros["constexpr14"]        = prefix + "_CONSTEXPR_14"s;
+        macros["version_major"]      = prefix + "_VERSION_MAJOR"s;
+        macros["version_minor"]      = prefix + "_VERSION_MINOR"s;
+        macros["version_micro"]      = prefix + "_VERSION_MICRO"s;
+        macros["version_encode"]     = prefix + "_VERSION_ENCODE"s;
+        macros["version_stringize_"] = prefix + "_VERSION_STRINGIZE_"s;
+        macros["version_stringize"]  = prefix + "_VERSION_STRINGIZE"s;
+        macros["version"]            = prefix + "_VERSION"s;
+        macros["version_string"]     = prefix + "_VERSION_STRING"s;
+        macros["begin_enum"]         = prefix + "_BEGIN_ENUM"s;
+        macros["end_enum"]           = prefix + "_END_ENUM"s;
+        macros["flags_enum"]         = prefix + "_FLAGS_ENUM"s;
     }
 
     void renderPlatformHeader(ASTNodeRef node) {
@@ -517,7 +498,7 @@ struct ASTVisitor {
         std::vector details = { "This header provides cross-platform macros, type definitions, and utility"s,
                                 "\n"s,
                                 "macros for the "s,
-                                apiName(node),
+                                state.data["api_name_readable"].get<std::string>(),
                                 " library. It handles:"s,
                                 "\n"s,
                                 "  - Platform detection (Windows, macOS, iOS, Android, Linux, Web)"s,
@@ -562,7 +543,7 @@ struct ASTVisitor {
         if (semver) {
             brief   = { "Library version information and utilities."s };
             details = { "This header provides version information for the "s,
-                        apiName(node),
+                        state.data["api_name_readable"].get<std::string>(),
                         " library,"s,
                         "\n"s,
                         "including version number components and macros for version comparison"s,
@@ -577,7 +558,7 @@ struct ASTVisitor {
                         "\n"s };
         } else {
             brief   = { "Library version information."s };
-            details = { "This header provides version information for the "s, apiName(node), " library."s };
+            details = { "This header provides version information for the "s, state.data["api_name_readable"].get<std::string>(), " library."s };
         }
 
         pushImport(node,
@@ -601,20 +582,18 @@ struct ASTVisitor {
             return;
         }
         std::string name;
+        std::string guard;
         if (!postfix.empty() && !single) {
-            name = filename(node, postfix);
+            name  = filename(node, postfix);
+            guard = calcMacro(node, postfix);
         } else {
-            name = filename(node);
+            name  = filename(node);
+            guard = calcMacro(node);
         }
-        std::string includeGuard = name;
-        std::replace(includeGuard.begin(), includeGuard.end(), '-', '_');
-        std::replace(includeGuard.begin(), includeGuard.end(), '.', '_');
-        upper(includeGuard);
-
         auto import = node.is<IDL_AST_NODE_TYPE_IMPORT>() ? node : node.ctx().emptyNodeRef();
 
         inja::json data;
-        data["include_guard"] = includeGuard;
+        data["include_guard"] = guard;
         data["filename"]      = name;
         data["is_main"]       = main || single;
 
@@ -646,29 +625,21 @@ struct ASTVisitor {
         return node.accept<CName>(std::ref(state.cnameCache), postfix).str;
     }
 
-    template <typename... Postfix>
-    std::string fullname(ASTNodeRef& node, Case caseConvention, std::string_view postfix = {}) {
-        auto name = node.accept<CName>(std::ref(state.cnameCache)).str;
-        // CName::Settings settings = state.cnameSettings;
+    std::string calcMacro(ASTNodeRef& node, std::string_view namePostfix = {}, bool addExt = true, bool upper = true) {
+        node.accept<CName>(std::ref(state.cnameCache), namePostfix);
+        CName::Cache cache = state.cnameCache;
 
-        // settings.conventions[IDL_AST_NODE_TYPE_API].caseConvention    = caseConvention;
-        // settings.conventions[IDL_AST_NODE_TYPE_API].postfix           = postfix;
-        // settings.conventions[IDL_AST_NODE_TYPE_IMPORT].caseConvention = caseConvention;
-        // settings.conventions[IDL_AST_NODE_TYPE_IMPORT].postfix        = postfix;
-        // return node.accept<CName>(std::cref(settings)).str;
-        return "OK";
-    }
-
-    std::string apiName(ASTNodeRef& node, Case caseConvention = Case::PascalCase) {
-        std::vector<int> nums{};
-        if (auto attr = node.findChild<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>()) {
-            auto view = attr.getChilds() | std::views::transform([](const auto& arg) {
-                return int(arg->valueInt);
-            });
-            nums.assign(view.begin(), view.end());
+        cache.conventions[IDL_AST_NODE_TYPE_API].caseConvention    = upper ? Case::ScreamingSnakeCase : Case::SnakeCase;
+        cache.conventions[IDL_AST_NODE_TYPE_IMPORT].caseConvention = upper ? Case::ScreamingSnakeCase : Case::SnakeCase;
+        if (!addExt) {
+            cache.conventions[IDL_AST_NODE_TYPE_API].postfix    = {};
+            cache.conventions[IDL_AST_NODE_TYPE_IMPORT].postfix = {};
         }
-        const auto str = node.name();
-        return convert({ str.data(), str.length() }, caseConvention, nums.empty() ? nullptr : &nums);
+
+        auto prefix = node.accept<CName>(std::ref(cache), namePostfix).str;
+        std::replace(prefix.begin(), prefix.end(), '-', '_');
+        std::replace(prefix.begin(), prefix.end(), '.', '_');
+        return prefix;
     }
 
     static std::string escape(std::string_view str) {

@@ -1,0 +1,10 @@
+@ Brief
+@ Detail [detail]
+@ Copyright [copyright]
+@ License [license]
+@ Author [author]
+api Api[
+    cformat(
+        indents:4,
+        braces.after.decl:trUe
+    )]

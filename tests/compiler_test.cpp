@@ -625,11 +625,11 @@ TEST(idlc, InvalidAttrForDeclaration) {
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 2);
     ASSERT_EQ(messages[0],
-              "error [E3005]: Invalid attribute [flags] for api 'Api' declaration, allowed attributes are maxenum, countenums, cname, tokenizer, "
-              "single, stdtypes, booltype, version, brief, detail, author, copyright, license at e3005:6:10");
+              "error [E3005]: Invalid attribute [flags] for api 'Api' declaration, allowed attributes are maxenum, countenums, cname, cconv, "
+              "cformat, tokenizer, single, stdtypes, booltype, version, brief, detail, author, copyright, license at e3005:6:10");
     ASSERT_EQ(messages[1],
-              "error [E3005]: Invalid attribute [hex] for api 'Api' declaration, allowed attributes are maxenum, countenums, cname, tokenizer, "
-              "single, stdtypes, booltype, version, brief, detail, author, copyright, license at e3005:6:17");
+              "error [E3005]: Invalid attribute [hex] for api 'Api' declaration, allowed attributes are maxenum, countenums, cname, cconv, cformat, "
+              "tokenizer, single, stdtypes, booltype, version, brief, detail, author, copyright, license at e3005:6:17");
 
     auto api = idl_compilation_result_get_api(ast);
     ASSERT_NE(api, HandleNone);
@@ -864,11 +864,11 @@ TEST(idlc, UnknownAttributeInDoc) {
     ASSERT_EQ(messages[3], "error [E3015]: Unknown attribute in the documentation [hex] at e3015:7:39");
     ASSERT_EQ(messages[4], "error [E3018]: Inline documentation only [detail] description is allowed at e3015:7:39");
     ASSERT_EQ(messages[5],
-              "error [E3005]: Invalid attribute [flags] for api 'Api' declaration, allowed attributes are maxenum, countenums, cname, tokenizer, "
-              "single, stdtypes, booltype, version, brief, detail, author, copyright, license at e3015:6:31");
+              "error [E3005]: Invalid attribute [flags] for api 'Api' declaration, allowed attributes are maxenum, countenums, cname, cconv, "
+              "cformat, tokenizer, single, stdtypes, booltype, version, brief, detail, author, copyright, license at e3015:6:31");
     ASSERT_EQ(messages[6],
-              "error [E3005]: Invalid attribute [hex] for api 'Api' declaration, allowed attributes are maxenum, countenums, cname, tokenizer, "
-              "single, stdtypes, booltype, version, brief, detail, author, copyright, license at e3015:7:39");
+              "error [E3005]: Invalid attribute [hex] for api 'Api' declaration, allowed attributes are maxenum, countenums, cname, cconv, cformat, "
+              "tokenizer, single, stdtypes, booltype, version, brief, detail, author, copyright, license at e3015:7:39");
 
     auto api = idl_compilation_result_get_api(ast);
     ASSERT_NE(api, HandleNone);
@@ -1033,6 +1033,20 @@ TEST(idlc, CouldNotFindFileForImport) {
     ASSERT_TRUE(isType(ast, importAttrs[1], IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL));
 
     ASSERT_EQ(idl_compilation_result_get_api(ast2), HandleNone);
+}
+
+TEST(idlc, ResultCode) {
+    const auto [result, _, __] = compile("e3021nonexists", false, false);
+    ASSERT_EQ(result, IDL_RESULT_ERROR_SOURCE_NOT_FOUND);
+
+    const auto [result2, _2, __2] = compile("e3045", false, false);
+    ASSERT_EQ(result2, IDL_RESULT_ERROR_COMPILATION);
+
+    const auto [result3, _3, __3] = compile("w2002.idl", false, false);
+    ASSERT_EQ(result3, IDL_RESULT_SUCCESS);
+
+    const auto [result4, _4, __4] = compile("w2002.idl", true, false);
+    ASSERT_EQ(result4, IDL_RESULT_ERROR_COMPILATION);
 }
 
 TEST(idlc, ConstCanBeDefinedOnlyForEnum) {
@@ -1845,16 +1859,47 @@ TEST(idlc, MultipleEnumConstsCanBeAssignedOnlyToFlagEnum) {
     ASSERT_TRUE(hasAnyState(ast, fields[3], IDL_AST_NODE_STATE_BUILD_ERROR_BIT));
 }
 
-TEST(idlc, ResultCode) {
-    const auto [result, _, __] = compile("e3021nonexists", false, false);
-    ASSERT_EQ(result, IDL_RESULT_ERROR_SOURCE_NOT_FOUND);
+TEST(idlc, ArgCanBeDefinedForFunc) {
+    const auto [result, ast, messages] = compile("e3057func");
+    deferred(idl_compilation_result_destroy(ast));
+    GTEST_FAIL();
+}
 
-    const auto [result2, _2, __2] = compile("e3045", false, false);
-    ASSERT_EQ(result2, IDL_RESULT_ERROR_COMPILATION);
+TEST(idlc, InvalidCallConvFormatWasPassedToCConv) {
+    const auto [result, ast, messages] = compile("e3058");
+    deferred(idl_compilation_result_destroy(ast));
+    ASSERT_EQ(result, IDL_RESULT_SUCCESS);
+    ASSERT_EQ(messages.size(), 1);
+    ASSERT_EQ(messages[0],
+              "error [E3058]: An invalid calling convention format was passed to the argument at index 1 (const:screamingsnke:full:skip:::_BIT) in "
+              "attribute [cconv] (correct format: <token>:<snake|camel|pascal|...>:<full|short>:<skip|add>:<prefix>:<postfix>[:<special_postfix>], "
+              "sample: const:screamingsnake:full:skip:::_BIT) at e3058:6:9");
 
-    const auto [result3, _3, __3] = compile("w2002.idl", false, false);
-    ASSERT_EQ(result3, IDL_RESULT_SUCCESS);
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
 
-    const auto [result4, _4, __4] = compile("w2002.idl", true, false);
-    ASSERT_EQ(result4, IDL_RESULT_ERROR_COMPILATION);
+    auto cconv = findChild(ast, api, IDL_AST_NODE_TYPE_ATTR_CCONV);
+    ASSERT_NE(cconv, HandleNone);
+
+    auto cconvArgs = getChilds(ast, cconv);
+    ASSERT_TRUE(cconvArgs.empty());
+}
+
+TEST(idlc, InvalidFormatParamWasPassedToCFormat) {
+    const auto [result, ast, messages] = compile("e3059");
+    deferred(idl_compilation_result_destroy(ast));
+    ASSERT_EQ(result, IDL_RESULT_SUCCESS);
+    ASSERT_EQ(messages.size(), 1);
+    ASSERT_EQ(messages[0],
+              "error [E3059]: An invalid format parameter was passed to the argument at index 1 (braces.after.decl:trUe) in attribute [cformat] "
+              "(correct format: indents:<value>, braces.after.decl:<bool>, sample: indents:4) at e3059:7:5");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto cformat = findChild(ast, api, IDL_AST_NODE_TYPE_ATTR_CFORMAT);
+    ASSERT_NE(cformat, HandleNone);
+
+    auto cformatArgs = getChilds(ast, cformat);
+    ASSERT_TRUE(cformatArgs.empty());
 }

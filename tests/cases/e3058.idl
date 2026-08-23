@@ -1,0 +1,10 @@
+@ Brief
+@ Detail [detail]
+@ Copyright [copyright]
+@ License [license]
+@ Author [author]
+api Api[cconv(
+        enum:snake:full:skip::_t:_flags_t,
+        const:screamingsnke:full:skip:::_BIT,
+        file:lisp:full:add::.h
+    )]

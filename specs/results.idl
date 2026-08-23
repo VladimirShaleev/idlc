@@ -84,6 +84,7 @@ enum Status
     const E3056 : 3056 [tokenizer(0)] @ Multiple enumeration constants can be assigned only to a flag enumeration.
     const E3057 : 3057 [tokenizer(0)] @ A 'arg' can be defined for 'func', 'method' and 'callback'.
     const E3058 : 3058 [tokenizer(0)] @ An invalid calling convention format was passed to the \[cconv\] attribute argument.
+    const E3059 : 3059 [tokenizer(0)] @ An invalid format parameter was passed to the \[cformat\] attribute argument.
 
 @ Compilation message.
 @ Detailed description of warning or compilation error. [detail]

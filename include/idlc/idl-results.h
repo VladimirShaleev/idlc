@@ -107,6 +107,7 @@ typedef enum
     IDL_STATUS_E3056    = 3056, /**< Multiple enumeration constants can be assigned only to a flag enumeration. */
     IDL_STATUS_E3057    = 3057, /**< A 'arg' can be defined for 'func', 'method' and 'callback'. */
     IDL_STATUS_E3058    = 3058, /**< An invalid calling convention format was passed to the [cconv] attribute argument. */
+    IDL_STATUS_E3059    = 3059, /**< An invalid format parameter was passed to the [cformat] attribute argument. */
     IDL_STATUS_MAX_ENUM = 0x7FFFFFFF /**< Max value of enum (not used) */
 } idl_status_t;
 

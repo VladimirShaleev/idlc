@@ -576,6 +576,10 @@ struct AttrName {
         str = "cconv";
     }
 
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_CFORMAT>) {
+        str = "cformat";
+    }
+
     void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_REF>) {
         str = "ref";
     }

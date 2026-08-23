@@ -159,6 +159,9 @@ inline std::string err(Args&&... args) {
     } else if constexpr (Status == IDL_STATUS_E3058) {
         str = fmt::format(
             "An invalid calling convention format was passed to the argument at index {} ({}) in attribute [cconv] (correct format: {})", args...);
+    } else if constexpr (Status == IDL_STATUS_E3059) {
+        str = fmt::format("An invalid format parameter was passed to the argument at index {} ({}) in attribute [cformat] (correct format: {})",
+                          args...);
     } else {
         assert(!"Unknown status code");
     }

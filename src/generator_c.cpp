@@ -326,14 +326,41 @@ struct ASTVisitor {
             cname.boolType = IDL_BOOL_TYPE_STD_BOOL;
         }
 
-        auto indents         = 4;
+        std::unordered_map<std::string_view, std::string_view> cformat;
+        if (auto cformatAttr = node.findChild<IDL_AST_NODE_TYPE_ATTR_CFORMAT>()) {
+            auto view = cformatAttr.getChilds() | std::views::transform([](ASTNodeRef arg) {
+                assert(arg.is<IDL_AST_NODE_TYPE_LITERAL_STR>());
+                auto str = arg.valueStr();
+                auto pos = str.find_last_of(':');
+                assert(pos != std::string_view::npos);
+                return std::make_pair(str.substr(0, pos), str.substr(pos + 1));
+            });
+            for (const auto& [key, value] : view) {
+                cformat[key] = value;
+            }
+        }
+
+        auto bracesAfterDecl = true;
+        if (auto it = cformat.find("braces.after.decl"); it != cformat.end()) {
+            bracesAfterDecl = it->second == "true"sv;
+        }
+
+        auto indents = 4;
+        if (auto it = cformat.find("indents"); it != cformat.end()) {
+            try {
+                std::string str{ it->second.data(), it->second.length() };
+                indents = std::stoi(str);
+            } catch (const std::exception&) {
+            }
+        }
+
         auto single          = !!node.findChild<IDL_AST_NODE_TYPE_ATTR_SINGLE>();
         auto addDoc          = false;
         auto addDocGroups    = false;
         auto addMemberGroups = false;
         cname.stdTypes       = !!node.findChild<IDL_AST_NODE_TYPE_ATTR_STD_TYPES>();
         if (auto options = state.writer.options()) {
-            indents         = options->getIndents();
+            // indents         = options->getIndents();
             auto cOptions   = options->getCOptions();
             addDoc          = cOptions.add_doc;
             addDocGroups    = cOptions.add_doc_groups;
@@ -341,7 +368,7 @@ struct ASTVisitor {
         }
 
         auto& config                = state.data["config"];
-        config["begin_block"]       = "\n{";
+        config["begin_block"]       = bracesAfterDecl ? "\n{" : " {";
         config["single"]            = single;
         config["indents"]           = indents;
         config["add_doc"]           = addDoc;

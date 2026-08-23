@@ -21,7 +21,8 @@ struct AttrValidatorRules {
                                     add<IDL_AST_NODE_TYPE_ATTR_STD_TYPES>(),       add<IDL_AST_NODE_TYPE_ATTR_BOOL_TYPE>(),
                                     add<IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR>(true),  add<IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT>(true),
                                     add<IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE>(true), add<IDL_AST_NODE_TYPE_ATTR_COUNT_ENUMS>(),
-                                    add<IDL_AST_NODE_TYPE_ATTR_MAX_ENUM>(),        add<IDL_AST_NODE_TYPE_ATTR_CCONV>() };
+                                    add<IDL_AST_NODE_TYPE_ATTR_MAX_ENUM>(),        add<IDL_AST_NODE_TYPE_ATTR_CCONV>(),
+                                    add<IDL_AST_NODE_TYPE_ATTR_CFORMAT>() };
         validate(node, allowed);
     }
 
@@ -411,6 +412,33 @@ struct AttrArgRules {
         } else if (!isValidFormats) {
             node->child = HandleNone;
             ctx.log<IDL_STATUS_E3058>(node->location, index, invalidArg, correctFormat);
+        }
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ATTR_CFORMAT>) {
+        using namespace std::string_view_literals;
+        auto& ctx   = node.ctx();
+        node->child = argFirst;
+        const std::regex format("(indents:\\d+)|(braces\\.after\\.decl:(true|false))");
+        int index = -1;
+        std::string_view invalidArg{};
+
+        auto isValidFormats = argCount > 0 && std::all_of(node.begin(), node.end(), [this, &format, &index, &invalidArg](auto arg) {
+            ++index;
+            if (arg.template is<IDL_AST_NODE_TYPE_LITERAL_STR>()) {
+                auto argView = arg.valueStr();
+                invalidArg   = argView;
+                return std::regex_match(argView.begin(), argView.end(), format);
+            }
+            return false;
+        });
+        constexpr std::string_view correctFormat = "indents:<value>, braces.after.decl:<bool>, sample: indents:4";
+        if (argCount == 0) {
+            node->child = HandleNone;
+            ctx.log<IDL_STATUS_E3014>(node->location, node.accept<AttrName>().str, std::format(" (format: {})", correctFormat));
+        } else if (!isValidFormats) {
+            node->child = HandleNone;
+            ctx.log<IDL_STATUS_E3059>(node->location, index, invalidArg, correctFormat);
         }
     }
 

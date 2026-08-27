@@ -67,11 +67,12 @@ struct AttrValidatorRules {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_FUNC>) {
-        static std::map allowed = { add<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>(true), add<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(true),
-                                    add<IDL_AST_NODE_TYPE_ATTR_CNAME>(),         add<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>(),
-                                    add<IDL_AST_NODE_TYPE_ATTR_TYPE>(),          add<IDL_AST_NODE_TYPE_ATTR_REF>(),
-                                    add<IDL_AST_NODE_TYPE_ATTR_ARRAY>(),         add<IDL_AST_NODE_TYPE_ATTR_CONST>(),
-                                    add<IDL_AST_NODE_TYPE_ATTR_OPTIONAL>() };
+        static std::map allowed = {
+            add<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>(true), add<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(true), add<IDL_AST_NODE_TYPE_ATTR_DOC_RETURN>(true),
+            add<IDL_AST_NODE_TYPE_ATTR_CNAME>(),         add<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>(),      add<IDL_AST_NODE_TYPE_ATTR_TYPE>(),
+            add<IDL_AST_NODE_TYPE_ATTR_REF>(),           add<IDL_AST_NODE_TYPE_ATTR_ARRAY>(),          add<IDL_AST_NODE_TYPE_ATTR_CONST>(),
+            add<IDL_AST_NODE_TYPE_ATTR_OPTIONAL>()
+        };
         validate(node, allowed);
     }
 
@@ -115,8 +116,25 @@ struct AttrValidatorRules {
         for (auto& [type, info] : allowed | std::views::filter([](const auto& attr) {
             return attr.second.recommended;
         })) {
+            auto printWarn = true;
+            if (type == IDL_AST_NODE_TYPE_ATTR_DOC_RETURN) {
+                if (node.is<IDL_AST_NODE_TYPE_FUNC>()) {
+                    if (auto declType = node.declType(); !declType || declType.is<IDL_AST_NODE_TYPE_VOID>()) {
+                        printWarn = false;
+                        if (declType) {
+                            node.ctx().log<IDL_STATUS_N1005>(node->location);
+                        }
+                        if (uniqueAttrs.contains(type)) {
+                            const auto token = node.accept<DeclToken>().str;
+                            node.ctx().log<IDL_STATUS_W2008>(node->location, token, node.fullname());
+                        }
+                    }
+                }
+            }
             if (!uniqueAttrs.contains(type)) {
-                node.ctx().log<IDL_STATUS_W2001>(node->location, node.fullname(), info.name);
+                if (printWarn) {
+                    node.ctx().log<IDL_STATUS_W2001>(node->location, node.fullname(), info.name);
+                }
             }
         }
     }
@@ -297,6 +315,14 @@ struct AttrArgRules {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>) {
+        if (argCount > 0) {
+            node->child = argFirst;
+        } else {
+            node.ctx().log<IDL_STATUS_E3014>(node->location, node.accept<AttrName>().str, "");
+        }
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_RETURN>) {
         if (argCount > 0) {
             node->child = argFirst;
         } else {
@@ -1081,7 +1107,16 @@ struct BuildRules {
         auto type = node.declType();
         if (!type) {
             node.setBuildError();
-            return;
+        }
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ARG>) {
+        auto& ctx = node.ctx();
+        auto type = node.declType();
+        if (!type || type.is<IDL_AST_NODE_TYPE_VOID>()) {
+            auto attrType = node.findChild<IDL_AST_NODE_TYPE_ATTR_TYPE>();
+            ctx.log<IDL_STATUS_E3060>(attrType ? attrType->location : node->location, node.fullname());
+            node.setBuildError();
         }
     }
 

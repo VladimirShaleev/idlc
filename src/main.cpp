@@ -167,7 +167,7 @@ int main(int argc, char* argv[]) {
         if (idl_compilation_result_has_errors(result)) {
             failed = true;
         }
-        if (idl_compilation_result_has_errors(result) || idl_compilation_result_has_warnings(result)) {
+        if (idl_compilation_result_has_errors(result) || idl_compilation_result_has_warnings(result) || idl_compilation_result_has_notes(result)) {
             idl_uint32_t count{};
             idl_compilation_result_get_messages(result, &count, nullptr);
             std::vector<idl_message_t> messages;

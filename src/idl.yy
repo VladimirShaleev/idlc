@@ -99,6 +99,7 @@
 %token ATTRCOUNTENUMS;
 %token ATTRBRIEF
 %token ATTRDETAIL
+%token ATTRRETURN
 %token ATTRVALUE
 %token ATTRTYPE
 %token ATTRCNAME
@@ -278,6 +279,7 @@ attr_item
     | ATTROPTIONAL   { $$ = alloc_node(@1, ATTR_OPTIONAL); }
     | ATTRBRIEF      { $$ = alloc_node(@1, ATTR_DOC_BRIEF); }
     | ATTRDETAIL     { $$ = alloc_node(@1, ATTR_DOC_DETAIL); }
+    | ATTRRETURN     { $$ = alloc_node(@1, ATTR_DOC_RETURN); }
     | INVALID_ATTR   { $$ = HandleNone; log(E3013, @1, $1); }
     ;
 

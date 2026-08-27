@@ -354,6 +354,9 @@ public:
                 case IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL:
                     visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>{});
                     break;
+                case IDL_AST_NODE_TYPE_ATTR_DOC_RETURN:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_RETURN>{});
+                    break;
                 case IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR:
                     visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR>{});
                     break;

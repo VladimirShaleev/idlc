@@ -63,6 +63,7 @@ SYMBOLS  [a-zA-Z0-9_\-^\.@: ]
 <ATTRCTX>"countenums"  { attrArg(); return token::ATTRCOUNTENUMS; }
 <ATTRCTX>"brief"       { attrArg(); return token::ATTRBRIEF; }
 <ATTRCTX>"detail"      { attrArg(); return token::ATTRDETAIL; }
+<ATTRCTX>"return"      { attrArg(); return token::ATTRRETURN; }
 <ATTRCTX>"value"       { attrArg(); return token::ATTRVALUE; }
 <ATTRCTX>"type"        { attrArg(); return token::ATTRTYPE; }
 <ATTRCTX>"cname"       { attrArg(ShortString); return token::ATTRCNAME; }

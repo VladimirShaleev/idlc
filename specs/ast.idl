@@ -42,6 +42,7 @@ enum ASTNodeType [tokenizer(3-4)]
     const AttrDoc @ TODO
     const AttrDocBrief @ TODO
     const AttrDocDetail @ TODO
+    const AttrDocReturn @ TODO
     const AttrDocAuthor @ TODO
     const AttrDocCopyright @ TODO
     const AttrDocLicense @ TODO

@@ -42,6 +42,7 @@ typedef enum
     IDL_STATUS_N1002    = 1002, /**< Unnecessary parentheses for empty attribute list. */
     IDL_STATUS_N1003    = 1003, /**< Unnecessary explicit attribute [brief] in documentation. */
     IDL_STATUS_N1004    = 1004, /**< Unnecessary explicit attribute [detail] in inline documentation. */
+    IDL_STATUS_N1005    = 1005, /**< The 'Void' return type is optional because it is inferred by default. */
     IDL_STATUS_W2001    = 2001, /**< The declaration is missing an attribute. */
     IDL_STATUS_W2002    = 2002, /**< Repeated import. */
     IDL_STATUS_W2003    = 2003, /**< The constant refers to a constant declared below. */
@@ -49,6 +50,7 @@ typedef enum
     IDL_STATUS_W2005    = 2005, /**< Special character expected after backslash. */
     IDL_STATUS_W2006    = 2006, /**< The field type has the declaration type declared below. */
     IDL_STATUS_W2007    = 2007, /**< Implicit conversion from an integer type to a floating-point type. */
+    IDL_STATUS_W2008    = 2008, /**< Documentation for the return value of type 'Void' is specified. */
     IDL_STATUS_E3001    = 3001, /**< Syntax error. */
     IDL_STATUS_E3002    = 3002, /**< Argument parsing error. */
     IDL_STATUS_E3003    = 3003, /**< The [version] attribute must have three required integer parameters, such as version(1, 2, 3) or version("string"). */
@@ -108,6 +110,7 @@ typedef enum
     IDL_STATUS_E3057    = 3057, /**< A 'arg' can be defined for 'func', 'method' and 'callback'. */
     IDL_STATUS_E3058    = 3058, /**< An invalid calling convention format was passed to the [cconv] attribute argument. */
     IDL_STATUS_E3059    = 3059, /**< An invalid format parameter was passed to the [cformat] attribute argument. */
+    IDL_STATUS_E3060    = 3060, /**< The argument type cannot be 'Void'. */
     IDL_STATUS_MAX_ENUM = 0x7FFFFFFF /**< Max value of enum (not used) */
 } idl_status_t;
 

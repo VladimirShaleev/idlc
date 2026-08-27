@@ -17,6 +17,8 @@ inline std::string err(Args&&... args) {
         str = fmt::format("Unnecessary explicit attribute [brief] in documentation");
     } else if constexpr (Status == IDL_STATUS_N1004) {
         str = fmt::format("Unnecessary explicit attribute [detail] in inline documentation");
+    } else if constexpr (Status == IDL_STATUS_N1005) {
+        str = fmt::format("The 'Void' return type is optional because it is inferred by default");
     } else if constexpr (Status == IDL_STATUS_W2001) {
         str = fmt::format("The declaration '{}' is missing an attribute [{}]", args...);
     } else if constexpr (Status == IDL_STATUS_W2002) {
@@ -31,6 +33,8 @@ inline std::string err(Args&&... args) {
         str = fmt::format("The field '{}' type has the declaration type {} '{}' declared below", args...);
     } else if constexpr (Status == IDL_STATUS_W2007) {
         str = fmt::format("Implicit conversion from an integer type to a floating-point type");
+    } else if constexpr (Status == IDL_STATUS_W2008) {
+        str = fmt::format("Documentation provided ([return] attribute) for {} '{}' without a return value", args...);
     } else if constexpr (Status == IDL_STATUS_E3001) {
         if constexpr (sizeof...(args) > 0) {
             str = fmt::format("Syntax error '{}'", args...);
@@ -162,6 +166,8 @@ inline std::string err(Args&&... args) {
     } else if constexpr (Status == IDL_STATUS_E3059) {
         str = fmt::format("An invalid format parameter was passed to the argument at index {} ({}) in attribute [cformat] (correct format: {})",
                           args...);
+    } else if constexpr (Status == IDL_STATUS_E3060) {
+        str = fmt::format("The argument type of '{}' cannot be 'Void'", args...);
     } else {
         assert(!"Unknown status code");
     }

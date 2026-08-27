@@ -434,6 +434,10 @@ struct PriorityDocAttr {
         setPriority(tag);
     }
 
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_RETURN> tag) {
+        setPriority(tag);
+    }
+
     void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR> tag) {
         setPriority(tag);
     }
@@ -558,6 +562,10 @@ struct AttrName {
 
     void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>) {
         str = "detail";
+    }
+
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_RETURN>) {
+        str = "return";
     }
 
     void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_VALUE>) {

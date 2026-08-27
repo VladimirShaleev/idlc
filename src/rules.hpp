@@ -5,6 +5,34 @@
 
 namespace idl {
 
+struct AttrSubValidatorRules {
+    AttrSubValidatorRules(ASTNodeType attrType, bool attached) noexcept : attrType(attrType), attached(attached) {
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_FUNC>) {
+        if (attrType == IDL_AST_NODE_TYPE_ATTR_DOC_RETURN) {
+            if (auto declType = node.declType(); !declType || declType.is<IDL_AST_NODE_TYPE_VOID>()) {
+                printWarn = false;
+                if (declType) {
+                    node.ctx().log<IDL_STATUS_N1005>(node->location);
+                }
+                if (attached) {
+                    const auto token = node.accept<DeclToken>().str;
+                    node.ctx().log<IDL_STATUS_W2008>(node->location, token, node.fullname());
+                }
+            }
+        }
+    }
+
+    template <ASTNodeType Type>
+    void visit(ASTNodeRef& node, Tag<Type>) noexcept {
+    }
+
+    ASTNodeType attrType;
+    bool attached;
+    bool printWarn{ true };
+};
+
 struct AttrValidatorRules {
     struct AttrInfo {
         std::string_view name;
@@ -116,25 +144,10 @@ struct AttrValidatorRules {
         for (auto& [type, info] : allowed | std::views::filter([](const auto& attr) {
             return attr.second.recommended;
         })) {
-            auto printWarn = true;
-            if (type == IDL_AST_NODE_TYPE_ATTR_DOC_RETURN) {
-                if (node.is<IDL_AST_NODE_TYPE_FUNC>()) {
-                    if (auto declType = node.declType(); !declType || declType.is<IDL_AST_NODE_TYPE_VOID>()) {
-                        printWarn = false;
-                        if (declType) {
-                            node.ctx().log<IDL_STATUS_N1005>(node->location);
-                        }
-                        if (uniqueAttrs.contains(type)) {
-                            const auto token = node.accept<DeclToken>().str;
-                            node.ctx().log<IDL_STATUS_W2008>(node->location, token, node.fullname());
-                        }
-                    }
-                }
-            }
-            if (!uniqueAttrs.contains(type)) {
-                if (printWarn) {
-                    node.ctx().log<IDL_STATUS_W2001>(node->location, node.fullname(), info.name);
-                }
+            auto containsAttr = uniqueAttrs.contains(type);
+            auto printWarn    = node.accept<AttrSubValidatorRules>(type, containsAttr).printWarn;
+            if (!containsAttr && printWarn) {
+                node.ctx().log<IDL_STATUS_W2001>(node->location, node.fullname(), info.name);
             }
         }
     }

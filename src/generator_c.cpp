@@ -74,6 +74,10 @@ struct DoxygenVisitor {
         str = "details"sv;
     }
 
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_RETURN>) {
+        str = "return"sv;
+    }
+
     void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR>) {
         str = "author"sv;
     }
@@ -106,6 +110,10 @@ struct DoxygenGroupVisitor {
         str = "structs"sv;
     }
 
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_FUNC>) {
+        str = "functions"sv;
+    }
+
     template <ASTNodeType Type>
     void visit(ASTNodeRef&, Tag<Type>) noexcept {
     }
@@ -117,6 +125,7 @@ struct ASTStatsVisitor {
     struct Stats {
         size_t hasEnums{};
         size_t hasEnumFlags{};
+        ASTNodeRef voidType{};
     };
 
     explicit ASTStatsVisitor(Stats& stats) noexcept : stats(stats) {
@@ -127,6 +136,10 @@ struct ASTStatsVisitor {
         if (node.findChild<IDL_AST_NODE_TYPE_ATTR_FLAGS>()) {
             stats.hasEnumFlags = true;
         }
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_VOID>) {
+        stats.voidType = node;
     }
 
     template <ASTNodeType Type>
@@ -177,6 +190,24 @@ struct ASTVisitor {
         state.env.render_to(state.out(), findTemplate("c_enum.txt"), state.data);
 
         state.data.erase("consts");
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_FUNC>) {
+        tryPopImport(node);
+
+        state.data["node"] = node.handle().handle;
+        fillDoc(0, false, node, state.data);
+
+        auto& args = state.data["args"];
+        for (auto child : node.getChilds<IDL_AST_NODE_TYPE_ARG>()) {
+            args.push_back(inja::json::object({
+                { "node", child.handle().handle }
+            }));
+        }
+
+        state.env.render_to(state.out(), findTemplate("c_func.txt"), state.data);
+
+        state.data.erase("args");
     }
 
     template <ASTNodeType Type>
@@ -255,6 +286,32 @@ struct ASTVisitor {
             docs.insert(groupIt, group);
         }
 
+        if (node.is<IDL_AST_NODE_TYPE_FUNC>()) {
+            size_t offsetParams = 0;
+            if (auto pos = map.find("details"); pos != map.end()) {
+                offsetParams = pos->second + 1;
+            } else if (auto pos = map.find("return"); pos != map.end()) {
+                offsetParams = pos->second;
+            }
+            auto paramIt = docs.begin() + offsetParams;
+
+            for (auto arg : node.getChilds<IDL_AST_NODE_TYPE_ARG>()) {
+                inja::json param = {
+                    { "name",     "param[in]"                                                 },
+                    { "literals", { arg.accept<CName>(std::ref(state.cnameCache)).str, " "s } }
+                };
+                auto& literals = param["literals"];
+                for (auto literal : arg.findChild<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>().getChilds()) {
+                    if (isInline && literal.is<IDL_AST_NODE_TYPE_LITERAL_STR>() && literal.valueStr()[0] == '\n') {
+                        doxygen["is_inline"] = false;
+                        isInline             = false;
+                    }
+                    literals.push_back(literal.handle().handle);
+                }
+                paramIt = docs.insert(paramIt, param);
+            }
+        }
+
         for (const auto& [name, literals] : overrideDoc) {
             inja::json doc = {
                 { "name",     name     },
@@ -310,7 +367,7 @@ struct ASTVisitor {
             version = Semver{ args[0]->valueInt, args[1]->valueInt, args[2]->valueInt };
         }
 
-        constexpr auto filters = ASTNodeRef::SkipDocs | ASTNodeRef::SkipAttrs | ASTNodeRef::SkipLiterals | ASTNodeRef::SkipTrivials;
+        constexpr auto filters = ASTNodeRef::SkipDocs | ASTNodeRef::SkipAttrs | ASTNodeRef::SkipLiterals;
         ASTStatsVisitor::Stats stats{};
         state.writer.api().acceptRecursive<ASTStatsVisitor>(filters, std::ref(stats));
 
@@ -410,8 +467,9 @@ struct ASTVisitor {
         }
         const auto str = node.name();
 
-        state.data["api_name"]          = "";
+        state.data["api_name"]          = calcMacro(node, {}, false, false);
         state.data["api_name_readable"] = convert({ str.data(), str.length() }, Case::SpaceCase, nums.empty() ? nullptr : &nums);
+        state.data["cvoid"]             = stats.voidType.accept<CName>(std::ref(state.cnameCache)).str;
     }
 
     void addCallbacks(ASTNodeRef node) {

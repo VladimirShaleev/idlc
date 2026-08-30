@@ -123,6 +123,14 @@ struct CDefaultConvention {
         conv.postfixEx      = "_BIT";
     }
 
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ARG>) noexcept {
+        conv.fullname = false;
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_VOID>) noexcept {
+        conv.fullname = false;
+    }
+
     template <ASTNodeType Type>
     void visit(ASTNodeRef& node, Tag<Type>) noexcept {
         if (node.is<IDL_AST_NODE_TYPE_TYPE>()) {

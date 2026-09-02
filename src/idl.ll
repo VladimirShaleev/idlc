@@ -61,6 +61,7 @@ SYMBOLS  [a-zA-Z0-9_\-^\.@: ]
 <ATTRCTX>"hex"         { attrArg(); return token::ATTRHEX; }
 <ATTRCTX>"maxenum"     { attrArg(); return token::ATTRMAXENUM; }
 <ATTRCTX>"countenums"  { attrArg(); return token::ATTRCOUNTENUMS; }
+<ATTRCTX>"typedenums"  { attrArg(); return token::ATTRTYPEDENUMS; }
 <ATTRCTX>"brief"       { attrArg(); return token::ATTRBRIEF; }
 <ATTRCTX>"detail"      { attrArg(); return token::ATTRDETAIL; }
 <ATTRCTX>"return"      { attrArg(); return token::ATTRRETURN; }

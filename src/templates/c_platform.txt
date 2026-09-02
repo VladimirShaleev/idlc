@@ -197,7 +197,7 @@ typedef {% set native=cnativetype(trivial.node) %}{{ native }} {{ indents(max_le
 ## endfor
 ## set types_doxygen.member_group = "end"
 ## set type_definitions_doxygen.member_group = "end"
-{% if config.add_member_groups %}{{ render("c_doxygen", type_definitions_doxygen) }}{% endif %}{% if config.add_doc_groups %}{{ nl(1) }}{{ render("c_doxygen", types_doxygen) }}{% endif %}{% endif %}{% if config.has_enums %}
+{% if config.add_member_groups %}{{ render("c_doxygen", type_definitions_doxygen) }}{% endif %}{% if config.add_doc_groups %}{{ nl(1) }}{{ render("c_doxygen", types_doxygen) }}{% endif %}{% endif %}{% if config.add_typed_enum_macros %}
 {% if config.add_member_groups %}{{ render("c_doxygen", enum_macros_doxygen) }}{{ nl(1) }}{% endif %}{%if config.add_doc%}{{ render("c_doxygen", begin_enum_doxygen) }}{{ nl(1) }}{{ render("c_doxygen", end_enum_doxygen) }}{{ nl(1) }}{% endif %}#if defined(__cplusplus)
 # define {{ macros.begin_enum }}(type) typedef enum : type
 # define {{ macros.end_enum }}(name, type) name
@@ -207,9 +207,8 @@ typedef {% set native=cnativetype(trivial.node) %}{{ native }} {{ indents(max_le
 #else
 # define {{ macros.begin_enum }}(type) enum 
 # define {{ macros.end_enum }}(name, type); typedef type name
-#endif
+#endif{% endif %}
 ## if config.has_enum_flags
-
 ## set enum_t = api_name + "_enum_t"
 ## set sp = indents(config.indents)
 ## set sp2 = indents(config.indents * 2)
@@ -249,7 +248,7 @@ typedef {% set native=cnativetype(trivial.node) %}{{ native }} {{ indents(max_le
 ## set max_len = line_len
 ## endif
 ## endfor
-{% if config.add_doc %}{{ render("c_doxygen", flags_enum_doxygen) }}{{ nl(1) }}{% endif %}#ifdef __cplusplus
+{% if config.add_typed_enum_macros %}{{ nl(1) }}{% endif %}{% if config.add_doc %}{{ render("c_doxygen", flags_enum_doxygen) }}{{ nl(1) }}{% endif %}#ifdef __cplusplus
 # include <type_traits>
 ## for line in flags
 {{ line }} {{ indents(max_len - length(line)) }}\
@@ -259,4 +258,4 @@ typedef {% set native=cnativetype(trivial.node) %}{{ native }} {{ indents(max_le
 # define {{ macros.flags_enum }}({{ enum_t }})
 #endif
 ## endif
-{% if config.add_member_groups %}{% set enum_macros_doxygen.member_group = "end" %}{{ nl(1) }}{{ render("c_doxygen", enum_macros_doxygen) }}{% endif %}{% endif %}
+{% if config.add_member_groups %}{% set enum_macros_doxygen.member_group = "end" %}{{ nl(1) }}{{ render("c_doxygen", enum_macros_doxygen) }}{% endif %}

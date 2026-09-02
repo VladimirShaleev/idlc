@@ -306,6 +306,9 @@ public:
                 case IDL_AST_NODE_TYPE_ATTR_COUNT_ENUMS:
                     visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_COUNT_ENUMS>{});
                     break;
+                case IDL_AST_NODE_TYPE_ATTR_TYPED_ENUMS:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_TYPED_ENUMS>{});
+                    break;
                 case IDL_AST_NODE_TYPE_ATTR_VALUE:
                     visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_VALUE>{});
                     break;

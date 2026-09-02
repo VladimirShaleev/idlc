@@ -24,6 +24,7 @@ enum ASTNodeType [tokenizer(3-4)]
     const AttrHex @ TODO
     const AttrMaxEnum @ TODO
     const AttrCountEnums @ TODO
+    const AttrTypedEnums @ TODO
     const AttrValue @ TODO
     const AttrType @ TODO
     const AttrCName @ TODO

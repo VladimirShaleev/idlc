@@ -49,8 +49,8 @@ struct AttrValidatorRules {
                                     add<IDL_AST_NODE_TYPE_ATTR_STD_TYPES>(),       add<IDL_AST_NODE_TYPE_ATTR_BOOL_TYPE>(),
                                     add<IDL_AST_NODE_TYPE_ATTR_DOC_AUTHOR>(true),  add<IDL_AST_NODE_TYPE_ATTR_DOC_COPYRIGHT>(true),
                                     add<IDL_AST_NODE_TYPE_ATTR_DOC_LICENSE>(true), add<IDL_AST_NODE_TYPE_ATTR_COUNT_ENUMS>(),
-                                    add<IDL_AST_NODE_TYPE_ATTR_MAX_ENUM>(),        add<IDL_AST_NODE_TYPE_ATTR_CCONV>(),
-                                    add<IDL_AST_NODE_TYPE_ATTR_CFORMAT>() };
+                                    add<IDL_AST_NODE_TYPE_ATTR_TYPED_ENUMS>(),     add<IDL_AST_NODE_TYPE_ATTR_MAX_ENUM>(),
+                                    add<IDL_AST_NODE_TYPE_ATTR_CCONV>(),           add<IDL_AST_NODE_TYPE_ATTR_CFORMAT>() };
         validate(node, allowed);
     }
 
@@ -60,11 +60,11 @@ struct AttrValidatorRules {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ENUM>) {
-        static std::map allowed = { add<IDL_AST_NODE_TYPE_ATTR_FLAGS>(),         add<IDL_AST_NODE_TYPE_ATTR_HEX>(),
-                                    add<IDL_AST_NODE_TYPE_ATTR_COUNT_ENUMS>(),   add<IDL_AST_NODE_TYPE_ATTR_MAX_ENUM>(),
-                                    add<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>(true), add<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(true),
-                                    add<IDL_AST_NODE_TYPE_ATTR_CNAME>(),         add<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>(),
-                                    add<IDL_AST_NODE_TYPE_ATTR_TYPE>() };
+        static std::map allowed = { add<IDL_AST_NODE_TYPE_ATTR_FLAGS>(),          add<IDL_AST_NODE_TYPE_ATTR_HEX>(),
+                                    add<IDL_AST_NODE_TYPE_ATTR_COUNT_ENUMS>(),    add<IDL_AST_NODE_TYPE_ATTR_MAX_ENUM>(),
+                                    add<IDL_AST_NODE_TYPE_ATTR_TYPED_ENUMS>(),    add<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>(true),
+                                    add<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(true), add<IDL_AST_NODE_TYPE_ATTR_CNAME>(),
+                                    add<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>(),      add<IDL_AST_NODE_TYPE_ATTR_TYPE>() };
         validate(node, allowed);
     }
 

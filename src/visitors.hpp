@@ -569,6 +569,10 @@ struct AttrName {
         str = "countenums";
     }
 
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_TYPED_ENUMS>) {
+        str = "typedenums";
+    }
+
     void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_DOC_BRIEF>) {
         str = "brief";
     }

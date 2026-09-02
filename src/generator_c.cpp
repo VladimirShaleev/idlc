@@ -124,18 +124,34 @@ struct DoxygenGroupVisitor {
 
 struct ASTStatsVisitor {
     struct Stats {
-        size_t hasEnums{};
-        size_t hasEnumFlags{};
+        bool hasEnums{};
+        bool hasEnumFlags{};
+        bool addTypedEnumMacros{};
         ASTNodeRef voidType{};
+
+        void build() {
+            if (!hasEnums) {
+                addTypedEnumMacros = false;
+            }
+        }
     };
 
     explicit ASTStatsVisitor(Stats& stats) noexcept : stats(stats) {
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_API>) {
+        if (node.findChild<IDL_AST_NODE_TYPE_ATTR_TYPED_ENUMS>()) {
+            stats.addTypedEnumMacros = true;
+        }
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ENUM>) {
         stats.hasEnums = true;
         if (node.findChild<IDL_AST_NODE_TYPE_ATTR_FLAGS>()) {
             stats.hasEnumFlags = true;
+        }
+        if (node.findChild<IDL_AST_NODE_TYPE_ATTR_TYPED_ENUMS>()) {
+            stats.addTypedEnumMacros = true;
         }
     }
 
@@ -188,8 +204,16 @@ struct ASTVisitor {
             fillDoc(1, true, child, consts.back());
         }
 
+        auto useTypedEnums = !!node.findChild<IDL_AST_NODE_TYPE_ATTR_TYPED_ENUMS>();
+        if (!useTypedEnums) {
+            useTypedEnums = !!state.writer.api().findChild<IDL_AST_NODE_TYPE_ATTR_TYPED_ENUMS>();
+        }
+
+        state.data["use_typed_enums"] = useTypedEnums;
+
         state.env.render_to(state.out(), findTemplate("c_enum.txt"), state.data);
 
+        state.data.erase("use_typed_enums");
         state.data.erase("consts");
     }
 
@@ -371,6 +395,7 @@ struct ASTVisitor {
         constexpr auto filters = ASTNodeRef::SkipDocs | ASTNodeRef::SkipAttrs | ASTNodeRef::SkipLiterals;
         ASTStatsVisitor::Stats stats{};
         state.writer.api().acceptRecursive<ASTStatsVisitor>(filters, std::ref(stats));
+        stats.build();
 
         auto& cname       = state.cnameCache;
         auto attrBoolType = node.findChild<IDL_AST_NODE_TYPE_ATTR_BOOL_TYPE>();
@@ -432,14 +457,15 @@ struct ASTVisitor {
             addMemberGroups = cOptions.add_member_groups;
         }
 
-        auto& config                = state.data["config"];
-        config["single"]            = single;
-        config["add_doc"]           = addDoc;
-        config["add_doc_groups"]    = addDoc && addDocGroups;
-        config["add_member_groups"] = addDoc && addMemberGroups;
-        config["std_types"]         = cname.stdTypes;
-        config["has_enums"]         = stats.hasEnums;
-        config["has_enum_flags"]    = stats.hasEnumFlags;
+        auto& config                    = state.data["config"];
+        config["single"]                = single;
+        config["add_doc"]               = addDoc;
+        config["add_doc_groups"]        = addDoc && addDocGroups;
+        config["add_member_groups"]     = addDoc && addMemberGroups;
+        config["std_types"]             = cname.stdTypes;
+        config["has_enums"]             = stats.hasEnums;
+        config["has_enum_flags"]        = stats.hasEnumFlags;
+        config["add_typed_enum_macros"] = stats.addTypedEnumMacros;
         switch (cname.boolType) {
             case BoolType::Int32:
                 config["bool_type"] = "int32";
@@ -498,7 +524,6 @@ struct ASTVisitor {
         state.data["api_name"]          = calcMacro(node, {}, false, false);
         state.data["api_name_readable"] = convert({ str.data(), str.length() }, Case::SpaceCase, nums.empty() ? nullptr : &nums);
         state.data["cvoid"]             = stats.voidType.accept<CName>(std::ref(state.cnameCache)).str;
-        std::cout << state.data.dump(4) << std::endl;
     }
 
     void addCallbacks(ASTNodeRef node) {

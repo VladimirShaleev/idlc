@@ -95,8 +95,9 @@
 %token ATTRLICENSE
 %token ATTRFLAGS
 %token ATTRHEX
-%token ATTRMAXENUM;
-%token ATTRCOUNTENUMS;
+%token ATTRMAXENUM
+%token ATTRCOUNTENUMS
+%token ATTRTYPEDENUMS
 %token ATTRBRIEF
 %token ATTRDETAIL
 %token ATTRRETURN
@@ -274,6 +275,7 @@ attr_item
     | ATTRHEX        { $$ = alloc_node(@1, ATTR_HEX); }
     | ATTRMAXENUM    { $$ = alloc_node(@1, ATTR_MAX_ENUM); }
     | ATTRCOUNTENUMS { $$ = alloc_node(@1, ATTR_COUNT_ENUMS); }
+    | ATTRTYPEDENUMS { $$ = alloc_node(@1, ATTR_TYPED_ENUMS); }
     | ATTRREF        { $$ = alloc_node(@1, ATTR_REF); }
     | ATTRCONST      { $$ = alloc_node(@1, ATTR_CONST); }
     | ATTROPTIONAL   { $$ = alloc_node(@1, ATTR_OPTIONAL); }

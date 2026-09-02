@@ -1,5 +1,5 @@
 
-{{ render("c_doxygen", doxygen) }}{{ macros.begin_enum }}({{ ctype(node) }}){% if config.break.after.decl %}{{ nl(1) }}{{ "{" }}{% else %} {{ "{" }}{% endif %}
+{{ render("c_doxygen", doxygen) }}{% if use_typed_enums %}{{ macros.begin_enum }}({{ ctype(node) }}){% else %}typedef enum{% endif %}{% if config.break.after.decl %}{{ nl(1) }}{{ "{" }}{% else %} {{ "{" }}{% endif %}
 ## set max_len = 0
 ## for const in consts
 ## set name_len = length(cname(const.node))
@@ -10,8 +10,7 @@
 ## for const in consts
 {% if const.doxygen.is_inline == false %}{{ nl(1) }}{{ render("c_doxygen", const.doxygen) }}{% endif %}{{ indents(config.indents) }}{% set name=cname(const.node) %}{{ name }} {{ indents(max_len - length(name)) }}= {{ cvalue(const.node) }}{% if loop.is_last == false %},{% endif %}{{ render("c_doxygen_inline", const.doxygen) }}
 ## endfor
-}
-{{ macros.end_enum }}({{ cname(node) }}, {{ ctype(node) }});
+}{% if use_typed_enums %}{{ nl(1) }}{{ macros.end_enum }}({{ cname(node) }}, {{ ctype(node) }}){% else %} {{ cname(node) }}{% endif %};
 ## if is_flags
 {{ macros.flags_enum}}({{ cname(node) }});
 ## endif

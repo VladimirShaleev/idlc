@@ -1,0 +1,13 @@
+
+{{ render("c_doxygen", doxygen) }}typedef struct{% if config.break.after.decl %}{{ nl(1) }}{{ "{" }}{% else %} {{ "{" }}{% endif %}
+## set max_len = 0
+## for field in fields
+## set type_len = length(ctype(field.node))
+## if type_len > max_len
+## set max_len = type_len
+## endif
+## endfor
+## for field in fields
+{% if field.doxygen.is_inline == false %}{{ nl(1) }}{{ render("c_doxygen", field.doxygen) }}{% endif %}{{ indents(config.indents) }}{% set type=ctype(field.node) %}{{ type }}{{ indents(max_len - length(type)) }} {{ cname(field.node) }};{{ render("c_doxygen_inline", field.doxygen) }}
+## endfor
+} {{ cname(node) }};

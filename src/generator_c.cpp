@@ -217,6 +217,25 @@ struct ASTVisitor {
         state.data.erase("consts");
     }
 
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_STRUCT>) {
+        tryPopImport(node);
+
+        state.data["node"] = node.handle().handle;
+        fillDoc(0, false, node, state.data);
+
+        auto& fields = state.data["fields"];
+        for (auto child : node.getChilds<IDL_AST_NODE_TYPE_FIELD>()) {
+            fields.push_back(inja::json::object({
+                { "node", child.handle().handle }
+            }));
+            fillDoc(1, true, child, fields.back());
+        }
+
+        state.env.render_to(state.out(), findTemplate("c_struct.txt"), state.data);
+
+        state.data.erase("fields");
+    }
+
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_FUNC>) {
         tryPopImport(node);
 
@@ -300,15 +319,18 @@ struct ASTVisitor {
         }
 
         if (state.data["config"]["add_doc_groups"].get<bool>()) {
-            auto groupIt = docs.end();
-            if (copyrightPos >= 0) {
-                groupIt = docs.begin() + copyrightPos;
+            auto groupStr = node.accept<DoxygenGroupVisitor>().str;
+            if (!groupStr.empty()) {
+                auto groupIt = docs.end();
+                if (copyrightPos >= 0) {
+                    groupIt = docs.begin() + copyrightPos;
+                }
+                inja::json group = {
+                    { "name",     "ingroup"    },
+                    { "literals", { groupStr } }
+                };
+                docs.insert(groupIt, group);
             }
-            inja::json group = {
-                { "name",     "ingroup"                                  },
-                { "literals", { node.accept<DoxygenGroupVisitor>().str } }
-            };
-            docs.insert(groupIt, group);
         }
 
         if (node.is<IDL_AST_NODE_TYPE_FUNC>()) {

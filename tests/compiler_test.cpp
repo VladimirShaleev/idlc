@@ -1892,7 +1892,9 @@ TEST(idlc, InvalidFormatParamWasPassedToCFormat) {
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0],
               "error [E3059]: An invalid format parameter was passed to the argument at index 1 (break.after.decl:trUe) in attribute [cformat] "
-              "(correct format: indents:<value>, break.after.decl:<bool>, sample: indents:4) at e3059:7:5");
+              "(correct format: indents:<value(4)>, space.after.comma:<bool(true)>, arg.alignment:<none|bracket(bracket)>, "
+              "arg.wrapping:<none|each_on_wew_line(each_on_wew_line)>, break.after.api:<bool(false)>, break.after.decl:<bool(true)>, "
+              "break.after.return.type:<bool(true)>, sample: indents:4) at e3059:7:5");
 
     auto api = idl_compilation_result_get_api(ast);
     ASSERT_NE(api, HandleNone);

@@ -14,33 +14,6 @@
 IDL_BEGIN
 
 /**
- * @brief   Trivial types.
- * @details Fixed-size primitive types.
- * @ingroup enums
- */
-typedef enum
-{
-    IDL_TRIVIAL_TYPES_DEFAULT     = 0, /**< Default types from .idl file. */
-    IDL_TRIVIAL_TYPES_STD         = 1, /**< Use std types */
-    IDL_TRIVIAL_TYPES_API_DEFINED = 2, /**< User-defined types in the API */
-    IDL_TRIVIAL_TYPES_MAX_ENUM    = 0x7FFFFFFF /**< Max value of enum (not used) */
-} idl_trivial_types_t;
-
-/**
- * @brief   Bool type.
- * @details Boolean ABI represent type.
- * @ingroup enums
- */
-typedef enum
-{
-    IDL_BOOL_TYPE_DEFAULT  = 0, /**< Default type from .idl file. */
-    IDL_BOOL_TYPE_INT_32   = 1, /**< 32 bits integer. */
-    IDL_BOOL_TYPE_INT_8    = 2, /**< 8 bits integer. */
-    IDL_BOOL_TYPE_STD_BOOL = 3, /**< 8 bit C *_Bool* type. */
-    IDL_BOOL_TYPE_MAX_ENUM = 0x7FFFFFFF /**< Max value of enum (not used) */
-} idl_bool_type_t;
-
-/**
  * @brief   Output format files.
  * @details Output default, in single file or multi files.
  * @ingroup enums
@@ -234,52 +207,6 @@ idl_options_set_warnings_as_errors(idl_options_t options,
                                    idl_bool_t enable);
 
 /**
- * @brief     Get indents setting.
- * @details   Return space count for generators.
- * @param[in] options Target options.
- * @return    Indents.
- * @sa        ::idl_options_set_indents
- * @ingroup   functions
- */
-idl_api idl_uint32_t
-idl_options_get_indents(idl_options_t options);
-
-/**
- * @brief     Set indents setting.
- * @details   Setting space count for generators.
- * @param[in] options Target options.
- * @param[in] indents Indent count.
- * @sa        ::idl_options_get_indents
- * @ingroup   functions
- */
-idl_api void
-idl_options_set_indents(idl_options_t options,
-                        idl_uint32_t indents);
-
-/**
- * @brief     Get line length.
- * @details   Return maximum line length for generators.
- * @param[in] options Target options.
- * @return    Maximum length.
- * @sa        ::idl_options_set_line_length
- * @ingroup   functions
- */
-idl_api idl_uint32_t
-idl_options_get_line_length(idl_options_t options);
-
-/**
- * @brief     Set line length.
- * @details   Setting maximum line length for generators.
- * @param[in] options Target options.
- * @param[in] length Maximum line length.
- * @sa        ::idl_options_get_line_length
- * @ingroup   functions
- */
-idl_api void
-idl_options_set_line_length(idl_options_t options,
-                            idl_uint32_t length);
-
-/**
  * @brief     Get output format.
  * @details   Return output format default, single or multi files.
  * @param[in] options Target options.
@@ -452,52 +379,6 @@ idl_api void
 idl_options_set_writer(idl_options_t options,
                        idl_write_callback_t callback,
                        idl_data_t data);
-
-/**
- * @brief     Get bool type.
- * @details   Returns the boolean ABI type.
- * @param[in] options Target options.
- * @return    ABI boolean type.
- * @sa        ::idl_options_set_bool_type
- * @ingroup   functions
- */
-idl_api idl_bool_type_t
-idl_options_get_bool_type(idl_options_t options);
-
-/**
- * @brief     Set bool type.
- * @details   Set boolean ABI type.
- * @param[in] options Target options.
- * @param[in] bool_type Bool type.
- * @sa        ::idl_options_get_bool_type
- * @ingroup   functions
- */
-idl_api void
-idl_options_set_bool_type(idl_options_t options,
-                          idl_bool_type_t bool_type);
-
-/**
- * @brief     Is std types.
- * @details   Returns is used std types.
- * @param[in] options Target options.
- * @return    TRUE is use std types.
- * @sa        ::idl_options_set_trivial_types
- * @ingroup   functions
- */
-idl_api idl_trivial_types_t
-idl_options_get_trivial_types(idl_options_t options);
-
-/**
- * @brief     Set std types.
- * @details   Use stdint.h types directly if TRUE.
- * @param[in] options Target options.
- * @param[in] types Use stdint.h types.
- * @sa        ::idl_options_get_trivial_types
- * @ingroup   functions
- */
-idl_api void
-idl_options_set_trivial_types(idl_options_t options,
-                              idl_trivial_types_t types);
 
 /**
  * @brief     Get Idl options.

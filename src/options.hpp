@@ -115,22 +115,6 @@ public:
         _writerData = data;
     }
 
-    idl_bool_type_t getBoolType() const noexcept {
-        return _boolType;
-    }
-
-    void setBoolType(idl_bool_type_t boolType) noexcept {
-        _boolType = boolType;
-    }
-
-    idl_trivial_types_t getTrivialTypes() const noexcept {
-        return _trivialTypes;
-    }
-
-    void setTrivialTypes(idl_trivial_types_t types) noexcept {
-        _trivialTypes = types;
-    }
-
     idl_idl_options_t getIdlOptions() const noexcept {
         return _idlOptions;
     }
@@ -172,8 +156,6 @@ private:
     std::string _outputDir{};
     std::vector<std::string> _importDirs{};
     std::vector<std::string> _additions{};
-    idl_bool_type_t _boolType{};
-    idl_trivial_types_t _trivialTypes{};
     idl_idl_options_t _idlOptions{};
     idl_c_options_t _cOptions{};
     idl_import_callback_t _importer{};

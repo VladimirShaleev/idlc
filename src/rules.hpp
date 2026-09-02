@@ -241,6 +241,106 @@ struct AttrIDocValidatorRules {
     }
 };
 
+struct CFormatRule {
+    enum Type {
+        Value,
+        Bool,
+        Choice
+    };
+
+    std::string_view name;
+    Type type;
+    std::array<std::string_view, 5> choices;
+    std::variant<int, bool> value;
+};
+
+struct CFormatRules {
+    static constexpr std::array formats = {
+        CFormatRule{ "indents",                 CFormatRule::Value,  {},                             4     },
+        CFormatRule{ "space.after.comma",       CFormatRule::Bool,   {},                             true  },
+        CFormatRule{ "arg.alignment",           CFormatRule::Choice, { "none", "bracket" },          1     },
+        CFormatRule{ "arg.wrapping",            CFormatRule::Choice, { "none", "each_on_wew_line" }, 1     },
+        CFormatRule{ "break.after.api",         CFormatRule::Bool,   {},                             false },
+        CFormatRule{ "break.after.decl",        CFormatRule::Bool,   {},                             true  },
+        CFormatRule{ "break.after.return.type", CFormatRule::Bool,   {},                             true  },
+    };
+
+    static std::regex regex() {
+        std::ostringstream ss;
+        for (const auto& [name, type, choices, value] : formats) {
+            ss << '(';
+            for (char c : name) {
+                if (c == '.') {
+                    ss << '\\';
+                }
+                ss << c;
+            }
+            ss << ':';
+            switch (type) {
+                case CFormatRule::Value:
+                    ss << "\\d+";
+                    break;
+                case CFormatRule::Bool:
+                    ss << "(true|false)";
+                    break;
+                case CFormatRule::Choice: {
+                    auto hasPrev = false;
+                    ss << '(';
+                    for (auto choice : choices) {
+                        if (choice.empty()) {
+                            break;
+                        }
+                        if (hasPrev) {
+                            ss << '|';
+                        }
+                        ss << choice;
+                        hasPrev = true;
+                    }
+                    ss << ')';
+                    break;
+                }
+            }
+            ss << ")|";
+        }
+        auto format = ss.str();
+        format.pop_back();
+        return std::regex(format);
+    }
+
+    static std::string correctFormat() {
+        std::ostringstream ss;
+        for (const auto& [name, type, choices, value] : formats) {
+            ss << name << ":<";
+            switch (type) {
+                case CFormatRule::Value:
+                    ss << "value(" << std::get<int>(value);
+                    break;
+                case CFormatRule::Bool:
+                    ss << "bool(" << (std::get<bool>(value) ? "true" : "false");
+                    break;
+                case CFormatRule::Choice: {
+                    auto hasPrev = false;
+                    for (auto choice : choices) {
+                        if (choice.empty()) {
+                            break;
+                        }
+                        if (hasPrev) {
+                            ss << '|';
+                        }
+                        ss << choice;
+                        hasPrev = true;
+                    }
+                    ss << '(' << choices[std::get<int>(value)];
+                    break;
+                }
+            }
+            ss << ")>, ";
+        }
+        ss << "sample: " << formats[0].name << ':' << std::get<int>(formats[0].value);
+        return ss.str();
+    }
+};
+
 struct AttrArgRules {
     AttrArgRules(ASTNodeHandle argFirst, ASTNodeHandle argLast, size_t argCount) noexcept : argFirst(argFirst), argLast(argLast), argCount(argCount) {
     }
@@ -458,11 +558,11 @@ struct AttrArgRules {
         using namespace std::string_view_literals;
         auto& ctx   = node.ctx();
         node->child = argFirst;
-        const std::regex format("(indents:\\d+)|(braces\\.after\\.decl:(true|false))");
-        int index = -1;
+        int index   = -1;
         std::string_view invalidArg{};
+        const auto format = CFormatRules::regex();
 
-        auto isValidFormats = argCount > 0 && std::all_of(node.begin(), node.end(), [this, &format, &index, &invalidArg](auto arg) {
+        auto isValidFormats      = argCount > 0 && std::all_of(node.begin(), node.end(), [this, &format, &index, &invalidArg](auto arg) {
             ++index;
             if (arg.template is<IDL_AST_NODE_TYPE_LITERAL_STR>()) {
                 auto argView = arg.valueStr();
@@ -471,7 +571,7 @@ struct AttrArgRules {
             }
             return false;
         });
-        constexpr std::string_view correctFormat = "indents:<value>, braces.after.decl:<bool>, sample: indents:4";
+        const auto correctFormat = CFormatRules::correctFormat();
         if (argCount == 0) {
             node->child = HandleNone;
             ctx.log<IDL_STATUS_E3014>(node->location, node.accept<AttrName>().str, std::format(" (format: {})", correctFormat));
@@ -942,54 +1042,8 @@ struct BuildRules {
                     node.findChild<IDL_AST_NODE_TYPE_ATTR_SINGLE>().setReplacedByCompiler();
                 }
             }
-            if (const auto boolType = options->getBoolType(); boolType != IDL_BOOL_TYPE_DEFAULT) {
-                std::string_view symbol{};
-                switch (boolType) {
-                    case IDL_BOOL_TYPE_INT_32:
-                        symbol = "Int32";
-                        break;
-                    case IDL_BOOL_TYPE_INT_8:
-                        symbol = "Int8";
-                        break;
-                    case IDL_BOOL_TYPE_STD_BOOL:
-                        symbol = "Bool";
-                        break;
-                    default:
-                        assert(!"unreachable code");
-                        break;
-                }
-                auto addBoolType = true;
-                if (auto attrBoolType = node.findChild<IDL_AST_NODE_TYPE_ATTR_BOOL_TYPE>(); attrBoolType) {
-                    auto type = node.ctx().getNodeRef(attrBoolType->child).resolveRef();
-                    idl_bool_type_t prevBoolType{};
-                    if (type.is<IDL_AST_NODE_TYPE_INT_8>()) {
-                        prevBoolType = IDL_BOOL_TYPE_INT_8;
-                    } else if (type.is<IDL_AST_NODE_TYPE_INT_32>()) {
-                        prevBoolType = IDL_BOOL_TYPE_INT_32;
-                    } else if (type.is<IDL_AST_NODE_TYPE_BOOL>()) {
-                        prevBoolType = IDL_BOOL_TYPE_STD_BOOL;
-                    } else {
-                        assert(!"unreachable code");
-                    }
-                    if (prevBoolType != boolType) {
-                        attrBoolType.setReplacedByCompiler();
-                    } else {
-                        addBoolType = false;
-                    }
-                }
-                if (addBoolType) {
-                    ctx.addNode<IDL_AST_NODE_TYPE_ATTR_BOOL_TYPE>(node, DeclRef(symbol));
-                }
-            } else if (!node.findChild<IDL_AST_NODE_TYPE_ATTR_BOOL_TYPE>()) {
+            if (!node.findChild<IDL_AST_NODE_TYPE_ATTR_BOOL_TYPE>()) {
                 ctx.addNode<IDL_AST_NODE_TYPE_ATTR_BOOL_TYPE>(node, DeclRef("Int32"));
-            }
-            if (const auto trivials = options->getTrivialTypes(); trivials != IDL_TRIVIAL_TYPES_DEFAULT) {
-                auto attrStdTypes = node.findChild<IDL_AST_NODE_TYPE_ATTR_STD_TYPES>();
-                if (trivials == IDL_TRIVIAL_TYPES_STD && !attrStdTypes) {
-                    ctx.addNode<IDL_AST_NODE_TYPE_ATTR_STD_TYPES>(node);
-                } else if (trivials == IDL_TRIVIAL_TYPES_API_DEFINED && attrStdTypes) {
-                    attrStdTypes.setReplacedByCompiler();
-                }
             }
             if (const auto ver = options->getVersion()) {
                 if (auto attrVer = node.findChild<IDL_AST_NODE_TYPE_ATTR_VERSION>()) {

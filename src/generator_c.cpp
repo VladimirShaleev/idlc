@@ -1,6 +1,7 @@
 #include "case_converter.hpp"
 #include "fixed_stack.hpp"
 #include "idl_resources.hpp"
+#include "rules.hpp"
 #include "visitors.hpp"
 #include "writer.hpp"
 
@@ -376,14 +377,17 @@ struct ASTVisitor {
         assert(attrBoolType);
         auto boolType = node.ctx().getNodeRef(attrBoolType->child).resolveRef(true);
         if (boolType.is<IDL_AST_NODE_TYPE_INT_8>()) {
-            cname.boolType = IDL_BOOL_TYPE_INT_8;
+            cname.boolType = BoolType::Int8;
         } else if (boolType.is<IDL_AST_NODE_TYPE_INT_32>()) {
-            cname.boolType = IDL_BOOL_TYPE_INT_32;
+            cname.boolType = BoolType::Int32;
         } else if (boolType.is<IDL_AST_NODE_TYPE_BOOL>()) {
-            cname.boolType = IDL_BOOL_TYPE_STD_BOOL;
+            cname.boolType = BoolType::StdBool;
         }
 
-        std::unordered_map<std::string_view, std::string_view> cformat;
+        std::unordered_map<std::string_view, CFormatRule> cformat;
+        for (const auto& format : CFormatRules::formats) {
+            cformat[format.name] = format;
+        }
         if (auto cformatAttr = node.findChild<IDL_AST_NODE_TYPE_ATTR_CFORMAT>()) {
             auto view = cformatAttr.getChilds() | std::views::transform([](ASTNodeRef arg) {
                 assert(arg.is<IDL_AST_NODE_TYPE_LITERAL_STR>());
@@ -393,21 +397,26 @@ struct ASTVisitor {
                 return std::make_pair(str.substr(0, pos), str.substr(pos + 1));
             });
             for (const auto& [key, value] : view) {
-                cformat[key] = value;
-            }
-        }
-
-        auto bracesAfterDecl = true;
-        if (auto it = cformat.find("braces.after.decl"); it != cformat.end()) {
-            bracesAfterDecl = it->second == "true"sv;
-        }
-
-        auto indents = 4;
-        if (auto it = cformat.find("indents"); it != cformat.end()) {
-            try {
-                std::string str{ it->second.data(), it->second.length() };
-                indents = std::stoi(str);
-            } catch (const std::exception&) {
+                auto& format = cformat[key];
+                switch (format.type) {
+                    case CFormatRule::Value:
+                        try {
+                            std::string str{ value.data(), value.length() };
+                            format.value = std::stoi(str);
+                        } catch (const std::exception&) {
+                        }
+                        break;
+                    case CFormatRule::Bool:
+                        format.value = value[0] == 't';
+                        break;
+                    case CFormatRule::Choice: {
+                        auto it = std::find(format.choices.begin(), format.choices.end(), value);
+                        if (it != format.choices.end()) {
+                            format.value = int(std::distance(format.choices.begin(), it));
+                        }
+                        break;
+                    }
+                }
             }
         }
 
@@ -417,7 +426,6 @@ struct ASTVisitor {
         auto addMemberGroups = false;
         cname.stdTypes       = !!node.findChild<IDL_AST_NODE_TYPE_ATTR_STD_TYPES>();
         if (auto options = state.writer.options()) {
-            // indents         = options->getIndents();
             auto cOptions   = options->getCOptions();
             addDoc          = cOptions.add_doc;
             addDocGroups    = cOptions.add_doc_groups;
@@ -425,9 +433,7 @@ struct ASTVisitor {
         }
 
         auto& config                = state.data["config"];
-        config["begin_block"]       = bracesAfterDecl ? "\n{" : " {";
         config["single"]            = single;
-        config["indents"]           = indents;
         config["add_doc"]           = addDoc;
         config["add_doc_groups"]    = addDoc && addDocGroups;
         config["add_member_groups"] = addDoc && addMemberGroups;
@@ -435,18 +441,40 @@ struct ASTVisitor {
         config["has_enums"]         = stats.hasEnums;
         config["has_enum_flags"]    = stats.hasEnumFlags;
         switch (cname.boolType) {
-            case IDL_BOOL_TYPE_INT_32:
+            case BoolType::Int32:
                 config["bool_type"] = "int32";
                 break;
-            case IDL_BOOL_TYPE_INT_8:
+            case BoolType::Int8:
                 config["bool_type"] = "int8";
                 break;
-            case IDL_BOOL_TYPE_STD_BOOL:
+            case BoolType::StdBool:
                 config["bool_type"] = "std_bool";
                 break;
             default:
                 assert(!"unreachable code");
                 break;
+        }
+        for (const auto& [_, format] : cformat) {
+            size_t start = 0;
+            size_t pos;
+            auto* curr = &config;
+            while ((pos = format.name.substr(start).find_first_of('.')) != std::string_view::npos) {
+                auto subname = format.name.substr(start, pos);
+                curr         = &((*curr)[subname]);
+                start += pos + 1;
+            }
+            curr = &((*curr)[format.name.substr(start)]);
+            switch (format.type) {
+                case CFormatRule::Value:
+                    (*curr) = std::get<int>(format.value);
+                    break;
+                case CFormatRule::Bool:
+                    (*curr) = std::get<bool>(format.value);
+                    break;
+                case CFormatRule::Choice:
+                    (*curr) = format.choices[std::get<int>(format.value)];
+                    break;
+            }
         }
         config["semver"] = std::holds_alternative<Semver>(version);
         if (std::holds_alternative<Semver>(version)) {
@@ -470,6 +498,7 @@ struct ASTVisitor {
         state.data["api_name"]          = calcMacro(node, {}, false, false);
         state.data["api_name_readable"] = convert({ str.data(), str.length() }, Case::SpaceCase, nums.empty() ? nullptr : &nums);
         state.data["cvoid"]             = stats.voidType.accept<CName>(std::ref(state.cnameCache)).str;
+        std::cout << state.data.dump(4) << std::endl;
     }
 
     void addCallbacks(ASTNodeRef node) {

@@ -1,3 +1,20 @@
+## if config.arg.alignment == "bracket"
+## if config.break.after.return.type
+## set s = 0
+## else if config.break.after.api
+## set s = length(ctype(node)) + 1
+## else 
+## set s = length(macros.import_api) + length(ctype(node)) + 2
+## endif
+## set s = s + length(cname(node)) + 1
+## else
+## set s = config.indents
+## endif
+## if config.arg.wrapping == "none"
+## set s = 0
+## if config.space.after.comma
+## set s = 1
+## endif
+## endif
 
-{{ render("c_doxygen", doxygen) }}{{ macros.import_api }} {{ctype(node)}}
-{% set func_name = cname(node) %}{% set s = length(func_name) %}{{ func_name }}({% if length(args) == 0 %}{{ cvoid }}{% else %}{% for arg in args %}{{ ctype(arg.node) }} {{ cname(arg.node) }}{% if loop.is_last == false %},{{ nl(1) }}{{ indents(s) }} {% endif %}{% endfor %}{% endif %});
+{{ render("c_doxygen", doxygen) }}{{ macros.import_api }}{% if config.break.after.api %}{{ nl(1) }}{% else %} {% endif %}{{ ctype(node) }}{% if config.break.after.return.type %}{{ nl(1) }}{% else %} {% endif %}{{ cname(node) }}({% if length(args) == 0 %}{{ cvoid }}{% else %}{% for arg in args %}{{ ctype(arg.node) }} {{ cname(arg.node) }}{% if loop.is_last == false %},{% if config.arg.wrapping == "none" %}{% else %}{{ nl(1) }}{% endif %}{{ indents(s) }}{% endif %}{% endfor %}{% endif %});

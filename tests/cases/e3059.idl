@@ -6,5 +6,5 @@
 api Api[
     cformat(
         indents:4,
-        braces.after.decl:trUe
+        break.after.decl:trUe
     )]

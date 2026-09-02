@@ -1,18 +1,3 @@
-@ Trivial types.
-@ Fixed-size primitive types. [detail]
-enum TrivialTypes
-    const Default @ Default types from .idl file.
-    const Std @ Use std types
-    const ApiDefined @ User-defined types in the API
-
-@ Bool type.
-@ Boolean ABI represent type. [detail]
-enum BoolType
-    const Default @ Default type from .idl file.
-    const Int32 @ 32 bits integer.
-    const Int8 @ 8 bits integer.
-    const StdBool @ 8 bit C *_Bool* type.
-
 @ Output format files.
 @ Output default, in single file or multi files. [detail]
 enum OutputFiles
@@ -80,13 +65,9 @@ callback WriteCallback
 interface Options
     prop DebugMode [get(GetDebugMode),set(SetDebugMode)] @ Setting debug compilation output to console.
     prop WarningsAsErrors [get(GetWarningsAsErrors),set(SetWarningsAsErrors)] @ Treat warnings as errors.
-    prop Indents [get(GetIndents),set(SetIndents)] @ Setting indent count.
-    prop LineLength [get(GetLineLength),set(SetLineLength)] @ Setting maximum line length.
     prop OutputFiles [get(GetOutputFiles),set(SetOutputFiles)] @ Setting output format: default from .idl, single or multi files.
     prop OutputDir [get(GetOutputDir),set(SetOutputDir)] @ Output directory of the compilation result.
     prop ImportDirs [get(GetImportDirs),set(SetImportDirs)] @ Directories to search for files when importing.
-    prop BoolType [get(GetBoolType),set(SetBoolType)] @ Setting bool type representation.
-    prop TrivialTypes [get(GetTrivialTypes),set(SetTrivialTypes)] @ Setting use stdint.h types directly.
     prop IdlOptions [get(GetIdlOptions),set(SetIdlOptions)] @ Setting specifi Idl options.
     prop COptions [get(GetCOptions),set(SetCOptions)] @ Setting specific C options.
 
@@ -140,34 +121,6 @@ interface Options
     method SetWarningsAsErrors
         arg Options {Options} [this] @ Target options.
         arg Enable {Bool} @ Enable treat warnings as errors.
-
-    @ Get indents setting.
-    @ Return space count for generators. [detail]
-    @ Indents. [return]
-    @ {SetIndents} [see]
-    method GetIndents {Uint32} [const]
-        arg Options {Options} [this] @ Target options.
-
-    @ Set indents setting.
-    @ Setting space count for generators. [detail]
-    @ {GetIndents} [see]
-    method SetIndents
-        arg Options {Options} [this] @ Target options.
-        arg Indents {Uint32} @ Indent count.
-
-    @ Get line length.
-    @ Return maximum line length for generators. [detail]
-    @ Maximum length. [return]
-    @ {SetLineLength} [see]
-    method GetLineLength {Uint32} [const]
-        arg Options {Options} [this] @ Target options.
-
-    @ Set line length.
-    @ Setting maximum line length for generators. [detail]
-    @ {GetLineLength} [see]
-    method SetLineLength
-        arg Options {Options} [this] @ Target options.
-        arg Length {Uint32} @ Maximum line length.
 
     @ Get output format.
     @ Return output format default, single or multi files. [detail]
@@ -278,34 +231,6 @@ interface Options
         arg Options {Options} [this] @ Target options.
         arg Callback {WriteCallback} @ Callback function.
         arg Data {Data} [optional,userdata] @ Callback user data.
-
-    @ Get bool type.
-    @ Returns the boolean ABI type. [detail]
-    @ ABI boolean type. [return]
-    @ {SetBoolType} [see]
-    method GetBoolType {BoolType} [const]
-        arg Options {Options} [this] @ Target options.
-
-    @ Set bool type.
-    @ Set boolean ABI type. [detail]
-    @ {GetBoolType} [see]
-    method SetBoolType
-        arg Options {Options} [this] @ Target options.
-        arg BoolType {BoolType} @ Bool type.
-
-    @ Is std types.
-    @ Returns is used std types. [detail]
-    @ {True} is use std types. [return]
-    @ {SetTrivialTypes} [see]
-    method GetTrivialTypes {TrivialTypes} [const]
-        arg Options {Options} [this] @ Target options.
-
-    @ Set std types.
-    @ Use stdint.h types directly if {True}. [detail]
-    @ {GetTrivialTypes} [see]
-    method SetTrivialTypes
-        arg Options {Options} [this] @ Target options.
-        arg Types {TrivialTypes} @ Use stdint.h types.
 
     @ Get Idl options.
     @ Returns specific Idl options. [detail]

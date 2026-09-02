@@ -40,8 +40,6 @@ int main(int argc, char* argv[]) {
     auto imports   = std::vector<std::string>();
     auto additions = std::vector<std::string>();
     std::string apiver;
-    uint32_t indents = 4;
-    uint32_t line    = 120;
     bool idlOriginal;
     bool cAddDoc;
     bool cAddDocGroups;
@@ -52,19 +50,6 @@ int main(int argc, char* argv[]) {
         { "c",   IDL_GENERATOR_C           },
         { "js",  IDL_GENERATOR_JAVA_SCRIPT },
         { "cs",  IDL_GENERATOR_CSHARP      }
-    };
-
-    std::map<std::string, idl_bool_type_t> boolTypes = {
-        { "default", IDL_BOOL_TYPE_DEFAULT  },
-        { "int32",   IDL_BOOL_TYPE_INT_32   },
-        { "int8",    IDL_BOOL_TYPE_INT_8    },
-        { "std",     IDL_BOOL_TYPE_STD_BOOL }
-    };
-
-    std::map<std::string, idl_trivial_types_t> trivialTypes = {
-        { "default", IDL_TRIVIAL_TYPES_DEFAULT     },
-        { "std",     IDL_TRIVIAL_TYPES_STD         },
-        { "api",     IDL_TRIVIAL_TYPES_API_DEFINED }
     };
 
     std::map<std::string, idl_output_files_t> formats = {
@@ -79,12 +64,8 @@ int main(int argc, char* argv[]) {
     program.add_argument("-o", "--output").store_into(output).help("output directory");
     program.add_argument("-i", "--imports").append().store_into(imports).help("import directories");
     program.add_argument("-w", "--warnings").store_into(warnAsErr).help("warnings as errors");
-    auto boolType = addCommand(program, "bool type"sv, IDL_BOOL_TYPE_DEFAULT, boolTypes, "--bool"sv);
-    auto trivials = addCommand(program, "trivial types"sv, IDL_TRIVIAL_TYPES_DEFAULT, trivialTypes, "--trivials"sv);
     auto format   = addCommand(program, "output files format"sv, IDL_OUTPUT_FILES_DEFAULT, formats, "--output-files"sv);
     program.add_argument("--apiver").store_into(apiver).help("api version");
-    program.add_argument("--indents").store_into(indents).help("indents count");
-    program.add_argument("--line").store_into(line).help("max line length");
     program.add_argument("--idl-original").store_into(idlOriginal).help("prefered original style");
     program.add_argument("--c-add-doc").store_into(cAddDoc).help("add Doxygen documentation");
     program.add_argument("--c-add-doc-groups").store_into(cAddDocGroups).help("add Doxygen groups");
@@ -145,11 +126,7 @@ int main(int argc, char* argv[]) {
     idl_options_set_output_dir(options, outputDir.c_str());
     idl_options_set_import_dirs(options, (idl_uint32_t) dirs.size(), dirs.data());
     idl_options_set_version(options, version ? &version.value() : nullptr);
-    idl_options_set_indents(options, indents);
-    idl_options_set_line_length(options, line);
     idl_options_set_output_files(options, format(program, formats));
-    idl_options_set_trivial_types(options, trivials(program, trivialTypes));
-    idl_options_set_bool_type(options, boolType(program, boolTypes));
     idl_options_set_idl_options(options, &idlOptions);
     idl_options_set_c_options(options, &cOptions);
     idl_compiler_t compiler{};

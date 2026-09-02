@@ -282,26 +282,6 @@ void idl_options_set_writer(idl_options_t options, idl_write_callback_t callback
     return options->as<idl::Options>()->setWriter(callback, data);
 }
 
-idl_bool_type_t idl_options_get_bool_type(idl_options_t options) {
-    assert(options);
-    return options->as<idl::Options>()->getBoolType();
-}
-
-void idl_options_set_bool_type(idl_options_t options, idl_bool_type_t bool_type) {
-    assert(options);
-    options->as<idl::Options>()->setBoolType(bool_type);
-}
-
-idl_trivial_types_t idl_options_get_trivial_types(idl_options_t options) {
-    assert(options);
-    return options->as<idl::Options>()->getTrivialTypes();
-}
-
-void idl_options_set_trivial_types(idl_options_t options, idl_trivial_types_t types) {
-    assert(options);
-    options->as<idl::Options>()->setTrivialTypes(types);
-}
-
 idl_idl_options_t idl_options_get_idl_options(idl_options_t options) {
     assert(options);
     return options->as<idl::Options>()->getIdlOptions();

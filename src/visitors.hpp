@@ -5,8 +5,14 @@
 
 namespace idl {
 
+enum class BoolType {
+    Int32,
+    Int8,
+    StdBool
+};
+
 struct CNativeType {
-    explicit CNativeType(idl_bool_type_t boolType) noexcept : boolType(boolType) {
+    explicit CNativeType(BoolType boolType) noexcept : boolType(boolType) {
     }
 
     void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_VOID>) noexcept {
@@ -27,14 +33,13 @@ struct CNativeType {
 
     void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_BOOL>) noexcept {
         switch (boolType) {
-            case IDL_BOOL_TYPE_INT_32:
+            case BoolType::Int32:
                 str = "int32_t";
                 break;
-            case IDL_BOOL_TYPE_DEFAULT:
-            case IDL_BOOL_TYPE_INT_8:
+            case BoolType::Int8:
                 str = "int8_t";
                 break;
-            case IDL_BOOL_TYPE_STD_BOOL:
+            case BoolType::StdBool:
                 str = "bool";
                 break;
             default:
@@ -87,7 +92,7 @@ struct CNativeType {
         assert(!"unreachable code");
     }
 
-    idl_bool_type_t boolType;
+    BoolType boolType;
     std::string_view str;
 };
 
@@ -145,7 +150,7 @@ template <typename CBaseConvention>
 struct CBaseName {
     struct Cache {
         bool stdTypes{};
-        idl_bool_type_t boolType{};
+        BoolType boolType{};
         std::array<CConvention, IDL_AST_NODE_TYPE_FLOAT_64 + 1> conventions{};
     };
 

@@ -112,6 +112,8 @@
 %token ATTRSTDTYPES
 %token ATTRBOOLTYPE
 %token ATTRREF
+%token ATTRIN
+%token ATTROUT
 %token ATTRCONST
 %token ATTROPTIONAL
 
@@ -277,6 +279,8 @@ attr_item
     | ATTRCOUNTENUMS { $$ = alloc_node(@1, ATTR_COUNT_ENUMS); }
     | ATTRTYPEDENUMS { $$ = alloc_node(@1, ATTR_TYPED_ENUMS); }
     | ATTRREF        { $$ = alloc_node(@1, ATTR_REF); }
+    | ATTRIN         { $$ = alloc_node(@1, ATTR_IN); }
+    | ATTROUT        { $$ = alloc_node(@1, ATTR_OUT); }
     | ATTRCONST      { $$ = alloc_node(@1, ATTR_CONST); }
     | ATTROPTIONAL   { $$ = alloc_node(@1, ATTR_OPTIONAL); }
     | ATTRBRIEF      { $$ = alloc_node(@1, ATTR_DOC_BRIEF); }

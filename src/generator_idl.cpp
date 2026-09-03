@@ -336,10 +336,17 @@ struct ASTVisitor {
     }
 
     void printAttrs(ASTNodeRef& node, int level) {
-        auto attrFilter = [this](const auto& attr) {
+        const auto hasOut = node.findChild<IDL_AST_NODE_TYPE_ATTR_OUT>(state.origin);
+        auto attrFilter   = [this, hasOut](const auto& attr) {
             if (attr.template is<IDL_AST_NODE_TYPE_ATTR_BOOL_TYPE>()) {
                 auto type = attr.getChilds(state.origin).front().resolveRef(true);
                 return !type.template is<IDL_AST_NODE_TYPE_INT_32>();
+            }
+            if (attr.template is<IDL_AST_NODE_TYPE_ATTR_IN>() && !hasOut) {
+                return false;
+            }
+            if (attr.template is<IDL_AST_NODE_TYPE_ATTR_REF>() && hasOut) {
+                return false;
             }
             return attr.template is<IDL_AST_NODE_TYPE_ATTR>() &&
                    !attr.template is<IDL_AST_NODE_TYPE_ATTR_DOC, IDL_AST_NODE_TYPE_ATTR_VALUE, IDL_AST_NODE_TYPE_ATTR_TYPE>();

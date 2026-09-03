@@ -613,6 +613,14 @@ struct AttrName {
         str = "ref";
     }
 
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_IN>) {
+        str = "in";
+    }
+
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_OUT>) {
+        str = "out";
+    }
+
     void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ATTR_CONST>) {
         str = "const";
     }

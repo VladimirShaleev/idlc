@@ -342,6 +342,12 @@ public:
                 case IDL_AST_NODE_TYPE_ATTR_REF:
                     visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_REF>{});
                     break;
+                case IDL_AST_NODE_TYPE_ATTR_IN:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_IN>{});
+                    break;
+                case IDL_AST_NODE_TYPE_ATTR_OUT:
+                    visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_OUT>{});
+                    break;
                 case IDL_AST_NODE_TYPE_ATTR_CONST:
                     visitor.visit(node, Tag<IDL_AST_NODE_TYPE_ATTR_CONST>{});
                     break;

@@ -105,10 +105,16 @@ struct AttrValidatorRules {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ARG>) {
-        static std::map allowed = { add<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(true), add<IDL_AST_NODE_TYPE_ATTR_CNAME>(),
-                                    add<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>(),      add<IDL_AST_NODE_TYPE_ATTR_TYPE>(true),
-                                    add<IDL_AST_NODE_TYPE_ATTR_VALUE>(),          add<IDL_AST_NODE_TYPE_ATTR_REF>(),
-                                    add<IDL_AST_NODE_TYPE_ATTR_ARRAY>(),          add<IDL_AST_NODE_TYPE_ATTR_CONST>(),
+        static std::map allowed = { add<IDL_AST_NODE_TYPE_ATTR_DOC_DETAIL>(true),
+                                    add<IDL_AST_NODE_TYPE_ATTR_CNAME>(),
+                                    add<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>(),
+                                    add<IDL_AST_NODE_TYPE_ATTR_TYPE>(true),
+                                    add<IDL_AST_NODE_TYPE_ATTR_VALUE>(),
+                                    add<IDL_AST_NODE_TYPE_ATTR_REF>(),
+                                    add<IDL_AST_NODE_TYPE_ATTR_IN>(),
+                                    add<IDL_AST_NODE_TYPE_ATTR_OUT>(),
+                                    add<IDL_AST_NODE_TYPE_ATTR_ARRAY>(),
+                                    add<IDL_AST_NODE_TYPE_ATTR_CONST>(),
                                     add<IDL_AST_NODE_TYPE_ATTR_OPTIONAL>() };
         validate(node, allowed);
     }
@@ -1185,6 +1191,12 @@ struct BuildRules {
             auto attrType = node.findChild<IDL_AST_NODE_TYPE_ATTR_TYPE>();
             ctx.log<IDL_STATUS_E3060>(attrType ? attrType->location : node->location, node.fullname());
             node.setBuildError();
+        }
+        if (!node.findChild<IDL_AST_NODE_TYPE_ATTR_IN, IDL_AST_NODE_TYPE_ATTR_OUT>()) {
+            ctx.addNode<IDL_AST_NODE_TYPE_ATTR_IN>(node);
+        }
+        if (node.findChild<IDL_AST_NODE_TYPE_ATTR_OUT>() && !node.findChild<IDL_AST_NODE_TYPE_ATTR_REF>()) {
+            ctx.addNode<IDL_AST_NODE_TYPE_ATTR_REF>(node);
         }
     }
 

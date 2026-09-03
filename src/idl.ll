@@ -76,6 +76,8 @@ SYMBOLS  [a-zA-Z0-9_\-^\.@: ]
 <ATTRCTX>"tokenizer"   { attrArg(FallbackString); return token::ATTRTOKENIZER; }
 <ATTRCTX>"array"       { attrArg(FallbackString); return token::ATTRARRAY; }
 <ATTRCTX>"ref"         { attrArg(); return token::ATTRREF; }
+<ATTRCTX>"in"          { attrArg(); return token::ATTRIN; }
+<ATTRCTX>"out"         { attrArg(); return token::ATTROUT; }
 <ATTRCTX>"const"       { attrArg(); return token::ATTRCONST; }
 <ATTRCTX>"optional"    { attrArg(); return token::ATTROPTIONAL; }
 <ATTRCTX>","           { attrArg(); return YYText()[0]; }

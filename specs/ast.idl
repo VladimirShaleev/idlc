@@ -36,6 +36,8 @@ enum ASTNodeType [tokenizer(3-4)]
     const AttrStdTypes @ TODO
     const AttrBoolType @ TODO
     const AttrRef @ TODO
+    const AttrIn @ TODO
+    const AttrOut @ TODO
     const AttrConst @ TODO
     const AttrOptional @ TODO
     const AttrVersion @ TODO

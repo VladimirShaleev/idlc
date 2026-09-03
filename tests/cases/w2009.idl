@@ -4,3 +4,8 @@
 @ License [license]
 @ Author [author]
 api Api
+
+@ Test function
+@ Description [detail]
+func Test
+    arg Arg {Str} [const] @ Doc

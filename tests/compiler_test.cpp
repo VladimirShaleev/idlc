@@ -577,13 +577,58 @@ TEST(idlc, ImplicitConversionFromIntToFloat) {
 TEST(idlc, DocForReturnValueOfTypeVoidIsSpecified) {
     const auto [result, ast, messages] = compile("w2008");
     deferred(idl_compilation_result_destroy(ast));
-    GTEST_FAIL();
+    ASSERT_EQ(result, IDL_RESULT_SUCCESS);
+    ASSERT_EQ(messages.size(), 1);
+    ASSERT_EQ(messages[0], "warning [W2008]: Documentation provided ([return] attribute) for func 'Api.Test' without a return value at w2008:11:1");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto func = findChild(ast, api, IDL_AST_NODE_TYPE_FUNC);
+    ASSERT_NE(func, HandleNone);
+
+    auto attrType = findChild(ast, func, IDL_AST_NODE_TYPE_ATTR_TYPE);
+    ASSERT_NE(attrType, HandleNone);
+
+    auto declRef = findChild(ast, attrType, IDL_AST_NODE_TYPE_DECL_REF);
+    ASSERT_NE(declRef, HandleNone);
+
+    auto type = getDeclRef(ast, declRef);
+    ASSERT_NE(type, HandleNone);
+    ASSERT_TRUE(isType(ast, type, IDL_AST_NODE_TYPE_VOID));
 }
 
 TEST(idlc, ConstAttrIsRedundantForStrAsTheStrTypeIsConstByDefault) {
     const auto [result, ast, messages] = compile("w2009");
     deferred(idl_compilation_result_destroy(ast));
-    GTEST_FAIL();
+    ASSERT_EQ(result, IDL_RESULT_SUCCESS);
+    ASSERT_EQ(messages.size(), 1);
+    ASSERT_EQ(
+        messages[0],
+        "warning [W2009]: The [const] attribute is redundant for the Str of 'Api.Test.Arg', as the string type is constant by default at w2009:11:5");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto func = findChild(ast, api, IDL_AST_NODE_TYPE_FUNC);
+    ASSERT_NE(func, HandleNone);
+
+    auto arg = findChild(ast, func, IDL_AST_NODE_TYPE_ARG);
+    ASSERT_NE(arg, HandleNone);
+
+    auto attrType = findChild(ast, arg, IDL_AST_NODE_TYPE_ATTR_TYPE);
+    ASSERT_NE(attrType, HandleNone);
+
+    auto declRef = findChild(ast, attrType, IDL_AST_NODE_TYPE_DECL_REF);
+    ASSERT_NE(declRef, HandleNone);
+
+    auto type = getDeclRef(ast, declRef);
+    ASSERT_NE(type, HandleNone);
+    ASSERT_TRUE(isType(ast, type, IDL_AST_NODE_TYPE_STR));
+
+    auto attrConst = findChild(ast, arg, IDL_AST_NODE_TYPE_ATTR_CONST);
+    ASSERT_NE(attrConst, HandleNone);
+    ASSERT_TRUE(hasAllState(ast, attrConst, IDL_AST_NODE_STATE_REPLACED_BY_COMPILER_BIT));
 }
 
 TEST(idlc, SyntaxError) {
@@ -1898,7 +1943,18 @@ TEST(idlc, MultipleEnumConstsCanBeAssignedOnlyToFlagEnum) {
 TEST(idlc, ArgCanBeDefinedForFunc) {
     const auto [result, ast, messages] = compile("e3057func");
     deferred(idl_compilation_result_destroy(ast));
-    GTEST_FAIL();
+    ASSERT_EQ(result, IDL_RESULT_SUCCESS);
+    ASSERT_EQ(messages.size(), 1);
+    ASSERT_EQ(messages[0], "error [E3057]: A 'arg' of 'Arg' can be defined only for 'func', 'method' and 'callback' at e3057func:11:5");
+    
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto test = findChild(ast, api, IDL_AST_NODE_TYPE_STRUCT);
+    ASSERT_NE(test, HandleNone);
+
+    auto fields = getChilds(ast, test, IDL_AST_NODE_TYPE_FIELD);
+    ASSERT_TRUE(fields.empty());
 }
 
 TEST(idlc, InvalidCallConvFormatWasPassedToCConv) {

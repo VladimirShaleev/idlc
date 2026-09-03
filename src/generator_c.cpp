@@ -19,43 +19,55 @@ struct State;
 struct Include {
     State& state;
     Output output;
+    ASTNodeRef node;
     ASTNodeRef import;
+    ASTNodeRef prevNode;
     inja::json data;
+};
+
+struct Stats {
+    bool hasEnums{};
+    bool hasEnumFlags{};
+    bool addTypedEnumMacros{};
+    ASTNodeRef voidType{};
+    std::unordered_set<ASTNodeRef> hasImports;
+
+    void build() {
+        if (!hasEnums) {
+            addTypedEnumMacros = false;
+        }
+    }
 };
 
 struct State {
     Writer& writer;
+    Stats stats;
     CName::Cache cnameCache;
     inja::json data;
     inja::Environment env;
-    std::stack<Include> includes;
+    std::vector<Include> includes;
     std::unordered_map<std::string, inja::Template> templates;
 
     std::ostream& out() noexcept {
-        return includes.top().output.stream();
+        return includes.back().output.stream();
     }
 
     void mergeImport() {
-        auto& import = includes.top().data;
+        auto& import = includes.back().data;
 
         data["macros"]["include_guard"] = import["include_guard"];
         data["filename"]                = import["filename"];
         data["is_main"]                 = import["is_main"];
+        data["has_includes"]            = import["has_includes"];
     }
 
     void popImport() {
-        const auto filename = includes.top().output.filename().string();
-        const auto isImport = !!includes.top().import;
-
         data["include_guard_close"] = true;
         env.render_to(out(), templates["c_include_guard.txt"], data);
-        includes.pop();
+        includes.pop_back();
         data["include_guard_close"] = false;
         if (!includes.empty()) {
             mergeImport();
-            if (isImport) {
-                fmt::print(out(), "#include \"{}\"\n", filename);
-            }
         }
     }
 
@@ -127,19 +139,6 @@ struct DoxygenGroupVisitor {
 };
 
 struct ASTStatsVisitor {
-    struct Stats {
-        bool hasEnums{};
-        bool hasEnumFlags{};
-        bool addTypedEnumMacros{};
-        ASTNodeRef voidType{};
-
-        void build() {
-            if (!hasEnums) {
-                addTypedEnumMacros = false;
-            }
-        }
-    };
-
     explicit ASTStatsVisitor(Stats& stats) noexcept : stats(stats) {
     }
 
@@ -147,6 +146,10 @@ struct ASTStatsVisitor {
         if (node.findChild<IDL_AST_NODE_TYPE_ATTR_TYPED_ENUMS>()) {
             stats.addTypedEnumMacros = true;
         }
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_IMPORT>) {
+        stats.hasImports.insert(node.parent());
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ENUM>) {
@@ -181,10 +184,12 @@ struct ASTVisitor {
         renderPlatformHeader(node);
         renderVersionHeader(node);
         pushImport(node, ""sv, true);
+        setPrevNode(node);
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_IMPORT>) {
         pushImport(node);
+        setPrevNode(node);
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ENUM>) {
@@ -219,6 +224,8 @@ struct ASTVisitor {
 
         state.data.erase("use_typed_enums");
         state.data.erase("consts");
+
+        setPrevNode(node);
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_STRUCT>) {
@@ -238,6 +245,8 @@ struct ASTVisitor {
         state.env.render_to(state.out(), findTemplate("c_struct.txt"), state.data);
 
         state.data.erase("fields");
+
+        setPrevNode(node);
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_FUNC>) {
@@ -256,6 +265,8 @@ struct ASTVisitor {
         state.env.render_to(state.out(), findTemplate("c_func.txt"), state.data);
 
         state.data.erase("args");
+
+        setPrevNode(node);
     }
 
     template <ASTNodeType Type>
@@ -291,7 +302,7 @@ struct ASTVisitor {
         }
 
         if (node.is<IDL_AST_NODE_TYPE_API, IDL_AST_NODE_TYPE_IMPORT>()) {
-            const auto& filename = state.includes.top().output.filename();
+            const auto& filename = state.includes.back().output.filename();
             docs.push_back({
                 { "name",     "file" },
                 { "literals", {}     }
@@ -419,9 +430,8 @@ struct ASTVisitor {
         }
 
         constexpr auto filters = ASTNodeRef::SkipDocs | ASTNodeRef::SkipAttrs | ASTNodeRef::SkipLiterals;
-        ASTStatsVisitor::Stats stats{};
-        state.writer.api().acceptRecursive<ASTStatsVisitor>(filters, std::ref(stats));
-        stats.build();
+        state.writer.api().acceptRecursive<ASTStatsVisitor>(filters, std::ref(state.stats));
+        state.stats.build();
 
         auto& cname       = state.cnameCache;
         auto attrBoolType = node.findChild<IDL_AST_NODE_TYPE_ATTR_BOOL_TYPE>();
@@ -489,9 +499,9 @@ struct ASTVisitor {
         config["add_doc_groups"]        = addDoc && addDocGroups;
         config["add_member_groups"]     = addDoc && addMemberGroups;
         config["std_types"]             = cname.stdTypes;
-        config["has_enums"]             = stats.hasEnums;
-        config["has_enum_flags"]        = stats.hasEnumFlags;
-        config["add_typed_enum_macros"] = stats.addTypedEnumMacros;
+        config["has_enums"]             = state.stats.hasEnums;
+        config["has_enum_flags"]        = state.stats.hasEnumFlags;
+        config["add_typed_enum_macros"] = state.stats.addTypedEnumMacros;
         switch (cname.boolType) {
             case BoolType::Int32:
                 config["bool_type"] = "int32";
@@ -549,7 +559,7 @@ struct ASTVisitor {
 
         state.data["api_name"]          = calcMacro(node, {}, false, false);
         state.data["api_name_readable"] = convert({ str.data(), str.length() }, Case::SpaceCase, nums.empty() ? nullptr : &nums);
-        state.data["cvoid"]             = stats.voidType.accept<CName>(std::ref(state.cnameCache)).str;
+        state.data["cvoid"]             = state.stats.voidType.accept<CName>(std::ref(state.cnameCache)).str;
     }
 
     void addCallbacks(ASTNodeRef node) {
@@ -687,13 +697,15 @@ struct ASTVisitor {
             }
         }
 
-        pushImport(node,
-                   "Platform"sv,
-                   false,
-                   {
-                       { "brief",   std::move(brief)   },
-                       { "details", std::move(details) }
+        auto filename = pushImport(node,
+                                   "Platform"sv,
+                                   false,
+                                   {
+                                       { "brief",   std::move(brief)   },
+                                       { "details", std::move(details) }
         });
+
+        state.data["config"]["platform_header"] = filename;
 
         state.env.render_to(state.out(), findTemplate("c_platform.txt"), state.data);
 
@@ -726,13 +738,15 @@ struct ASTVisitor {
             details = { "This header provides version information for the "s, state.data["api_name_readable"].get<std::string>(), " library."s };
         }
 
-        pushImport(node,
-                   "Version"sv,
-                   false,
-                   {
-                       { "brief",   std::move(brief)   },
-                       { "details", std::move(details) }
+        auto filename = pushImport(node,
+                                   "Version"sv,
+                                   false,
+                                   {
+                                       { "brief",   std::move(brief)   },
+                                       { "details", std::move(details) }
         });
+
+        state.data["config"]["version_header"] = filename;
 
         state.env.render_to(state.out(), findTemplate(semver ? "c_semver.txt"s : "c_strver.txt"s), state.data);
     }
@@ -741,10 +755,14 @@ struct ASTVisitor {
         return state.out();
     }
 
-    void pushImport(ASTNodeRef& node, std::string_view postfix = ""sv, bool main = false, const OverrideDoc& overrideDoc = {}) {
+    void setPrevNode(ASTNodeRef& node) {
+        state.includes.back().prevNode = node;
+    }
+
+    std::string pushImport(ASTNodeRef& node, std::string_view postfix = ""sv, bool main = false, const OverrideDoc& overrideDoc = {}) {
         const auto single = state.data["config"]["single"].get<bool>();
         if (single && !state.includes.empty()) {
-            return;
+            return {};
         }
         std::string name;
         std::string guard;
@@ -761,12 +779,27 @@ struct ASTVisitor {
         data["include_guard"] = guard;
         data["filename"]      = name;
         data["is_main"]       = main || single;
+        data["has_includes"]  = state.stats.hasImports.contains(node);
 
-        state.includes.emplace(state, state.writer.createOutput(name), import, std::move(data));
+        if (node.is<IDL_AST_NODE_TYPE_IMPORT>()) {
+            auto it = std::find_if(state.includes.rbegin(), state.includes.rend(), [parent = node.parent()](auto& item) {
+                return item.node == parent;
+            });
+            assert(it != state.includes.rend());
+            if (!it->prevNode.is<IDL_AST_NODE_TYPE_IMPORT>()) {
+                fmt::print(it->output.stream(), "\n");
+            }
+            fmt::print(it->output.stream(), "#include \"{}\"\n", name);
+            it->prevNode = node;
+        }
+
+        state.includes.emplace_back(state, state.writer.createOutput(name), node, import, node.ctx().emptyNodeRef(), std::move(data));
         state.mergeImport();
         fillDoc(0, false, node, state.data, !postfix.empty() && !single ? overrideDoc : OverrideDoc{});
 
         state.env.render_to(state.out(), findTemplate("c_include_guard.txt"), state.data);
+
+        return name;
     }
 
     void tryPopImport(ASTNodeRef& node) {
@@ -774,13 +807,13 @@ struct ASTVisitor {
         if (single) {
             return;
         }
-        auto currImport = state.includes.top().import;
+        auto currImport = state.includes.back().import;
         auto currParent = node.parent();
         while (currParent && !currParent.is<IDL_AST_NODE_TYPE_IMPORT>()) {
             currParent = currParent.parent();
         }
         if (currParent != currImport) {
-            while (currParent != state.includes.top().import) {
+            while (currParent != state.includes.back().import) {
                 state.popImport();
             }
         }

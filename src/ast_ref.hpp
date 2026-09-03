@@ -624,4 +624,15 @@ private:
 
 } // namespace idl
 
+namespace std {
+
+template <>
+struct hash<::idl::ASTNodeRef> {
+    std::size_t operator()(const ::idl::ASTNodeRef& ref) const {
+        return std::hash<idl_uint16_t>{}(ref.handle().handle);
+    }
+};
+
+} // namespace std
+
 #endif

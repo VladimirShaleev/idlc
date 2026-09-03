@@ -99,8 +99,16 @@ struct DoxygenVisitor {
         str = "copyright"sv;
     }
 
-    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ARG>) {
-        str = "param[in]"sv;
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ARG>) {
+        const auto hasIn  = node.findChild<IDL_AST_NODE_TYPE_ATTR_IN>();
+        const auto hasOut = node.findChild<IDL_AST_NODE_TYPE_ATTR_OUT>();
+        if (hasIn && hasOut) {
+            str = "param[in,out]"sv;
+        } else if (hasOut) {
+            str = "param[out]"sv;
+        } else {
+            str = "param[in]"sv;
+        }
     }
 
     template <ASTNodeType Type>
@@ -370,7 +378,7 @@ struct ASTVisitor {
                     }
                     literals.push_back(literal.handle().handle);
                 }
-                paramIt = docs.insert(paramIt, param);
+                paramIt = ++docs.insert(paramIt, param);
             }
         }
 

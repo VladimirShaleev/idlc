@@ -589,7 +589,14 @@ struct ASTVisitor {
             auto& ctx   = state.writer.api().ctx();
             auto handle = args.at(0)->get<uint16_t>();
             ASTNodeRef node(ctx, { handle });
-            return node.declType().accept<CName>(std::ref(state.cnameCache)).str;
+            auto result = node.declType().accept<CName>(std::ref(state.cnameCache)).str;
+            if (node.findChild<IDL_AST_NODE_TYPE_ATTR_CONST>()) {
+                result = "const "s + result;
+            }
+            if (node.findChild<IDL_AST_NODE_TYPE_ATTR_REF>()) {
+                result += "*";
+            }
+            return result;
         });
 
         state.env.add_callback("cvalue", 1, [this](inja::Arguments& args) {

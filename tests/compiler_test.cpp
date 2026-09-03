@@ -1,7 +1,7 @@
 #include "compiler.hpp"
 
 TEST(idlc, UnnecessaryParenthesesForAttribute) {
-    const auto [result, ast, messages] = compile("n1001.idl");
+    const auto [result, ast, messages] = compile("n1001");
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
@@ -19,7 +19,7 @@ TEST(idlc, UnnecessaryParenthesesForAttribute) {
 }
 
 TEST(idlc, EmptyAttributeList) {
-    const auto [result, ast, messages] = compile("n1002.idl");
+    const auto [result, ast, messages] = compile("n1002");
     deferred(idl_compilation_result_destroy(ast));
 
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
@@ -53,7 +53,7 @@ TEST(idlc, EmptyAttributeList) {
 }
 
 TEST(idlc, ExplicitAttributeBrief) {
-    const auto [result, ast, messages] = compile("n1003.idl");
+    const auto [result, ast, messages] = compile("n1003");
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
@@ -71,7 +71,7 @@ TEST(idlc, ExplicitAttributeBrief) {
 }
 
 TEST(idlc, ExplicitAttributeDetail) {
-    const auto [result, ast, messages] = compile("n1004.idl");
+    const auto [result, ast, messages] = compile("n1004");
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
@@ -91,8 +91,14 @@ TEST(idlc, ExplicitAttributeDetail) {
     ASSERT_NE(detail, HandleNone);
 }
 
+TEST(idlc, VoidReturnTypeIsOptionalBecauseItIsInferredByDefault) {
+    const auto [result, ast, messages] = compile("n1005");
+    deferred(idl_compilation_result_destroy(ast));
+    GTEST_FAIL();
+}
+
 TEST(idlc, MissingAttribute) {
-    const auto [result, ast, messages] = compile("w2001.idl");
+    const auto [result, ast, messages] = compile("w2001");
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 8);
@@ -130,7 +136,7 @@ TEST(idlc, MissingAttribute) {
 }
 
 TEST(idlc, RepeatedImport) {
-    const auto [result, ast, messages] = compile("w2002.idl");
+    const auto [result, ast, messages] = compile("w2002");
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 2);
@@ -152,7 +158,7 @@ TEST(idlc, RepeatedImport) {
 }
 
 TEST(idlc, ConstantForwardRefers) {
-    const auto [result, ast, messages] = compile("w2003.idl");
+    const auto [result, ast, messages] = compile("w2003");
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
@@ -176,7 +182,7 @@ TEST(idlc, ConstantForwardRefers) {
 }
 
 TEST(idlc, FloatOutOfRange) {
-    const auto [result, ast, messages] = compile("w2004float.idl", true);
+    const auto [result, ast, messages] = compile("w2004float", true);
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 2);
@@ -220,7 +226,7 @@ TEST(idlc, FloatOutOfRange) {
 }
 
 TEST(idlc, IntegerOutOfRange) {
-    const auto [result, ast, messages] = compile("w2004int.idl");
+    const auto [result, ast, messages] = compile("w2004int");
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 3);
@@ -257,7 +263,7 @@ TEST(idlc, IntegerOutOfRange) {
 }
 
 TEST(idlc, IntegerOutOfRangeWarnAsErrors) {
-    const auto [result, ast, messages] = compile("w2004int.idl", true);
+    const auto [result, ast, messages] = compile("w2004int", true);
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 3);
@@ -294,7 +300,7 @@ TEST(idlc, IntegerOutOfRangeWarnAsErrors) {
 }
 
 TEST(idlc, SpecialCharacterExpectedAfterBackslash) {
-    const auto [result, ast, messages] = compile("w2005.idl");
+    const auto [result, ast, messages] = compile("w2005");
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 6);
@@ -498,7 +504,7 @@ TEST(idlc, SpecialCharacterExpectedAfterBackslash) {
 }
 
 TEST(idlc, FieldTypeHasDeclTypeDeclaredBelow) {
-    const auto [result, ast, messages] = compile("w2006.idl");
+    const auto [result, ast, messages] = compile("w2006");
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
@@ -516,7 +522,7 @@ TEST(idlc, FieldTypeHasDeclTypeDeclaredBelow) {
 }
 
 TEST(idlc, ImplicitConversionFromIntToFloat) {
-    const auto [result, ast, messages] = compile("w2007.idl");
+    const auto [result, ast, messages] = compile("w2007");
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
@@ -550,8 +556,20 @@ TEST(idlc, ImplicitConversionFromIntToFloat) {
     ASSERT_DOUBLE_EQ(getFloat(ast, value2), 300.0);
 }
 
+TEST(idlc, DocForReturnValueOfTypeVoidIsSpecified) {
+    const auto [result, ast, messages] = compile("w2008");
+    deferred(idl_compilation_result_destroy(ast));
+    GTEST_FAIL();
+}
+
+TEST(idlc, ConstAttrIsRedundantForStrAsTheStrTypeIsConstByDefault) {
+    const auto [result, ast, messages] = compile("w2009");
+    deferred(idl_compilation_result_destroy(ast));
+    GTEST_FAIL();
+}
+
 TEST(idlc, SyntaxError) {
-    const auto [result, ast, messages] = compile("e3001.idl");
+    const auto [result, ast, messages] = compile("e3001");
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
@@ -562,7 +580,7 @@ TEST(idlc, SyntaxError) {
 }
 
 TEST(idlc, ArgumentParsingError) {
-    const auto [result, ast, messages] = compile("e3002.idl");
+    const auto [result, ast, messages] = compile("e3002");
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 2);
@@ -582,7 +600,7 @@ TEST(idlc, ArgumentParsingError) {
 }
 
 TEST(idlc, VersionAttrRequiredParams) {
-    const auto [result, ast, messages] = compile("e3003.idl");
+    const auto [result, ast, messages] = compile("e3003");
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
@@ -601,7 +619,7 @@ TEST(idlc, VersionAttrRequiredParams) {
 }
 
 TEST(idlc, VersionComponentRange) {
-    const auto [result, ast, messages] = compile("e3004.idl");
+    const auto [result, ast, messages] = compile("e3004");
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 3);
@@ -620,16 +638,16 @@ TEST(idlc, VersionComponentRange) {
 }
 
 TEST(idlc, InvalidAttrForDeclaration) {
-    const auto [result, ast, messages] = compile("e3005.idl");
+    const auto [result, ast, messages] = compile("e3005");
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 2);
     ASSERT_EQ(messages[0],
-              "error [E3005]: Invalid attribute [flags] for api 'Api' declaration, allowed attributes are maxenum, countenums, cname, cconv, "
-              "cformat, tokenizer, single, stdtypes, booltype, version, brief, detail, author, copyright, license at e3005:6:10");
+              "error [E3005]: Invalid attribute [flags] for api 'Api' declaration, allowed attributes are maxenum, countenums, typedenums, cname, "
+              "cconv, cformat, tokenizer, single, stdtypes, booltype, version, brief, detail, author, copyright, license at e3005:6:10");
     ASSERT_EQ(messages[1],
-              "error [E3005]: Invalid attribute [hex] for api 'Api' declaration, allowed attributes are maxenum, countenums, cname, cconv, cformat, "
-              "tokenizer, single, stdtypes, booltype, version, brief, detail, author, copyright, license at e3005:6:17");
+              "error [E3005]: Invalid attribute [hex] for api 'Api' declaration, allowed attributes are maxenum, countenums, typedenums, cname, "
+              "cconv, cformat, tokenizer, single, stdtypes, booltype, version, brief, detail, author, copyright, license at e3005:6:17");
 
     auto api = idl_compilation_result_get_api(ast);
     ASSERT_NE(api, HandleNone);
@@ -667,7 +685,7 @@ TEST(idlc, NumberOfValuesForFieldExceedsTheArraySize) {
 }
 
 TEST(idlc, AttributeDuplication) {
-    const auto [result, ast, messages] = compile("e3007.idl");
+    const auto [result, ast, messages] = compile("e3007");
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
@@ -689,7 +707,7 @@ TEST(idlc, AttributeDuplication) {
 }
 
 TEST(idlc, AttributeMustNotHaveArguments) {
-    const auto [result, ast, messages] = compile("e3008.idl");
+    const auto [result, ast, messages] = compile("e3008");
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 3);
@@ -723,7 +741,7 @@ TEST(idlc, AttributeMustNotHaveArguments) {
 }
 
 TEST(idlc, StringClosingCharacter) {
-    const auto [result, ast, messages] = compile("e3009.idl");
+    const auto [result, ast, messages] = compile("e3009");
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 2);
@@ -735,7 +753,7 @@ TEST(idlc, StringClosingCharacter) {
 }
 
 TEST(idlc, ApiRedeclaration) {
-    const auto [result, ast, messages] = compile("e3010.idl");
+    const auto [result, ast, messages] = compile("e3010");
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
@@ -750,7 +768,7 @@ TEST(idlc, ApiRedeclaration) {
 }
 
 TEST(idlc, FirstDeclaration) {
-    const auto [result, ast, messages] = compile("e3011.idl");
+    const auto [result, ast, messages] = compile("e3011");
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
@@ -764,7 +782,7 @@ TEST(idlc, FirstDeclaration) {
 }
 
 TEST(idlc, SymbolRedefinition) {
-    const auto [result, ast, messages] = compile("e3012.idl");
+    const auto [result, ast, messages] = compile("e3012");
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 2);
@@ -786,7 +804,7 @@ TEST(idlc, SymbolRedefinition) {
 }
 
 TEST(idlc, UnknownAttribute) {
-    const auto [result, ast, messages] = compile("e3013.idl");
+    const auto [result, ast, messages] = compile("e3013");
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 3);
@@ -808,7 +826,7 @@ TEST(idlc, UnknownAttribute) {
 }
 
 TEST(idlc, AttrMustContainOneOrMoreArgs) {
-    const auto [result, ast, messages] = compile("e3014.idl");
+    const auto [result, ast, messages] = compile("e3014");
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 7);
@@ -854,7 +872,7 @@ TEST(idlc, AttrMustContainOneOrMoreArgs) {
 }
 
 TEST(idlc, UnknownAttributeInDoc) {
-    const auto [result, ast, messages] = compile("e3015.idl");
+    const auto [result, ast, messages] = compile("e3015");
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 7);
@@ -864,11 +882,11 @@ TEST(idlc, UnknownAttributeInDoc) {
     ASSERT_EQ(messages[3], "error [E3015]: Unknown attribute in the documentation [hex] at e3015:7:39");
     ASSERT_EQ(messages[4], "error [E3018]: Inline documentation only [detail] description is allowed at e3015:7:39");
     ASSERT_EQ(messages[5],
-              "error [E3005]: Invalid attribute [flags] for api 'Api' declaration, allowed attributes are maxenum, countenums, cname, cconv, "
-              "cformat, tokenizer, single, stdtypes, booltype, version, brief, detail, author, copyright, license at e3015:6:31");
+              "error [E3005]: Invalid attribute [flags] for api 'Api' declaration, allowed attributes are maxenum, countenums, typedenums, cname, "
+              "cconv, cformat, tokenizer, single, stdtypes, booltype, version, brief, detail, author, copyright, license at e3015:6:31");
     ASSERT_EQ(messages[6],
-              "error [E3005]: Invalid attribute [hex] for api 'Api' declaration, allowed attributes are maxenum, countenums, cname, cconv, cformat, "
-              "tokenizer, single, stdtypes, booltype, version, brief, detail, author, copyright, license at e3015:7:39");
+              "error [E3005]: Invalid attribute [hex] for api 'Api' declaration, allowed attributes are maxenum, countenums, typedenums, cname, "
+              "cconv, cformat, tokenizer, single, stdtypes, booltype, version, brief, detail, author, copyright, license at e3015:7:39");
 
     auto api = idl_compilation_result_get_api(ast);
     ASSERT_NE(api, HandleNone);
@@ -972,7 +990,7 @@ TEST(idlc, InlineDocAllowedDetailOnlyAttr) {
 }
 
 TEST(idlc, FieldCanBeDefinedOnlyForStruct) {
-    const auto [result, ast, messages] = compile("e3019.idl");
+    const auto [result, ast, messages] = compile("e3019");
     deferred(idl_compilation_result_destroy(ast));
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
@@ -1042,10 +1060,10 @@ TEST(idlc, ResultCode) {
     const auto [result2, _2, __2] = compile("e3045", false, false);
     ASSERT_EQ(result2, IDL_RESULT_ERROR_COMPILATION);
 
-    const auto [result3, _3, __3] = compile("w2002.idl", false, false);
+    const auto [result3, _3, __3] = compile("w2002", false, false);
     ASSERT_EQ(result3, IDL_RESULT_SUCCESS);
 
-    const auto [result4, _4, __4] = compile("w2002.idl", true, false);
+    const auto [result4, _4, __4] = compile("w2002", true, false);
     ASSERT_EQ(result4, IDL_RESULT_ERROR_COMPILATION);
 }
 
@@ -1894,7 +1912,7 @@ TEST(idlc, InvalidFormatParamWasPassedToCFormat) {
               "error [E3059]: An invalid format parameter was passed to the argument at index 1 (break.after.decl:trUe) in attribute [cformat] "
               "(correct format: indents:<value(4)>, space.after.comma:<bool(true)>, arg.alignment:<none|bracket(bracket)>, "
               "arg.wrapping:<none|each_on_wew_line(each_on_wew_line)>, break.after.api:<bool(false)>, break.after.decl:<bool(true)>, "
-              "break.after.return.type:<bool(true)>, sample: indents:4) at e3059:7:5");
+              "break.after.typedef:<bool(false)>, break.after.return.type:<bool(true)>, sample: indents:4) at e3059:7:5");
 
     auto api = idl_compilation_result_get_api(ast);
     ASSERT_NE(api, HandleNone);
@@ -1904,4 +1922,22 @@ TEST(idlc, InvalidFormatParamWasPassedToCFormat) {
 
     auto cformatArgs = getChilds(ast, cformat);
     ASSERT_TRUE(cformatArgs.empty());
+}
+
+TEST(idlc, ArgTypeCannotBeVoid) {
+    const auto [result, ast, messages] = compile("e3060");
+    deferred(idl_compilation_result_destroy(ast));
+    GTEST_FAIL();
+}
+
+TEST(idlc, ReturnArgCannotBeConst) {
+    const auto [result, ast, messages] = compile("e3061");
+    deferred(idl_compilation_result_destroy(ast));
+    GTEST_FAIL();
+}
+
+TEST(idlc, StrCannotBeRef) {
+    const auto [result, ast, messages] = compile("e3062");
+    deferred(idl_compilation_result_destroy(ast));
+    GTEST_FAIL();
 }

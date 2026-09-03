@@ -35,6 +35,8 @@ inline std::string err(Args&&... args) {
         str = fmt::format("Implicit conversion from an integer type to a floating-point type");
     } else if constexpr (Status == IDL_STATUS_W2008) {
         str = fmt::format("Documentation provided ([return] attribute) for {} '{}' without a return value", args...);
+    } else if constexpr (Status == IDL_STATUS_W2009) {
+        str = fmt::format("The [const] attribute is redundant for the Str of '{}', as the string type is constant by default", args...);
     } else if constexpr (Status == IDL_STATUS_E3001) {
         if constexpr (sizeof...(args) > 0) {
             str = fmt::format("Syntax error '{}'", args...);
@@ -168,6 +170,10 @@ inline std::string err(Args&&... args) {
                           args...);
     } else if constexpr (Status == IDL_STATUS_E3060) {
         str = fmt::format("The argument type of '{}' cannot be 'Void'", args...);
+    } else if constexpr (Status == IDL_STATUS_E3061) {
+        str = fmt::format("The return argument '{}' cannot be constant", args...);
+    } else if constexpr (Status == IDL_STATUS_E3062) {
+        str = fmt::format("A Str argument '{}' cannot be a reference [ref], except in the case of a return value [out] or result [result]", args...);
     } else {
         assert(!"Unknown status code");
     }

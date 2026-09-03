@@ -27,6 +27,7 @@ enum Status
     const W2006 : 2006 [tokenizer(0)] @ The field type has the declaration type declared below.
     const W2007 : 2007 [tokenizer(0)] @ Implicit conversion from an integer type to a floating-point type.
     const W2008 : 2008 [tokenizer(0)] @ Documentation for the return value of type 'Void' is specified.
+    const W2009 : 2009 [tokenizer(0)] @ The \[const\] attribute is redundant for the Str, as the string type is constant by default.
 
     const E3001 : 3001 [tokenizer(0)] @ Syntax error.
     const E3002 : 3002 [tokenizer(0)] @ Argument parsing error.
@@ -88,6 +89,8 @@ enum Status
     const E3058 : 3058 [tokenizer(0)] @ An invalid calling convention format was passed to the \[cconv\] attribute argument.
     const E3059 : 3059 [tokenizer(0)] @ An invalid format parameter was passed to the \[cformat\] attribute argument.
     const E3060 : 3060 [tokenizer(0)] @ The argument type cannot be 'Void'.
+    const E3061 : 3061 [tokenizer(0)] @ The return argument cannot be constant.
+    const E3062 : 3062 [tokenizer(0)] @ A Str cannot be a reference \[ref\], except in the case of a return value \[out\] or result \[result\].
 
 @ Compilation message.
 @ Detailed description of warning or compilation error. [detail]

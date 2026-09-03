@@ -51,6 +51,7 @@ typedef enum
     IDL_STATUS_W2006    = 2006, /**< The field type has the declaration type declared below. */
     IDL_STATUS_W2007    = 2007, /**< Implicit conversion from an integer type to a floating-point type. */
     IDL_STATUS_W2008    = 2008, /**< Documentation for the return value of type 'Void' is specified. */
+    IDL_STATUS_W2009    = 2009, /**< The [const] attribute is redundant for the Str, as the string type is constant by default. */
     IDL_STATUS_E3001    = 3001, /**< Syntax error. */
     IDL_STATUS_E3002    = 3002, /**< Argument parsing error. */
     IDL_STATUS_E3003    = 3003, /**< The [version] attribute must have three required integer parameters, such as version(1, 2, 3) or version("string"). */
@@ -111,6 +112,8 @@ typedef enum
     IDL_STATUS_E3058    = 3058, /**< An invalid calling convention format was passed to the [cconv] attribute argument. */
     IDL_STATUS_E3059    = 3059, /**< An invalid format parameter was passed to the [cformat] attribute argument. */
     IDL_STATUS_E3060    = 3060, /**< The argument type cannot be 'Void'. */
+    IDL_STATUS_E3061    = 3061, /**< The return argument cannot be constant. */
+    IDL_STATUS_E3062    = 3062, /**< A Str cannot be a reference [ref], except in the case of a return value [out] or result [result]. */
     IDL_STATUS_MAX_ENUM = 0x7FFFFFFF /**< Max value of enum (not used) */
 } idl_status_t;
 

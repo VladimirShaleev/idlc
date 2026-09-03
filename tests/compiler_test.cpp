@@ -91,10 +91,28 @@ TEST(idlc, ExplicitAttributeDetail) {
     ASSERT_NE(detail, HandleNone);
 }
 
-TEST(idlc, VoidReturnTypeIsOptionalBecauseItIsInferredByDefault) {
+TEST(idlc, VoidReturnTypeIsOptional) {
     const auto [result, ast, messages] = compile("n1005");
     deferred(idl_compilation_result_destroy(ast));
-    GTEST_FAIL();
+    ASSERT_EQ(result, IDL_RESULT_SUCCESS);
+    ASSERT_EQ(messages.size(), 1);
+    ASSERT_EQ(messages[0], "note [N1005]: The 'Void' return type is optional because it is inferred by default at n1005:10:1");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto func = findChild(ast, api, IDL_AST_NODE_TYPE_FUNC);
+    ASSERT_NE(func, HandleNone);
+
+    auto attrType = findChild(ast, func, IDL_AST_NODE_TYPE_ATTR_TYPE);
+    ASSERT_NE(attrType, HandleNone);
+
+    auto declRef = findChild(ast, attrType, IDL_AST_NODE_TYPE_DECL_REF);
+    ASSERT_NE(declRef, HandleNone);
+
+    auto type = getDeclRef(ast, declRef);
+    ASSERT_NE(type, HandleNone);
+    ASSERT_TRUE(isType(ast, type, IDL_AST_NODE_TYPE_VOID));
 }
 
 TEST(idlc, MissingAttribute) {
@@ -1561,7 +1579,7 @@ TEST(idlc, TypeAttrMustContainOnlyOneType) {
     ASSERT_NE(test, HandleNone);
 
     auto attrType = findChild(ast, test, IDL_AST_NODE_TYPE_ATTR_TYPE);
-    ASSERT_NE(test, HandleNone);
+    ASSERT_NE(attrType, HandleNone);
 
     auto declRef = findChild(ast, attrType, IDL_AST_NODE_TYPE_DECL_REF);
     ASSERT_NE(declRef, HandleNone);

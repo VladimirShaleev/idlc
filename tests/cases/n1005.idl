@@ -4,3 +4,8 @@
 @ License [license]
 @ Author [author]
 api Api
+
+@ Test function
+@ Description [detail]
+func Test {Void}
+    arg Value {Int32} @ Doc for {Value}

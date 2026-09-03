@@ -87,6 +87,10 @@ struct DoxygenVisitor {
         str = "copyright"sv;
     }
 
+    void visit(ASTNodeRef&, Tag<IDL_AST_NODE_TYPE_ARG>) {
+        str = "param[in]"sv;
+    }
+
     template <ASTNodeType Type>
     void visit(ASTNodeRef&, Tag<Type>) noexcept {
     }
@@ -344,7 +348,7 @@ struct ASTVisitor {
 
             for (auto arg : node.getChilds<IDL_AST_NODE_TYPE_ARG>()) {
                 inja::json param = {
-                    { "name",     "param[in]"                                                 },
+                    { "name",     arg.accept<DoxygenVisitor>().str                            },
                     { "literals", { arg.accept<CName>(std::ref(state.cnameCache)).str, " "s } }
                 };
                 auto& literals = param["literals"];

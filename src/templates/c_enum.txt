@@ -10,7 +10,7 @@
 ## for const in consts
 {% if const.doxygen.is_inline == false %}{{ nl(1) }}{{ render("c_doxygen", const.doxygen) }}{% endif %}{{ indents(config.indents) }}{% set name=cname(const.node) %}{{ name }} {{ indents(max_len - length(name)) }}= {{ cvalue(const.node) }}{% if loop.is_last == false %},{% endif %}{{ render("c_doxygen_inline", const.doxygen) }}
 ## endfor
-}{% if use_typed_enums %}{{ nl(1) }}{{ macros.end_enum }}({{ cname(node) }}, {{ ctype(node) }}){% else %} {{ cname(node) }}{% endif %};
+}{% if use_typed_enums %}{{ nl(1) }}{{ macros.end_enum }}({{ cname(node) }}, {{ ctype(node) }}){% else %}{% if config.break.after.typedef %}{{ nl(1) }}{% else %} {% endif %}{{ cname(node) }}{% endif %};
 ## if is_flags
 {{ macros.flags_enum}}({{ cname(node) }});
 ## endif

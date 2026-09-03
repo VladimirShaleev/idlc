@@ -262,6 +262,7 @@ struct CFormatRules {
         CFormatRule{ "arg.wrapping",            CFormatRule::Choice, { "none", "each_on_wew_line" }, 1     },
         CFormatRule{ "break.after.api",         CFormatRule::Bool,   {},                             false },
         CFormatRule{ "break.after.decl",        CFormatRule::Bool,   {},                             true  },
+        CFormatRule{ "break.after.typedef",     CFormatRule::Bool,   {},                             false },
         CFormatRule{ "break.after.return.type", CFormatRule::Bool,   {},                             true  },
     };
 

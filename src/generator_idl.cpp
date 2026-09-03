@@ -3,7 +3,7 @@
 #include "visitors.hpp"
 #include "writer.hpp"
 
-using namespace std::string_literals;
+using namespace std::literals;
 
 namespace idl::gen::idl {
 
@@ -84,7 +84,7 @@ struct LiteralPrinter {
             auto validSymbols = true;
             for (auto c : valueStr) {
                 auto valid = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '-' || c == '^' ||
-                             c == '.' || c == '@';
+                             c == '.' || c == '@' || c == ':';
                 if (!valid) {
                     validSymbols = false;
                     break;
@@ -128,18 +128,32 @@ struct LiteralPrinter {
 };
 
 struct AttrArgsGetter {
-    explicit AttrArgsGetter(bool origin) noexcept : origin(origin) {
+    explicit AttrArgsGetter(bool origin, bool wrapAttrs, int level, uint32_t indents) noexcept :
+        origin(origin),
+        wrapAttrs(wrapAttrs),
+        level(level),
+        indents(indents) {
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ATTR_CNAME>) {
         auto view = node.getChilds(origin);
-        printArgs(false, view.begin(), view.end());
+        printArgs(false, false, view.begin(), view.end());
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ATTR_CCONV>) {
+        auto view = node.getChilds(origin);
+        printArgs(false, wrapAttrs, view.begin(), view.end());
+    }
+
+    void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ATTR_CFORMAT>) {
+        auto view = node.getChilds(origin);
+        printArgs(false, wrapAttrs, view.begin(), view.end());
     }
 
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ATTR_TOKENIZER>) {
         auto view = node.getChilds(origin);
         if (origin) {
-            printArgs(false, view.begin(), view.end());
+            printArgs(false, false, view.begin(), view.end());
         } else {
             std::ostringstream ss;
             auto hasPrev = false;
@@ -161,16 +175,16 @@ struct AttrArgsGetter {
     void visit(ASTNodeRef& node, Tag<IDL_AST_NODE_TYPE_ATTR_VERSION>) {
         auto view = node.getChilds(origin);
         if (origin) {
-            printArgs(false, view.begin(), view.end());
+            printArgs(false, false, view.begin(), view.end());
         } else {
             std::vector<ASTNodeRef> components{};
             components.assign(view.begin(), view.end());
             if (components.size() == 3) {
                 std::ostringstream ss;
-                fmt::print(ss, "{}.{}.{}", components[0]->valueInt, components[1]->valueInt, components[2]->valueInt);
+                fmt::print(ss, "({}.{}.{})", components[0]->valueInt, components[1]->valueInt, components[2]->valueInt);
                 args = ss.str();
             } else {
-                printArgs(false, components.begin(), components.end());
+                printArgs(false, false, components.begin(), components.end());
             }
         }
     }
@@ -178,24 +192,43 @@ struct AttrArgsGetter {
     template <ASTNodeType Type>
     void visit(ASTNodeRef& node, Tag<Type>) noexcept {
         auto view = node.getChilds(origin);
-        printArgs(true, view.begin(), view.end());
+        printArgs(true, false, view.begin(), view.end());
     }
 
     template <typename It>
-    void printArgs(bool addQuotes, It begin, It end) {
+    void printArgs(bool addQuotes, bool wrapArgs, It begin, It end) {
+        const auto count = std::distance(begin, end);
+        if (count == 0) {
+            return;
+        }
+        if (wrapArgs && count == 1) {
+            wrapArgs = false;
+        }
         std::ostringstream ss;
         auto hasPrev = false;
+        auto spaces  = wrapArgs ? indents * (level + 1) : 0;
+        fmt::print(ss, "(");
+        if (wrapArgs) {
+            fmt::print(ss, "\n");
+        }
         for (auto it = begin; it != end; ++it) {
             if (hasPrev) {
-                fmt::print(ss, ", ");
+                fmt::print(ss, ",{}", wrapArgs ? "\n"sv : " "sv);
             }
             hasPrev = true;
-            fmt::print(ss, "{}", (*it).template accept<LiteralPrinter>(addQuotes, (*it).parent()).str);
+            fmt::print(ss, "{:{}}{}", "", spaces, (*it).template accept<LiteralPrinter>(addQuotes, (*it).parent()).str);
         }
+        if (wrapArgs) {
+            fmt::print(ss, "\n{:{}}", "", indents * level);
+        }
+        fmt::print(ss, ")");
         args = ss.str();
     }
 
     bool origin;
+    bool wrapAttrs;
+    int level;
+    uint32_t indents;
     std::string args;
 };
 
@@ -270,7 +303,7 @@ struct ASTVisitor {
         fmt::print(out(), "{:{}}{} {}", "", state.indents * level, token(node), node.name());
         printType(node);
         printValue(node);
-        printAttrs(node);
+        printAttrs(node, level);
         printIDoc(node, level, hasIDoc);
     }
 
@@ -302,32 +335,51 @@ struct ASTVisitor {
         }
     }
 
-    void printAttrs(ASTNodeRef& node) {
-        auto attrs = node.getAttrs(state.origin) | std::views::filter([](const auto& attr) {
+    void printAttrs(ASTNodeRef& node, int level) {
+        auto attrFilter = [this](const auto& attr) {
+            if (attr.template is<IDL_AST_NODE_TYPE_ATTR_BOOL_TYPE>()) {
+                auto type = attr.getChilds(state.origin).front().resolveRef(true);
+                return !type.template is<IDL_AST_NODE_TYPE_INT_32>();
+            }
             return attr.template is<IDL_AST_NODE_TYPE_ATTR>() &&
                    !attr.template is<IDL_AST_NODE_TYPE_ATTR_DOC, IDL_AST_NODE_TYPE_ATTR_VALUE, IDL_AST_NODE_TYPE_ATTR_TYPE>();
-        });
+        };
+        auto attrs     = node.getAttrs(state.origin) | std::views::filter(attrFilter);
+        auto attrCount = std::ranges::distance(attrs);
+        auto wrapAttrs = attrCount > 5;
+        if (!wrapAttrs) {
+            wrapAttrs = std::ranges::any_of(attrs, [this](const auto& attr) {
+                if (attr.template is<IDL_AST_NODE_TYPE_ATTR_CCONV, IDL_AST_NODE_TYPE_ATTR_CFORMAT>()) {
+                    auto args = attr.getChilds(state.origin);
+                    return std::ranges::distance(args) > 1;
+                }
+                return false;
+            });
+        }
 
         bool hasPrev = false;
         for (auto attr : attrs) {
             if (!hasPrev) {
                 hasPrev = true;
-                fmt::print(out(), " [");
+                fmt::print(out(), " [{}", wrapAttrs ? "\n"sv : ""sv);
             } else {
-                fmt::print(out(), ", ");
+                fmt::print(out(), ",{}", wrapAttrs ? "\n"sv : " "sv);
             }
-            printAttr(attr);
+            if (wrapAttrs) {
+                fmt::print(out(), "{:{}}", "", state.indents * (level + 1));
+            }
+            printAttr(attr, wrapAttrs, level);
         }
         if (hasPrev) {
-            fmt::print(out(), "]");
+            fmt::print(out(), "{}]", wrapAttrs ? "\n"sv : ""sv);
         }
     }
 
-    void printAttr(ASTNodeRef& node) {
+    void printAttr(ASTNodeRef& node, bool wrapAttrs, int level) {
         fmt::print(out(), "{}", attrName(node));
-        const auto args = node.accept<AttrArgsGetter>(state.origin).args;
+        const auto args = node.accept<AttrArgsGetter>(state.origin, wrapAttrs, wrapAttrs ? (level + 1) : level, state.indents).args;
         if (!args.empty()) {
-            fmt::print(out(), "({})", args);
+            fmt::print(out(), "{}", args);
         }
     }
 

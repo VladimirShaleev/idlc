@@ -10,4 +10,4 @@
 ## for field in fields
 {% if field.doxygen.is_inline == false %}{{ nl(1) }}{{ render("c_doxygen", field.doxygen) }}{% endif %}{{ indents(config.indents) }}{% set type=ctype(field.node) %}{{ type }}{{ indents(max_len - length(type)) }} {{ cname(field.node) }};{{ render("c_doxygen_inline", field.doxygen) }}
 ## endfor
-} {{ cname(node) }};
+}{% if config.break.after.typedef %}{{ nl(1) }}{% else %} {% endif %}{{ cname(node) }};

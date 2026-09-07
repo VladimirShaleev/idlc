@@ -661,7 +661,7 @@ struct AttrArgRules {
     template <size_t... I>
     static std::string cconvTokensSeq(Context& ctx, std::index_sequence<I...>) {
         std::ostringstream ss;
-        ((ss << ASTNodeRef::byType<idl_ast_node_type_t(I + IDL_AST_NODE_TYPE_ENUM)>(ctx).accept<DeclToken>().str << '|'), ...);
+        ((ss << ASTNodeRef::byType<idl_ast_node_type_t(I + IDL_AST_NODE_TYPE_ENUM)>(ctx).template accept<DeclToken>().str << '|'), ...);
         ss << "file";
         return ss.str();
     }

@@ -794,7 +794,7 @@ struct ASTVisitor {
         data["include_guard"] = guard;
         data["filename"]      = name;
         data["is_main"]       = main || single;
-        data["has_includes"]  = state.stats.hasImports.contains(node);
+        data["has_includes"]  = state.stats.hasImports.contains(node) || !postfix.empty();
 
         if (node.is<IDL_AST_NODE_TYPE_IMPORT>()) {
             auto it = std::find_if(state.includes.rbegin(), state.includes.rend(), [parent = node.parent()](auto& item) {

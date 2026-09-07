@@ -313,9 +313,7 @@ struct CBaseName {
                     return argStr.starts_with(token);
                 });
 
-                if (it == argView.end()) {
-                    conv = node.accept<CBaseConvention>().conv;
-                } else {
+                if (it != argView.end()) {
                     auto params = split(it->valueStr());
                     auto target = params[1];
 
@@ -330,6 +328,7 @@ struct CBaseName {
                         return std::string_view{ name, index } == target;
                     });
 
+                    conv.calculated     = true;
                     conv.caseConvention = itConv->first;
                     conv.fullname       = params[2][0] == 'f';
                     conv.includeImports = params[3][0] == 'a';
@@ -338,7 +337,10 @@ struct CBaseName {
                     conv.postfixEx      = params[6];
                 }
             }
-            conv.calculated = true;
+            if (!conv.calculated) {
+                conv = node.accept<CBaseConvention>().conv;
+                assert(conv.calculated);
+            }
         }
         return conv;
     }

@@ -4,3 +4,9 @@
 @ License [license]
 @ Author [author]
 api Api
+
+@ Brief
+@ Detail [detail]
+func Test
+    arg ExplicitVoid {Void} @ Todo
+    arg ImplicitVoid @ Todo

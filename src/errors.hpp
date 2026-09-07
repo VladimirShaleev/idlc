@@ -19,6 +19,8 @@ inline std::string err(Args&&... args) {
         str = fmt::format("Unnecessary explicit attribute [detail] in inline documentation");
     } else if constexpr (Status == IDL_STATUS_N1005) {
         str = fmt::format("The 'Void' return type is optional because it is inferred by default");
+    } else if constexpr (Status == IDL_STATUS_N1006) {
+        str = fmt::format("The [const] attribute is redundant for a trivial type of '{}'", args...);
     } else if constexpr (Status == IDL_STATUS_W2001) {
         str = fmt::format("The declaration '{}' is missing an attribute [{}]", args...);
     } else if constexpr (Status == IDL_STATUS_W2002) {
@@ -35,8 +37,6 @@ inline std::string err(Args&&... args) {
         str = fmt::format("Implicit conversion from an integer type to a floating-point type");
     } else if constexpr (Status == IDL_STATUS_W2008) {
         str = fmt::format("Documentation provided ([return] attribute) for {} '{}' without a return value", args...);
-    } else if constexpr (Status == IDL_STATUS_W2009) {
-        str = fmt::format("The [const] attribute is redundant for the Str of '{}', as the string type is constant by default", args...);
     } else if constexpr (Status == IDL_STATUS_E3001) {
         if constexpr (sizeof...(args) > 0) {
             str = fmt::format("Syntax error '{}'", args...);
@@ -173,7 +173,8 @@ inline std::string err(Args&&... args) {
     } else if constexpr (Status == IDL_STATUS_E3061) {
         str = fmt::format("The return argument '{}' cannot be constant", args...);
     } else if constexpr (Status == IDL_STATUS_E3062) {
-        str = fmt::format("A Str argument '{}' cannot be a reference [ref], except in the case of a return value [out] or result [result]", args...);
+        str = fmt::format("A Trivial argument '{}' cannot be a reference [ref], except in the case of a return value [out] or result [result]",
+                          args...);
     } else {
         assert(!"Unknown status code");
     }

@@ -18,6 +18,7 @@ enum Status
     const N1003 : 1003 [tokenizer(0)] @ Unnecessary explicit attribute \[brief\] in documentation.
     const N1004 : 1004 [tokenizer(0)] @ Unnecessary explicit attribute \[detail\] in inline documentation.
     const N1005 : 1005 [tokenizer(0)] @ The 'Void' return type is optional because it is inferred by default.
+    const N1006 : 1006 [tokenizer(0)] @ The \[const\] attribute is redundant for a trivial type.
 
     const W2001 : 2001 [tokenizer(0)] @ The declaration is missing an attribute.
     const W2002 : 2002 [tokenizer(0)] @ Repeated import.
@@ -27,7 +28,6 @@ enum Status
     const W2006 : 2006 [tokenizer(0)] @ The field type has the declaration type declared below.
     const W2007 : 2007 [tokenizer(0)] @ Implicit conversion from an integer type to a floating-point type.
     const W2008 : 2008 [tokenizer(0)] @ Documentation for the return value of type 'Void' is specified.
-    const W2009 : 2009 [tokenizer(0)] @ The \[const\] attribute is redundant for the Str, as the string type is constant by default.
 
     const E3001 : 3001 [tokenizer(0)] @ Syntax error.
     const E3002 : 3002 [tokenizer(0)] @ Argument parsing error.
@@ -90,7 +90,7 @@ enum Status
     const E3059 : 3059 [tokenizer(0)] @ An invalid format parameter was passed to the \[cformat\] attribute argument.
     const E3060 : 3060 [tokenizer(0)] @ The argument type cannot be 'Void'.
     const E3061 : 3061 [tokenizer(0)] @ The return argument cannot be constant.
-    const E3062 : 3062 [tokenizer(0)] @ A Str cannot be a reference \[ref\], except in the case of a return value \[out\] or result \[result\].
+    const E3062 : 3062 [tokenizer(0)] @ A Trivial argument cannot be a reference \[ref\], except in the case of a return value \[out\] or result \[result\].
 
 @ Compilation message.
 @ Detailed description of warning or compilation error. [detail]

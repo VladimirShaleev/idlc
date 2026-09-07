@@ -1202,17 +1202,20 @@ struct BuildRules {
         if (hasOut && !hasRef) {
             ctx.addNode<IDL_AST_NODE_TYPE_ATTR_REF>(node);
         }
+        if (hasRef && !hasOut) {
+            ctx.addNode<IDL_AST_NODE_TYPE_ATTR_CONST>(node);
+        }
         if (hasOut && hasConst) {
             ctx.log<IDL_STATUS_E3061>(node->location, node.fullname());
             node.setBuildError();
         }
-        if (node.declType().is<IDL_AST_NODE_TYPE_STR>()) {
+        if (node.declType().is<IDL_AST_NODE_TYPE_TRIVIAL_TYPE>()) {
             if (hasRef && !hasOut) {
                 ctx.log<IDL_STATUS_E3062>(node->location, node.fullname());
                 node.setBuildError();
             }
-            if (hasConst) {
-                ctx.log<IDL_STATUS_W2009>(node->location, node.fullname());
+            if (hasConst && !hasOut) {
+                note: ctx.log<IDL_STATUS_N1006>(node->location, node.fullname());
                 node.findChild<IDL_AST_NODE_TYPE_ATTR_CONST>().setReplacedByCompiler();
             }
         }

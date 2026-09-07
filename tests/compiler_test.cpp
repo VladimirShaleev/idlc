@@ -115,6 +115,55 @@ TEST(idlc, VoidReturnTypeIsOptional) {
     ASSERT_TRUE(isType(ast, type, IDL_AST_NODE_TYPE_VOID));
 }
 
+TEST(idlc, ConstAttrIsRedundantForATrivialType) {
+    const auto [result, ast, messages] = compile("n1006");
+    deferred(idl_compilation_result_destroy(ast));
+    ASSERT_EQ(result, IDL_RESULT_SUCCESS);
+    ASSERT_EQ(messages.size(), 2);
+    ASSERT_EQ(messages[0], "note [N1006]: The [const] attribute is redundant for a trivial type of 'Api.Test.String' at n1006:11:5");
+    ASSERT_EQ(messages[1], "note [N1006]: The [const] attribute is redundant for a trivial type of 'Api.Test.Integer' at n1006:12:5");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto func = findChild(ast, api, IDL_AST_NODE_TYPE_FUNC);
+    ASSERT_NE(func, HandleNone);
+
+    auto argString = findChild(ast, func, "String");
+    ASSERT_NE(argString, HandleNone);
+
+    auto attrTypeString = findChild(ast, argString, IDL_AST_NODE_TYPE_ATTR_TYPE);
+    ASSERT_NE(attrTypeString, HandleNone);
+
+    auto declRefString = findChild(ast, attrTypeString, IDL_AST_NODE_TYPE_DECL_REF);
+    ASSERT_NE(declRefString, HandleNone);
+
+    auto typeString = getDeclRef(ast, declRefString);
+    ASSERT_NE(typeString, HandleNone);
+    ASSERT_TRUE(isType(ast, typeString, IDL_AST_NODE_TYPE_STR));
+
+    auto attrConstString = findChild(ast, argString, IDL_AST_NODE_TYPE_ATTR_CONST);
+    ASSERT_NE(attrConstString, HandleNone);
+    ASSERT_TRUE(hasAllState(ast, attrConstString, IDL_AST_NODE_STATE_REPLACED_BY_COMPILER_BIT));
+
+    auto argInteger = findChild(ast, func, "Integer");
+    ASSERT_NE(argInteger, HandleNone);
+
+    auto attrTypeInteger = findChild(ast, argInteger, IDL_AST_NODE_TYPE_ATTR_TYPE);
+    ASSERT_NE(attrTypeInteger, HandleNone);
+
+    auto declRefInteger = findChild(ast, attrTypeInteger, IDL_AST_NODE_TYPE_DECL_REF);
+    ASSERT_NE(declRefInteger, HandleNone);
+
+    auto typeInteger = getDeclRef(ast, declRefInteger);
+    ASSERT_NE(typeInteger, HandleNone);
+    ASSERT_TRUE(isType(ast, typeInteger, IDL_AST_NODE_TYPE_INT_32));
+
+    auto attrConstInteger = findChild(ast, argInteger, IDL_AST_NODE_TYPE_ATTR_CONST);
+    ASSERT_NE(attrConstInteger, HandleNone);
+    ASSERT_TRUE(hasAllState(ast, attrConstInteger, IDL_AST_NODE_STATE_REPLACED_BY_COMPILER_BIT));
+}
+
 TEST(idlc, MissingAttribute) {
     const auto [result, ast, messages] = compile("w2001");
     deferred(idl_compilation_result_destroy(ast));
@@ -596,39 +645,6 @@ TEST(idlc, DocForReturnValueOfTypeVoidIsSpecified) {
     auto type = getDeclRef(ast, declRef);
     ASSERT_NE(type, HandleNone);
     ASSERT_TRUE(isType(ast, type, IDL_AST_NODE_TYPE_VOID));
-}
-
-TEST(idlc, ConstAttrIsRedundantForStrAsTheStrTypeIsConstByDefault) {
-    const auto [result, ast, messages] = compile("w2009");
-    deferred(idl_compilation_result_destroy(ast));
-    ASSERT_EQ(result, IDL_RESULT_SUCCESS);
-    ASSERT_EQ(messages.size(), 1);
-    ASSERT_EQ(
-        messages[0],
-        "warning [W2009]: The [const] attribute is redundant for the Str of 'Api.Test.Arg', as the string type is constant by default at w2009:11:5");
-
-    auto api = idl_compilation_result_get_api(ast);
-    ASSERT_NE(api, HandleNone);
-
-    auto func = findChild(ast, api, IDL_AST_NODE_TYPE_FUNC);
-    ASSERT_NE(func, HandleNone);
-
-    auto arg = findChild(ast, func, IDL_AST_NODE_TYPE_ARG);
-    ASSERT_NE(arg, HandleNone);
-
-    auto attrType = findChild(ast, arg, IDL_AST_NODE_TYPE_ATTR_TYPE);
-    ASSERT_NE(attrType, HandleNone);
-
-    auto declRef = findChild(ast, attrType, IDL_AST_NODE_TYPE_DECL_REF);
-    ASSERT_NE(declRef, HandleNone);
-
-    auto type = getDeclRef(ast, declRef);
-    ASSERT_NE(type, HandleNone);
-    ASSERT_TRUE(isType(ast, type, IDL_AST_NODE_TYPE_STR));
-
-    auto attrConst = findChild(ast, arg, IDL_AST_NODE_TYPE_ATTR_CONST);
-    ASSERT_NE(attrConst, HandleNone);
-    ASSERT_TRUE(hasAllState(ast, attrConst, IDL_AST_NODE_STATE_REPLACED_BY_COMPILER_BIT));
 }
 
 TEST(idlc, SyntaxError) {
@@ -1946,7 +1962,7 @@ TEST(idlc, ArgCanBeDefinedForFunc) {
     ASSERT_EQ(result, IDL_RESULT_SUCCESS);
     ASSERT_EQ(messages.size(), 1);
     ASSERT_EQ(messages[0], "error [E3057]: A 'arg' of 'Arg' can be defined only for 'func', 'method' and 'callback' at e3057func:11:5");
-    
+
     auto api = idl_compilation_result_get_api(ast);
     ASSERT_NE(api, HandleNone);
 
@@ -2001,17 +2017,91 @@ TEST(idlc, InvalidFormatParamWasPassedToCFormat) {
 TEST(idlc, ArgTypeCannotBeVoid) {
     const auto [result, ast, messages] = compile("e3060");
     deferred(idl_compilation_result_destroy(ast));
-    GTEST_FAIL();
+    ASSERT_EQ(result, IDL_RESULT_SUCCESS);
+    ASSERT_EQ(messages.size(), 3);
+    ASSERT_EQ(messages[0], "warning [W2001]: The declaration 'Api.Test.ImplicitVoid' is missing an attribute [type] at e3060:12:5");
+    ASSERT_EQ(messages[1], "error [E3060]: The argument type of 'Api.Test.ExplicitVoid' cannot be 'Void' at e3060:11:23");
+    ASSERT_EQ(messages[2], "error [E3060]: The argument type of 'Api.Test.ImplicitVoid' cannot be 'Void' at e3060:12:5");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto func = findChild(ast, api, IDL_AST_NODE_TYPE_FUNC);
+    ASSERT_NE(func, HandleNone);
+
+    auto explicitVoidArg = findChild(ast, func, "ExplicitVoid");
+    auto implicitVoidArg = findChild(ast, func, "ImplicitVoid");
+    ASSERT_NE(explicitVoidArg, HandleNone);
+    ASSERT_NE(implicitVoidArg, HandleNone);
+
+    auto explicitVoidAttrType = findChild(ast, explicitVoidArg, IDL_AST_NODE_TYPE_ATTR_TYPE);
+    ASSERT_NE(explicitVoidAttrType, HandleNone);
+
+    auto explicitVoidDeclRef = findChild(ast, explicitVoidAttrType, IDL_AST_NODE_TYPE_DECL_REF);
+    ASSERT_NE(explicitVoidDeclRef, HandleNone);
+
+    auto explicitVoidType = getDeclRef(ast, explicitVoidDeclRef);
+    ASSERT_NE(explicitVoidType, HandleNone);
+    ASSERT_TRUE(isType(ast, explicitVoidType, IDL_AST_NODE_TYPE_VOID));
+
+    auto implicitVoidAttrType = findChild(ast, implicitVoidArg, IDL_AST_NODE_TYPE_ATTR_TYPE);
+    ASSERT_EQ(implicitVoidAttrType, HandleNone);
 }
 
 TEST(idlc, ReturnArgCannotBeConst) {
     const auto [result, ast, messages] = compile("e3061");
     deferred(idl_compilation_result_destroy(ast));
-    GTEST_FAIL();
+    ASSERT_EQ(messages.size(), 2);
+    ASSERT_EQ(messages[0], "error [E3061]: The return argument 'Api.Test.Arg4' cannot be constant at e3061:15:5");
+    ASSERT_EQ(messages[1], "error [E3061]: The return argument 'Api.Test.Arg5' cannot be constant at e3061:16:5");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto func = findChild(ast, api, IDL_AST_NODE_TYPE_FUNC);
+    ASSERT_NE(func, HandleNone);
+
+    auto checkAttrs = [ast, func](const std::string& argName, bool hasIn, bool hasOut, bool hasRef, bool hasConst) {
+        auto arg = findChild(ast, func, argName);
+        ASSERT_NE(arg, HandleNone);
+
+        const auto actualIn    = findChild(ast, arg, IDL_AST_NODE_TYPE_ATTR_IN) != HandleNone;
+        const auto actualOut   = findChild(ast, arg, IDL_AST_NODE_TYPE_ATTR_OUT) != HandleNone;
+        const auto actualRef   = findChild(ast, arg, IDL_AST_NODE_TYPE_ATTR_REF) != HandleNone;
+        const auto actualConst = findChild(ast, arg, IDL_AST_NODE_TYPE_ATTR_CONST) != HandleNone;
+
+        ASSERT_EQ(actualIn, hasIn);
+        ASSERT_EQ(actualOut, hasOut);
+        ASSERT_EQ(actualRef, hasRef);
+        ASSERT_EQ(actualConst, hasConst);
+    };
+
+    checkAttrs("Arg0", true, false, false, false);
+    checkAttrs("Arg1", true, false, false, false);
+    checkAttrs("Arg2", false, true, true, false);
+    checkAttrs("Arg3", true, true, true, false);
+    checkAttrs("Arg4", true, true, true, true);
+    checkAttrs("Arg5", false, true, true, true);
 }
 
-TEST(idlc, StrCannotBeRef) {
+TEST(idlc, TrivialArgCannotBeRef) {
     const auto [result, ast, messages] = compile("e3062");
     deferred(idl_compilation_result_destroy(ast));
-    GTEST_FAIL();
+    ASSERT_EQ(messages.size(), 2);
+    ASSERT_EQ(messages[0],
+              "error [E3062]: A Trivial argument 'Api.Test.Arg0' cannot be a reference [ref], except in the case of a return value [out] or result "
+              "[result] at e3062:11:5");
+    ASSERT_EQ(messages[1],
+              "error [E3062]: A Trivial argument 'Api.Test.Arg1' cannot be a reference [ref], except in the case of a return value [out] or result "
+              "[result] at e3062:12:5");
+
+    auto api = idl_compilation_result_get_api(ast);
+    ASSERT_NE(api, HandleNone);
+
+    auto func = findChild(ast, api, IDL_AST_NODE_TYPE_FUNC);
+    ASSERT_NE(func, HandleNone);
+
+    for (auto arg : getChilds(ast, func, IDL_AST_NODE_TYPE_ARG)) {
+        ASSERT_TRUE(hasAllState(ast, arg, IDL_AST_NODE_STATE_BUILD_ERROR_BIT));
+    }
 }

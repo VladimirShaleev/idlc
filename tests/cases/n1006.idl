@@ -8,4 +8,5 @@ api Api
 @ Test function
 @ Description [detail]
 func Test
-    arg Arg {Str} [const] @ Doc
+    arg String {Str} [const] @ Doc
+    arg Integer {Int32} [const] @ Doc

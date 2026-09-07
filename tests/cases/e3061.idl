@@ -4,3 +4,13 @@
 @ License [license]
 @ Author [author]
 api Api
+
+@ Brief
+@ Detail [detail]
+func Test
+    arg Arg0 {Int32} @ Todo
+    arg Arg1 {Float32} [in] @ Todo
+    arg Arg2 {Float64} [out] @ Todo
+    arg Arg3 {Int8} [in,out] @ Todo
+    arg Arg4 {Int8} [in,out,const] @ Todo
+    arg Arg5 {Int32} [const,out] @ Todo

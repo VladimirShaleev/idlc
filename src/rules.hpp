@@ -1209,13 +1209,30 @@ struct BuildRules {
             ctx.log<IDL_STATUS_E3061>(node->location, node.fullname());
             node.setBuildError();
         }
-        if (node.declType().is<IDL_AST_NODE_TYPE_TRIVIAL_TYPE>()) {
+        if (hasIn && !hasOut) {
+            ctx.log<IDL_STATUS_N1009>(node->location, node.fullname());
+        }
+        if (node.declType().is<IDL_AST_NODE_TYPE_TRIVIAL_TYPE, IDL_AST_NODE_TYPE_ENUM>()) {
             if (hasRef && !hasOut) {
                 ctx.log<IDL_STATUS_E3062>(node->location, node.fullname());
                 node.setBuildError();
             }
             if (hasConst && !hasOut) {
-                note: ctx.log<IDL_STATUS_N1006>(node->location, node.fullname());
+                ctx.log<IDL_STATUS_N1006>(node->location, node.fullname());
+                node.findChild<IDL_AST_NODE_TYPE_ATTR_CONST>().setReplacedByCompiler();
+            }
+        } else if (node.declType().is<IDL_AST_NODE_TYPE_STRUCT>()) {
+            if (!hasRef && !hasOut) {
+                ctx.addNode<IDL_AST_NODE_TYPE_ATTR_REF>(node);
+            }
+            if (!hasConst && !hasOut) {
+                ctx.addNode<IDL_AST_NODE_TYPE_ATTR_CONST>(node);
+            }
+            if (hasRef && !hasOut) {
+                ctx.log<IDL_STATUS_N1008>(node->location, node.fullname());
+            }
+            if (hasConst && !hasOut) {
+                ctx.log<IDL_STATUS_N1007>(node->location, node.fullname());
                 node.findChild<IDL_AST_NODE_TYPE_ATTR_CONST>().setReplacedByCompiler();
             }
         }

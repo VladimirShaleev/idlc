@@ -19,6 +19,9 @@ enum Status
     const N1004 : 1004 [tokenizer(0)] @ Unnecessary explicit attribute \[detail\] in inline documentation.
     const N1005 : 1005 [tokenizer(0)] @ The 'Void' return type is optional because it is inferred by default.
     const N1006 : 1006 [tokenizer(0)] @ The \[const\] attribute is redundant for a trivial type.
+    const N1007 : 1007 [tokenizer(0)] @ Redundant \[const\] attribute, arguments of structural types are implicitly const.
+    const N1008 : 1008 [tokenizer(0)] @ Redundant \[ref\] attribute, arguments of structural types are implicitly reference types.
+    const N1009 : 1009 [tokenizer(0)] @ Redundant \[in\] attribute, except when used in conjunction with \[out\].
 
     const W2001 : 2001 [tokenizer(0)] @ The declaration is missing an attribute.
     const W2002 : 2002 [tokenizer(0)] @ Repeated import.

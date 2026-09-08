@@ -44,6 +44,9 @@ typedef enum
     IDL_STATUS_N1004    = 1004, /**< Unnecessary explicit attribute [detail] in inline documentation. */
     IDL_STATUS_N1005    = 1005, /**< The 'Void' return type is optional because it is inferred by default. */
     IDL_STATUS_N1006    = 1006, /**< The [const] attribute is redundant for a trivial type. */
+    IDL_STATUS_N1007    = 1007, /**< Redundant [const] attribute, arguments of structural types are implicitly const. */
+    IDL_STATUS_N1008    = 1008, /**< Redundant [ref] attribute, arguments of structural types are implicitly reference types. */
+    IDL_STATUS_N1009    = 1009, /**< Redundant [in] attribute, except when used in conjunction with [out]. */
     IDL_STATUS_W2001    = 2001, /**< The declaration is missing an attribute. */
     IDL_STATUS_W2002    = 2002, /**< Repeated import. */
     IDL_STATUS_W2003    = 2003, /**< The constant refers to a constant declared below. */

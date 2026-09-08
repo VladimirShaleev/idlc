@@ -21,6 +21,12 @@ inline std::string err(Args&&... args) {
         str = fmt::format("The 'Void' return type is optional because it is inferred by default");
     } else if constexpr (Status == IDL_STATUS_N1006) {
         str = fmt::format("The [const] attribute is redundant for a trivial type of '{}'", args...);
+    } else if constexpr (Status == IDL_STATUS_N1007) {
+        str = fmt::format("Redundant [const] attribute of '{}', arguments of structural types are implicitly const", args...);
+    } else if constexpr (Status == IDL_STATUS_N1008) {
+        str = fmt::format("Redundant [ref] attribute of '{}', arguments of structural types are implicitly reference types", args...);
+    } else if constexpr (Status == IDL_STATUS_N1009) {
+        str = fmt::format("Redundant [in] attribute of '{}', except when used in conjunction with [out]", args...);
     } else if constexpr (Status == IDL_STATUS_W2001) {
         str = fmt::format("The declaration '{}' is missing an attribute [{}]", args...);
     } else if constexpr (Status == IDL_STATUS_W2002) {

@@ -23,11 +23,14 @@ addCommand(argparse::ArgumentParser& program, std::string_view help, T defaultVa
     ss << ')';
     arg.help(ss.str());
 
+#if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunused-value"
+#endif
     auto lastArg = (args, ...);
+#if defined(__clang__)
 #pragma clang diagnostic pop
-
+#endif
     return [defaultValue, lastArg](argparse::ArgumentParser& program, const std::map<std::string, T>& keys) {
         if (!program.is_used(lastArg)) {
             return defaultValue;
